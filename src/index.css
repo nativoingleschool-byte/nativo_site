@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1F3A5F;
+  --color-secondary: #C9A96E;
+  --color-background: #F8F9FB;
+  --color-surface: #FFFFFF;
+  --color-on-surface: #1A1C1E;
+  --color-on-surface-variant: #44474E;
+  --color-outline: #E0E2E7;
+
+  --font-sans: "Inter", sans-serif;
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    -webkit-font-smoothing: antialiased;
+    
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+body::-webkit-scrollbar {
+    display: none;
+}
+
+.hero-title {
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+}
