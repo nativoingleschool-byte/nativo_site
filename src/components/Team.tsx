@@ -1,5 +1,3 @@
-import { ExternalLink } from 'lucide-react';
-
 export default function Team() {
   const teamMembers = [
     {
