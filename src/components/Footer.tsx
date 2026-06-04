@@ -14,9 +14,9 @@ export default function Footer() {
         <div>
           <h5 className="text-secondary font-bold mb-8 uppercase text-xs tracking-widest">Explorar</h5>
           <ul className="space-y-4 text-sm">
-            <li><a className="hover:text-white transition-colors" href="#">Sobre Nós</a></li>
-            <li><a className="hover:text-white transition-colors" href="#">Planos</a></li>
-            <li><a className="hover:text-white transition-colors" href="#">Preços</a></li>
+            <li><a className="hover:text-white transition-colors" href="#about">Sobre Nós</a></li>
+            <li><a className="hover:text-white transition-colors" href="#pricing">Planos</a></li>
+            <li><a className="hover:text-white transition-colors" href="#team">Equipe</a></li>
           </ul>
         </div>
         <div>
