@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import TopAppBar from './components/TopAppBar';
 import Hero from './components/Hero';
 import Positioning from './components/Positioning';
