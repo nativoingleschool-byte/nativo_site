@@ -1,48 +1,66 @@
-export default function Team() {
+interface TeamProps {
+  t: {
+    title: string;
+    subtitle: string;
+    roles: {
+      weberty: string;
+      keziah: string;
+      jhennifer: string;
+      giordanna: string;
+      caitlin: string;
+      eric: string;
+      cole: string;
+      bruno: string;
+      vini: string;
+    };
+  };
+}
+
+export default function Team({ t }: TeamProps) {
   const teamMembers = [
     {
       name: "Weberty",
-      role: "Fundador e professor brasileiro",
+      roleKey: "weberty" as const,
       image: "/team/Weberty.png"
     },
     {
       name: "Keziah",
-      role: "Diretora Pedagógica e professora nativa",
+      roleKey: "keziah" as const,
       image: "/team/Keziah.png"
     },
     {
       name: "Jhennifer",
-      role: "Coordenadora de alunos e professora brasileira",
+      roleKey: "jhennifer" as const,
       image: "/team/Jhennifer.png"
     },
     {
       name: "Giordanna",
-      role: "Gerente de marketing e professora brasileira",
+      roleKey: "giordanna" as const,
       image: "/team/Giordanna.png"
     },
     {
       name: "Caitlin",
-      role: "Professora nativa",
+      roleKey: "caitlin" as const,
       image: "/team/Caitlin.png"
     },
     {
       name: "Eric",
-      role: "Professor brasileiro",
+      roleKey: "eric" as const,
       image: "/team/Eric.png"
     },
     {
       name: "Cole",
-      role: "Professor nativo",
+      roleKey: "cole" as const,
       image: "/team/Cole.png"
     },
     {
       name: "Bruno",
-      role: "Professor brasileiro",
+      roleKey: "bruno" as const,
       image: "/team/Bruno.png"
     },
     {
       name: "Vini",
-      role: "Professor brasileiro",
+      roleKey: "vini" as const,
       image: "/team/Vini.png"
     }
   ];
@@ -52,11 +70,11 @@ export default function Team() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-20 text-center max-w-3xl mx-auto">
           <h2 className="text-5xl font-extrabold text-primary mb-6">
-            Nossa Equipe
+            {t.title}
           </h2>
 
           <p className="text-xl text-on-surface-variant font-light leading-relaxed">
-            Especialistas dedicados a transformar sua relação com a língua inglesa através de excelência acadêmica e suporte contínuo de alto nível.
+            {t.subtitle}
           </p>
         </div>
 
@@ -78,9 +96,9 @@ export default function Team() {
                 {member.name}
               </h4>
 
-              {member.role && (
+              {member.roleKey && (
                 <p className="text-[10px] text-secondary font-black uppercase tracking-[0.2em] mt-2">
-                  {member.role}
+                  {t.roles[member.roleKey]}
                 </p>
               )}
             </div>
