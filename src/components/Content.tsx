@@ -1,7 +1,15 @@
 import { Camera, Play, X } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Content() {
+interface ContentProps {
+  t: {
+    title: string;
+    instagram: string;
+    follow: string;
+  };
+}
+
+export default function Content({ t }: ContentProps) {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const reels = [
     {
@@ -24,12 +32,12 @@ export default function Content() {
   return (
     <section className="py-[160px] bg-white px-6">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-5xl font-extrabold text-primary text-center mb-24">Conteúdo Nativo</h2>
+        <h2 className="text-5xl font-extrabold text-primary text-center mb-24">{t.title}</h2>
         <div className="max-w-2xl mx-auto">
           
           <div className="bg-background p-6 md:p-12 rounded-[2.5rem] md:rounded-[2.5rem] rounded-3xl border border-outline/50 hover:shadow-2xl transition-all">
             <div className="flex items-center justify-between mb-8 md:mb-12">
-              <h3 className="text-2xl md:text-3xl font-bold text-primary">Instagram</h3>
+              <h3 className="text-2xl md:text-3xl font-bold text-primary">{t.instagram}</h3>
               <Camera className="text-secondary w-8 h-8 md:w-10 md:h-10" />
             </div>
             <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8 md:mb-12">
@@ -50,7 +58,7 @@ export default function Content() {
                 </div>
               ))}
             </div>
-            <a href="https://www.instagram.com/nativo_english?igsh=ZTY4Z283aHJmams5" target="_blank" rel="noopener noreferrer" className="w-full py-4 md:py-5 rounded-xl md:rounded-2xl bg-white border border-outline text-primary font-bold hover:bg-primary hover:text-white transition-all shadow-sm cursor-pointer flex justify-center items-center text-sm md:text-base">Seguir @nativoenglish</a>
+            <a href="https://www.instagram.com/nativo_english?igsh=ZTY4Z283aHJmams5" target="_blank" rel="noopener noreferrer" className="w-full py-4 md:py-5 rounded-xl md:rounded-2xl bg-white border border-outline text-primary font-bold hover:bg-primary hover:text-white transition-all shadow-sm cursor-pointer flex justify-center items-center text-sm md:text-base">{t.follow}</a>
           </div>
         </div>
       </div>
