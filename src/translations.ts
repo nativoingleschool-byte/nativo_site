@@ -7,6 +7,7 @@ export const translations = {
       pricing: "Planos",
       team: "Equipe",
       cta: "Começar",
+      login: "Login",
     },
     hero: {
       badge: "O futuro da sua comunicação",
@@ -111,6 +112,7 @@ export const translations = {
       pricing: "Plans",
       team: "Team",
       cta: "Get Started",
+      login: "Log In",
     },
     hero: {
       badge: "The future of your communication",
@@ -215,6 +217,7 @@ export const translations = {
       pricing: "Planes",
       team: "Equipo",
       cta: "Comenzar",
+      login: "Acceder",
     },
     hero: {
       badge: "El futuro de tu comunicación",

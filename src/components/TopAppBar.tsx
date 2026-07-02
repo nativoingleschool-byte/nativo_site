@@ -10,10 +10,12 @@ interface TopAppBarProps {
     pricing: string;
     team: string;
     cta: string;
+    login: string;
   };
+  onOpenLogin: () => void;
 }
 
-export default function TopAppBar({ lang, setLang, t }: TopAppBarProps) {
+export default function TopAppBar({ lang, setLang, t, onOpenLogin }: TopAppBarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const LanguageSelector = () => (
@@ -45,6 +47,12 @@ export default function TopAppBar({ lang, setLang, t }: TopAppBarProps) {
           <a className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#pricing">{t.pricing}</a>
           <a className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#team">{t.team}</a>
           <a className="bg-primary text-white border-2 border-primary px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:bg-primary/90 hover:shadow-lg" href="#pricing">{t.cta}</a>
+          <button 
+            onClick={onOpenLogin}
+            className="text-on-surface-variant hover:text-primary transition-colors text-sm font-bold cursor-pointer"
+          >
+            {t.login}
+          </button>
           <LanguageSelector />
         </div>
         <button 
@@ -87,6 +95,15 @@ export default function TopAppBar({ lang, setLang, t }: TopAppBarProps) {
           >
             {t.cta}
           </a>
+          <button 
+            onClick={() => {
+              setIsOpen(false);
+              onOpenLogin();
+            }}
+            className="border-2 border-outline hover:border-primary text-primary px-8 py-3.5 rounded-full text-base font-bold text-center transition-all shadow-sm cursor-pointer"
+          >
+            {t.login}
+          </button>
           <div className="pt-4 border-t border-outline/50 flex justify-center">
             <LanguageSelector />
           </div>
