@@ -306,17 +306,25 @@ function ReminderAppInner() {
       setSetupSigningIn(true)
 
       try {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: creds.email,
-          password: creds.password,
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: creds.email, password: creds.password })
         })
-
+        const data = await response.json()
         if (cancelled) return
 
-        if (error) {
-          setLoginError('This setup link is invalid or has expired.')
+        if (!response.ok) {
+          setLoginError(data.error || 'This setup link is invalid or has expired.')
           return
         }
+
+        const { error } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        })
+
+        if (error) throw error
 
         setSetupMode(true)
         setLoginForm({ email: creds.email, password: '' })
@@ -691,13 +699,29 @@ function ReminderAppInner() {
     event.preventDefault()
     setLoginError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginForm.email,
-      password: loginForm.password,
-    })
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginForm.email, password: loginForm.password })
+      })
+      const data = await response.json()
 
-    if (error) {
-      setLoginError(error.message)
+      if (!response.ok) {
+        setLoginError(data.error || 'Falha na autenticação.')
+        return
+      }
+
+      const { error } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token
+      })
+
+      if (error) {
+        setLoginError(error.message)
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Erro de conexão com o servidor.')
     }
   }
 
