@@ -22,7 +22,8 @@ create table if not exists public.profiles (
   cnpj text null,
   status_nota_fiscal text null check (status_nota_fiscal in ('enviada', 'pendente', 'nao_se_aplica')),
   taxa_hora_aula numeric(10,2) not null default 56.00,
-  moeda_taxa text not null default 'BRL'
+  moeda_taxa text not null default 'BRL',
+  status_pagamento_professor text null check (status_pagamento_professor in ('pago', 'pendente')) default 'pendente'
 );
 
 -- 2. Lessons Table (Class schedule and tracking)

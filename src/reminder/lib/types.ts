@@ -22,6 +22,16 @@ export type Profile = {
   speciality: string
   push_enabled: boolean
   created_at?: string
+  timezone?: string
+  cpf?: string
+  data_pagamento_preferencial?: number
+  status_pagamento?: 'em_dia' | 'atrasado' | 'pendente' | null
+  chave_pix?: string
+  cnpj?: string
+  status_nota_fiscal?: 'enviada' | 'pendente' | 'nao_se_aplica' | null
+  taxa_hora_aula?: number
+  moeda_taxa?: string
+  status_pagamento_professor?: 'pago' | 'pendente' | null
 }
 
 export type Lesson = {
@@ -36,6 +46,9 @@ export type Lesson = {
   student_lesson_status: StudentLessonStatus
   teacher_lesson_status: TeacherLessonStatus
   created_at?: string
+  ends_at?: string
+  status?: 'agendada' | 'concluida' | 'cancelada'
+  recurrence?: string
 }
 
 export type ReminderNotification = {
