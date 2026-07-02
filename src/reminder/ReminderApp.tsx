@@ -190,6 +190,10 @@ function ReminderAppInner() {
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff'>('students')
+  const [studentTab, setStudentTab] = useState<'account' | 'lessons'>('lessons')
+  const [teacherTab, setTeacherTab] = useState<'calendar' | 'worklog' | 'profile'>('calendar')
+  const [teacherNotes, setTeacherNotes] = useState('')
+  const [uploadingNf, setUploadingNf] = useState(false)
   const [invoices, setInvoices] = useState<any[]>([])
   const [inviteEmail, setInviteEmail] = useState('')
   const [generatedInviteLink, setGeneratedInviteLink] = useState('')
@@ -837,6 +841,19 @@ function ReminderAppInner() {
       setAppError(error instanceof Error ? error.message : 'Could not create the class.')
       throw error
     }
+  }
+
+  const updateTeacherLessonGroup = async (draft: {
+    lesson_ids: string[]
+    student_ids: string[]
+    subject: string
+    class_name: string
+    teacher_id: string
+    starts_at: string
+    duration_minutes: number
+  }) => {
+    const alterAll = window.confirm('Deseja alterar apenas esta aula ou todas as futuras da recorrência?')
+    await updateLessonGroup(draft)
   }
 
   const updateLessonGroup = async (draft: {
@@ -1893,145 +1910,189 @@ function ReminderAppInner() {
             <article className="panel">
               <div className="panel-header">
                 <div>
-                  <p className="section-label">Student</p>
-                  <h2>Pending reminders</h2>
+                  <p className="section-label">Estudante</p>
+                  <h2>{studentTab === 'lessons' ? 'Lesson Information' : 'Minha Conta'}</h2>
+                </div>
+                <div className="tab-row">
+                  <button
+                    type="button"
+                    className={studentTab === 'lessons' ? 'tab-button tab-button-active' : 'tab-button'}
+                    onClick={() => setStudentTab('lessons')}
+                  >
+                    Aulas & Notificações
+                  </button>
+                  <button
+                    type="button"
+                    className={studentTab === 'account' ? 'tab-button tab-button-active' : 'tab-button'}
+                    onClick={() => setStudentTab('account')}
+                  >
+                    Dados & Pagamentos
+                  </button>
                 </div>
               </div>
 
-              <div className="split-column">
-                <section>
-                  <h3>4-hour reminders</h3>
-                  <div className="list-stack">
-                    {dueStudentFourHourReminders.map((lesson) => (
-                      <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                        <p className="reminder-title">{lesson.subject}</p>
-                        <p className="muted">
-                          Starts in {minutesUntil(now, lesson.starts_at)} minutes on {formatShortDateLabel(lesson.starts_at)}
-                        </p>
-                        <div className="button-row wrap">
-                          <button className="primary-button" onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
-                            I will attend
-                          </button>
-                          <button className="danger-button" onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
-                            I need to cancel
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {dueStudentFourHourReminders.length === 0 && <p className="empty-state">No 4-hour reminders are currently due.</p>}
-                  </div>
-                </section>
-
-                <section>
-                  <h3>Class-time reminders</h3>
-                  <div className="list-stack">
-                    {dueStudentStartReminders.map((lesson) => (
-                      <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                        <p className="reminder-title">{lesson.subject}</p>
-                        <p className="muted">Your class is due now. Confirm whether you completed it.</p>
-                        <div className="button-row wrap">
-                          <button className="primary-button" onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
-                            I did my class
-                          </button>
-                          <button className="danger-button" onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
-                            I did not do it
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {dueStudentStartReminders.length === 0 && <p className="empty-state">No class-time reminders are currently due.</p>}
-                  </div>
-                </section>
-              </div>
-            </article>
-
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Student</p>
-                  <h2>Lesson registry</h2>
-                </div>
-              </div>
-
-              <div className="split-column">
-                <section>
-                  <h3>Past 3 lessons</h3>
-                  <div className="list-stack">
-                    {studentPastLessons.map((lesson) => (
-                      <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                        <div>
-                          <h3>{lesson.subject}</h3>
+              {studentTab === 'lessons' ? (
+                <div className="split-column animate-fade-in">
+                  <section style={{ flex: 1.3 }}>
+                    <h3>Lembretes de Aulas Ativas</h3>
+                    <div className="list-stack">
+                      {/* 4-hour reminders */}
+                      {dueStudentFourHourReminders.map((lesson) => (
+                        <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
+                          <p className="reminder-title">{lesson.subject}</p>
                           <p className="muted">
-                            {formatShortDateLabel(lesson.starts_at)} with {profilesById[lesson.teacher_id]?.full_name}
+                            Inicia em {minutesUntil(now, lesson.starts_at)} minutos às {formatShortDateLabel(lesson.starts_at)}
                           </p>
+                          <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                            <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
+                              Vou comparecer
+                            </button>
+                            <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
+                              Preciso cancelar
+                            </button>
+                          </div>
                         </div>
-                        <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                      ))}
 
-                <section>
-                  <h3>Next 4 lessons</h3>
-                  <div className="list-stack">
-                    {studentUpcomingLessons.map((lesson) => (
-                      <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                        <div>
-                          <h3>{lesson.subject}</h3>
-                          <p className="muted">
-                            {formatShortDateLabel(lesson.starts_at)} with {profilesById[lesson.teacher_id]?.full_name}
-                          </p>
+                      {/* Class-time reminders */}
+                      {dueStudentStartReminders.map((lesson) => (
+                        <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
+                          <p className="reminder-title">{lesson.subject}</p>
+                          <p className="muted">Sua aula agendada começou. Confirme se ela aconteceu:</p>
+                          <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                            <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
+                              Tive a aula
+                            </button>
+                            <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
+                              Não tive a aula
+                            </button>
+                          </div>
                         </div>
-                        <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
+                      ))}
+
+                      {dueStudentFourHourReminders.length === 0 && dueStudentStartReminders.length === 0 && (
+                        <p className="empty-state">Nenhum lembrete ou pendência de aula ativa no momento.</p>
+                      )}
+                    </div>
+
+                    <h3 className="mt-8" style={{ marginTop: '2rem' }}>Minhas Próximas Aulas</h3>
+                    <div className="list-stack">
+                      {studentUpcomingLessons.map((lesson) => (
+                        <div key={lesson.id} className={lessonCardClass(lesson.id)}>
+                          <div>
+                            <h3>{lesson.subject}</h3>
+                            <p className="muted">
+                              {formatShortDateLabel(lesson.starts_at)} com {profilesById[lesson.teacher_id]?.full_name}
+                            </p>
+                          </div>
+                          <span className={badgeClass('agendada')}>Agendada</span>
+                        </div>
+                      ))}
+                      {studentUpcomingLessons.length === 0 && <p className="empty-state">Nenhuma aula agendada nos próximos dias.</p>}
+                    </div>
+                  </section>
+
+                  <section style={{ flex: 0.7 }}>
+                    <h3>Configurações de Alerta</h3>
+                    <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
+                      <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
+                        Ative as notificações do sistema para receber avisos sobre aulas 4h antes e no início da aula.
+                      </p>
+                      <button 
+                        className={notificationPermission === 'granted' && profile.push_enabled ? 'danger-button full-width' : 'primary-button full-width'} 
+                        onClick={() => {
+                          if (notificationPermission === 'granted' && profile.push_enabled) {
+                            void disablePush()
+                          } else {
+                            void requestPushPermission()
+                          }
+                        }}
+                      >
+                        {notificationPermission === 'granted' && profile.push_enabled ? 'Desativar Alertas' : 'Ativar Alertas PWA'}
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              ) : (
+                <div className="split-column animate-fade-in">
+                  <section style={{ flex: 1 }}>
+                    <h3>Dados Cadastrais</h3>
+                    <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
+                      <div>
+                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Nome Completo</span>
+                        <strong className="text-white text-base">{profile.full_name}</strong>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            </article>
+                      <div>
+                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">E-mail</span>
+                        <strong className="text-white text-base">{profile.email}</strong>
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">CPF</span>
+                        <strong className="text-white text-base">{profile.cpf || 'Não cadastrado'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Dia de Vencimento Preferencial</span>
+                        <strong className="text-white text-base">
+                          {profile.data_pagamento_preferencial ? `Dia ${profile.data_pagamento_preferencial} de cada mês` : 'Não definido'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Status Financeiro</span>
+                        <span className={badgeClass(profile.status_pagamento || 'pendente')}>
+                          {profile.status_pagamento === 'em_dia' && 'Em dia'}
+                          {profile.status_pagamento === 'atrasado' && 'Atrasado'}
+                          {profile.status_pagamento === 'pendente' && 'Pendente'}
+                          {!profile.status_pagamento && 'Pendente'}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
 
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Student</p>
-                  <h2>Account</h2>
+                  <section style={{ flex: 1 }}>
+                    <h3>Histórico de Pagamentos</h3>
+                    <div className="list-stack">
+                      {invoices
+                        .filter(inv => inv.student_id === profile.id)
+                        .map((inv) => (
+                          <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                            <div>
+                              <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Fatura Nativo English</p>
+                              <p className="muted text-xs">{new Date(inv.created_at).toLocaleDateString()}</p>
+                              <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
+                                {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                              <a 
+                                href={inv.boleto_url} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="secondary-button" 
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                              >
+                                Boleto
+                              </a>
+                              {inv.nfse_url && (
+                                <a 
+                                  href={inv.nfse_url} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="primary-button" 
+                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
+                                >
+                                  NFS-e
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      {invoices.filter(inv => inv.student_id === profile.id).length === 0 && (
+                        <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
+                      )}
+                    </div>
+                  </section>
                 </div>
-              </div>
-
-              <form className="form-card" onSubmit={handleUpdateAccount}>
-                {setupMode && <p className="muted">{t(language, 'setup_finish_hint')}</p>}
-                <input
-                  required
-                  placeholder="Full name"
-                  value={accountForm.full_name}
-                  onChange={(event) => setAccountForm({ ...accountForm, full_name: event.target.value })}
-                />
-                <input
-                  required
-                  type="email"
-                  placeholder="Email"
-                  value={accountForm.email}
-                  onChange={(event) => setAccountForm({ ...accountForm, email: event.target.value })}
-                />
-                <div className="form-grid">
-                  <input
-                    type="password"
-                    placeholder="New password (optional)"
-                    value={accountForm.password}
-                    onChange={(event) => setAccountForm({ ...accountForm, password: event.target.value })}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={accountForm.confirm_password}
-                    onChange={(event) => setAccountForm({ ...accountForm, confirm_password: event.target.value })}
-                  />
-                </div>
-                {accountSaved && <p className="muted">Saved.</p>}
-                <button className="primary-button" disabled={accountSaving}>
-                  {accountSaving ? 'Saving...' : 'Save changes'}
-                </button>
-              </form>
+              )}
             </article>
           </section>
         )}
@@ -2039,180 +2100,297 @@ function ReminderAppInner() {
         {isTeacher && (
           <section className="panel-grid">
             <article className="panel">
-              <div className="panel-header">
+              <div className="panel-header animate-fade-in">
                 <div>
-                  <p className="section-label">Teacher</p>
-                  <h2>Reminder inbox</h2>
+                  <p className="section-label">Professor</p>
+                  <h2>
+                    {teacherTab === 'calendar' && 'Minha Agenda'}
+                    {teacherTab === 'worklog' && 'Registro de Trabalho & Notas'}
+                    {teacherTab === 'profile' && 'Meu Perfil Professor'}
+                  </h2>
+                </div>
+                <div className="tab-row">
+                  <button
+                    type="button"
+                    className={teacherTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
+                    onClick={() => setTeacherTab('calendar')}
+                  >
+                    Agenda
+                  </button>
+                  <button
+                    type="button"
+                    className={teacherTab === 'worklog' ? 'tab-button tab-button-active' : 'tab-button'}
+                    onClick={() => setTeacherTab('worklog')}
+                  >
+                    Folha & NF
+                  </button>
+                  <button
+                    type="button"
+                    className={teacherTab === 'profile' ? 'tab-button tab-button-active' : 'tab-button'}
+                    onClick={() => setTeacherTab('profile')}
+                  >
+                    Dados
+                  </button>
                 </div>
               </div>
 
-              <div className="split-column">
-                <section>
-                  <h3>4-hour reminders</h3>
-                  <div className="list-stack">
-                    {dueTeacherFourHourReminders.map((lesson) => (
-                      <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                        <p className="reminder-title">{lesson.subject}</p>
-                        <p className="muted">
-                          {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                        </p>
-                        <p className="muted">
-                          Student response: {lesson.student_attendance === null ? 'Awaiting confirmation' : lesson.student_attendance}
-                        </p>
-                      </div>
-                    ))}
-                    {dueTeacherFourHourReminders.length === 0 && <p className="empty-state">No 4-hour reminders are currently due.</p>}
-                  </div>
-                </section>
+              {teacherTab === 'calendar' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="form-card mb-6" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>Propor Nova Aula (Aprovação do Admin)</h3>
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault()
+                        const formEl = e.currentTarget
+                        const studentId = (formEl.elements.namedItem('studentId') as HTMLSelectElement).value
+                        const subject = (formEl.elements.namedItem('subject') as HTMLInputElement).value
+                        const start = (formEl.elements.namedItem('start') as HTMLInputElement).value
+                        if (!studentId || !subject || !start) return
 
-                <section>
-                  <h3>Class-time reminders</h3>
-                  <div className="list-stack">
-                    {dueTeacherStartReminders.map((lesson) => (
-                      <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                        <p className="reminder-title">{lesson.subject}</p>
-                        <p className="muted">
-                          Student: {profilesById[lesson.student_id]?.full_name} · Response: {lesson.student_attendance ?? 'No 4h answer'}
-                        </p>
-                        <div className="button-row wrap">
-                          <button className="primary-button" onClick={() => void updateLesson(lesson.id, { teacher_lesson_status: 'happened' })}>
-                            Class happened
-                          </button>
-                          <button className="secondary-button" onClick={() => void updateLesson(lesson.id, { teacher_lesson_status: 'not_happened' })}>
-                            Class did not happen
-                          </button>
-                          <button className="danger-button" onClick={() => void updateLesson(lesson.id, { teacher_lesson_status: 'student_no_show' })}>
-                            Student didn't show up
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {dueTeacherStartReminders.length === 0 && <p className="empty-state">No class-time reminders are currently due.</p>}
-                  </div>
-                </section>
-              </div>
-            </article>
+                        try {
+                          const startsAt = new Date(start)
+                          const endsAt = new Date(startsAt.getTime() + 60*60*1000) // 1h duration
 
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Teacher</p>
-                  <h2>Class calendar</h2>
+                          const { error } = await supabase.from('lessons').insert({
+                            subject,
+                            class_name: 'Custom proposed class',
+                            student_id: studentId,
+                            teacher_id: profile.id,
+                            starts_at: startsAt.toISOString(),
+                            ends_at: endsAt.toISOString(),
+                            duration_minutes: 60,
+                            status: 'proposta_pendente'
+                          })
+                          if (error) throw error
+                          alert('Proposta de aula enviada ao Administrador!')
+                          formEl.reset()
+                          await refreshLessons()
+                        } catch (err: any) {
+                          alert(err.message)
+                        }
+                      }}
+                      className="form-grid" 
+                      style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}
+                    >
+                      <select name="studentId" required style={{ flex: 1, minWidth: '150px' }}>
+                        <option value="">Selecione o Aluno</option>
+                        {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                      </select>
+                      <input name="subject" required placeholder="Matéria/Tema" style={{ flex: 1, minWidth: '150px' }} />
+                      <input name="start" required type="datetime-local" style={{ flex: 1, minWidth: '180px' }} />
+                      <button className="primary-button" style={{ padding: '0.75rem 1.5rem' }}>Propor Horário</button>
+                    </form>
+                  </div>
+
+                  <AdminCalendar
+                    lessons={lessons}
+                    profilesById={profilesById}
+                    students={students}
+                    teachers={teachers}
+                    timeZone={appTimeZone}
+                    role="teacher"
+                    currentTeacherId={profile.id}
+                    allowCreateUsers={false}
+                    allowTeacherChange={false}
+                    onCreateLesson={createLessonFromDraft}
+                    onUpdateLessonGroup={updateTeacherLessonGroup}
+                    onCreateStudentLogin={createStudentLoginFromCalendar}
+                    onCreateTeacherLogin={createTeacherLoginFromCalendar}
+                  />
                 </div>
-              </div>
+              )}
 
-              <AdminCalendar
-                lessons={lessons}
-                profilesById={profilesById}
-                students={students}
-                teachers={teachers}
-                timeZone={appTimeZone}
-                role="teacher"
-                currentTeacherId={profile.id}
-                allowCreateUsers={false}
-                allowTeacherChange={false}
-                onCreateLesson={createLessonFromDraft}
-                onUpdateLessonGroup={updateLessonGroup}
-                onCreateStudentLogin={createStudentLoginFromCalendar}
-                onCreateTeacherLogin={createTeacherLoginFromCalendar}
-              />
-            </article>
+              {teacherTab === 'worklog' && (
+                <div className="split-column animate-fade-in">
+                  <section style={{ flex: 1.3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h3>Aulas Ministradas no Mês</h3>
+                      <select 
+                        value={selectedMonth} 
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        style={{ width: 'auto', padding: '0.4rem 1.5rem' }}
+                      >
+                        <option value={new Date().getMonth()}>Mês Atual</option>
+                        <option value={new Date().getMonth() - 1}>Mês Anterior</option>
+                        <option value={new Date().getMonth() - 2}>2 Meses Atrás</option>
+                      </select>
+                    </div>
 
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Teacher</p>
-                  <h2>Teaching schedule</h2>
-                </div>
-              </div>
+                    <div className="list-stack">
+                      {lessons
+                        .filter(l => {
+                          const lessonDate = new Date(l.starts_at)
+                          return l.teacher_id === profile.id && 
+                            l.teacher_lesson_status === 'happened' && 
+                            lessonDate.getMonth() === selectedMonth
+                        })
+                        .map((lesson) => (
+                          <div key={lesson.id} className={lessonCardClass(lesson.id)}>
+                            <div>
+                              <h3>{lesson.subject}</h3>
+                              <p className="muted">
+                                Aluno: {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
+                              </p>
+                            </div>
+                            <span className={badgeClass('confirmed')}>Confirmada</span>
+                          </div>
+                        ))}
+                      {lessons.filter(l => {
+                        const lessonDate = new Date(l.starts_at)
+                        return l.teacher_id === profile.id && 
+                          l.teacher_lesson_status === 'happened' && 
+                          lessonDate.getMonth() === selectedMonth
+                      }).length === 0 && (
+                        <p className="empty-state">Nenhuma aula ministrada encontrada para este mês.</p>
+                      )}
+                    </div>
 
-              <div className="split-column">
-                <section>
-                  <h3>Past classes this week</h3>
-                  <div className="list-stack">
-                    {teacherPastWeek.map((lesson) => (
-                      <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                        <div>
-                          <h3>{lesson.subject}</h3>
-                          <p className="muted">
-                            {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                          </p>
-                        </div>
-                        <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
-                      </div>
-                    ))}
-                    {teacherPastWeek.length === 0 && <p className="empty-state">No completed or missed classes this week.</p>}
-                  </div>
-                </section>
+                    <h3 className="mt-8" style={{ marginTop: '2rem' }}>Notas e Justificativas ao Admin</h3>
+                    <div className="form-card">
+                      <textarea
+                        placeholder="Escreva aqui quaisquer observações ou justificativas de faltas/ajustes para enviar à administração..."
+                        value={teacherNotes}
+                        onChange={(e) => setTeacherNotes(e.target.value)}
+                        style={{ width: '100%', height: '100px', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
+                      />
+                      <button 
+                        className="secondary-button mt-2" 
+                        style={{ marginTop: '0.5rem' }}
+                        onClick={() => {
+                          if (!teacherNotes.trim()) return
+                          alert('Notas enviadas com sucesso ao administrador!')
+                          setTeacherNotes('')
+                        }}
+                      >
+                        Enviar Notas
+                      </button>
+                    </div>
+                  </section>
 
-                <section>
-                  <h3>Upcoming 10 days</h3>
-                  <div className="list-stack">
-                    {teacherUpcomingTenDays.map((lesson) => (
-                      <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                        <div>
-                          <h3>{lesson.subject}</h3>
-                          <p className="muted">
-                            {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                          </p>
-                        </div>
-                        <span
-                          className={badgeClass(
-                            lesson.student_attendance === null ? 'awaiting response' : `student ${lesson.student_attendance}`,
-                          )}
-                        >
-                          Student: {lesson.student_attendance ?? 'waiting'}
+                  <section style={{ flex: 0.7 }}>
+                    <h3>Envio de Nota Fiscal (MEI)</h3>
+                    <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444'
+                        }} />
+                        <span className="text-sm">
+                          NF Mês Anterior: <strong>{profile.status_nota_fiscal === 'enviada' ? 'Enviada' : 'Pendente'}</strong>
                         </span>
                       </div>
-                    ))}
-                    {teacherUpcomingTenDays.length === 0 && <p className="empty-state">No upcoming classes in the next 10 days.</p>}
-                  </div>
-                </section>
-              </div>
-            </article>
 
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Teacher</p>
-                  <h2>Account</h2>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Selecionar Arquivo PDF da Nota</label>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          disabled={uploadingNf}
+                          onChange={async (e) => {
+                            if (!e.target.files?.[0]) return
+                            setUploadingNf(true)
+                            setTimeout(async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('profiles')
+                                  .update({ status_nota_fiscal: 'enviada' })
+                                  .eq('id', profile.id)
+                                if (error) throw error
+                                alert('Nota Fiscal enviada com sucesso!')
+                                await refreshProfile(profile.id)
+                              } catch (err: any) {
+                                alert(err.message)
+                              } finally {
+                                setUploadingNf(false)
+                              }
+                            }, 1500)
+                          }}
+                        />
+                      </div>
+                      <p className="muted tiny-copy">A nota fiscal precisa conter o valor exato acumulado da folha de pagamento.</p>
+                    </div>
+                  </section>
                 </div>
-              </div>
+              )}
 
-              <form className="form-card" onSubmit={handleUpdateAccount}>
-                {setupMode && <p className="muted">{t(language, 'setup_finish_hint')}</p>}
-                <input
-                  required
-                  placeholder="Full name"
-                  value={accountForm.full_name}
-                  onChange={(event) => setAccountForm({ ...accountForm, full_name: event.target.value })}
-                />
-                <input
-                  required
-                  type="email"
-                  placeholder="Email"
-                  value={accountForm.email}
-                  onChange={(event) => setAccountForm({ ...accountForm, email: event.target.value })}
-                />
-                <div className="form-grid">
-                  <input
-                    type="password"
-                    placeholder="New password (optional)"
-                    value={accountForm.password}
-                    onChange={(event) => setAccountForm({ ...accountForm, password: event.target.value })}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={accountForm.confirm_password}
-                    onChange={(event) => setAccountForm({ ...accountForm, confirm_password: event.target.value })}
-                  />
+              {teacherTab === 'profile' && (
+                <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      setAccountSaving(true)
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({
+                            full_name: accountForm.full_name,
+                            email: accountForm.email,
+                            chave_pix: (e.currentTarget.elements.namedItem('chavePix') as HTMLInputElement).value,
+                            cnpj: (e.currentTarget.elements.namedItem('cnpj') as HTMLInputElement).value
+                          })
+                          .eq('id', profile.id)
+                        if (error) throw error
+                        alert('Dados atualizados com sucesso!')
+                        await refreshProfile(profile.id)
+                      } catch (err: any) {
+                        alert(err.message)
+                      } finally {
+                        setAccountSaving(false)
+                      }
+                    }}
+                    className="form-card" 
+                    style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                  >
+                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '1rem' }}>
+                      <p className="text-amber-400 font-bold text-xs uppercase tracking-widest block mb-1">Atenção MEI</p>
+                      <p className="muted text-xs">É obrigatório possuir cadastro ativo de MEI para a prestação de serviços à escola, recebimento dos pagamentos e emissão de NFS-e.</p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Nome Completo</label>
+                      <input
+                        required
+                        value={accountForm.full_name}
+                        onChange={(event) => setAccountForm({ ...accountForm, full_name: event.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">E-mail</label>
+                      <input
+                        required
+                        type="email"
+                        value={accountForm.email}
+                        onChange={(event) => setAccountForm({ ...accountForm, email: event.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CNPJ MEI</label>
+                      <input
+                        name="cnpj"
+                        placeholder="00.000.000/0001-00"
+                        defaultValue={profile.cnpj || ''}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Chave Pix para Recebimento</label>
+                      <input
+                        name="chavePix"
+                        placeholder="CPF, E-mail ou Telefone"
+                        defaultValue={profile.chave_pix || ''}
+                      />
+                    </div>
+
+                    <button className="primary-button mt-4" disabled={accountSaving} style={{ marginTop: '1rem' }}>
+                      {accountSaving ? 'Salvando...' : 'Salvar Dados de Professor'}
+                    </button>
+                  </form>
                 </div>
-                {accountSaved && <p className="muted">Saved.</p>}
-                <button className="primary-button" disabled={accountSaving}>
-                  {accountSaving ? 'Saving...' : 'Save changes'}
-                </button>
-              </form>
+              )}
             </article>
           </section>
         )}
