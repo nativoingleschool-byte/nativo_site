@@ -9,12 +9,14 @@ import Content from './components/Content';
 import Footer from './components/Footer';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import TermsOfServiceModal from './components/TermsOfServiceModal';
+import LoginModal from './components/LoginModal';
 import { Language, translations } from './translations';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('pt');
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const userLang = navigator.language || (navigator as any).userLanguage || 'pt';
@@ -30,7 +32,12 @@ export default function App() {
 
   return (
     <div className="font-sans text-on-surface bg-background antialiased min-h-screen">
-      <TopAppBar lang={lang} setLang={setLang} t={t.nav} />
+      <TopAppBar 
+        lang={lang} 
+        setLang={setLang} 
+        t={t.nav} 
+        onOpenLogin={() => setShowLogin(true)} 
+      />
       <main>
         <Hero t={t.hero} />
         <Positioning t={t.positioning} />
@@ -55,6 +62,11 @@ export default function App() {
         lang={lang}
         isOpen={showTermsOfService}
         onClose={() => setShowTermsOfService(false)}
+      />
+
+      <LoginModal
+        isOpen={showLogin}
+        onClose={() => setShowLogin(false)}
       />
     </div>
   );
