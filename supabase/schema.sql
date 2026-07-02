@@ -53,6 +53,14 @@ create table if not exists public.invoices (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+-- 4. Invitations Table (Magic invitation links)
+create table if not exists public.invitations (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  used boolean not null default false
+);
+
 -- Helper function to check if active user is an admin
 create or replace function public.is_admin()
 returns boolean
@@ -73,6 +81,7 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.lessons enable row level security;
 alter table public.invoices enable row level security;
+alter table public.invitations enable row level security;
 
 -- Policies for Profiles
 drop policy if exists "profiles_select" on public.profiles;
@@ -134,3 +143,15 @@ create policy "invoices_all_admin" on public.invoices
 for all
 using (public.is_admin())
 with check (public.is_admin());
+
+-- Policies for Invitations
+drop policy if exists "invitations_all_admin" on public.invitations;
+create policy "invitations_all_admin" on public.invitations
+for all
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "invitations_select_anon" on public.invitations;
+create policy "invitations_select_anon" on public.invitations
+for select
+using (true);
