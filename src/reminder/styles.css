@@ -1,0 +1,672 @@
+.reminder-app-scope {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e5eefc;
+  background: #020617;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.reminder-app-scope * {
+  box-sizing: border-box;
+}
+
+.reminder-app-scope {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.15), transparent 22%),
+    linear-gradient(180deg, #08111f 0%, #020617 100%);
+}
+
+.reminder-app-scope button,
+.reminder-app-scope input,
+.reminder-app-scope select {
+  font: inherit;
+}
+
+.reminder-app-scope button {
+  cursor: pointer;
+  border: none;
+}
+
+.reminder-app-scope h1,
+.reminder-app-scope h2,
+.reminder-app-scope h3,
+.reminder-app-scope p {
+  margin: 0;
+}
+
+.reminder-app-scope h1 {
+  font-size: 2.35rem;
+}
+
+.reminder-app-scope h2 {
+  font-size: 1.45rem;
+}
+
+.reminder-app-scope h3 {
+  font-size: 1rem;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.large-copy {
+  font-size: 1.05rem;
+  max-width: 60ch;
+}
+
+.tiny-copy {
+  font-size: 0.82rem;
+}
+
+.inline-code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #e2e8f0;
+}
+
+.eyebrow,
+.section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  color: #93c5fd;
+  margin-bottom: 8px;
+}
+
+.login-shell,
+.app-shell {
+  min-height: 100vh;
+}
+
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(360px, 480px);
+}
+
+.login-hero,
+.login-panel,
+.sidebar,
+.main-content {
+  padding: 32px;
+}
+
+.login-hero,
+.sidebar {
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.login-panel,
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.feature-card,
+.panel,
+.summary-card,
+.clock-panel,
+.login-panel,
+.user-row,
+.credential-card {
+  background: rgba(15, 23, 42, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 22px;
+  box-shadow: 0 16px 45px rgba(2, 6, 23, 0.35);
+}
+
+.feature-card,
+.summary-card,
+.clock-panel,
+.credential-card {
+  padding: 18px;
+}
+
+.login-panel {
+  margin: 24px;
+  align-self: center;
+}
+
+.app-shell.final-shell {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.main-content {
+  padding-bottom: 40px;
+}
+
+.button-row,
+.button-stack {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(30, 41, 59, 0.96);
+  color: #dbeafe;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.tab-button-active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #eff6ff;
+}
+
+.button-row.wrap,
+.button-stack {
+  flex-wrap: wrap;
+}
+
+.button-stack {
+  flex-direction: column;
+}
+
+.ghost-button,
+.primary-button,
+.secondary-button,
+.danger-button {
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+}
+
+.ghost-button {
+  background: rgba(30, 41, 59, 0.96);
+  color: #dbeafe;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: white;
+}
+
+.secondary-button {
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.danger-button {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.26);
+}
+
+.ghost-button:hover,
+.primary-button:hover,
+.secondary-button:hover,
+.danger-button:hover {
+  transform: translateY(-1px);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.summary-grid,
+.panel-grid,
+.form-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-card span {
+  color: #93c5fd;
+  font-size: 0.92rem;
+}
+
+.summary-card strong {
+  font-size: 2rem;
+}
+
+.panel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.forms-stack,
+.list-stack,
+.split-column,
+.demo-credentials {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-card,
+.lesson-card,
+.reminder-card,
+.install-note {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.55);
+  padding: 16px;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reminder-app-scope input,
+.reminder-app-scope select {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  padding: 12px 14px;
+}
+
+.reminder-app-scope input::placeholder {
+  color: #64748b;
+}
+
+.credential-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-row {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 120px;
+  gap: 10px;
+}
+
+.lesson-card,
+.reminder-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.reminder-card {
+  flex-direction: column;
+}
+
+.lesson-card-focus,
+.reminder-card-focus {
+  border-color: rgba(96, 165, 250, 0.9);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.35);
+}
+
+.reminder-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.status-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.16);
+  color: #bbf7d0;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fecaca;
+}
+
+.badge-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #dbeafe;
+}
+
+.empty-state {
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
+}
+
+.error-text {
+  color: #fda4af;
+}
+
+.feature-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  color: #dbeafe;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #dbeafe;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-card {
+  width: min(720px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
+}
+
+.calendar-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.calendar-toolbar-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.timezone-picker {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-note {
+  min-height: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.55);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 72px repeat(7, minmax(0, 1fr));
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.2);
+}
+
+.calendar-header-spacer {
+  background: rgba(15, 23, 42, 0.78);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.calendar-header-cell {
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.78);
+  border-left: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.calendar-time-column {
+  display: grid;
+  grid-template-rows: repeat(32, 26px);
+  background: rgba(15, 23, 42, 0.65);
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.calendar-time-slot {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.9);
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.calendar-time-slot-hour {
+  color: #bfdbfe;
+}
+
+.calendar-day-column {
+  position: relative;
+  display: grid;
+  grid-template-rows: repeat(32, 26px);
+  border-left: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.calendar-slot {
+  border: none;
+  background: transparent;
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
+  padding: 0;
+}
+
+.calendar-slot:hover {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.calendar-event {
+  margin: 2px 0;
+  border-radius: 12px;
+  padding: 6px 8px;
+  background: rgba(59, 130, 246, 0.22);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 2;
+  position: relative;
+  text-align: left;
+}
+
+.calendar-event-success {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.calendar-event-danger {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.calendar-event-neutral {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+.calendar-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  padding-top: 12px;
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.selection-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+@media (max-width: 1280px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-grid,
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .login-panel {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .app-shell.final-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  }
+
+  .user-row,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-toolbar-actions {
+    width: 100%;
+  }
+
+  .timezone-picker {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .main-content,
+  .sidebar,
+  .login-panel,
+  .login-hero {
+    padding: 20px;
+  }
+
+  .summary-grid,
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row,
+  .lesson-card {
+    flex-direction: column;
+  }
+
+  .status-stack {
+    justify-content: flex-start;
+  }
+
+  .calendar-grid {
+    overflow: auto;
+  }
+}
