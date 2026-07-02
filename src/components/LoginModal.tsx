@@ -21,21 +21,32 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setError('');
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
+      const resData = await response.json();
 
-      if (authError) {
-        throw new Error(authError.message);
+      if (!response.ok) {
+        throw new Error(resData.error || 'Erro ao realizar login.');
       }
 
-      if (data?.user) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: resData.session.access_token,
+        refresh_token: resData.session.refresh_token
+      });
+
+      if (sessionError) {
+        throw new Error(sessionError.message);
+      }
+
+      if (resData.user) {
         // Fetch the user's profile to check their role
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', data.user.id)
+          .eq('id', resData.user.id)
           .single();
 
         if (profileError || !profile) {
