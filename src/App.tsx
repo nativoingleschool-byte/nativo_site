@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LandingApp from './LandingApp';
 import ReminderApp from './reminder/ReminderApp';
+import RegisterApp from './components/RegisterApp';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
@@ -36,6 +37,10 @@ export default function App() {
 
   if (currentPath.startsWith('/reminder')) {
     return <ReminderApp />;
+  }
+
+  if (currentPath.startsWith('/register')) {
+    return <RegisterApp />;
   }
 
   return <LandingApp />;
