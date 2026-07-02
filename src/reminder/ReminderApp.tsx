@@ -24,6 +24,8 @@ type UserFormState = {
   speciality: string
   first_class_at: string
   first_class_teacher_id: string
+  cpf?: string
+  data_pagamento_preferencial?: number
 }
 
 type AccountFormState = {
@@ -52,6 +54,8 @@ const defaultUserForm = (): UserFormState => ({
   speciality: '',
   first_class_at: '',
   first_class_teacher_id: '',
+  cpf: '',
+  data_pagamento_preferencial: 5,
 })
 
 const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
@@ -185,7 +189,16 @@ function ReminderAppInner() {
   const [pendingLink, setPendingLink] = useState<PendingLink>({ lessonId: null, intent: null })
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
-  const [adminTab, setAdminTab] = useState<'users' | 'calendar' | 'management'>('users')
+  const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff'>('students')
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [generatedInviteLink, setGeneratedInviteLink] = useState('')
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [invoiceForm, setInvoiceForm] = useState<{ studentId: string; amount: string; dueDate: string } | null>(null)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
+  const [paymentSearch, setPaymentSearch] = useState('')
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'em_dia' | 'pendente' | 'atrasado'>('all')
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [createWithSetupLink, setCreateWithSetupLink] = useState(false)
   const [latestSetupLink, setLatestSetupLink] = useState<string | null>(null)
   const [setupCredentials, setSetupCredentials] = useState<{ email: string; password: string } | null>(null)
@@ -342,11 +355,18 @@ function ReminderAppInner() {
     setLessons((data ?? []) as Lesson[])
   }
 
+  const refreshInvoices = async () => {
+    const { data, error } = await supabase.from('invoices').select('*').order('created_at', { ascending: false })
+    if (error) throw error
+    setInvoices(data ?? [])
+  }
+
   useEffect(() => {
     if (!session?.user || !isSupabaseConfigured) {
       setProfile(null)
       setProfiles([])
       setLessons([])
+      setInvoices([])
       return
     }
 
@@ -358,8 +378,12 @@ function ReminderAppInner() {
         if (cancelled) return
         if (currentProfile.role === 'admin') {
           await refreshProfiles()
+          await refreshInvoices()
         } else {
           setProfiles([currentProfile])
+          if (currentProfile.role === 'student') {
+            await refreshInvoices()
+          }
         }
         if (cancelled) return
         await refreshLessons()
@@ -400,6 +424,9 @@ function ReminderAppInner() {
         if (changedId && changedId === session.user.id) {
           void refreshProfile(session.user.id)
         }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
+        void refreshInvoices()
       })
       .subscribe()
 
@@ -984,6 +1011,89 @@ function ReminderAppInner() {
     }
   }
 
+  const handleGenerateInviteLink = async (e: any) => {
+    e.preventDefault()
+    setInviteLoading(true)
+    setGeneratedInviteLink('')
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      const res = await fetch('/api/admin/invite-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: inviteEmail })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao gerar link de convite.')
+      setGeneratedInviteLink(data.invite_link)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  const handleGenerateBoleto = async (e: any) => {
+    e.preventDefault()
+    if (!invoiceForm) return
+    setInvoiceLoading(true)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      const res = await fetch('/api/billing/generate-boleto', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          student_id: invoiceForm.studentId,
+          amount: Number(invoiceForm.amount),
+          due_date: invoiceForm.dueDate
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao gerar boleto.')
+      alert('Boleto gerado com sucesso!')
+      setInvoiceForm(null)
+      await refreshInvoices()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setInvoiceLoading(false)
+    }
+  }
+
+  const handleUpdateTeacherPayout = async (teacherId: string, status: 'pago' | 'pendente') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status_pagamento_professor: status })
+        .eq('id', teacherId)
+      if (error) throw error
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleBatchUpdatePayout = async (status: 'pago' | 'pendente') => {
+    try {
+      const teacherIds = teachers.map(t => t.id)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status_pagamento_professor: status })
+        .in('id', teacherIds)
+      if (error) throw error
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   const handleUpdateAccount = async (event: FormEvent) => {
     event.preventDefault()
     if (!session?.access_token) return
@@ -1253,153 +1363,392 @@ function ReminderAppInner() {
 
         {isAdmin && (
           <section className="panel">
-            <div className="panel-header">
+            <div className="panel-header animate-fade-in">
               <div>
-                <p className="section-label">Admin</p>
-                <h2>{adminTab === 'users' ? 'Users' : adminTab === 'calendar' ? 'Calendar' : 'Management'}</h2>
+                <p className="section-label">Sistema de Gestão Escolar</p>
+                <h2>
+                  {adminTab === 'students' && 'Student Pool'}
+                  {adminTab === 'payments' && 'Payments Page'}
+                  {adminTab === 'calendar' && 'Calendar (Visão Semanal)'}
+                  {adminTab === 'staff' && 'Staff Control (Folha de Pagamento)'}
+                </h2>
               </div>
               <div className="tab-row">
                 <button
                   type="button"
-                  className={adminTab === 'users' ? 'tab-button tab-button-active' : 'tab-button'}
-                  onClick={() => setAdminTab('users')}
+                  className={adminTab === 'students' ? 'tab-button tab-button-active' : 'tab-button'}
+                  onClick={() => setAdminTab('students')}
                 >
-                  {t(language, 'users')}
+                  Student Pool
+                </button>
+                <button
+                  type="button"
+                  className={adminTab === 'payments' ? 'tab-button tab-button-active' : 'tab-button'}
+                  onClick={() => setAdminTab('payments')}
+                >
+                  Payments
                 </button>
                 <button
                   type="button"
                   className={adminTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
                   onClick={() => setAdminTab('calendar')}
                 >
-                  {t(language, 'calendar')}
+                  Calendar
                 </button>
                 <button
                   type="button"
-                  className={adminTab === 'management' ? 'tab-button tab-button-active' : 'tab-button'}
-                  onClick={() => setAdminTab('management')}
+                  className={adminTab === 'staff' ? 'tab-button tab-button-active' : 'tab-button'}
+                  onClick={() => setAdminTab('staff')}
                 >
-                  {t(language, 'management')}
+                  Staff Control
                 </button>
               </div>
             </div>
 
-            {adminTab === 'users' ? (
+            {adminTab === 'students' && (
               <>
-                <form className="form-card" onSubmit={handleCreateUser}>
-                  <div className="form-grid">
+                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>Gerar Link de Matrícula</h3>
+                  <form onSubmit={handleGenerateInviteLink} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
                     <input
                       required
-                      placeholder={t(language, 'full_name')}
-                      value={userForm.full_name}
-                      onChange={(event) => setUserForm({ ...userForm, full_name: event.target.value })}
-                    />
-                    <input
                       type="email"
-                      placeholder={t(language, 'email_optional')}
-                      value={userForm.email}
-                      onChange={(event) => setUserForm({ ...userForm, email: event.target.value })}
+                      placeholder="E-mail do novo Aluno"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      style={{ flex: 1, padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
                     />
-                    <input
-                      required={!createWithSetupLink}
-                      type="password"
-                      placeholder={createWithSetupLink ? t(language, 'password_not_needed') : t(language, 'password')}
-                      value={userForm.password}
-                      disabled={createWithSetupLink}
-                      onChange={(event) => setUserForm({ ...userForm, password: event.target.value })}
-                    />
-                    <select
-                      value={userForm.role}
-                      onChange={(event) =>
-                        setUserForm({
-                          ...userForm,
-                          role: event.target.value as UserRole,
-                          class_name: event.target.value === 'student' ? userForm.class_name : '',
-                          speciality: event.target.value !== 'student' ? userForm.speciality : '',
-                        })
-                      }
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    {userForm.role === 'student' ? (
-                      <>
+                    <button className="primary-button" style={{ padding: '0.75rem 1.5rem', whiteSpace: 'nowrap' }} disabled={inviteLoading}>
+                      {inviteLoading ? 'Gerando...' : 'Gerar Convite'}
+                    </button>
+                  </form>
+                  {generatedInviteLink && (
+                    <div className="credential-card mt-4" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
+                      <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>Link de Matrícula Gerado</p>
+                      <p className="inline-code" style={{ wordBreak: 'break-all', fontSize: '0.85rem', margin: '0.5rem 0', display: 'block', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                        {generatedInviteLink}
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(generatedInviteLink)
+                          alert('Link copiado!')
+                        }}
+                      >
+                        Copiar Link
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '1rem' }}>Nome Completo</th>
+                        <th style={{ padding: '1rem' }}>E-mail</th>
+                        <th style={{ padding: '1rem' }}>CPF</th>
+                        <th style={{ padding: '1rem' }}>Vencimento</th>
+                        <th style={{ padding: '1rem' }}>Status Financeiro</th>
+                        <th style={{ padding: '1rem' }}>Horário Habitual</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {students.map((student) => {
+                        const studentLessons = lessons.filter(l => l.student_id === student.id)
+                        const scheduleText = studentLessons.length > 0 
+                          ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || 'Agendado'
+                          : 'Sem aulas'
+
+                        return (
+                          <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.full_name}</td>
+                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
+                            <td style={{ padding: '1rem' }}>{student.cpf || 'Não cadastrado'}</td>
+                            <td style={{ padding: '1rem' }}>
+                              {student.data_pagamento_preferencial ? `Dia ${student.data_pagamento_preferencial}` : 'Não definido'}
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span className={badgeClass(student.status_pagamento || 'pendente')}>
+                                {student.status_pagamento === 'em_dia' && 'Em dia'}
+                                {student.status_pagamento === 'atrasado' && 'Atrasado'}
+                                {student.status_pagamento === 'pendente' && 'Pendente'}
+                                {!student.status_pagamento && 'Pendente'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span 
+                                title="Utilize o calendário para alterar horários" 
+                                style={{ borderBottom: '1px dotted #64748b', cursor: 'help', color: '#38bdf8' }}
+                              >
+                                {scheduleText}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                              <button 
+                                className="secondary-button" 
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                onClick={() => {
+                                  setSavingUserId(student.id)
+                                  setUserForm({
+                                    id: student.id,
+                                    email: student.email,
+                                    full_name: student.full_name,
+                                    role: 'student',
+                                    class_name: student.class_name || '',
+                                    speciality: '',
+                                    password: '',
+                                    cpf: student.cpf || '',
+                                    data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
+                                    first_class_at: '',
+                                    first_class_teacher_id: ''
+                                  })
+                                }}
+                              >
+                                Editar
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {savingUserId && userForm.role === 'student' && (
+                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Editar Dados do Estudante</h3>
+                      <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input
-                          type="datetime-local"
-                          placeholder={t(language, 'first_class_time_optional')}
-                          value={userForm.first_class_at}
-                          onChange={(event) => setUserForm({ ...userForm, first_class_at: event.target.value })}
+                          required
+                          placeholder="Nome Completo"
+                          value={userForm.full_name}
+                          onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                        />
+                        <input
+                          required
+                          type="email"
+                          placeholder="E-mail"
+                          value={userForm.email}
+                          onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                        />
+                        <input
+                          placeholder="CPF"
+                          value={userForm.cpf || ''}
+                          onChange={(e) => setUserForm({ ...userForm, cpf: e.target.value })}
                         />
                         <select
-                          value={userForm.first_class_teacher_id}
-                          onChange={(event) => setUserForm({ ...userForm, first_class_teacher_id: event.target.value })}
+                          value={userForm.data_pagamento_preferencial || 5}
+                          onChange={(e) => setUserForm({ ...userForm, data_pagamento_preferencial: Number(e.target.value) })}
                         >
-                          <option value="">{t(language, 'choose_teacher_first_class')}</option>
-                          {teachers.map((teacher) => (
-                            <option key={teacher.id} value={teacher.id}>
-                              {teacher.full_name}
-                            </option>
+                          {[1, 5, 10, 15, 20, 25].map(day => (
+                            <option key={day} value={day}>Vencimento Dia {day}</option>
                           ))}
                         </select>
-                      </>
-                    ) : (
-                      <input
-                        placeholder={userForm.role === 'teacher' ? 'Speciality (optional)' : 'Admin label (optional)'}
-                        value={userForm.speciality}
-                        onChange={(event) => setUserForm({ ...userForm, speciality: event.target.value })}
-                      />
-                    )}
-                  </div>
-                  <div className="calendar-form-section">
-                    <label className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={createWithSetupLink}
-                        onChange={(event) => {
-                          setCreateWithSetupLink(event.target.checked)
-                          if (event.target.checked) {
-                            setUserForm((current) => ({ ...current, password: '' }))
-                          }
-                        }}
-                      />
-                      {t(language, 'create_setup_link')}
-                    </label>
-                    <p className="muted tiny-copy">{t(language, 'setup_link_help')}</p>
-                  </div>
-                  <button className="primary-button">{t(language, 'add_user')}</button>
-                </form>
-
-                {latestSetupLink && (
-                  <div className="credential-card">
-                    <p className="section-label">{t(language, 'setup_link_title')}</p>
-                    <p className="muted tiny-copy">{t(language, 'setup_link_share')}</p>
-                    <p className="inline-code" style={{ wordBreak: 'break-all' }}>
-                      {latestSetupLink}
-                    </p>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => void navigator.clipboard.writeText(latestSetupLink)}
-                    >
-                      {t(language, 'copy_link')}
-                    </button>
+                      </div>
+                      <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                        <button 
+                          className="primary-button" 
+                          onClick={async () => {
+                            try {
+                              const { error } = await supabase
+                                .from('profiles')
+                                .update({
+                                  full_name: userForm.full_name,
+                                  email: userForm.email,
+                                  cpf: userForm.cpf || null,
+                                  data_pagamento_preferencial: userForm.data_pagamento_preferencial
+                                })
+                                .eq('id', userForm.id)
+                              if (error) throw error
+                              setSavingUserId(null)
+                              await refreshProfiles()
+                            } catch (err: any) {
+                              alert(err.message)
+                            }
+                          }}
+                        >
+                          Salvar
+                        </button>
+                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>Cancelar</button>
+                      </div>
+                    </div>
                   </div>
                 )}
-
-                <div className="user-table">
-                  {profiles.map((item) => (
-                    <EditableUserRow
-                      key={item.id}
-                      user={item}
-                      saving={savingUserId === item.id}
-                      deleting={deletingUserId === item.id}
-                      onSave={handleSaveUser}
-                      onDelete={handleDeleteUser}
-                    />
-                  ))}
-                </div>
               </>
-            ) : adminTab === 'calendar' ? (
+            )}
+
+            {adminTab === 'payments' && (
+              <>
+                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
+                    <input
+                      placeholder="Pesquisar Aluno..."
+                      value={paymentSearch}
+                      onChange={(e) => setPaymentSearch(e.target.value)}
+                      style={{ flex: 2 }}
+                    />
+                    <select
+                      value={paymentFilter}
+                      onChange={(e) => setPaymentFilter(e.target.value as any)}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="all">Todos os Status</option>
+                      <option value="em_dia">Verde (Em dia)</option>
+                      <option value="pendente">Amarelo (Pendente)</option>
+                      <option value="atrasado">Vermelho (Atrasado)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '1rem' }}>Estudante</th>
+                        <th style={{ padding: '1rem' }}>Status Financeiro</th>
+                        <th style={{ padding: '1rem' }}>Último Boleto / Link</th>
+                        <th style={{ padding: '1rem' }}>NFS-e Emitida</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {students
+                        .filter(student => {
+                          const matchesSearch = student.full_name.toLowerCase().includes(paymentSearch.toLowerCase()) || 
+                            student.email.toLowerCase().includes(paymentSearch.toLowerCase())
+                          const status = student.status_pagamento || 'pendente'
+                          const matchesFilter = paymentFilter === 'all' || status === paymentFilter
+                          return matchesSearch && matchesFilter
+                        })
+                        .map((student) => {
+                          const studentInvoices = invoices.filter(inv => inv.student_id === student.id)
+                          const lastInvoice = studentInvoices[0]
+
+                          return (
+                            <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                              <td style={{ padding: '1rem' }}>
+                                <div style={{ fontWeight: 'bold' }}>{student.full_name}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{student.email}</div>
+                              </td>
+                              <td style={{ padding: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    borderRadius: '50%',
+                                    background: student.status_pagamento === 'em_dia' ? '#10b981' : 
+                                                student.status_pagamento === 'pendente' ? '#f59e0b' : '#ef4444'
+                                  }} />
+                                  <span style={{ fontSize: '0.85rem' }}>
+                                    {student.status_pagamento === 'em_dia' && 'Em dia'}
+                                    {student.status_pagamento === 'pendente' && 'Pendente'}
+                                    {student.status_pagamento === 'atrasado' && 'Atrasado'}
+                                    {!student.status_pagamento && 'Pendente'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '1rem' }}>
+                                {lastInvoice ? (
+                                  <a 
+                                    href={lastInvoice.boleto_url} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.85rem' }}
+                                  >
+                                    Ver Boleto ({lastInvoice.status})
+                                  </a>
+                                ) : (
+                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Nenhum boleto gerado</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem' }}>
+                                {lastInvoice?.nfse_url ? (
+                                  <a 
+                                    href={lastInvoice.nfse_url} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    style={{ color: '#10b981', textDecoration: 'underline', fontSize: '0.85rem', fontWeight: 'bold' }}
+                                  >
+                                    Visualizar NFS-e
+                                  </a>
+                                ) : (
+                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Nenhuma NFS-e disponível</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                <button
+                                  className="secondary-button"
+                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                                  onClick={() => setInvoiceForm({ studentId: student.id, amount: '340', dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] })}
+                                >
+                                  Gerar novo boleto
+                                </button>
+                                <button
+                                  className="secondary-button"
+                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', opacity: lastInvoice ? 1 : 0.5 }}
+                                  disabled={!lastInvoice}
+                                  onClick={async () => {
+                                    if (!lastInvoice) return
+                                    const nextStatus = prompt('Insira o novo status (pendente, pago, atrasado):', lastInvoice.status)
+                                    if (nextStatus && ['pendente', 'pago', 'atrasado'].includes(nextStatus)) {
+                                      const { error } = await supabase.from('invoices').update({ status: nextStatus }).eq('id', lastInvoice.id)
+                                      if (error) alert(error.message)
+                                      else await refreshInvoices()
+                                    }
+                                  }}
+                                >
+                                  Modificar
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {invoiceForm && (
+                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="form-card" style={{ maxWidth: '400px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.25rem' }}>Gerar Boleto (Cora API)</h3>
+                      <form onSubmit={handleGenerateBoleto} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Valor (R$)</label>
+                          <input
+                            required
+                            type="number"
+                            placeholder="Valor da cobrança"
+                            value={invoiceForm.amount}
+                            onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Data de Vencimento</label>
+                          <input
+                            required
+                            type="date"
+                            value={invoiceForm.dueDate}
+                            onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                          />
+                        </div>
+                        <div className="button-stack mt-4" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                          <button type="submit" className="primary-button" disabled={invoiceLoading}>
+                            {invoiceLoading ? 'Gerando...' : 'Confirmar e Gerar'}
+                          </button>
+                          <button type="button" className="secondary-button" onClick={() => setInvoiceForm(null)}>Cancelar</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {adminTab === 'calendar' && (
               <>
                 <AdminCalendar
                   lessons={lessons}
@@ -1443,86 +1792,97 @@ function ReminderAppInner() {
                   ))}
                 </div>
               </>
-            ) : (
-              <>
-                <div className="form-card">
-                  <div className="form-grid">
-                    <select
-                      value={managementRole}
-                      onChange={(event) => {
-                        const nextRole = event.target.value as 'student' | 'teacher'
-                        setManagementRole(nextRole)
-                        const nextId = nextRole === 'student' ? students[0]?.id : teachers[0]?.id
-                        setManagementUserId(nextId ?? '')
-                      }}
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                    </select>
+            )}
 
-                    <select value={managementUserId} onChange={(event) => setManagementUserId(event.target.value)}>
-                      {(managementRole === 'student' ? students : teachers).map((person) => (
-                        <option key={person.id} value={person.id}>
-                          {person.full_name}
-                        </option>
-                      ))}
-                    </select>
+            {adminTab === 'staff' && (
+              <>
+                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Mês de Apuração: </span>
+                    <strong style={{ color: '#fff' }}>Julho de 2026</strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button 
+                      className="primary-button" 
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                      onClick={() => void handleBatchUpdatePayout('pago')}
+                    >
+                      Pagar Todos
+                    </button>
+                    <button 
+                      className="secondary-button" 
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                      onClick={() => void handleBatchUpdatePayout('pendente')}
+                    >
+                      Pendente Todos
+                    </button>
                   </div>
                 </div>
 
-                {managementRole === 'student' ? (
-                  <div className="split-column">
-                    <section>
-                      <h3>Confirmed</h3>
-                      <div className="list-stack">
-                        {managementAttended.map((lesson) => (
-                          <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                            <div>
-                              <h3>{lesson.subject}</h3>
-                              <p className="muted">{formatShortDateLabel(lesson.starts_at)}</p>
-                              <p className="muted">Teacher: {profilesById[lesson.teacher_id]?.full_name}</p>
-                            </div>
-                            <span className={badgeClass('confirmed')}>Confirmed</span>
-                          </div>
-                        ))}
-                        {managementAttended.length === 0 && <p className="empty-state">No confirmed lessons yet.</p>}
-                      </div>
-                    </section>
+                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '1rem' }}>Professor</th>
+                        <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
+                        <th style={{ padding: '1rem' }}>Chave PIX</th>
+                        <th style={{ padding: '1rem' }}>Horas Trab.</th>
+                        <th style={{ padding: '1rem' }}>Valor/Hora</th>
+                        <th style={{ padding: '1rem' }}>Total Devido</th>
+                        <th style={{ padding: '1rem' }}>Status</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teachers.map((teacher) => {
+                        const teacherLessons = lessons.filter(l => 
+                          l.teacher_id === teacher.id && 
+                          l.teacher_lesson_status === 'happened'
+                        )
+                        const totalMinutes = teacherLessons.reduce((acc, l) => acc + l.duration_minutes, 0)
+                        const totalHours = totalMinutes / 60
+                        
+                        const hourlyRate = teacher.taxa_hora_aula ?? 56.00
+                        const currency = teacher.moeda_taxa ?? 'BRL'
+                        const amountDue = totalHours * Number(hourlyRate)
 
-                    <section>
-                      <h3>Cancelled</h3>
-                      <div className="list-stack">
-                        {managementCancelled.map((lesson) => (
-                          <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                            <div>
-                              <h3>{lesson.subject}</h3>
-                              <p className="muted">{formatShortDateLabel(lesson.starts_at)}</p>
-                              <p className="muted">Teacher: {profilesById[lesson.teacher_id]?.full_name}</p>
-                            </div>
-                            <span className={badgeClass('cancel')}>Cancelled</span>
-                          </div>
-                        ))}
-                        {managementCancelled.length === 0 && <p className="empty-state">No cancelled lessons yet.</p>}
-                      </div>
-                    </section>
-                  </div>
-                ) : (
-                  <div className="list-stack">
-                    <h3>Teacher lesson history</h3>
-                    {managementLessons.map((lesson) => (
-                      <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                        <div>
-                          <h3>{lesson.subject}</h3>
-                          <p className="muted">
-                            {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                          </p>
-                        </div>
-                        <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
-                      </div>
-                    ))}
-                    {managementLessons.length === 0 && <p className="empty-state">No lessons found for this teacher yet.</p>}
-                  </div>
-                )}
+                        return (
+                          <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{teacher.full_name}</td>
+                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || 'Não cadastrado'}</td>
+                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || 'Não cadastrada'}</td>
+                            <td style={{ padding: '1rem' }}>{totalHours.toFixed(1)}h</td>
+                            <td style={{ padding: '1rem' }}>{currency} {Number(hourlyRate).toFixed(2)}</td>
+                            <td style={{ padding: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>
+                              {currency} {amountDue.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span className={badgeClass(teacher.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
+                                {teacher.status_pagamento_professor === 'pago' ? 'Pago' : 'Pendente'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              <button
+                                className="primary-button"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pago')}
+                              >
+                                Pago
+                              </button>
+                              <button
+                                className="secondary-button"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pendente')}
+                              >
+                                Pendente
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
           </section>
