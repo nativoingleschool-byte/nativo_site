@@ -117,7 +117,7 @@
 
 .login-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 480px);
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 480px);
 }
 
 .login-hero,
@@ -184,7 +184,7 @@
 .login-panel {
   margin: 24px;
   align-self: center;
-  width: calc(100% - 48px);
+  max-width: 100%;
 }
 
 .app-shell.final-shell {
