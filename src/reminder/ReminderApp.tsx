@@ -1015,7 +1015,8 @@ function ReminderAppInner() {
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   return (
-    <div className="app-shell final-shell">
+    <div className="reminder-app-scope">
+      <div className="app-shell final-shell">
       <Sidebar
         profile={profile}
         language={language}
@@ -1245,6 +1246,7 @@ function ReminderAppInner() {
           />
         )}
       </main>
+      </div>
     </div>
   )
 }
