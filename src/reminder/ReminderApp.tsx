@@ -116,6 +116,7 @@ function ReminderAppInner() {
   const [setupSigningIn, setSetupSigningIn] = useState(false)
   const [accountForm, setAccountForm] = useState<AccountFormState>(() => defaultAccountForm(null))
   const [accountSaving, setAccountSaving] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     storeLanguage(language)
@@ -1016,29 +1017,52 @@ function ReminderAppInner() {
 
   return (
     <div className="reminder-app-scope">
-      <div className="app-shell final-shell">
-      <Sidebar
-        profile={profile}
-        language={language}
-        setLanguage={setLanguage}
-        appTimeZone={appTimeZone}
-        setAppTimeZone={setAppTimeZone}
-        now={now}
-        notificationPermission={notificationPermission}
-        requestPushPermission={requestPushPermission}
-        disablePush={disablePush}
-        isStandalone={isStandalone}
-        installPrompt={installPrompt}
-        promptInstall={promptInstall}
-        handleLogout={handleLogout}
-      />
+      {/* Mobile Top Navigation Header */}
+      <header className="mobile-app-header">
+        <span className="mobile-brand">Nativo English</span>
+        <button 
+          type="button" 
+          className="hamburger-btn" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle Navigation Menu"
+        >
+          <span className="hamburger-line"></span>
+          <span className="hamburger-line"></span>
+          <span className="hamburger-line"></span>
+        </button>
+      </header>
 
-      <main className="main-content">
-        <section className="summary-grid">
-          {summaryCards.map((card) => (
-            <StatCard key={card.label} label={card.label} value={card.value} />
-          ))}
-        </section>
+      <div className="app-shell final-shell">
+        <div className={`sidebar-wrapper ${isMobileMenuOpen ? 'mobile-show' : ''}`}>
+          <Sidebar
+            profile={profile}
+            language={language}
+            setLanguage={setLanguage}
+            appTimeZone={appTimeZone}
+            setAppTimeZone={setAppTimeZone}
+            now={now}
+            notificationPermission={notificationPermission}
+            requestPushPermission={requestPushPermission}
+            disablePush={disablePush}
+            isStandalone={isStandalone}
+            installPrompt={installPrompt}
+            promptInstall={promptInstall}
+            handleLogout={handleLogout}
+          />
+          {isMobileMenuOpen && (
+            <div 
+              className="mobile-sidebar-backdrop" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+        </div>
+
+        <main className="main-content">
+          <section className="summary-grid">
+            {summaryCards.map((card) => (
+              <StatCard key={card.label} label={card.label} value={card.value} />
+            ))}
+          </section>
 
         {appError && (
           <section className="panel">
