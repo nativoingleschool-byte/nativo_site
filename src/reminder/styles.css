@@ -128,7 +128,9 @@ body:has(.reminder-app-scope) {
 
 .login-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 480px);
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 480px);
+  width: 100%;
+  max-width: 100vw;
 }
 
 .login-hero,
