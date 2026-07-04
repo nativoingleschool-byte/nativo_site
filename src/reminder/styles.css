@@ -8,6 +8,8 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-width: 100vw;
+  overflow-x: hidden;
 }
 
 .reminder-app-scope * {
@@ -32,12 +34,21 @@
 
 .reminder-app-scope {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
   background:
     radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.12), transparent 35%),
     linear-gradient(180deg, #090d16 0%, #030712 100%);
+}
+
+/* Ensure browser html/body background scales properly and doesn't leak white color */
+html:has(.reminder-app-scope),
+body:has(.reminder-app-scope) {
+  background-color: #030712 !important;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .reminder-app-scope button,
