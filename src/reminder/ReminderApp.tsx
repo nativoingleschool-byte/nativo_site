@@ -1058,7 +1058,21 @@ function ReminderAppInner() {
                   {adminTab === 'staff' && t(language, 'staff_control')}
                 </h2>
               </div>
-              <div className="tab-row">
+              {/* Mobile Tab Dropdown */}
+              <div className="mobile-tab-select">
+                <select
+                  value={adminTab}
+                  onChange={(e) => setAdminTab(e.target.value as any)}
+                >
+                  <option value="students">{t(language, 'student_pool')}</option>
+                  <option value="payments">{t(language, 'payments')}</option>
+                  <option value="calendar">{t(language, 'calendar')}</option>
+                  <option value="staff">{t(language, 'staff_control')}</option>
+                </select>
+              </div>
+
+              {/* Desktop Tab Buttons */}
+              <div className="tab-row desktop-only">
                 <button
                   type="button"
                   className={adminTab === 'students' ? 'tab-button tab-button-active' : 'tab-button'}

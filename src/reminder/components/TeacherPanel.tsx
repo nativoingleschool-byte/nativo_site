@@ -179,7 +179,20 @@ export default function TeacherPanel({
               {teacherTab === 'profile' && 'Meu Perfil Professor'}
             </h2>
           </div>
-          <div className="tab-row">
+          {/* Mobile Tab Dropdown */}
+          <div className="mobile-tab-select">
+            <select
+              value={teacherTab}
+              onChange={(e) => setTeacherTab(e.target.value as any)}
+            >
+              <option value="calendar">Agenda</option>
+              <option value="worklog">Folha & NF</option>
+              <option value="profile">Dados</option>
+            </select>
+          </div>
+
+          {/* Desktop Tab Buttons */}
+          <div className="tab-row desktop-only">
             <button
               type="button"
               className={teacherTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
