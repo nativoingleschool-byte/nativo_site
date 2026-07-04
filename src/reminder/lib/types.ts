@@ -1,5 +1,29 @@
 export type UserRole = 'admin' | 'teacher' | 'student'
 
+export type UserFormState = {
+  id?: string
+  full_name: string
+  email: string
+  password: string
+  role: UserRole
+  class_name: string
+  speciality: string
+  first_class_at: string
+  first_class_teacher_id: string
+  cpf?: string
+  data_pagamento_preferencial?: number
+  chave_pix?: string
+  cnpj?: string
+  taxa_hora_aula?: number
+}
+
+export type AccountFormState = {
+  full_name: string
+  email: string
+  password?: string
+  confirm_password?: string
+}
+
 export type StudentAttendance = 'attend' | 'cancel' | null
 export type StudentLessonStatus = 'done' | 'not_done' | null
 export type TeacherLessonStatus = 'happened' | 'not_happened' | 'student_no_show' | null
