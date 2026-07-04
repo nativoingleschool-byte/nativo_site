@@ -1412,12 +1412,12 @@ function ReminderAppInner() {
           <section className="panel">
             <div className="panel-header animate-fade-in">
               <div>
-                <p className="section-label">Sistema de Gestão Escolar</p>
+                <p className="section-label">{t(language, 'school_management')}</p>
                 <h2>
-                  {adminTab === 'students' && 'Student Pool'}
-                  {adminTab === 'payments' && 'Payments Page'}
-                  {adminTab === 'calendar' && 'Calendar (Visão Semanal)'}
-                  {adminTab === 'staff' && 'Staff Control (Folha de Pagamento)'}
+                  {adminTab === 'students' && t(language, 'student_pool')}
+                  {adminTab === 'payments' && t(language, 'payments')}
+                  {adminTab === 'calendar' && t(language, 'calendar')}
+                  {adminTab === 'staff' && t(language, 'staff_control')}
                 </h2>
               </div>
               <div className="tab-row">
@@ -1426,28 +1426,28 @@ function ReminderAppInner() {
                   className={adminTab === 'students' ? 'tab-button tab-button-active' : 'tab-button'}
                   onClick={() => setAdminTab('students')}
                 >
-                  Student Pool
+                  {t(language, 'student_pool')}
                 </button>
                 <button
                   type="button"
                   className={adminTab === 'payments' ? 'tab-button tab-button-active' : 'tab-button'}
                   onClick={() => setAdminTab('payments')}
                 >
-                  Payments
+                  {t(language, 'payments')}
                 </button>
                 <button
                   type="button"
                   className={adminTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
                   onClick={() => setAdminTab('calendar')}
                 >
-                  Calendar
+                  {t(language, 'calendar')}
                 </button>
                 <button
                   type="button"
                   className={adminTab === 'staff' ? 'tab-button tab-button-active' : 'tab-button'}
                   onClick={() => setAdminTab('staff')}
                 >
-                  Staff Control
+                  {t(language, 'staff_control')}
                 </button>
               </div>
             </div>
@@ -1455,23 +1455,23 @@ function ReminderAppInner() {
             {adminTab === 'students' && (
               <>
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>Gerar Link de Matrícula</h3>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
                   <form onSubmit={handleGenerateInviteLink} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
                     <input
                       required
                       type="email"
-                      placeholder="E-mail do novo Aluno"
+                      placeholder={t(language, 'invite_email_placeholder')}
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       style={{ flex: 1, padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
                     />
                     <button className="primary-button" style={{ padding: '0.75rem 1.5rem', whiteSpace: 'nowrap' }} disabled={inviteLoading}>
-                      {inviteLoading ? 'Gerando...' : 'Gerar Convite'}
+                      {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
                     </button>
                   </form>
                   {generatedInviteLink && (
                     <div className="credential-card mt-4" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
-                      <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>Link de Matrícula Gerado</p>
+                      <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>{t(language, 'invite_link_generated')}</p>
                       <p className="inline-code" style={{ wordBreak: 'break-all', fontSize: '0.85rem', margin: '0.5rem 0', display: 'block', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
                         {generatedInviteLink}
                       </p>
@@ -1480,10 +1480,10 @@ function ReminderAppInner() {
                         className="secondary-button"
                         onClick={() => {
                           void navigator.clipboard.writeText(generatedInviteLink)
-                          alert('Link copiado!')
+                          alert(t(language, 'copied_alert'))
                         }}
                       >
-                        Copiar Link
+                        {t(language, 'copy_link_btn')}
                       </button>
                     </div>
                   )}
@@ -1493,36 +1493,36 @@ function ReminderAppInner() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>Nome Completo</th>
-                        <th style={{ padding: '1rem' }}>E-mail</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
+                        <th style={{ padding: '1rem' }}>Email</th>
                         <th style={{ padding: '1rem' }}>CPF</th>
-                        <th style={{ padding: '1rem' }}>Vencimento</th>
-                        <th style={{ padding: '1rem' }}>Status Financeiro</th>
-                        <th style={{ padding: '1rem' }}>Horário Habitual</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'student_habitual_time')}</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {students.map((student) => {
                         const studentLessons = lessons.filter(l => l.student_id === student.id)
                         const scheduleText = studentLessons.length > 0 
-                          ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || 'Agendado'
-                          : 'Sem aulas'
+                          ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || t(language, 'class_scheduled')
+                          : t(language, 'student_no_classes')
 
                         return (
                           <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.full_name}</td>
                             <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
-                            <td style={{ padding: '1rem' }}>{student.cpf || 'Não cadastrado'}</td>
+                            <td style={{ padding: '1rem' }}>{student.cpf || '-'}</td>
                             <td style={{ padding: '1rem' }}>
-                              {student.data_pagamento_preferencial ? `Dia ${student.data_pagamento_preferencial}` : 'Não definido'}
+                              {student.data_pagamento_preferencial ? t(language, 'billing_day_label').replace('{day}', String(student.data_pagamento_preferencial)) : '-'}
                             </td>
                             <td style={{ padding: '1rem' }}>
                               <span className={badgeClass(student.status_pagamento || 'pendente')}>
-                                {student.status_pagamento === 'em_dia' && 'Em dia'}
-                                {student.status_pagamento === 'atrasado' && 'Atrasado'}
-                                {student.status_pagamento === 'pendente' && 'Pendente'}
-                                {!student.status_pagamento && 'Pendente'}
+                                {student.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
+                                {student.status_pagamento === 'atrasado' && t(language, 'financial_late')}
+                                {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
+                                {!student.status_pagamento && t(language, 'financial_pending')}
                               </span>
                             </td>
                             <td style={{ padding: '1rem' }}>
@@ -1554,7 +1554,7 @@ function ReminderAppInner() {
                                   })
                                 }}
                               >
-                                Editar
+                                {t(language, 'edit')}
                               </button>
                             </td>
                           </tr>
@@ -1567,18 +1567,18 @@ function ReminderAppInner() {
                 {savingUserId && userForm.role === 'student' && (
                   <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Editar Dados do Estudante</h3>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
                       <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input
                           required
-                          placeholder="Nome Completo"
+                          placeholder={t(language, 'full_name')}
                           value={userForm.full_name}
                           onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
                         />
                         <input
                           required
                           type="email"
-                          placeholder="E-mail"
+                          placeholder="Email"
                           value={userForm.email}
                           onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                         />
@@ -1592,7 +1592,7 @@ function ReminderAppInner() {
                           onChange={(e) => setUserForm({ ...userForm, data_pagamento_preferencial: Number(e.target.value) })}
                         >
                           {[1, 5, 10, 15, 20, 25].map(day => (
-                            <option key={day} value={day}>Vencimento Dia {day}</option>
+                            <option key={day} value={day}>{t(language, 'billing_day_label').replace('{day}', String(day))}</option>
                           ))}
                         </select>
                       </div>
@@ -1618,9 +1618,9 @@ function ReminderAppInner() {
                             }
                           }}
                         >
-                          Salvar
+                          {t(language, 'save')}
                         </button>
-                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>Cancelar</button>
+                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
                       </div>
                     </div>
                   </div>
@@ -1633,7 +1633,7 @@ function ReminderAppInner() {
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
                   <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
                     <input
-                      placeholder="Pesquisar Aluno..."
+                      placeholder={`${t(language, 'edit_student_title').split(' ')[0]}...`}
                       value={paymentSearch}
                       onChange={(e) => setPaymentSearch(e.target.value)}
                       style={{ flex: 2 }}
@@ -1643,10 +1643,10 @@ function ReminderAppInner() {
                       onChange={(e) => setPaymentFilter(e.target.value as any)}
                       style={{ flex: 1 }}
                     >
-                      <option value="all">Todos os Status</option>
-                      <option value="em_dia">Verde (Em dia)</option>
-                      <option value="pendente">Amarelo (Pendente)</option>
-                      <option value="atrasado">Vermelho (Atrasado)</option>
+                      <option value="all">All status</option>
+                      <option value="em_dia">Green ({t(language, 'financial_ok')})</option>
+                      <option value="pendente">Yellow ({t(language, 'financial_pending')})</option>
+                      <option value="atrasado">Red ({t(language, 'financial_late')})</option>
                     </select>
                   </div>
                 </div>
@@ -1655,11 +1655,11 @@ function ReminderAppInner() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>Estudante</th>
-                        <th style={{ padding: '1rem' }}>Status Financeiro</th>
-                        <th style={{ padding: '1rem' }}>Último Boleto / Link</th>
-                        <th style={{ padding: '1rem' }}>NFS-e Emitida</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'edit_student_title').split(' ').pop()}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
+                        <th style={{ padding: '1rem' }}>Last Invoice / Link</th>
+                        <th style={{ padding: '1rem' }}>NFS-e</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1691,10 +1691,10 @@ function ReminderAppInner() {
                                                 student.status_pagamento === 'pendente' ? '#f59e0b' : '#ef4444'
                                   }} />
                                   <span style={{ fontSize: '0.85rem' }}>
-                                    {student.status_pagamento === 'em_dia' && 'Em dia'}
-                                    {student.status_pagamento === 'pendente' && 'Pendente'}
-                                    {student.status_pagamento === 'atrasado' && 'Atrasado'}
-                                    {!student.status_pagamento && 'Pendente'}
+                                    {student.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
+                                    {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
+                                    {student.status_pagamento === 'atrasado' && t(language, 'financial_late')}
+                                    {!student.status_pagamento && t(language, 'financial_pending')}
                                   </span>
                                 </div>
                               </td>
@@ -1706,10 +1706,10 @@ function ReminderAppInner() {
                                     rel="noreferrer" 
                                     style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.85rem' }}
                                   >
-                                    Ver Boleto ({lastInvoice.status})
+                                    Invoice ({lastInvoice.status})
                                   </a>
                                 ) : (
-                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Nenhum boleto gerado</span>
+                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No invoice</span>
                                 )}
                               </td>
                               <td style={{ padding: '1rem' }}>
@@ -1720,10 +1720,10 @@ function ReminderAppInner() {
                                     rel="noreferrer" 
                                     style={{ color: '#10b981', textDecoration: 'underline', fontSize: '0.85rem', fontWeight: 'bold' }}
                                   >
-                                    Visualizar NFS-e
+                                    NFS-e
                                   </a>
                                 ) : (
-                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Nenhuma NFS-e disponível</span>
+                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No NFS-e</span>
                                 )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -1732,7 +1732,7 @@ function ReminderAppInner() {
                                   style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                                   onClick={() => setInvoiceForm({ studentId: student.id, amount: '340', dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] })}
                                 >
-                                  Gerar novo boleto
+                                  New invoice
                                 </button>
                                 <button
                                   className="secondary-button"
@@ -1748,7 +1748,7 @@ function ReminderAppInner() {
                                     }
                                   }}
                                 >
-                                  Modificar
+                                  {t(language, 'edit')}
                                 </button>
                               </td>
                             </tr>
@@ -1784,9 +1784,9 @@ function ReminderAppInner() {
                         </div>
                         <div className="button-stack mt-4" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                           <button type="submit" className="primary-button" disabled={invoiceLoading}>
-                            {invoiceLoading ? 'Gerando...' : 'Confirmar e Gerar'}
+                            {invoiceLoading ? t(language, 'loading_invite') : t(language, 'save')}
                           </button>
-                          <button type="button" className="secondary-button" onClick={() => setInvoiceForm(null)}>Cancelar</button>
+                          <button type="button" className="secondary-button" onClick={() => setInvoiceForm(null)}>{t(language, 'cancel')}</button>
                         </div>
                       </form>
                     </div>
@@ -1845,7 +1845,7 @@ function ReminderAppInner() {
               <>
                 {/* Add New Staff Section */}
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Adicionar Novo Membro da Equipe</h3>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'add_staff_title')}</h3>
                   <form 
                     onSubmit={async (e) => {
                       e.preventDefault();
@@ -1874,40 +1874,40 @@ function ReminderAppInner() {
                     style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Nome Completo</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'full_name')}</label>
                       <input
                         required
                         type="text"
-                        placeholder="Nome Completo"
+                        placeholder={t(language, 'full_name')}
                         value={userForm.full_name}
                         onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
                         style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>E-mail</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email</label>
                       <input
                         required
                         type="email"
-                        placeholder="E-mail de Acesso"
+                        placeholder="Email"
                         value={userForm.email}
                         onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                         style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Senha</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'password')}</label>
                       <input
                         required
                         type="password"
-                        placeholder="Senha de Acesso"
+                        placeholder={t(language, 'password')}
                         value={userForm.password}
                         onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                         style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Cargo / Função</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'role_label')}</label>
                       <select
                         value={userForm.role === 'student' ? 'teacher' : userForm.role}
                         onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
@@ -1918,7 +1918,7 @@ function ReminderAppInner() {
                       </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Especialidade (Opcional)</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'speciality_label')}</label>
                       <input
                         type="text"
                         placeholder="E.g. Business, TOEFL"
@@ -1928,7 +1928,7 @@ function ReminderAppInner() {
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Chave PIX (Professores)</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'pix_label')}</label>
                       <input
                         type="text"
                         placeholder="Celular, E-mail, CPF..."
@@ -1938,7 +1938,7 @@ function ReminderAppInner() {
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>CNPJ / CPF (Professores)</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'cnpj_label')}</label>
                       <input
                         type="text"
                         placeholder="CNPJ ou CPF"
@@ -1948,7 +1948,7 @@ function ReminderAppInner() {
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Valor/Hora (R$)</label>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'value_hour_label')}</label>
                       <input
                         type="number"
                         placeholder="Valor hora aula"
@@ -1959,25 +1959,25 @@ function ReminderAppInner() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: 'span 1' }}>
                       <button type="submit" className="primary-button" style={{ width: '100%', padding: '0.6rem 1rem' }}>
-                        Adicionar Staff
+                        {t(language, 'add_staff_btn')}
                       </button>
                     </div>
                   </form>
                 </div>
 
                 {/* Staff list table */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Lista de Membros da Equipe</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'staff_list_title')}</h3>
                 <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem', marginBottom: '2.5rem' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>Nome Completo</th>
-                        <th style={{ padding: '1rem' }}>E-mail</th>
-                        <th style={{ padding: '1rem' }}>Função</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
+                        <th style={{ padding: '1rem' }}>Email</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'role_label').split(' ')[0]}</th>
                         <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
                         <th style={{ padding: '1rem' }}>Chave PIX</th>
-                        <th style={{ padding: '1rem' }}>Valor/Hora</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1993,11 +1993,11 @@ function ReminderAppInner() {
                               <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
                               <td style={{ padding: '1rem' }}>
                                 <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
-                                  {staff.role === 'admin' ? 'Administrador' : 'Professor'}
+                                  {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
                                 </span>
                               </td>
-                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || 'Não cadastrado'}</td>
-                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || 'Não cadastrada'}</td>
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || '-'}</td>
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || '-'}</td>
                               <td style={{ padding: '1rem' }}>
                                 {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
                               </td>
@@ -2026,14 +2026,14 @@ function ReminderAppInner() {
                                       })
                                     }}
                                   >
-                                    Editar
+                                    {t(language, 'edit')}
                                   </button>
                                   <button
                                     className="secondary-button"
                                     style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
                                     onClick={() => void handleDeleteUser(staff.id)}
                                   >
-                                    Excluir
+                                    {t(language, 'delete')}
                                   </button>
                                 </div>
                               </td>
@@ -2048,18 +2048,18 @@ function ReminderAppInner() {
                 {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && (
                   <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Editar Dados do Staff</h3>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
                       <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input
                           required
-                          placeholder="Nome Completo"
+                          placeholder={t(language, 'full_name')}
                           value={userForm.full_name}
                           onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
                         />
                         <input
                           required
                           type="email"
-                          placeholder="E-mail"
+                          placeholder="Email"
                           value={userForm.email}
                           onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                         />
@@ -2119,19 +2119,19 @@ function ReminderAppInner() {
                             }
                           }}
                         >
-                          Salvar
+                          {t(language, 'save')}
                         </button>
-                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>Cancelar</button>
+                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* Payroll Section */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Folha de Pagamento (Professores)</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'payout_teachers_title')}</h3>
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Mês de Apuração: </span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{t(language, 'payout_month')}: </span>
                     <strong style={{ color: '#fff' }}>Julho de 2026</strong>
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -2140,14 +2140,14 @@ function ReminderAppInner() {
                       style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
                       onClick={() => void handleBatchUpdatePayout('pago')}
                     >
-                      Pagar Todos
+                      {t(language, 'pay_all')}
                     </button>
                     <button 
                       className="secondary-button" 
                       style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
                       onClick={() => void handleBatchUpdatePayout('pendente')}
                     >
-                      Pendente Todos
+                      {t(language, 'pending_all')}
                     </button>
                   </div>
                 </div>
@@ -2156,14 +2156,14 @@ function ReminderAppInner() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>Professor</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
                         <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
                         <th style={{ padding: '1rem' }}>Chave PIX</th>
-                        <th style={{ padding: '1rem' }}>Horas Trab.</th>
-                        <th style={{ padding: '1rem' }}>Valor/Hora</th>
-                        <th style={{ padding: '1rem' }}>Total Devido</th>
-                        <th style={{ padding: '1rem' }}>Status</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'hours_worked')}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'amount_due')}</th>
+                        <th style={{ padding: '1rem' }}>{t(language, 'status')}</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2182,8 +2182,8 @@ function ReminderAppInner() {
                         return (
                           <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{teacher.full_name}</td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || 'Não cadastrado'}</td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || 'Não cadastrada'}</td>
+                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || '-'}</td>
+                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || '-'}</td>
                             <td style={{ padding: '1rem' }}>{totalHours.toFixed(1)}h</td>
                             <td style={{ padding: '1rem' }}>{currency} {Number(hourlyRate).toFixed(2)}</td>
                             <td style={{ padding: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>
@@ -2191,7 +2191,7 @@ function ReminderAppInner() {
                             </td>
                             <td style={{ padding: '1rem' }}>
                               <span className={badgeClass(teacher.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
-                                {teacher.status_pagamento_professor === 'pago' ? 'Pago' : 'Pendente'}
+                                {teacher.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
                               </span>
                             </td>
                             <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -2200,14 +2200,14 @@ function ReminderAppInner() {
                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                                 onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pago')}
                               >
-                                Pago
+                                {t(language, 'paid')}
                               </button>
                               <button
                                 className="secondary-button"
                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                                 onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pendente')}
                               >
-                                Pendente
+                                {t(language, 'pending')}
                               </button>
                             </td>
                           </tr>
@@ -2226,8 +2226,8 @@ function ReminderAppInner() {
             <article className="panel">
               <div className="panel-header">
                 <div>
-                  <p className="section-label">Estudante</p>
-                  <h2>{studentTab === 'lessons' ? 'Lesson Information' : 'Minha Conta'}</h2>
+                  <p className="section-label">Student</p>
+                  <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : t(language, 'student_tab_account')}</h2>
                 </div>
                 <div className="tab-row">
                   <button
@@ -2235,14 +2235,14 @@ function ReminderAppInner() {
                     className={studentTab === 'lessons' ? 'tab-button tab-button-active' : 'tab-button'}
                     onClick={() => setStudentTab('lessons')}
                   >
-                    Aulas & Notificações
+                    {t(language, 'student_tab_lessons')}
                   </button>
                   <button
                     type="button"
                     className={studentTab === 'account' ? 'tab-button tab-button-active' : 'tab-button'}
                     onClick={() => setStudentTab('account')}
                   >
-                    Dados & Pagamentos
+                    {t(language, 'student_tab_account')}
                   </button>
                 </div>
               </div>
