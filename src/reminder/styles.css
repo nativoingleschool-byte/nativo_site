@@ -849,17 +849,17 @@ body:has(.reminder-app-scope) {
     margin-bottom: 1.5rem;
   }
 
-  /* Prevent text overflow leaks on small devices */
-  input, select {
-    font-size: 0.95rem;
-    padding: 10px 12px;
+  /* Prevent text overflow leaks on small devices and block automatic browser zooming */
+  input, select, textarea {
+    font-size: 16px !important;
+    padding: 12px 14px;
   }
 
   .reminder-app-scope h1 {
-    font-size: 2rem;
+    font-size: 1.85rem;
   }
 
   .reminder-app-scope h2 {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
   }
 }
