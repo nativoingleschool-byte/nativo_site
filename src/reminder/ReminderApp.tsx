@@ -2132,7 +2132,9 @@ function ReminderAppInner() {
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{t(language, 'payout_month')}: </span>
-                    <strong style={{ color: '#fff' }}>Julho de 2026</strong>
+                    <strong style={{ color: '#fff', textTransform: 'capitalize' }}>
+                      {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })}
+                    </strong>
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button 
