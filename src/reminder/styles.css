@@ -744,7 +744,8 @@
 
   .sidebar {
     border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 24px 20px;
   }
 
   .user-row,
@@ -770,24 +771,70 @@
   .sidebar,
   .login-panel,
   .login-hero {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .login-shell {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .login-hero {
+    display: none; /* Hide illustrative side column on mobile phones for clean layout */
+  }
+
+  .login-panel {
+    margin: 10px 0;
+    width: 100%;
   }
 
   .summary-grid,
   .feature-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .button-row,
   .lesson-card {
     flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .button-row button,
+  .button-row a {
+    width: 100%;
+    text-align: center;
   }
 
   .status-stack {
     justify-content: flex-start;
+    margin-top: 8px;
+    width: 100%;
   }
 
   .calendar-grid {
-    overflow: auto;
+    overflow-x: auto;
+    display: block;
+    min-width: 600px;
+  }
+  
+  .table-responsive {
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Prevent text overflow leaks on small devices */
+  input, select {
+    font-size: 0.95rem;
+    padding: 10px 12px;
+  }
+
+  .reminder-app-scope h1 {
+    font-size: 2rem;
+  }
+
+  .reminder-app-scope h2 {
+    font-size: 1.35rem;
   }
 }
