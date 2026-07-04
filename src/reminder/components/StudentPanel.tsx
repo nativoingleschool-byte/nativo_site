@@ -64,7 +64,19 @@ export default function StudentPanel({
             <p className="section-label">Student</p>
             <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : t(language, 'student_tab_account')}</h2>
           </div>
-          <div className="tab-row">
+          {/* Mobile Tab Dropdown */}
+          <div className="mobile-tab-select">
+            <select
+              value={studentTab}
+              onChange={(e) => setStudentTab(e.target.value as any)}
+            >
+              <option value="lessons">{t(language, 'student_tab_lessons')}</option>
+              <option value="account">{t(language, 'student_tab_account')}</option>
+            </select>
+          </div>
+
+          {/* Desktop Tab Buttons */}
+          <div className="tab-row desktop-only">
             <button
               type="button"
               className={studentTab === 'lessons' ? 'tab-button tab-button-active' : 'tab-button'}
