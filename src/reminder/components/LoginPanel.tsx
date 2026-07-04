@@ -21,7 +21,8 @@ export default function LoginPanel({
   handleLogin,
 }: LoginPanelProps) {
   return (
-    <div className="login-shell">
+    <div className="reminder-app-scope">
+      <div className="login-shell">
       <section className="login-hero">
         <div>
           <p className="eyebrow">Welcome</p>
@@ -86,6 +87,7 @@ export default function LoginPanel({
           <p className="muted">Use the email and password shared with you by your school or admin.</p>
         </div>
       </section>
+      </div>
     </div>
   )
 }
