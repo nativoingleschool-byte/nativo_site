@@ -35,6 +35,7 @@ import AdminPaymentsTab from './components/AdminPaymentsTab'
 import AdminStaffTab from './components/AdminStaffTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
+import { registerAppServiceWorker } from './pwa'
 
 type AccountFormState = {
   full_name: string
@@ -116,6 +117,10 @@ function ReminderAppInner() {
   const [setupSigningIn, setSetupSigningIn] = useState(false)
   const [accountForm, setAccountForm] = useState<AccountFormState>(() => defaultAccountForm(null))
   const [accountSaving, setAccountSaving] = useState(false)
+
+  useEffect(() => {
+    void registerAppServiceWorker()
+  }, [])
 
   useEffect(() => {
     storeLanguage(language)
@@ -611,25 +616,45 @@ function ReminderAppInner() {
   const requestPushPermission = async () => {
     if (!profile || !('Notification' in window)) {
       setNotificationPermission('unsupported')
+      alert("Alerta: As notificações push não são suportadas por este navegador. (Nota: Usuários de iOS precisam primeiro adicionar o app à Tela de Início via menu de Compartilhar).")
       return
     }
 
-    const permission = await Notification.requestPermission()
-    setNotificationPermission(permission)
-
-    if (permission === 'granted') {
-      await fetch('/api/me/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token ?? ''}`,
-        },
-        body: JSON.stringify({ push_enabled: true }),
-      })
-      await refreshProfile(profile.id)
-      if (profile.role === 'admin') {
-        await refreshProfiles()
+    try {
+      let permission: NotificationPermission
+      // Safari requestPermission compat
+      try {
+        permission = await Notification.requestPermission()
+      } catch (err) {
+        permission = await new Promise<NotificationPermission>((resolve) => {
+          Notification.requestPermission(resolve)
+        })
       }
+      
+      setNotificationPermission(permission)
+
+      if (permission === 'granted') {
+        const response = await fetch('/api/me/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token ?? ''}`,
+          },
+          body: JSON.stringify({ push_enabled: true }),
+        })
+        if (!response.ok) {
+          throw new Error('Falha ao registrar preferência de push no servidor.')
+        }
+        await refreshProfile(profile.id)
+        if (profile.role === 'admin') {
+          await refreshProfiles()
+        }
+        alert("Alertas push ativados com sucesso!")
+      } else if (permission === 'denied') {
+        alert("A permissão para notificações foi negada. Por favor, redefina as permissões nas configurações do seu navegador para receber alertas.")
+      }
+    } catch (err: any) {
+      alert("Erro ao solicitar permissão de push: " + err.message)
     }
   }
 
