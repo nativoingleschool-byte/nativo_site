@@ -156,3 +156,27 @@ drop policy if exists "invitations_select_anon" on public.invitations;
 create policy "invitations_select_anon" on public.invitations
 for select
 using (true);
+
+-- 5. Barueri Remessa Sequence tracking
+CREATE TABLE IF NOT EXISTS public.barueri_remessa_seq (
+  data_remessa DATE PRIMARY KEY DEFAULT CURRENT_DATE,
+  sequencia INT NOT NULL DEFAULT 1
+);
+
+CREATE OR REPLACE FUNCTION public.get_next_barueri_remessa()
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  next_seq INT;
+BEGIN
+  INSERT INTO public.barueri_remessa_seq (data_remessa, sequencia)
+  VALUES (CURRENT_DATE, 1)
+  ON CONFLICT (data_remessa)
+  DO UPDATE SET sequencia = barueri_remessa_seq.sequencia + 1
+  RETURNING sequencia INTO next_seq;
+  
+  RETURN next_seq;
+END;
+$$;
