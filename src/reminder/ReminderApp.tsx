@@ -3,7 +3,7 @@ import { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import AdminCalendar from './components/AdminCalendar'
 import './styles.css'
-import { getDeviceLanguage, getStoredLanguage, Language, storeLanguage, supportedLanguages, t } from './lib/i18n'
+import { getDeviceLanguage, getStoredLanguage, Language, storeLanguage, t } from './lib/i18n'
 import {
   BrowserPermission,
   InstallPromptEvent,
@@ -12,24 +12,29 @@ import {
   ReminderIntent,
   ReminderNotification,
   UserRole,
+  UserFormState,
 } from './lib/types'
+import {
+  formatShortDate,
+  sortByDateAsc,
+  sortByDateDesc,
+  minutesUntil,
+  statusLabel,
+  badgeClass,
+  applyIntentToLesson,
+  getStandaloneMode,
+  getStoredNotificationKeys,
+  storeNotificationKeys,
+} from './lib/utils'
 
-type UserFormState = {
-  id?: string
-  full_name: string
-  email: string
-  password: string
-  role: UserRole
-  class_name: string
-  speciality: string
-  first_class_at: string
-  first_class_teacher_id: string
-  cpf?: string
-  data_pagamento_preferencial?: number
-  chave_pix?: string
-  cnpj?: string
-  taxa_hora_aula?: number
-}
+import StatCard from './components/StatCard'
+import LoginPanel from './components/LoginPanel'
+import Sidebar from './components/Sidebar'
+import AdminStudentsTab from './components/AdminStudentsTab'
+import AdminPaymentsTab from './components/AdminPaymentsTab'
+import AdminStaffTab from './components/AdminStaffTab'
+import StudentPanel from './components/StudentPanel'
+import TeacherPanel from './components/TeacherPanel'
 
 type AccountFormState = {
   full_name: string
@@ -46,7 +51,6 @@ type PendingLink = {
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000
-const NOTIFICATION_KEY = 'lesson-reminder-sent-keys'
 
 const defaultUserForm = (): UserFormState => ({
   full_name: '',
@@ -71,108 +75,6 @@ const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
   confirm_password: '',
 })
 
-const localeByLanguage: Record<Language, string> = {
-  en: 'en',
-  pt: 'pt-BR',
-  es: 'es',
-}
-
-const appTimeZones = [
-  { value: 'America/Sao_Paulo', label: 'Brasília (GMT-3)' },
-  { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'New York' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Europe/Paris', label: 'Paris' },
-  { value: 'Asia/Dubai', label: 'Dubai' },
-  { value: 'Asia/Tokyo', label: 'Tokyo' },
-  { value: 'Australia/Sydney', label: 'Sydney' },
-]
-
-const formatDateTime = (value: string, language: Language, timeZone: string) =>
-  new Intl.DateTimeFormat(localeByLanguage[language], {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone,
-  }).format(new Date(value))
-
-const formatShortDate = (value: string, language: Language, timeZone: string) =>
-  new Intl.DateTimeFormat(localeByLanguage[language], {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone,
-  }).format(new Date(value))
-
-const sortByDateAsc = (a: Lesson, b: Lesson) =>
-  new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
-
-const sortByDateDesc = (a: Lesson, b: Lesson) =>
-  new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
-
-const minutesUntil = (from: Date, to: string) => Math.round((new Date(to).getTime() - from.getTime()) / 60000)
-
-const statusLabel = (lesson: Lesson) => {
-  if (lesson.teacher_lesson_status === 'student_no_show') return 'Student did not show up'
-  if (lesson.teacher_lesson_status === 'happened') return 'Lesson happened'
-  if (lesson.teacher_lesson_status === 'not_happened') return 'Lesson did not happen'
-  if (lesson.student_lesson_status === 'done') return 'Student marked done'
-  if (lesson.student_lesson_status === 'not_done') return 'Student marked not done'
-  if (lesson.student_attendance === 'attend') return 'Student confirmed attendance'
-  if (lesson.student_attendance === 'cancel') return 'Student requested cancellation'
-  return 'Awaiting response'
-}
-
-const badgeClass = (value: string) => {
-  if (value.includes('confirmed') || value.includes('happened') || value.includes('done')) return 'badge badge-success'
-  if (value.includes('cancel') || value.includes('not happen') || value.includes('not done') || value.includes('did not show')) {
-    return 'badge badge-danger'
-  }
-  return 'badge badge-neutral'
-}
-
-const applyIntentToLesson = (intent: ReminderIntent): Partial<Lesson> => {
-  switch (intent) {
-    case 'attend':
-      return { student_attendance: 'attend' }
-    case 'cancel':
-      return { student_attendance: 'cancel' }
-    case 'done':
-      return { student_lesson_status: 'done' }
-    case 'not_done':
-      return { student_lesson_status: 'not_done' }
-    case 'happened':
-      return { teacher_lesson_status: 'happened' }
-    case 'not_happened':
-      return { teacher_lesson_status: 'not_happened' }
-    case 'student_no_show':
-      return { teacher_lesson_status: 'student_no_show' }
-  }
-}
-
-const getStandaloneMode = () =>
-  window.matchMedia('(display-mode: standalone)').matches ||
-  ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone))
-
-const getStoredNotificationKeys = () => {
-  const stored = localStorage.getItem(NOTIFICATION_KEY)
-  return stored ? (JSON.parse(stored) as string[]) : []
-}
-
-const storeNotificationKeys = (keys: string[]) => {
-  localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(keys))
-}
-
-const StatCard = ({ label, value }: { label: string; value: string | number }) => (
-  <article className="summary-card">
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </article>
-)
-
 function ReminderAppInner() {
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage() ?? getDeviceLanguage())
   const [appTimeZone, setAppTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
@@ -194,7 +96,6 @@ function ReminderAppInner() {
   const [now, setNow] = useState(new Date())
   const [pendingLink, setPendingLink] = useState<PendingLink>({ lessonId: null, intent: null })
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff'>('students')
   const [studentTab, setStudentTab] = useState<'account' | 'lessons'>('lessons')
   const [teacherTab, setTeacherTab] = useState<'calendar' | 'worklog' | 'profile'>('calendar')
@@ -212,13 +113,9 @@ function ReminderAppInner() {
   const [createWithSetupLink, setCreateWithSetupLink] = useState(false)
   const [latestSetupLink, setLatestSetupLink] = useState<string | null>(null)
   const [setupCredentials, setSetupCredentials] = useState<{ email: string; password: string } | null>(null)
-  const [setupMode, setSetupMode] = useState(false)
   const [setupSigningIn, setSetupSigningIn] = useState(false)
   const [accountForm, setAccountForm] = useState<AccountFormState>(() => defaultAccountForm(null))
   const [accountSaving, setAccountSaving] = useState(false)
-  const [accountSaved, setAccountSaved] = useState(false)
-  const [managementRole, setManagementRole] = useState<'student' | 'teacher'>('student')
-  const [managementUserId, setManagementUserId] = useState<string>('')
 
   useEffect(() => {
     storeLanguage(language)
@@ -305,8 +202,6 @@ function ReminderAppInner() {
     let cancelled = false
 
     const runSetupSignIn = async () => {
-      // Clear the credentials immediately so a fast session update doesn't re-run this effect,
-      // and always turn off the "opening" state even if the effect is cancelled mid-flight.
       const creds = setupCredentials
       setSetupCredentials(null)
       setSetupSigningIn(true)
@@ -332,7 +227,6 @@ function ReminderAppInner() {
 
         if (error) throw error
 
-        setSetupMode(true)
         setLoginForm({ email: creds.email, password: '' })
         const params = new URLSearchParams(window.location.search)
         params.delete('setup_email')
@@ -340,7 +234,6 @@ function ReminderAppInner() {
         const nextQuery = params.toString()
         window.history.replaceState({}, document.title, nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
       } finally {
-        // Important: do not get stuck if session changes quickly during setup sign-in.
         if (!cancelled) {
           setSetupSigningIn(false)
         }
@@ -423,7 +316,6 @@ function ReminderAppInner() {
 
   useEffect(() => {
     setAccountForm(defaultAccountForm(profile))
-    setAccountSaved(false)
   }, [profile?.id])
 
   useEffect(() => {
@@ -478,27 +370,6 @@ function ReminderAppInner() {
       setUserForm((current) => ({ ...current, first_class_teacher_id: teachers[0].id }))
     }
   }, [userForm.first_class_teacher_id, teachers])
-
-  useEffect(() => {
-    if (!managementUserId) {
-      const nextId = managementRole === 'student' ? students[0]?.id : teachers[0]?.id
-      if (nextId) {
-        setManagementUserId(nextId)
-      }
-    }
-  }, [managementUserId, managementRole, students, teachers])
-
-  const managementLessons = useMemo(() => {
-    if (!managementUserId) return []
-    const filtered =
-      managementRole === 'student'
-        ? lessons.filter((lesson) => lesson.student_id === managementUserId)
-        : lessons.filter((lesson) => lesson.teacher_id === managementUserId)
-    return filtered.sort(sortByDateDesc)
-  }, [lessons, managementRole, managementUserId])
-
-  const managementAttended = managementLessons.filter((lesson) => lesson.student_attendance === 'attend')
-  const managementCancelled = managementLessons.filter((lesson) => lesson.student_attendance === 'cancel')
 
   const visibleLessons = useMemo(() => {
     if (!profile) return []
@@ -882,7 +753,7 @@ function ReminderAppInner() {
     starts_at: string
     duration_minutes: number
   }) => {
-    const alterAll = window.confirm('Deseja alterar apenas esta aula ou todas as futuras da recorrência?')
+    window.confirm('Deseja alterar apenas esta aula ou todas as futuras da recorrência?')
     await updateLessonGroup(draft)
   }
 
@@ -911,72 +782,10 @@ function ReminderAppInner() {
     }
   }
 
-  const handleCreateUser = async (event: FormEvent) => {
-    event.preventDefault()
-    setAppError('')
-    setLatestSetupLink(null)
-
-    let createdProfile: Profile | null = null
-
-    try {
-      if (createWithSetupLink) {
-        const result = await callAdminUsersApi<{ profile: Profile; invite_link: string }>('invite', {
-          full_name: userForm.full_name,
-          email: userForm.email,
-          role: userForm.role,
-          class_name: userForm.class_name,
-          speciality: userForm.speciality,
-        })
-        createdProfile = result.profile
-        setLatestSetupLink(result.invite_link)
-      } else {
-        createdProfile = await callAdminUsersApi<Profile>('create', userForm)
-      }
-
-      if (createdProfile && createdProfile.role === 'student' && userForm.first_class_at) {
-        const teacherId = userForm.first_class_teacher_id || teachers[0]?.id
-        if (!teacherId) {
-          setAppError('User created, but there is no teacher yet for the first class.')
-        } else {
-          await createLessonFromDraft({
-            subject: `${createdProfile.full_name} class`,
-            class_name: createdProfile.class_name ?? '',
-            student_ids: [createdProfile.id],
-            teacher_id: teacherId,
-            starts_at: userForm.first_class_at,
-            duration_minutes: 60,
-          })
-        }
-      }
-    } catch (error) {
-      setAppError(error instanceof Error ? error.message : 'Could not create the user.')
-      return
-    }
-
-    setUserForm(defaultUserForm())
-    await refreshProfiles()
-  }
-
-  const handleSaveUser = async (updatedUser: Profile & { password?: string }) => {
-    setSavingUserId(updatedUser.id)
-    try {
-      await callAdminUsersApi('update', updatedUser)
-    } catch (error) {
-      setAppError(error instanceof Error ? error.message : 'Could not update the user.')
-      setSavingUserId(null)
-      return
-    }
-
-    await refreshProfiles()
-    setSavingUserId(null)
-  }
-
   const handleDeleteUser = async (userId: string) => {
     setAppError('')
-    setDeletingUserId(userId)
     const confirmed = window.confirm('Delete this user? This cannot be undone.')
     if (!confirmed) {
-      setDeletingUserId(null)
       return
     }
 
@@ -988,26 +797,22 @@ function ReminderAppInner() {
         const force = window.confirm('This user has lessons. Delete the user AND all linked lessons?')
         if (!force) {
           setAppError(message)
-          setDeletingUserId(null)
           return
         }
         try {
           await callAdminUsersApi('delete', { id: userId, force: true })
         } catch (forceError) {
           setAppError(forceError instanceof Error ? forceError.message : 'Could not delete the user.')
-          setDeletingUserId(null)
           return
         }
       } else {
         setAppError(message)
-        setDeletingUserId(null)
         return
       }
     }
 
     await refreshProfiles()
     await refreshLessons()
-    setDeletingUserId(null)
   }
 
   const createStudentLoginFromCalendar = async (draft: {
@@ -1141,49 +946,6 @@ function ReminderAppInner() {
     }
   }
 
-  const handleUpdateAccount = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!session?.access_token) return
-    if (!profile) return
-
-    setAppError('')
-    setAccountSaved(false)
-
-    if (accountForm.password && accountForm.password !== accountForm.confirm_password) {
-      setAppError('Passwords do not match.')
-      return
-    }
-
-    setAccountSaving(true)
-    try {
-      const response = await fetch('/api/me/account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          full_name: accountForm.full_name,
-          email: accountForm.email,
-          password: accountForm.password || undefined,
-        }),
-      })
-
-      const result = (await response.json()) as { data?: { full_name: string; email: string }; error?: string }
-      if (!response.ok) {
-        throw new Error(result.error ?? 'Could not update account details.')
-      }
-
-      await refreshProfile(profile.id)
-      setAccountForm((current) => ({ ...current, password: '', confirm_password: '' }))
-      setAccountSaved(true)
-    } catch (error) {
-      setAppError(error instanceof Error ? error.message : 'Could not update account details.')
-    } finally {
-      setAccountSaving(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="login-shell">
@@ -1217,72 +979,15 @@ function ReminderAppInner() {
 
   if (!session || !profile) {
     return (
-      <div className="login-shell">
-        <section className="login-hero">
-          <div>
-            <p className="eyebrow">Welcome</p>
-            <h1>Keep every class organized</h1>
-            <p className="muted large-copy">
-              This app helps schools, teachers, and students see upcoming classes, stay on time, and keep a clear record of what
-              happened in each lesson.
-            </p>
-          </div>
-
-          <div className="feature-grid">
-            <article className="feature-card">
-              <h3>See what’s next</h3>
-              <p className="muted">Check upcoming classes and recent lessons in one place.</p>
-            </article>
-            <article className="feature-card">
-              <h3>Stay on time</h3>
-              <p className="muted">Get reminders before class so nobody misses an important lesson.</p>
-            </article>
-            <article className="feature-card">
-              <h3>Keep everyone aligned</h3>
-              <p className="muted">Students, teachers, and admins can each see the information that matters to them.</p>
-            </article>
-            <article className="feature-card">
-              <h3>Track each class</h3>
-              <p className="muted">Mark whether a class happened and keep a simple history of lessons.</p>
-            </article>
-          </div>
-        </section>
-
-        <section className="login-panel">
-          <div className="panel-header">
-            <div>
-              <p className="section-label">Login</p>
-              <h2>Sign in to your account</h2>
-            </div>
-          </div>
-
-          <form className="form-card" onSubmit={handleLogin}>
-            {setupSigningIn && <p className="muted">{t(language, 'opening_setup_link')}</p>}
-            <input
-              required
-              type="email"
-              placeholder="Email"
-              value={loginForm.email}
-              onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })}
-            />
-            <input
-              required
-              type="password"
-              placeholder="Password"
-              value={loginForm.password}
-              onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
-            />
-            {loginError && <p className="error-text">{loginError}</p>}
-            {appError && <p className="error-text">{appError}</p>}
-            <button className="primary-button">Sign in</button>
-          </form>
-
-          <div className="install-note">
-            <h3>Getting started</h3>
-            <p className="muted">Use the email and password shared with you by your school or admin.</p>
-          </div>
-        </section>
-      </div>
+      <LoginPanel
+        language={language}
+        setupSigningIn={setupSigningIn}
+        loginForm={loginForm}
+        setLoginForm={setLoginForm}
+        loginError={loginError}
+        appError={appError}
+        handleLogin={handleLogin}
+      />
     )
   }
 
@@ -1307,93 +1012,25 @@ function ReminderAppInner() {
   const lessonCardClass = (lessonId: string) =>
     focusedLessonId === lessonId ? 'lesson-card lesson-card-focus' : 'lesson-card'
 
-  const formatDateTimeLabel = (value: string) => formatDateTime(value, language, appTimeZone)
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   return (
     <div className="app-shell final-shell">
-      <aside className="sidebar">
-        <div>
-          <p className="eyebrow">Signed in as {profile.role}</p>
-          <h1>{profile.full_name}</h1>
-          <p className="muted">
-            {isAdmin && 'Manage the school users, schedule lessons, and track lesson outcomes across the whole app.'}
-            {isTeacher && 'See your weekly teaching schedule and record lesson outcomes with your students.'}
-            {isStudent && 'Review your lessons, respond to reminders, and mark whether classes happened.'}
-          </p>
-        </div>
-
-        <div className="clock-panel">
-          <p className="section-label">{t(language, 'language')}</p>
-          <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-            {supportedLanguages.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="clock-panel">
-          <p className="section-label">Live time</p>
-          <div className="feature-status">
-            <h2>{formatDateTimeLabel(now.toISOString())}</h2>
-            <select value={appTimeZone} onChange={(event) => setAppTimeZone(event.target.value)}>
-              {appTimeZones.map((zone) => (
-                <option key={zone.value} value={zone.value}>
-                  {zone.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="muted">Reminder cards appear automatically when the lesson enters the 4-hour window or starts.</p>
-        </div>
-
-        <div className="clock-panel">
-          <p className="section-label">Device features</p>
-          <div className="feature-status">
-            <span>Push alerts</span>
-            <strong>{notificationPermission === 'granted' && profile.push_enabled ? 'On' : 'Off'}</strong>
-          </div>
-          <div className="feature-status">
-            <span>Install mode</span>
-            <strong>{isStandalone ? 'Installed' : 'Browser'}</strong>
-          </div>
-          <div className="button-stack">
-            {notificationPermission !== 'granted' || !profile.push_enabled ? (
-              <button className="primary-button" onClick={requestPushPermission}>
-                Enable push alerts
-              </button>
-            ) : (
-              <button className="secondary-button" onClick={disablePush}>
-                Disable push alerts
-              </button>
-            )}
-
-            {!isStandalone && installPrompt ? (
-              <button className="secondary-button" onClick={promptInstall}>
-                Install app
-              </button>
-            ) : (
-              <p className="muted tiny-copy">
-                {!isStandalone
-                  ? 'If Chrome does not show an install prompt yet, use Add to Home Screen from the browser menu.'
-                  : 'The app is already running in installed mode.'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="clock-panel">
-          <p className="section-label">Session</p>
-          <p className="muted">
-            Email: <span className="inline-code">{profile.email}</span>
-          </p>
-          <button className="danger-button full-width" onClick={handleLogout}>
-            Log out
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        profile={profile}
+        language={language}
+        setLanguage={setLanguage}
+        appTimeZone={appTimeZone}
+        setAppTimeZone={setAppTimeZone}
+        now={now}
+        notificationPermission={notificationPermission}
+        requestPushPermission={requestPushPermission}
+        disablePush={disablePush}
+        isStandalone={isStandalone}
+        installPrompt={installPrompt}
+        promptInstall={promptInstall}
+        handleLogout={handleLogout}
+      />
 
       <main className="main-content">
         <section className="summary-grid">
@@ -1453,346 +1090,39 @@ function ReminderAppInner() {
             </div>
 
             {adminTab === 'students' && (
-              <>
-                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
-                  <form onSubmit={handleGenerateInviteLink} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                    <input
-                      required
-                      type="email"
-                      placeholder={t(language, 'invite_email_placeholder')}
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      style={{ flex: 1, padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
-                    />
-                    <button className="primary-button" style={{ padding: '0.75rem 1.5rem', whiteSpace: 'nowrap' }} disabled={inviteLoading}>
-                      {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
-                    </button>
-                  </form>
-                  {generatedInviteLink && (
-                    <div className="credential-card mt-4" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
-                      <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>{t(language, 'invite_link_generated')}</p>
-                      <p className="inline-code" style={{ wordBreak: 'break-all', fontSize: '0.85rem', margin: '0.5rem 0', display: 'block', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
-                        {generatedInviteLink}
-                      </p>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(generatedInviteLink)
-                          alert(t(language, 'copied_alert'))
-                        }}
-                      >
-                        {t(language, 'copy_link_btn')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
-                        <th style={{ padding: '1rem' }}>Email</th>
-                        <th style={{ padding: '1rem' }}>CPF</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'student_habitual_time')}</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students.map((student) => {
-                        const studentLessons = lessons.filter(l => l.student_id === student.id)
-                        const scheduleText = studentLessons.length > 0 
-                          ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || t(language, 'class_scheduled')
-                          : t(language, 'student_no_classes')
-
-                        return (
-                          <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.full_name}</td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
-                            <td style={{ padding: '1rem' }}>{student.cpf || '-'}</td>
-                            <td style={{ padding: '1rem' }}>
-                              {student.data_pagamento_preferencial ? t(language, 'billing_day_label').replace('{day}', String(student.data_pagamento_preferencial)) : '-'}
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span className={badgeClass(student.status_pagamento || 'pendente')}>
-                                {student.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
-                                {student.status_pagamento === 'atrasado' && t(language, 'financial_late')}
-                                {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
-                                {!student.status_pagamento && t(language, 'financial_pending')}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span 
-                                title="Utilize o calendário para alterar horários" 
-                                style={{ borderBottom: '1px dotted #64748b', cursor: 'help', color: '#38bdf8' }}
-                              >
-                                {scheduleText}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                              <button 
-                                className="secondary-button" 
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                onClick={() => {
-                                  setSavingUserId(student.id)
-                                  setUserForm({
-                                    id: student.id,
-                                    email: student.email,
-                                    full_name: student.full_name,
-                                    role: 'student',
-                                    class_name: student.class_name || '',
-                                    speciality: '',
-                                    password: '',
-                                    cpf: student.cpf || '',
-                                    data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
-                                    first_class_at: '',
-                                    first_class_teacher_id: ''
-                                  })
-                                }}
-                              >
-                                {t(language, 'edit')}
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {savingUserId && userForm.role === 'student' && (
-                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
-                      <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <input
-                          required
-                          placeholder={t(language, 'full_name')}
-                          value={userForm.full_name}
-                          onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                        />
-                        <input
-                          required
-                          type="email"
-                          placeholder="Email"
-                          value={userForm.email}
-                          onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                        />
-                        <input
-                          placeholder="CPF"
-                          value={userForm.cpf || ''}
-                          onChange={(e) => setUserForm({ ...userForm, cpf: e.target.value })}
-                        />
-                        <select
-                          value={userForm.data_pagamento_preferencial || 5}
-                          onChange={(e) => setUserForm({ ...userForm, data_pagamento_preferencial: Number(e.target.value) })}
-                        >
-                          {[1, 5, 10, 15, 20, 25].map(day => (
-                            <option key={day} value={day}>{t(language, 'billing_day_label').replace('{day}', String(day))}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                        <button 
-                          className="primary-button" 
-                          onClick={async () => {
-                            try {
-                              const { error } = await supabase
-                                .from('profiles')
-                                .update({
-                                  full_name: userForm.full_name,
-                                  email: userForm.email,
-                                  cpf: userForm.cpf || null,
-                                  data_pagamento_preferencial: userForm.data_pagamento_preferencial
-                                })
-                                .eq('id', userForm.id)
-                              if (error) throw error
-                              setSavingUserId(null)
-                              await refreshProfiles()
-                            } catch (err: any) {
-                              alert(err.message)
-                            }
-                          }}
-                        >
-                          {t(language, 'save')}
-                        </button>
-                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
+              <AdminStudentsTab
+                language={language}
+                inviteEmail={inviteEmail}
+                setInviteEmail={setInviteEmail}
+                handleGenerateInviteLink={handleGenerateInviteLink}
+                inviteLoading={inviteLoading}
+                generatedInviteLink={generatedInviteLink}
+                students={students}
+                lessons={lessons}
+                appTimeZone={appTimeZone}
+                savingUserId={savingUserId}
+                setSavingUserId={setSavingUserId}
+                userForm={userForm}
+                setUserForm={setUserForm}
+                refreshProfiles={refreshProfiles}
+              />
             )}
 
             {adminTab === 'payments' && (
-              <>
-                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
-                  <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
-                    <input
-                      placeholder={`${t(language, 'edit_student_title').split(' ')[0]}...`}
-                      value={paymentSearch}
-                      onChange={(e) => setPaymentSearch(e.target.value)}
-                      style={{ flex: 2 }}
-                    />
-                    <select
-                      value={paymentFilter}
-                      onChange={(e) => setPaymentFilter(e.target.value as any)}
-                      style={{ flex: 1 }}
-                    >
-                      <option value="all">All status</option>
-                      <option value="em_dia">Green ({t(language, 'financial_ok')})</option>
-                      <option value="pendente">Yellow ({t(language, 'financial_pending')})</option>
-                      <option value="atrasado">Red ({t(language, 'financial_late')})</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>{t(language, 'edit_student_title').split(' ').pop()}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
-                        <th style={{ padding: '1rem' }}>Last Invoice / Link</th>
-                        <th style={{ padding: '1rem' }}>NFS-e</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students
-                        .filter(student => {
-                          const matchesSearch = student.full_name.toLowerCase().includes(paymentSearch.toLowerCase()) || 
-                            student.email.toLowerCase().includes(paymentSearch.toLowerCase())
-                          const status = student.status_pagamento || 'pendente'
-                          const matchesFilter = paymentFilter === 'all' || status === paymentFilter
-                          return matchesSearch && matchesFilter
-                        })
-                        .map((student) => {
-                          const studentInvoices = invoices.filter(inv => inv.student_id === student.id)
-                          const lastInvoice = studentInvoices[0]
-
-                          return (
-                            <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                              <td style={{ padding: '1rem' }}>
-                                <div style={{ fontWeight: 'bold' }}>{student.full_name}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{student.email}</div>
-                              </td>
-                              <td style={{ padding: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <span style={{
-                                    width: '10px',
-                                    height: '10px',
-                                    borderRadius: '50%',
-                                    background: student.status_pagamento === 'em_dia' ? '#10b981' : 
-                                                student.status_pagamento === 'pendente' ? '#f59e0b' : '#ef4444'
-                                  }} />
-                                  <span style={{ fontSize: '0.85rem' }}>
-                                    {student.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
-                                    {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
-                                    {student.status_pagamento === 'atrasado' && t(language, 'financial_late')}
-                                    {!student.status_pagamento && t(language, 'financial_pending')}
-                                  </span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '1rem' }}>
-                                {lastInvoice ? (
-                                  <a 
-                                    href={lastInvoice.boleto_url} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.85rem' }}
-                                  >
-                                    Invoice ({lastInvoice.status})
-                                  </a>
-                                ) : (
-                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No invoice</span>
-                                )}
-                              </td>
-                              <td style={{ padding: '1rem' }}>
-                                {lastInvoice?.nfse_url ? (
-                                  <a 
-                                    href={lastInvoice.nfse_url} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    style={{ color: '#10b981', textDecoration: 'underline', fontSize: '0.85rem', fontWeight: 'bold' }}
-                                  >
-                                    NFS-e
-                                  </a>
-                                ) : (
-                                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No NFS-e</span>
-                                )}
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                <button
-                                  className="secondary-button"
-                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                                  onClick={() => setInvoiceForm({ studentId: student.id, amount: '340', dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] })}
-                                >
-                                  New invoice
-                                </button>
-                                <button
-                                  className="secondary-button"
-                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', opacity: lastInvoice ? 1 : 0.5 }}
-                                  disabled={!lastInvoice}
-                                  onClick={async () => {
-                                    if (!lastInvoice) return
-                                    const nextStatus = prompt('Insira o novo status (pendente, pago, atrasado):', lastInvoice.status)
-                                    if (nextStatus && ['pendente', 'pago', 'atrasado'].includes(nextStatus)) {
-                                      const { error } = await supabase.from('invoices').update({ status: nextStatus }).eq('id', lastInvoice.id)
-                                      if (error) alert(error.message)
-                                      else await refreshInvoices()
-                                    }
-                                  }}
-                                >
-                                  {t(language, 'edit')}
-                                </button>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {invoiceForm && (
-                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="form-card" style={{ maxWidth: '400px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.25rem' }}>Gerar Boleto (Cora API)</h3>
-                      <form onSubmit={handleGenerateBoleto} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Valor (R$)</label>
-                          <input
-                            required
-                            type="number"
-                            placeholder="Valor da cobrança"
-                            value={invoiceForm.amount}
-                            onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Data de Vencimento</label>
-                          <input
-                            required
-                            type="date"
-                            value={invoiceForm.dueDate}
-                            onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
-                          />
-                        </div>
-                        <div className="button-stack mt-4" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                          <button type="submit" className="primary-button" disabled={invoiceLoading}>
-                            {invoiceLoading ? t(language, 'loading_invite') : t(language, 'save')}
-                          </button>
-                          <button type="button" className="secondary-button" onClick={() => setInvoiceForm(null)}>{t(language, 'cancel')}</button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-              </>
+              <AdminPaymentsTab
+                language={language}
+                paymentSearch={paymentSearch}
+                setPaymentSearch={setPaymentSearch}
+                paymentFilter={paymentFilter}
+                setPaymentFilter={setPaymentFilter}
+                students={students}
+                invoices={invoices}
+                invoiceForm={invoiceForm}
+                setInvoiceForm={setInvoiceForm}
+                invoiceLoading={invoiceLoading}
+                handleGenerateBoleto={handleGenerateBoleto}
+                refreshInvoices={refreshInvoices}
+              />
             )}
 
             {adminTab === 'calendar' && (
@@ -1841,928 +1171,80 @@ function ReminderAppInner() {
               </>
             )}
 
-             {adminTab === 'staff' && (
-              <>
-                {/* Add New Staff Section */}
-                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'add_staff_title')}</h3>
-                  <form 
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      setAppError('');
-                      try {
-                        const targetRole = userForm.role === 'student' ? 'teacher' : userForm.role; // Default safety fallback
-                        const created = await callAdminUsersApi<Profile>('create', {
-                          full_name: userForm.full_name,
-                          email: userForm.email,
-                          password: userForm.password,
-                          role: targetRole,
-                          class_name: '',
-                          speciality: userForm.speciality || '',
-                          chave_pix: userForm.chave_pix || '',
-                          cnpj: userForm.cnpj || '',
-                          taxa_hora_aula: userForm.taxa_hora_aula || 56.00,
-                        });
-                        alert(`Membro da equipe ${created.full_name} adicionado com sucesso!`);
-                        setUserForm(defaultUserForm());
-                        await refreshProfiles();
-                      } catch (err: any) {
-                        setAppError(err.message || 'Erro ao adicionar membro da equipe.');
-                      }
-                    }} 
-                    className="form-grid" 
-                    style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'full_name')}</label>
-                      <input
-                        required
-                        type="text"
-                        placeholder={t(language, 'full_name')}
-                        value={userForm.full_name}
-                        onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email</label>
-                      <input
-                        required
-                        type="email"
-                        placeholder="Email"
-                        value={userForm.email}
-                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'password')}</label>
-                      <input
-                        required
-                        type="password"
-                        placeholder={t(language, 'password')}
-                        value={userForm.password}
-                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'role_label')}</label>
-                      <select
-                        value={userForm.role === 'student' ? 'teacher' : userForm.role}
-                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      >
-                        <option value="teacher">Professor (Teacher)</option>
-                        <option value="admin">Administrador (Admin)</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'speciality_label')}</label>
-                      <input
-                        type="text"
-                        placeholder="E.g. Business, TOEFL"
-                        value={userForm.speciality}
-                        onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'pix_label')}</label>
-                      <input
-                        type="text"
-                        placeholder="Celular, E-mail, CPF..."
-                        value={userForm.chave_pix || ''}
-                        onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'cnpj_label')}</label>
-                      <input
-                        type="text"
-                        placeholder="CNPJ ou CPF"
-                        value={userForm.cnpj || ''}
-                        onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'value_hour_label')}</label>
-                      <input
-                        type="number"
-                        placeholder="Valor hora aula"
-                        value={userForm.taxa_hora_aula || ''}
-                        onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
-                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: 'span 1' }}>
-                      <button type="submit" className="primary-button" style={{ width: '100%', padding: '0.6rem 1rem' }}>
-                        {t(language, 'add_staff_btn')}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Staff list table */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'staff_list_title')}</h3>
-                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem', marginBottom: '2.5rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
-                        <th style={{ padding: '1rem' }}>Email</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'role_label').split(' ')[0]}</th>
-                        <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
-                        <th style={{ padding: '1rem' }}>Chave PIX</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {profiles
-                        .filter((p) => p.role === 'admin' || p.role === 'teacher')
-                        .map((staff) => {
-                          const hourlyRate = staff.taxa_hora_aula ?? (staff.role === 'teacher' ? 56.00 : 0)
-                          const currency = staff.moeda_taxa ?? 'BRL'
-
-                          return (
-                            <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                              <td style={{ padding: '1rem', fontWeight: 'bold' }}>{staff.full_name}</td>
-                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
-                              <td style={{ padding: '1rem' }}>
-                                <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
-                                  {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
-                                </span>
-                              </td>
-                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || '-'}</td>
-                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || '-'}</td>
-                              <td style={{ padding: '1rem' }}>
-                                {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                  <button
-                                    className="secondary-button"
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                    onClick={() => {
-                                      setSavingUserId(staff.id)
-                                      setUserForm({
-                                        id: staff.id,
-                                        email: staff.email,
-                                        full_name: staff.full_name,
-                                        role: staff.role,
-                                        class_name: '',
-                                        speciality: staff.speciality || '',
-                                        password: '',
-                                        chave_pix: staff.chave_pix || '',
-                                        cnpj: staff.cnpj || '',
-                                        taxa_hora_aula: Number(staff.taxa_hora_aula || 56.00),
-                                        cpf: '',
-                                        data_pagamento_preferencial: 5,
-                                        first_class_at: '',
-                                        first_class_teacher_id: ''
-                                      })
-                                    }}
-                                  >
-                                    {t(language, 'edit')}
-                                  </button>
-                                  <button
-                                    className="secondary-button"
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
-                                    onClick={() => void handleDeleteUser(staff.id)}
-                                  >
-                                    {t(language, 'delete')}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Edit Modal Overlay */}
-                {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && (
-                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
-                      <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <input
-                          required
-                          placeholder={t(language, 'full_name')}
-                          value={userForm.full_name}
-                          onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                        />
-                        <input
-                          required
-                          type="email"
-                          placeholder="Email"
-                          value={userForm.email}
-                          onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                        />
-                        <select
-                          value={userForm.role}
-                          onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-                        >
-                          <option value="teacher">Professor</option>
-                          <option value="admin">Administrador</option>
-                        </select>
-                        <input
-                          placeholder="CNPJ ou CPF"
-                          value={userForm.cnpj || ''}
-                          onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
-                        />
-                        <input
-                          placeholder="Chave PIX"
-                          value={userForm.chave_pix || ''}
-                          onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
-                        />
-                        {userForm.role === 'teacher' && (
-                          <input
-                            type="number"
-                            placeholder="Valor da Hora Aula"
-                            value={userForm.taxa_hora_aula || ''}
-                            onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
-                          />
-                        )}
-                        <input
-                          placeholder="Especialidade"
-                          value={userForm.speciality}
-                          onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
-                        />
-                      </div>
-                      <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                        <button 
-                          className="primary-button" 
-                          onClick={async () => {
-                            try {
-                              const { error } = await supabase
-                                .from('profiles')
-                                .update({
-                                  full_name: userForm.full_name,
-                                  email: userForm.email,
-                                  role: userForm.role,
-                                  cnpj: userForm.cnpj || null,
-                                  chave_pix: userForm.chave_pix || null,
-                                  taxa_hora_aula: userForm.role === 'teacher' ? userForm.taxa_hora_aula : null,
-                                  speciality: userForm.speciality || null
-                                })
-                                .eq('id', userForm.id)
-                              if (error) throw error
-                              setSavingUserId(null)
-                              await refreshProfiles()
-                            } catch (err: any) {
-                              alert(err.message)
-                            }
-                          }}
-                        >
-                          {t(language, 'save')}
-                        </button>
-                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Payroll Section */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'payout_teachers_title')}</h3>
-                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{t(language, 'payout_month')}: </span>
-                    <strong style={{ color: '#fff', textTransform: 'capitalize' }}>
-                      {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })}
-                    </strong>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button 
-                      className="primary-button" 
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-                      onClick={() => void handleBatchUpdatePayout('pago')}
-                    >
-                      {t(language, 'pay_all')}
-                    </button>
-                    <button 
-                      className="secondary-button" 
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-                      onClick={() => void handleBatchUpdatePayout('pendente')}
-                    >
-                      {t(language, 'pending_all')}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
-                        <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
-                        <th style={{ padding: '1rem' }}>Chave PIX</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'hours_worked')}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'amount_due')}</th>
-                        <th style={{ padding: '1rem' }}>{t(language, 'status')}</th>
-                        <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {teachers.map((teacher) => {
-                        const teacherLessons = lessons.filter(l => 
-                          l.teacher_id === teacher.id && 
-                          l.teacher_lesson_status === 'happened'
-                        )
-                        const totalMinutes = teacherLessons.reduce((acc, l) => acc + l.duration_minutes, 0)
-                        const totalHours = totalMinutes / 60
-                        
-                        const hourlyRate = teacher.taxa_hora_aula ?? 56.00
-                        const currency = teacher.moeda_taxa ?? 'BRL'
-                        const amountDue = totalHours * Number(hourlyRate)
-
-                        return (
-                          <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{teacher.full_name}</td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || '-'}</td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || '-'}</td>
-                            <td style={{ padding: '1rem' }}>{totalHours.toFixed(1)}h</td>
-                            <td style={{ padding: '1rem' }}>{currency} {Number(hourlyRate).toFixed(2)}</td>
-                            <td style={{ padding: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>
-                              {currency} {amountDue.toFixed(2)}
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span className={badgeClass(teacher.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
-                                {teacher.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                              <button
-                                className="primary-button"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pago')}
-                              >
-                                {t(language, 'paid')}
-                              </button>
-                              <button
-                                className="secondary-button"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pendente')}
-                              >
-                                {t(language, 'pending')}
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+            {adminTab === 'staff' && (
+              <AdminStaffTab
+                language={language}
+                userForm={userForm}
+                setUserForm={setUserForm}
+                profiles={profiles}
+                teachers={teachers}
+                lessons={lessons}
+                savingUserId={savingUserId}
+                setSavingUserId={setSavingUserId}
+                callAdminUsersApi={callAdminUsersApi}
+                refreshProfiles={refreshProfiles}
+                refreshLessons={refreshLessons}
+                handleDeleteUser={handleDeleteUser}
+                handleBatchUpdatePayout={handleBatchUpdatePayout}
+                handleUpdateTeacherPayout={handleUpdateTeacherPayout}
+                setAppError={setAppError}
+              />
             )}
           </section>
         )}
 
         {isStudent && (
-          <section className="panel-grid">
-            <article className="panel">
-              <div className="panel-header">
-                <div>
-                  <p className="section-label">Student</p>
-                  <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : t(language, 'student_tab_account')}</h2>
-                </div>
-                <div className="tab-row">
-                  <button
-                    type="button"
-                    className={studentTab === 'lessons' ? 'tab-button tab-button-active' : 'tab-button'}
-                    onClick={() => setStudentTab('lessons')}
-                  >
-                    {t(language, 'student_tab_lessons')}
-                  </button>
-                  <button
-                    type="button"
-                    className={studentTab === 'account' ? 'tab-button tab-button-active' : 'tab-button'}
-                    onClick={() => setStudentTab('account')}
-                  >
-                    {t(language, 'student_tab_account')}
-                  </button>
-                </div>
-              </div>
-
-              {studentTab === 'lessons' ? (
-                <div className="split-column animate-fade-in">
-                  <section style={{ flex: 1.3 }}>
-                    <h3>Lembretes de Aulas Ativas</h3>
-                    <div className="list-stack">
-                      {/* 4-hour reminders */}
-                      {dueStudentFourHourReminders.map((lesson) => (
-                        <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                          <p className="reminder-title">{lesson.subject}</p>
-                          <p className="muted">
-                            Inicia em {minutesUntil(now, lesson.starts_at)} minutos às {formatShortDateLabel(lesson.starts_at)}
-                          </p>
-                          <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                            <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
-                              Vou comparecer
-                            </button>
-                            <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
-                              Preciso cancelar
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Class-time reminders */}
-                      {dueStudentStartReminders.map((lesson) => (
-                        <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                          <p className="reminder-title">{lesson.subject}</p>
-                          <p className="muted">Sua aula agendada começou. Confirme se ela aconteceu:</p>
-                          <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                            <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
-                              Tive a aula
-                            </button>
-                            <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
-                              Não tive a aula
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {dueStudentFourHourReminders.length === 0 && dueStudentStartReminders.length === 0 && (
-                        <p className="empty-state">Nenhum lembrete ou pendência de aula ativa no momento.</p>
-                      )}
-                    </div>
-
-                    <h3 className="mt-8" style={{ marginTop: '2rem' }}>Minhas Próximas Aulas</h3>
-                    <div className="list-stack">
-                      {studentUpcomingLessons.map((lesson) => (
-                        <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                          <div>
-                            <h3>{lesson.subject}</h3>
-                            <p className="muted">
-                              {formatShortDateLabel(lesson.starts_at)} com {profilesById[lesson.teacher_id]?.full_name}
-                            </p>
-                          </div>
-                          <span className={badgeClass('agendada')}>Agendada</span>
-                        </div>
-                      ))}
-                      {studentUpcomingLessons.length === 0 && <p className="empty-state">Nenhuma aula agendada nos próximos dias.</p>}
-                    </div>
-                  </section>
-
-                  <section style={{ flex: 0.7 }}>
-                    <h3>Configurações de Alerta</h3>
-                    <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
-                      <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
-                        Ative as notificações do sistema para receber avisos sobre aulas 4h antes e no início da aula.
-                      </p>
-                      <button 
-                        className={notificationPermission === 'granted' && profile.push_enabled ? 'danger-button full-width' : 'primary-button full-width'} 
-                        onClick={() => {
-                          if (notificationPermission === 'granted' && profile.push_enabled) {
-                            void disablePush()
-                          } else {
-                            void requestPushPermission()
-                          }
-                        }}
-                      >
-                        {notificationPermission === 'granted' && profile.push_enabled ? 'Desativar Alertas' : 'Ativar Alertas PWA'}
-                      </button>
-                    </div>
-                  </section>
-                </div>
-              ) : (
-                <div className="split-column animate-fade-in">
-                  <section style={{ flex: 1 }}>
-                    <h3>Dados Cadastrais</h3>
-                    <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
-                      <div>
-                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Nome Completo</span>
-                        <strong className="text-white text-base">{profile.full_name}</strong>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">E-mail</span>
-                        <strong className="text-white text-base">{profile.email}</strong>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">CPF</span>
-                        <strong className="text-white text-base">{profile.cpf || 'Não cadastrado'}</strong>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Dia de Vencimento Preferencial</span>
-                        <strong className="text-white text-base">
-                          {profile.data_pagamento_preferencial ? `Dia ${profile.data_pagamento_preferencial} de cada mês` : 'Não definido'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Status Financeiro</span>
-                        <span className={badgeClass(profile.status_pagamento || 'pendente')}>
-                          {profile.status_pagamento === 'em_dia' && 'Em dia'}
-                          {profile.status_pagamento === 'atrasado' && 'Atrasado'}
-                          {profile.status_pagamento === 'pendente' && 'Pendente'}
-                          {!profile.status_pagamento && 'Pendente'}
-                        </span>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section style={{ flex: 1 }}>
-                    <h3>Histórico de Pagamentos</h3>
-                    <div className="list-stack">
-                      {invoices
-                        .filter(inv => inv.student_id === profile.id)
-                        .map((inv) => (
-                          <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
-                            <div>
-                              <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Fatura Nativo English</p>
-                              <p className="muted text-xs">{new Date(inv.created_at).toLocaleDateString()}</p>
-                              <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
-                                {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                              <a 
-                                href={inv.boleto_url} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                className="secondary-button" 
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
-                              >
-                                Boleto
-                              </a>
-                              {inv.nfse_url && (
-                                <a 
-                                  href={inv.nfse_url} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  className="primary-button" 
-                                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
-                                >
-                                  NFS-e
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      {invoices.filter(inv => inv.student_id === profile.id).length === 0 && (
-                        <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
-                      )}
-                    </div>
-                  </section>
-                </div>
-              )}
-            </article>
-          </section>
+          <StudentPanel
+            language={language}
+            profile={profile}
+            lessons={lessons}
+            invoices={invoices}
+            appTimeZone={appTimeZone}
+            focusedLessonId={focusedLessonId}
+            now={now}
+            updateLesson={updateLesson}
+            profilesById={profilesById}
+            notificationPermission={notificationPermission}
+            disablePush={disablePush}
+            requestPushPermission={requestPushPermission}
+            studentTab={studentTab}
+            setStudentTab={setStudentTab}
+            dueStudentFourHourReminders={dueStudentFourHourReminders}
+            dueStudentStartReminders={dueStudentStartReminders}
+          />
         )}
 
         {isTeacher && (
-          <section className="panel-grid">
-            <article className="panel">
-              <div className="panel-header animate-fade-in">
-                <div>
-                  <p className="section-label">Professor</p>
-                  <h2>
-                    {teacherTab === 'calendar' && 'Minha Agenda'}
-                    {teacherTab === 'worklog' && 'Registro de Trabalho & Notas'}
-                    {teacherTab === 'profile' && 'Meu Perfil Professor'}
-                  </h2>
-                </div>
-                <div className="tab-row">
-                  <button
-                    type="button"
-                    className={teacherTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
-                    onClick={() => setTeacherTab('calendar')}
-                  >
-                    Agenda
-                  </button>
-                  <button
-                    type="button"
-                    className={teacherTab === 'worklog' ? 'tab-button tab-button-active' : 'tab-button'}
-                    onClick={() => setTeacherTab('worklog')}
-                  >
-                    Folha & NF
-                  </button>
-                  <button
-                    type="button"
-                    className={teacherTab === 'profile' ? 'tab-button tab-button-active' : 'tab-button'}
-                    onClick={() => setTeacherTab('profile')}
-                  >
-                    Dados
-                  </button>
-                </div>
-              </div>
-
-              {teacherTab === 'calendar' && (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="form-card mb-6" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>Propor Nova Aula (Aprovação do Admin)</h3>
-                    <form 
-                      onSubmit={async (e) => {
-                        e.preventDefault()
-                        const formEl = e.currentTarget
-                        const studentId = (formEl.elements.namedItem('studentId') as HTMLSelectElement).value
-                        const subject = (formEl.elements.namedItem('subject') as HTMLInputElement).value
-                        const start = (formEl.elements.namedItem('start') as HTMLInputElement).value
-                        if (!studentId || !subject || !start) return
-
-                        try {
-                          const startsAt = new Date(start)
-                          const endsAt = new Date(startsAt.getTime() + 60*60*1000) // 1h duration
-
-                          const { error } = await supabase.from('lessons').insert({
-                            subject,
-                            class_name: 'Custom proposed class',
-                            student_id: studentId,
-                            teacher_id: profile.id,
-                            starts_at: startsAt.toISOString(),
-                            ends_at: endsAt.toISOString(),
-                            duration_minutes: 60,
-                            status: 'proposta_pendente'
-                          })
-                          if (error) throw error
-                          alert('Proposta de aula enviada ao Administrador!')
-                          formEl.reset()
-                          await refreshLessons()
-                        } catch (err: any) {
-                          alert(err.message)
-                        }
-                      }}
-                      className="form-grid" 
-                      style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}
-                    >
-                      <select name="studentId" required style={{ flex: 1, minWidth: '150px' }}>
-                        <option value="">Selecione o Aluno</option>
-                        {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-                      </select>
-                      <input name="subject" required placeholder="Matéria/Tema" style={{ flex: 1, minWidth: '150px' }} />
-                      <input name="start" required type="datetime-local" style={{ flex: 1, minWidth: '180px' }} />
-                      <button className="primary-button" style={{ padding: '0.75rem 1.5rem' }}>Propor Horário</button>
-                    </form>
-                  </div>
-
-                  <AdminCalendar
-                    lessons={lessons}
-                    profilesById={profilesById}
-                    students={students}
-                    teachers={teachers}
-                    timeZone={appTimeZone}
-                    role="teacher"
-                    currentTeacherId={profile.id}
-                    allowCreateUsers={false}
-                    allowTeacherChange={false}
-                    onCreateLesson={createLessonFromDraft}
-                    onUpdateLessonGroup={updateTeacherLessonGroup}
-                    onCreateStudentLogin={createStudentLoginFromCalendar}
-                    onCreateTeacherLogin={createTeacherLoginFromCalendar}
-                  />
-                </div>
-              )}
-
-              {teacherTab === 'worklog' && (
-                <div className="split-column animate-fade-in">
-                  <section style={{ flex: 1.3 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h3>Aulas Ministradas no Mês</h3>
-                      <select 
-                        value={selectedMonth} 
-                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                        style={{ width: 'auto', padding: '0.4rem 1.5rem' }}
-                      >
-                        <option value={new Date().getMonth()}>Mês Atual</option>
-                        <option value={new Date().getMonth() - 1}>Mês Anterior</option>
-                        <option value={new Date().getMonth() - 2}>2 Meses Atrás</option>
-                      </select>
-                    </div>
-
-                    <div className="list-stack">
-                      {lessons
-                        .filter(l => {
-                          const lessonDate = new Date(l.starts_at)
-                          return l.teacher_id === profile.id && 
-                            l.teacher_lesson_status === 'happened' && 
-                            lessonDate.getMonth() === selectedMonth
-                        })
-                        .map((lesson) => (
-                          <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                            <div>
-                              <h3>{lesson.subject}</h3>
-                              <p className="muted">
-                                Aluno: {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                              </p>
-                            </div>
-                            <span className={badgeClass('confirmed')}>Confirmada</span>
-                          </div>
-                        ))}
-                      {lessons.filter(l => {
-                        const lessonDate = new Date(l.starts_at)
-                        return l.teacher_id === profile.id && 
-                          l.teacher_lesson_status === 'happened' && 
-                          lessonDate.getMonth() === selectedMonth
-                      }).length === 0 && (
-                        <p className="empty-state">Nenhuma aula ministrada encontrada para este mês.</p>
-                      )}
-                    </div>
-
-                    <h3 className="mt-8" style={{ marginTop: '2rem' }}>Notas e Justificativas ao Admin</h3>
-                    <div className="form-card">
-                      <textarea
-                        placeholder="Escreva aqui quaisquer observações ou justificativas de faltas/ajustes para enviar à administração..."
-                        value={teacherNotes}
-                        onChange={(e) => setTeacherNotes(e.target.value)}
-                        style={{ width: '100%', height: '100px', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
-                      />
-                      <button 
-                        className="secondary-button mt-2" 
-                        style={{ marginTop: '0.5rem' }}
-                        onClick={() => {
-                          if (!teacherNotes.trim()) return
-                          alert('Notas enviadas com sucesso ao administrador!')
-                          setTeacherNotes('')
-                        }}
-                      >
-                        Enviar Notas
-                      </button>
-                    </div>
-                  </section>
-
-                  <section style={{ flex: 0.7 }}>
-                    <h3>Envio de Nota Fiscal (MEI)</h3>
-                    <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444'
-                        }} />
-                        <span className="text-sm">
-                          NF Mês Anterior: <strong>{profile.status_nota_fiscal === 'enviada' ? 'Enviada' : 'Pendente'}</strong>
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Selecionar Arquivo PDF da Nota</label>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          disabled={uploadingNf}
-                          onChange={async (e) => {
-                            if (!e.target.files?.[0]) return
-                            setUploadingNf(true)
-                            setTimeout(async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from('profiles')
-                                  .update({ status_nota_fiscal: 'enviada' })
-                                  .eq('id', profile.id)
-                                if (error) throw error
-                                alert('Nota Fiscal enviada com sucesso!')
-                                await refreshProfile(profile.id)
-                              } catch (err: any) {
-                                alert(err.message)
-                              } finally {
-                                setUploadingNf(false)
-                              }
-                            }, 1500)
-                          }}
-                        />
-                      </div>
-                      <p className="muted tiny-copy">A nota fiscal precisa conter o valor exato acumulado da folha de pagamento.</p>
-                    </div>
-                  </section>
-                </div>
-              )}
-
-              {teacherTab === 'profile' && (
-                <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
-                  <form 
-                    onSubmit={async (e) => {
-                      e.preventDefault()
-                      setAccountSaving(true)
-                      try {
-                        const { error } = await supabase
-                          .from('profiles')
-                          .update({
-                            full_name: accountForm.full_name,
-                            email: accountForm.email,
-                            chave_pix: (e.currentTarget.elements.namedItem('chavePix') as HTMLInputElement).value,
-                            cnpj: (e.currentTarget.elements.namedItem('cnpj') as HTMLInputElement).value
-                          })
-                          .eq('id', profile.id)
-                        if (error) throw error
-                        alert('Dados atualizados com sucesso!')
-                        await refreshProfile(profile.id)
-                      } catch (err: any) {
-                        alert(err.message)
-                      } finally {
-                        setAccountSaving(false)
-                      }
-                    }}
-                    className="form-card" 
-                    style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-                  >
-                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '1rem' }}>
-                      <p className="text-amber-400 font-bold text-xs uppercase tracking-widest block mb-1">Atenção MEI</p>
-                      <p className="muted text-xs">É obrigatório possuir cadastro ativo de MEI para a prestação de serviços à escola, recebimento dos pagamentos e emissão de NFS-e.</p>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Nome Completo</label>
-                      <input
-                        required
-                        value={accountForm.full_name}
-                        onChange={(event) => setAccountForm({ ...accountForm, full_name: event.target.value })}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">E-mail</label>
-                      <input
-                        required
-                        type="email"
-                        value={accountForm.email}
-                        onChange={(event) => setAccountForm({ ...accountForm, email: event.target.value })}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CNPJ MEI</label>
-                      <input
-                        name="cnpj"
-                        placeholder="00.000.000/0001-00"
-                        defaultValue={profile.cnpj || ''}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Chave Pix para Recebimento</label>
-                      <input
-                        name="chavePix"
-                        placeholder="CPF, E-mail ou Telefone"
-                        defaultValue={profile.chave_pix || ''}
-                      />
-                    </div>
-
-                    <button className="primary-button mt-4" disabled={accountSaving} style={{ marginTop: '1rem' }}>
-                      {accountSaving ? 'Salvando...' : 'Salvar Dados de Professor'}
-                    </button>
-                  </form>
-                </div>
-              )}
-            </article>
-          </section>
+          <TeacherPanel
+            language={language}
+            teacherTab={teacherTab}
+            setTeacherTab={setTeacherTab}
+            students={students}
+            teachers={teachers}
+            profile={profile}
+            lessons={lessons}
+            appTimeZone={appTimeZone}
+            createLessonFromDraft={createLessonFromDraft}
+            updateTeacherLessonGroup={updateTeacherLessonGroup}
+            createStudentLoginFromCalendar={createStudentLoginFromCalendar}
+            createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
+            profilesById={profilesById}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            teacherNotes={teacherNotes}
+            setTeacherNotes={setTeacherNotes}
+            uploadingNf={uploadingNf}
+            setUploadingNf={setUploadingNf}
+            refreshProfile={refreshProfile}
+            refreshLessons={refreshLessons}
+            accountForm={accountForm}
+            setAccountForm={setAccountForm}
+            accountSaving={accountSaving}
+            setAccountSaving={setAccountSaving}
+            focusedLessonId={focusedLessonId}
+          />
         )}
       </main>
-    </div>
-  )
-}
-
-function EditableUserRow({
-  user,
-  onSave,
-  onDelete,
-  saving,
-  deleting,
-}: {
-  user: Profile
-  onSave: (user: Profile & { password?: string }) => Promise<void>
-  onDelete: (userId: string) => Promise<void>
-  saving: boolean
-  deleting: boolean
-}) {
-  const [draft, setDraft] = useState<Profile & { password?: string }>(user)
-
-  useEffect(() => {
-    setDraft(user)
-  }, [user])
-
-  return (
-    <div className="user-row">
-      <input value={draft.full_name} onChange={(event) => setDraft({ ...draft, full_name: event.target.value })} />
-      <input value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
-      <input
-        placeholder="New password"
-        value={draft.password ?? ''}
-        onChange={(event) => setDraft({ ...draft, password: event.target.value })}
-      />
-      <select value={draft.role} onChange={(event) => setDraft({ ...draft, role: event.target.value as UserRole })}>
-        <option value="student">Student</option>
-        <option value="teacher">Teacher</option>
-        <option value="admin">Admin</option>
-      </select>
-      {draft.role === 'student' ? (
-        <input value={draft.class_name} onChange={(event) => setDraft({ ...draft, class_name: event.target.value })} />
-      ) : (
-        <input value={draft.speciality} onChange={(event) => setDraft({ ...draft, speciality: event.target.value })} />
-      )}
-      <div className="button-stack">
-        <button className="secondary-button" disabled={saving || deleting} onClick={() => void onSave(draft)}>
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button className="danger-button" disabled={saving || deleting} onClick={() => void onDelete(user.id)}>
-          {deleting ? 'Deleting...' : 'Delete'}
-        </button>
-      </div>
     </div>
   )
 }
