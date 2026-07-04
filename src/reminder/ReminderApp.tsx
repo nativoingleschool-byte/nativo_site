@@ -613,28 +613,22 @@ function ReminderAppInner() {
     setFocusedLessonId(null)
   }
 
-  const requestPushPermission = async () => {
+  const requestPushPermission = (): Promise<void> => {
     if (!profile || !('Notification' in window)) {
       setNotificationPermission('unsupported')
       alert("Alerta: As notificações push não são suportadas por este navegador. (Nota: Usuários de iOS precisam primeiro adicionar o app à Tela de Início via menu de Compartilhar).")
-      return
+      return Promise.resolve()
     }
 
-    try {
-      let permission: NotificationPermission
-      // Safari requestPermission compat
-      try {
-        permission = await Notification.requestPermission()
-      } catch (err) {
-        permission = await new Promise<NotificationPermission>((resolve) => {
-          Notification.requestPermission(resolve)
-        })
-      }
-      
+    let hasResolved = false
+    const handlePermissionResult = (permission: NotificationPermission) => {
+      if (hasResolved) return
+      hasResolved = true
+
       setNotificationPermission(permission)
 
       if (permission === 'granted') {
-        const response = await fetch('/api/me/preferences', {
+        fetch('/api/me/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -642,20 +636,41 @@ function ReminderAppInner() {
           },
           body: JSON.stringify({ push_enabled: true }),
         })
-        if (!response.ok) {
-          throw new Error('Falha ao registrar preferência de push no servidor.')
-        }
-        await refreshProfile(profile.id)
-        if (profile.role === 'admin') {
-          await refreshProfiles()
-        }
-        alert("Alertas push ativados com sucesso!")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Falha ao registrar preferência de push no servidor.')
+            }
+            return refreshProfile(profile.id)
+          })
+          .then(() => {
+            if (profile.role === 'admin') {
+              return refreshProfiles()
+            }
+          })
+          .then(() => {
+            alert("Alertas push ativados com sucesso!")
+          })
+          .catch((err) => {
+            alert("Erro ao salvar preferência de push: " + err.message)
+          })
       } else if (permission === 'denied') {
         alert("A permissão para notificações foi negada. Por favor, redefina as permissões nas configurações do seu navegador para receber alertas.")
       }
-    } catch (err: any) {
-      alert("Erro ao solicitar permissão de push: " + err.message)
     }
+
+    try {
+      // Trigger requestPermission synchronously to preserve user gesture in Chrome/Firefox
+      const permissionPromise = Notification.requestPermission(handlePermissionResult)
+      if (permissionPromise && typeof permissionPromise.then === 'function') {
+        permissionPromise.then(handlePermissionResult).catch((err) => {
+          alert("Erro ao solicitar permissão de push: " + err.message)
+        })
+      }
+    } catch (err: any) {
+      alert("Erro ao iniciar permissão de push: " + err.message)
+    }
+
+    return Promise.resolve()
   }
 
   const disablePush = async () => {
