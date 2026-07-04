@@ -26,6 +26,9 @@ type UserFormState = {
   first_class_teacher_id: string
   cpf?: string
   data_pagamento_preferencial?: number
+  chave_pix?: string
+  cnpj?: string
+  taxa_hora_aula?: number
 }
 
 type AccountFormState = {
@@ -56,6 +59,9 @@ const defaultUserForm = (): UserFormState => ({
   first_class_teacher_id: '',
   cpf: '',
   data_pagamento_preferencial: 5,
+  chave_pix: '',
+  cnpj: '',
+  taxa_hora_aula: 56.00,
 })
 
 const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
@@ -1835,8 +1841,294 @@ function ReminderAppInner() {
               </>
             )}
 
-            {adminTab === 'staff' && (
+             {adminTab === 'staff' && (
               <>
+                {/* Add New Staff Section */}
+                <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Adicionar Novo Membro da Equipe</h3>
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setAppError('');
+                      try {
+                        const targetRole = userForm.role === 'student' ? 'teacher' : userForm.role; // Default safety fallback
+                        const created = await callAdminUsersApi<Profile>('create', {
+                          full_name: userForm.full_name,
+                          email: userForm.email,
+                          password: userForm.password,
+                          role: targetRole,
+                          class_name: '',
+                          speciality: userForm.speciality || '',
+                          chave_pix: userForm.chave_pix || '',
+                          cnpj: userForm.cnpj || '',
+                          taxa_hora_aula: userForm.taxa_hora_aula || 56.00,
+                        });
+                        alert(`Membro da equipe ${created.full_name} adicionado com sucesso!`);
+                        setUserForm(defaultUserForm());
+                        await refreshProfiles();
+                      } catch (err: any) {
+                        setAppError(err.message || 'Erro ao adicionar membro da equipe.');
+                      }
+                    }} 
+                    className="form-grid" 
+                    style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Nome Completo</label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="Nome Completo"
+                        value={userForm.full_name}
+                        onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>E-mail</label>
+                      <input
+                        required
+                        type="email"
+                        placeholder="E-mail de Acesso"
+                        value={userForm.email}
+                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Senha</label>
+                      <input
+                        required
+                        type="password"
+                        placeholder="Senha de Acesso"
+                        value={userForm.password}
+                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Cargo / Função</label>
+                      <select
+                        value={userForm.role === 'student' ? 'teacher' : userForm.role}
+                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      >
+                        <option value="teacher">Professor (Teacher)</option>
+                        <option value="admin">Administrador (Admin)</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Especialidade (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="E.g. Business, TOEFL"
+                        value={userForm.speciality}
+                        onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Chave PIX (Professores)</label>
+                      <input
+                        type="text"
+                        placeholder="Celular, E-mail, CPF..."
+                        value={userForm.chave_pix || ''}
+                        onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>CNPJ / CPF (Professores)</label>
+                      <input
+                        type="text"
+                        placeholder="CNPJ ou CPF"
+                        value={userForm.cnpj || ''}
+                        onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Valor/Hora (R$)</label>
+                      <input
+                        type="number"
+                        placeholder="Valor hora aula"
+                        value={userForm.taxa_hora_aula || ''}
+                        onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
+                        style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: 'span 1' }}>
+                      <button type="submit" className="primary-button" style={{ width: '100%', padding: '0.6rem 1rem' }}>
+                        Adicionar Staff
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Staff list table */}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Lista de Membros da Equipe</h3>
+                <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem', marginBottom: '2.5rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '1rem' }}>Nome Completo</th>
+                        <th style={{ padding: '1rem' }}>E-mail</th>
+                        <th style={{ padding: '1rem' }}>Função</th>
+                        <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
+                        <th style={{ padding: '1rem' }}>Chave PIX</th>
+                        <th style={{ padding: '1rem' }}>Valor/Hora</th>
+                        <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {profiles
+                        .filter((p) => p.role === 'admin' || p.role === 'teacher')
+                        .map((staff) => {
+                          const hourlyRate = staff.taxa_hora_aula ?? (staff.role === 'teacher' ? 56.00 : 0)
+                          const currency = staff.moeda_taxa ?? 'BRL'
+
+                          return (
+                            <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                              <td style={{ padding: '1rem', fontWeight: 'bold' }}>{staff.full_name}</td>
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
+                              <td style={{ padding: '1rem' }}>
+                                <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
+                                  {staff.role === 'admin' ? 'Administrador' : 'Professor'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || 'Não cadastrado'}</td>
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || 'Não cadastrada'}</td>
+                              <td style={{ padding: '1rem' }}>
+                                {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                  <button
+                                    className="secondary-button"
+                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                    onClick={() => {
+                                      setSavingUserId(staff.id)
+                                      setUserForm({
+                                        id: staff.id,
+                                        email: staff.email,
+                                        full_name: staff.full_name,
+                                        role: staff.role,
+                                        class_name: '',
+                                        speciality: staff.speciality || '',
+                                        password: '',
+                                        chave_pix: staff.chave_pix || '',
+                                        cnpj: staff.cnpj || '',
+                                        taxa_hora_aula: Number(staff.taxa_hora_aula || 56.00),
+                                        cpf: '',
+                                        data_pagamento_preferencial: 5,
+                                        first_class_at: '',
+                                        first_class_teacher_id: ''
+                                      })
+                                    }}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    className="secondary-button"
+                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
+                                    onClick={() => void handleDeleteUser(staff.id)}
+                                  >
+                                    Excluir
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Edit Modal Overlay */}
+                {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && (
+                  <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Editar Dados do Staff</h3>
+                      <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <input
+                          required
+                          placeholder="Nome Completo"
+                          value={userForm.full_name}
+                          onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                        />
+                        <input
+                          required
+                          type="email"
+                          placeholder="E-mail"
+                          value={userForm.email}
+                          onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                        />
+                        <select
+                          value={userForm.role}
+                          onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
+                        >
+                          <option value="teacher">Professor</option>
+                          <option value="admin">Administrador</option>
+                        </select>
+                        <input
+                          placeholder="CNPJ ou CPF"
+                          value={userForm.cnpj || ''}
+                          onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
+                        />
+                        <input
+                          placeholder="Chave PIX"
+                          value={userForm.chave_pix || ''}
+                          onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
+                        />
+                        {userForm.role === 'teacher' && (
+                          <input
+                            type="number"
+                            placeholder="Valor da Hora Aula"
+                            value={userForm.taxa_hora_aula || ''}
+                            onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
+                          />
+                        )}
+                        <input
+                          placeholder="Especialidade"
+                          value={userForm.speciality}
+                          onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
+                        />
+                      </div>
+                      <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                        <button 
+                          className="primary-button" 
+                          onClick={async () => {
+                            try {
+                              const { error } = await supabase
+                                .from('profiles')
+                                .update({
+                                  full_name: userForm.full_name,
+                                  email: userForm.email,
+                                  role: userForm.role,
+                                  cnpj: userForm.cnpj || null,
+                                  chave_pix: userForm.chave_pix || null,
+                                  taxa_hora_aula: userForm.role === 'teacher' ? userForm.taxa_hora_aula : null,
+                                  speciality: userForm.speciality || null
+                                })
+                                .eq('id', userForm.id)
+                              if (error) throw error
+                              setSavingUserId(null)
+                              await refreshProfiles()
+                            } catch (err: any) {
+                              alert(err.message)
+                            }
+                          }}
+                        >
+                          Salvar
+                        </button>
+                        <button className="secondary-button" onClick={() => setSavingUserId(null)}>Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payroll Section */}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>Folha de Pagamento (Professores)</h3>
                 <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Mês de Apuração: </span>
