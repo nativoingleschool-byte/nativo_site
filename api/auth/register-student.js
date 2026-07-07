@@ -25,7 +25,19 @@ export default async function handler(req, res) {
 
   try {
     const supabaseAdmin = getSupabaseAdmin()
-    const { token, email, password, full_name, cpf, data_pagamento_preferencial } = req.body || {}
+    const { 
+      token, 
+      email, 
+      password, 
+      full_name, 
+      cpf, 
+      data_pagamento_preferencial,
+      cep,
+      logradouro,
+      bairro,
+      cidade,
+      uf
+    } = req.body || {}
 
     if (!token || !email || !password || !full_name) {
       return json(res, 400, { error: 'Missing required registration fields.' })
@@ -38,14 +50,17 @@ export default async function handler(req, res) {
       .from('invitations')
       .select('*')
       .eq('id', token)
-      .eq('email', emailNormalized)
       .single()
 
     if (inviteError || !invitation) {
       return json(res, 400, { error: 'Link de convite inválido ou expirado.' })
     }
 
-    if (invitation.used) {
+    if (!invitation.is_global && invitation.email !== emailNormalized) {
+      return json(res, 400, { error: 'Este link de convite é restrito a outro e-mail.' })
+    }
+
+    if (!invitation.is_global && invitation.used) {
       return json(res, 400, { error: 'Este link de convite já foi utilizado.' })
     }
 
@@ -72,6 +87,11 @@ export default async function handler(req, res) {
       cpf: cpf || null,
       data_pagamento_preferencial: data_pagamento_preferencial ? Number(data_pagamento_preferencial) : null,
       status_pagamento: 'pendente', // Awaiting first payment setup
+      cep: cep || null,
+      logradouro: logradouro || null,
+      bairro: bairro || null,
+      cidade: cidade || null,
+      uf: uf || null,
       created_at: new Date().toISOString()
     }
 
@@ -85,14 +105,16 @@ export default async function handler(req, res) {
       throw new Error(profileError.message)
     }
 
-    // 4. Mark invitation token as used
-    const { error: inviteUpdateError } = await supabaseAdmin
-      .from('invitations')
-      .update({ used: true })
-      .eq('id', token)
+    // 4. Mark invitation token as used (only if it is not a global link)
+    if (!invitation.is_global) {
+      const { error: inviteUpdateError } = await supabaseAdmin
+        .from('invitations')
+        .update({ used: true })
+        .eq('id', token)
 
-    if (inviteUpdateError) {
-      console.error('Failed to mark invitation as used:', inviteUpdateError)
+      if (inviteUpdateError) {
+        console.error('Failed to mark invitation as used:', inviteUpdateError)
+      }
     }
 
     return json(res, 200, {

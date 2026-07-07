@@ -7,7 +7,7 @@ interface AdminStudentsTabProps {
   language: Language
   inviteEmail: string
   setInviteEmail: (email: string) => void
-  handleGenerateInviteLink: (e: any) => Promise<void>
+  handleGenerateInviteLink: (e: any, isGlobal?: boolean) => Promise<void>
   inviteLoading: boolean
   generatedInviteLink: string
   students: Profile[]
@@ -42,7 +42,7 @@ export default function AdminStudentsTab({
     <>
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
-        <form onSubmit={handleGenerateInviteLink} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
+        <form onSubmit={(e) => handleGenerateInviteLink(e)} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
           <input
             required
             type="email"
@@ -55,6 +55,17 @@ export default function AdminStudentsTab({
             {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
           </button>
         </form>
+        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-start' }}>
+          <button 
+            type="button" 
+            className="secondary-button" 
+            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }} 
+            onClick={(e) => handleGenerateInviteLink(e, true)}
+            disabled={inviteLoading}
+          >
+            Gerar Link Geral (Múltiplos Alunos)
+          </button>
+        </div>
         {generatedInviteLink && (
           <div className="credential-card mt-4" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
             <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>{t(language, 'invite_link_generated')}</p>
@@ -136,7 +147,12 @@ export default function AdminStudentsTab({
                           cpf: student.cpf || '',
                           data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
                           first_class_at: '',
-                          first_class_teacher_id: ''
+                          first_class_teacher_id: '',
+                          cep: student.cep || '',
+                          logradouro: student.logradouro || '',
+                          bairro: student.bairro || '',
+                          cidade: student.cidade || '',
+                          uf: student.uf || ''
                         })
                       }}
                     >
@@ -181,6 +197,37 @@ export default function AdminStudentsTab({
                   <option key={day} value={day}>{t(language, 'billing_day_label').replace('{day}', String(day))}</option>
                 ))}
               </select>
+              <input
+                placeholder="CEP"
+                value={userForm.cep || ''}
+                onChange={(e) => setUserForm({ ...userForm, cep: e.target.value })}
+              />
+              <input
+                placeholder="Endereço (Rua, Nº, Apto)"
+                value={userForm.logradouro || ''}
+                onChange={(e) => setUserForm({ ...userForm, logradouro: e.target.value })}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  placeholder="Bairro"
+                  style={{ flex: 1 }}
+                  value={userForm.bairro || ''}
+                  onChange={(e) => setUserForm({ ...userForm, bairro: e.target.value })}
+                />
+                <input
+                  placeholder="Cidade"
+                  style={{ flex: 1 }}
+                  value={userForm.cidade || ''}
+                  onChange={(e) => setUserForm({ ...userForm, cidade: e.target.value })}
+                />
+                <input
+                  placeholder="UF"
+                  maxLength={2}
+                  style={{ width: '60px' }}
+                  value={userForm.uf || ''}
+                  onChange={(e) => setUserForm({ ...userForm, uf: e.target.value.toUpperCase() })}
+                />
+              </div>
             </div>
             <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
               <button 
@@ -193,7 +240,12 @@ export default function AdminStudentsTab({
                         full_name: userForm.full_name,
                         email: userForm.email,
                         cpf: userForm.cpf || null,
-                        data_pagamento_preferencial: userForm.data_pagamento_preferencial
+                        data_pagamento_preferencial: userForm.data_pagamento_preferencial,
+                        cep: userForm.cep || null,
+                        logradouro: userForm.logradouro || null,
+                        bairro: userForm.bairro || null,
+                        cidade: userForm.cidade || null,
+                        uf: userForm.uf || null
                       })
                       .eq('id', userForm.id)
                     if (error) throw error

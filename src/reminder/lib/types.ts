@@ -15,6 +15,11 @@ export type UserFormState = {
   chave_pix?: string
   cnpj?: string
   taxa_hora_aula?: number
+  cep?: string
+  logradouro?: string
+  bairro?: string
+  cidade?: string
+  uf?: string
 }
 
 export type AccountFormState = {
@@ -56,6 +61,11 @@ export type Profile = {
   taxa_hora_aula?: number
   moeda_taxa?: string
   status_pagamento_professor?: 'pago' | 'pendente' | null
+  cep?: string
+  logradouro?: string
+  bairro?: string
+  cidade?: string
+  uf?: string
 }
 
 export type Lesson = {

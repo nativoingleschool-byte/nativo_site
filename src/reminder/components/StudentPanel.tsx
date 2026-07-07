@@ -1,6 +1,8 @@
+import { useState, useEffect, FormEvent } from 'react'
 import { BrowserPermission, Lesson, Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, minutesUntil, sortByDateDesc, sortByDateAsc } from '../lib/utils'
+import { supabase } from '../lib/supabase'
 
 interface StudentPanelProps {
   language: Language
@@ -19,6 +21,7 @@ interface StudentPanelProps {
   setStudentTab: (tab: 'account' | 'lessons') => void
   dueStudentFourHourReminders: Lesson[]
   dueStudentStartReminders: Lesson[]
+  refreshProfile: (userId: string) => Promise<Profile>
 }
 
 export default function StudentPanel({
@@ -38,7 +41,55 @@ export default function StudentPanel({
   setStudentTab,
   dueStudentFourHourReminders,
   dueStudentStartReminders,
+  refreshProfile,
 }: StudentPanelProps) {
+  const [fullName, setFullName] = useState(profile.full_name)
+  const [email, setEmail] = useState(profile.email)
+  const [cpf, setCpf] = useState(profile.cpf || '')
+  const [cep, setCep] = useState(profile.cep || '')
+  const [logradouro, setLogradouro] = useState(profile.logradouro || '')
+  const [bairro, setBairro] = useState(profile.bairro || '')
+  const [cidade, setCidade] = useState(profile.cidade || '')
+  const [uf, setUf] = useState(profile.uf || '')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setFullName(profile.full_name)
+    setEmail(profile.email)
+    setCpf(profile.cpf || '')
+    setCep(profile.cep || '')
+    setLogradouro(profile.logradouro || '')
+    setBairro(profile.bairro || '')
+    setCidade(profile.cidade || '')
+    setUf(profile.uf || '')
+  }, [profile])
+
+  const handleSaveStudentData = async (e: FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          email: email,
+          cpf: cpf || null,
+          cep: cep || null,
+          logradouro: logradouro || null,
+          bairro: bairro || null,
+          cidade: cidade || null,
+          uf: uf || null
+        })
+        .eq('id', profile.id)
+      if (error) throw error
+      await refreshProfile(profile.id)
+      alert('Cadastro atualizado com sucesso!')
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const visibleLessons = lessons.filter((lesson) => lesson.student_id === profile.id)
@@ -180,35 +231,94 @@ export default function StudentPanel({
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1 }}>
               <h3>Dados Cadastrais</h3>
-              <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
+              <form onSubmit={handleSaveStudentData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
                 <div>
-                  <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Nome Completo</span>
-                  <strong className="text-white text-base">{profile.full_name}</strong>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Nome Completo</label>
+                  <input
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">E-mail</span>
-                  <strong className="text-white text-base">{profile.email}</strong>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">E-mail</label>
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">CPF</span>
-                  <strong className="text-white text-base">{profile.cpf || 'Não cadastrado'}</strong>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CPF</label>
+                  <input
+                    placeholder="000.000.000-00"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Dia de Vencimento Preferencial</span>
-                  <strong className="text-white text-base">
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CEP</label>
+                  <input
+                    placeholder="06401-000"
+                    value={cep}
+                    onChange={(e) => setCep(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Endereço (Rua, Nº, Apto)</label>
+                  <input
+                    placeholder="Av. Principal, 123"
+                    value={logradouro}
+                    onChange={(e) => setLogradouro(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Bairro</label>
+                    <input
+                      placeholder="Centro"
+                      value={bairro}
+                      onChange={(e) => setBairro(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Cidade</label>
+                    <input
+                      placeholder="Barueri"
+                      value={cidade}
+                      onChange={(e) => setCidade(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ width: '60px' }}>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">UF</label>
+                    <input
+                      placeholder="SP"
+                      maxLength={2}
+                      value={uf}
+                      onChange={(e) => setUf(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Dia de Vencimento Preferencial</label>
+                  <strong className="text-white text-base block mt-1" style={{ padding: '0 0.5rem' }}>
                     {profile.data_pagamento_preferencial ? `Dia ${profile.data_pagamento_preferencial} de cada mês` : 'Não definido'}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-bold block uppercase tracking-widest">Status Financeiro</span>
-                  <span className={badgeClass(profile.status_pagamento || 'pendente')}>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Status Financeiro</label>
+                  <span className={`${badgeClass(profile.status_pagamento || 'pendente')} inline-block mt-1`}>
                     {profile.status_pagamento === 'em_dia' && 'Em dia'}
                     {profile.status_pagamento === 'atrasado' && 'Atrasado'}
                     {profile.status_pagamento === 'pendente' && 'Pendente'}
                     {!profile.status_pagamento && 'Pendente'}
                   </span>
                 </div>
-              </div>
+                <button type="submit" className="primary-button mt-4" disabled={saving} style={{ marginTop: '1rem' }}>
+                  {saving ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </form>
             </section>
 
             <section style={{ flex: 1 }}>
