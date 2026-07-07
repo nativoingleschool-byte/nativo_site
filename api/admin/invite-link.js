@@ -53,16 +53,20 @@ export default async function handler(req, res) {
 
   try {
     const supabaseAdmin = await assertAdmin(req)
-    const { email } = req.body || {}
+    const { email, is_global } = req.body || {}
 
-    if (!email || !email.includes('@')) {
+    if (!is_global && (!email || !email.includes('@'))) {
       return json(res, 400, { error: 'A valid email is required.' })
     }
+
+    const payload = is_global 
+      ? { email: 'global-invite@nativo.com', is_global: true }
+      : { email: email.trim().toLowerCase(), is_global: false }
 
     // Insert invitation record
     const { data: invitation, error: inviteError } = await supabaseAdmin
       .from('invitations')
-      .insert({ email: email.trim().toLowerCase() })
+      .insert(payload)
       .select('*')
       .single()
 
@@ -71,7 +75,9 @@ export default async function handler(req, res) {
     }
 
     // Create the registration url
-    const inviteLink = `${getBaseUrl(req)}/register?token=${invitation.id}&email=${encodeURIComponent(invitation.email)}`
+    const inviteLink = is_global
+      ? `${getBaseUrl(req)}/register?token=${invitation.id}`
+      : `${getBaseUrl(req)}/register?token=${invitation.id}&email=${encodeURIComponent(invitation.email)}`
 
     return json(res, 200, {
       message: 'Invitation link generated successfully.',

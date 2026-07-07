@@ -16,6 +16,11 @@ create table if not exists public.profiles (
   cpf text null,
   data_pagamento_preferencial integer null check (data_pagamento_preferencial between 1 and 31),
   status_pagamento text null check (status_pagamento in ('em_dia', 'atrasado', 'pendente')),
+  cep text null,
+  logradouro text null,
+  bairro text null,
+  cidade text null,
+  uf text null,
   
   -- Teacher specific fields
   chave_pix text null,
@@ -59,7 +64,8 @@ create table if not exists public.invitations (
   id uuid primary key default gen_random_uuid(),
   email text not null,
   created_at timestamptz not null default timezone('utc', now()),
-  used boolean not null default false
+  used boolean not null default false,
+  is_global boolean not null default false
 );
 
 -- Helper function to check if active user is an admin
