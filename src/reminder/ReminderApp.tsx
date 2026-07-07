@@ -903,7 +903,7 @@ function ReminderAppInner() {
     }
   }
 
-  const handleGenerateInviteLink = async (e: any) => {
+  const handleGenerateInviteLink = async (e: any, isGlobal?: boolean) => {
     e.preventDefault()
     setInviteLoading(true)
     setGeneratedInviteLink('')
@@ -916,7 +916,10 @@ function ReminderAppInner() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ email: inviteEmail })
+        body: JSON.stringify({ 
+          email: isGlobal ? undefined : inviteEmail,
+          is_global: isGlobal ? true : undefined
+        })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao gerar link de convite.')
@@ -1266,6 +1269,7 @@ function ReminderAppInner() {
             setStudentTab={setStudentTab}
             dueStudentFourHourReminders={dueStudentFourHourReminders}
             dueStudentStartReminders={dueStudentStartReminders}
+            refreshProfile={refreshProfile}
           />
         )}
 

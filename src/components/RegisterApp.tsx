@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { User, FileText, Mail, Lock, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, FileText, Mail, Lock, Calendar, Loader2, CheckCircle2, Home, MapPin } from 'lucide-react';
 
 export default function RegisterApp() {
   const [token, setToken] = useState('');
@@ -8,6 +8,11 @@ export default function RegisterApp() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [paymentDate, setPaymentDate] = useState('5');
+  const [cep, setCep] = useState('');
+  const [logradouro, setLogradouro] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [uf, setUf] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -44,6 +49,11 @@ export default function RegisterApp() {
           full_name: fullName,
           cpf,
           data_pagamento_preferencial: Number(paymentDate),
+          cep,
+          logradouro,
+          bairro,
+          cidade,
+          uf
         }),
       });
 
@@ -186,6 +196,71 @@ export default function RegisterApp() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* CEP */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CEP (Opcional)</label>
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="06401-000"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                value={cep}
+                onChange={(e) => setCep(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Logradouro */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Endereço (Rua, Nº, Apto) (Opcional)</label>
+            <div className="relative">
+              <Home className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Av. Principal, 123"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                value={logradouro}
+                onChange={(e) => setLogradouro(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Bairro, Cidade, UF in grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Bairro (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Centro"
+                className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                value={bairro}
+                onChange={(e) => setBairro(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Cidade (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Barueri"
+                className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">UF (Opcional)</label>
+              <input
+                type="text"
+                placeholder="SP"
+                maxLength={2}
+                className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm uppercase"
+                value={uf}
+                onChange={(e) => setUf(e.target.value)}
+              />
             </div>
           </div>
 
