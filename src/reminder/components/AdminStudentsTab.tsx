@@ -38,6 +38,41 @@ export default function AdminStudentsTab({
 }: AdminStudentsTabProps) {
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
+  const handleDeleteStudent = async (studentId: string, fullName: string) => {
+    if (!confirm(`Deseja realmente excluir o aluno ${fullName}? Isso removerá a conta e todos os dados relacionados (aulas e faturas).`)) {
+      return
+    }
+
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          payload: {
+            id: studentId,
+            force: true
+          }
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao deletar estudante.')
+
+      alert('Aluno excluído com sucesso!')
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   return (
     <>
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
@@ -157,6 +192,13 @@ export default function AdminStudentsTab({
                       }}
                     >
                       {t(language, 'edit')}
+                    </button>
+                    <button 
+                      className="danger-button" 
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginLeft: '0.5rem' }}
+                      onClick={() => void handleDeleteStudent(student.id, student.full_name)}
+                    >
+                      Excluir
                     </button>
                   </td>
                 </tr>
