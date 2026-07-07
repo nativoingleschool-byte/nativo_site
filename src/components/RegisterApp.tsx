@@ -134,7 +134,7 @@ export default function RegisterApp() {
 
           {/* CPF */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CPF (Opcional)</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CPF</label>
             <div className="relative">
               <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
               <input
