@@ -17,12 +17,17 @@ export default function RegisterApp() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const [isEmailLocked, setIsEmailLocked] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('token') || '';
     const emailParam = params.get('email') || '';
     setToken(tokenParam);
-    setEmail(emailParam);
+    if (emailParam) {
+      setEmail(emailParam);
+      setIsEmailLocked(true);
+    }
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -155,7 +160,7 @@ export default function RegisterApp() {
               <input
                 type="email"
                 required
-                disabled={Boolean(email)}
+                disabled={isEmailLocked}
                 placeholder="exemplo@gmail.com"
                 className="w-full pl-12 pr-4 py-3.5 bg-slate-950/50 border border-slate-900 rounded-2xl text-slate-400 placeholder-slate-600 focus:outline-none transition-colors text-sm disabled:cursor-not-allowed"
                 value={email}
