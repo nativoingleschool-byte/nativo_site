@@ -197,6 +197,16 @@ function ReminderAppInner() {
 
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('triggerPasswordReset') === 'true') {
+      setShowResetPasswordModal(true)
+      sessionStorage.removeItem('triggerPasswordReset')
+      if (window.location.hash) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     void registerAppServiceWorker()
   }, [])
 

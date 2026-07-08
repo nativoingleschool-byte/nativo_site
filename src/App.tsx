@@ -3,6 +3,13 @@ import LandingApp from './LandingApp';
 import ReminderApp from './reminder/ReminderApp';
 import RegisterApp from './components/RegisterApp';
 
+if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+  sessionStorage.setItem('triggerPasswordReset', 'true');
+  if (!window.location.pathname.startsWith('/reminder')) {
+    window.history.replaceState({}, document.title, '/reminder' + window.location.hash);
+  }
+}
+
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
 
