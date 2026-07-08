@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_type TEXT NOT NULL,
   payload JSONB NOT NULL,
+  headers JSONB,
   processed BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );

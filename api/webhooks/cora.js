@@ -1,199 +1,185 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const BARUERI_API_URL = process.env.BARUERI_API_URL || 'https://www.barueri.sp.gov.br/nfse/ws/servico.asmx'
-const SCHOOL_CNPJ = process.env.SCHOOL_CNPJ || '00.000.000/0001-00'
-const SCHOOL_IM = process.env.SCHOOL_IM || '123456'
+const SCHOOL_CNPJ = process.env.SCHOOL_CNPJ || '00.000.000/0001-00';
 
 const json = (res, status, body) => {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(body))
-}
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(body));
+};
 
 const getSupabaseAdmin = () => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.')
+    throw new Error('Supabase server environment variables are missing.');
   }
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false }
-  })
-}
+  });
+};
 
-// Generate the NFS-e XML following Barueri / ABRASF standard and post to municipal web service
-const generateBarueriNfse = async (student, invoice) => {
-  const isProd = Boolean(process.env.BARUERI_API_URL) && Boolean(process.env.BARUERI_CERTIFICATE)
-
-  if (!isProd) {
-    // Return mock NFS-e link for testing/sandbox environments
-    const mockNfseId = Math.floor(100000 + Math.random() * 900000)
-    console.log(`[Mock NFS-e] Generated NFS-e ${mockNfseId} for ${student.full_name}`)
-    return `https://receita.barueri.sp.gov.br/nfse/visualizar?id=${mockNfseId}&cnpj=${SCHOOL_CNPJ.replace(/\D/g, '')}`
-  }
-
-  // Format the XML request body (ABRASF standards)
-  const xmlPayload = `<?xml version="1.0" encoding="utf-8"?>
-<EnviarLoteRpsEnvio xmlns="http://www.abrasf.org.br/nfse.xsd">
-  <LoteRps Id="L1" Versao="2.03">
-    <NumeroLote>1</NumeroLote>
-    <Cnpj>${SCHOOL_CNPJ.replace(/\D/g, '')}</Cnpj>
-    <InscricaoMunicipal>${SCHOOL_IM}</InscricaoMunicipal>
-    <QuantidadeRps>1</QuantidadeRps>
-    <ListaRps>
-      <Rps>
-        <InfRps Id="R1">
-          <IdentificacaoRps>
-            <Numero>${invoice.id.slice(0, 8)}</Numero>
-            <Serie>A</Serie>
-            <Tipo>1</Tipo>
-          </IdentificacaoRps>
-          <DataEmissao>${new Date().toISOString().split('T')[0]}T12:00:00</DataEmissao>
-          <Status>1</Status>
-          <Servico>
-            <Valores>
-              <ValorServicos>56.00</ValorServicos>
-              <IssRetido>2</IssRetido>
-            </Valores>
-            <ItemListaServico>08.02</ItemListaServico>
-            <CodigoTributacaoMunicipio>859290100</CodigoTributacaoMunicipio>
-            <Discriminacao>Aulas de Inglês Online - Nativo English</Discriminacao>
-            <CodigoMunicipio>3505708</CodigoMunicipio>
-          </Servico>
-          <Prestador>
-            <Cnpj>${SCHOOL_CNPJ.replace(/\D/g, '')}</Cnpj>
-            <InscricaoMunicipal>${SCHOOL_IM}</InscricaoMunicipal>
-          </Prestador>
-          <Tomador>
-            <IdentificacaoTomador>
-              <CpfCnpj>
-                <Cpf>${student.cpf ? student.cpf.replace(/\D/g, '') : ''}</Cpf>
-              </CpfCnpj>
-            </IdentificacaoTomador>
-            <RazaoSocial>${student.full_name}</RazaoSocial>
-            <Contato>
-              <Email>${student.email}</Email>
-            </Contato>
-          </Tomador>
-        </InfRps>
-      </Rps>
-    </ListaRps>
-  </LoteRps>
-</EnviarLoteRpsEnvio>`
-
-  try {
-    const response = await fetch(BARUERI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'SOAPAction': 'http://www.abrasf.org.br/nfse/EnviarLoteRps'
-      },
-      body: xmlPayload
-    })
-
-    if (!response.ok) {
-      throw new Error(`Barueri API responded with status ${response.status}`)
-    }
-
-    const xmlResponse = await response.text()
-    
-    // Parse generated URL or invoice details from XML response
-    const match = xmlResponse.match(/<LinkNfse>(.*?)<\/LinkNfse>/i)
-    if (match && match[1]) {
-      return match[1]
-    }
-
-    throw new Error('NFS-e Link tag not found in Barueri XML response.')
-  } catch (error) {
-    console.error('Barueri XML request failed. Falling back to sandbox URL.', error)
-    return `https://receita.barueri.sp.gov.br/nfse/error-fallback`
-  }
-}
+/**
+ * Placeholder function for Phase 3: Barueri NFS-e XML emission.
+ * Simulates generating an invoice with the municipal service and returning the PDF link.
+ */
+const issueBarueriNFSe = async (studentData, amount, rpsNumber) => {
+  console.log(`[issueBarueriNFSe] Placeholder triggered for RPS ${rpsNumber}, Tomador: ${studentData.full_name}, Amount: ${amount}`);
+  
+  // In a sandbox/mock run, we generate a mock invoice id and visualization url
+  const mockNfseId = Math.floor(100000 + Math.random() * 900000);
+  const cnpjClean = SCHOOL_CNPJ.replace(/\D/g, '');
+  
+  return `https://receita.barueri.sp.gov.br/nfse/visualizar?id=${mockNfseId}&cnpj=${cnpjClean}&rps=${rpsNumber}`;
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return json(res, 405, { error: 'Method not allowed.' })
+    return json(res, 405, { error: 'Method not allowed.' });
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
+  const { event, data } = req.body || {};
+  const eventType = event || 'unknown';
+  const headers = req.headers || {};
+
+  let logRecordId = null;
+
   try {
-    const supabaseAdmin = getSupabaseAdmin()
-    
-    // Cora sends webhook events in standard json payloads
-    const { event, data } = req.body || {}
-    
-    // Check if the event is "invoice.paid" or equivalent status indicating payment received
-    if (event === 'invoice.paid' || event === 'invoice_paid') {
-      const coraInvoiceId = data?.id || data?.invoice_id
-      const paymentUrl = data?.payment_url
-      
-      // Locate the invoice in our database
-      const { data: invoice, error: invoiceError } = await supabaseAdmin
+    // 1. Listen & Validate (Logs Seguros): Record request to webhook_logs first
+    const { data: logRecord, error: logError } = await supabaseAdmin
+      .from('webhook_logs')
+      .insert({
+        event_type: eventType,
+        payload: req.body || {},
+        headers: headers,
+        processed: false
+      })
+      .select('id')
+      .single();
+
+    if (logError) {
+      console.error('Failed to save webhook log in database:', logError.message);
+    } else if (logRecord) {
+      logRecordId = logRecord.id;
+    }
+
+    // 2. Filter Events: Only process payment success events
+    if (eventType !== 'invoice.paid' && eventType !== 'invoice_paid') {
+      return json(res, 200, { message: 'Webhook event ignored.' });
+    }
+
+    // 3. Extract Data: Extract payment details and locate local invoice
+    const coraInvoiceId = data?.id || data?.invoice_id;
+    const paymentUrl = data?.payment_url || data?.payment_options?.bank_slip?.url || data?.payment_options?.pix?.url;
+    const amountCents = data?.amount || data?.value || 0;
+    const amount = amountCents / 100; // Cora returns values in cents
+
+    // Match payment to our local invoices table
+    let invoice = null;
+    if (paymentUrl) {
+      const { data: matchedInvoice } = await supabaseAdmin
         .from('invoices')
         .select('*')
-        .eq('boleto_url', paymentUrl) // Cora sends checkout/payment link in notifications
-        .single()
+        .eq('boleto_url', paymentUrl)
+        .maybeSingle();
+      invoice = matchedInvoice;
+    }
 
-      if (invoiceError || !invoice) {
-        console.warn(`Invoice with payment url ${paymentUrl} not found in database. Trying to match by ID...`)
-      }
-
-      const activeInvoice = invoice || (coraInvoiceId ? await supabaseAdmin
+    if (!invoice && coraInvoiceId) {
+      const { data: matchedInvoice } = await supabaseAdmin
         .from('invoices')
         .select('*')
         .eq('id', coraInvoiceId)
-        .single()
-        .then(r => r.data) : null)
+        .maybeSingle();
+      invoice = matchedInvoice;
+    }
 
-      if (!activeInvoice) {
-        return json(res, 404, { error: 'Invoice not found.' })
-      }
+    if (!invoice) {
+      console.warn(`Invoice mismatch: no local invoice matches payment url "${paymentUrl}" or ID "${coraInvoiceId}".`);
+      return json(res, 404, { error: 'Corresponding invoice not found.' });
+    }
 
-      // 1. Update invoice status to 'pago'
+    // Fetch the corresponding student profile details
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', invoice.student_id)
+      .single();
+
+    if (studentError || !student) {
+      throw new Error(`Student profile not found for ID ${invoice.student_id}`);
+    }
+
+    // 4. Trigger Flow (Tratamento Rigoroso de Erros)
+    // Get the next daily-sequential RPS number
+    const { data: rpsNumber, error: rpsError } = await supabaseAdmin
+      .rpc('get_next_barueri_rps');
+
+    if (rpsError || !rpsNumber) {
+      throw new Error(`RPS generation failed: ${rpsError?.message || 'Empty sequence'}`);
+    }
+
+    // Execute the invoice emission inside a strict try/catch block
+    try {
+      const nfsEPdfLink = await issueBarueriNFSe(student, amount, rpsNumber);
+
+      // On Success: Update invoice, student profile, and mark webhook as processed
       const { error: invoiceUpdateError } = await supabaseAdmin
         .from('invoices')
-        .update({ status: 'pago' })
-        .eq('id', activeInvoice.id)
+        .update({
+          status: 'pago',
+          rps_number: rpsNumber,
+          nfs_e_pdf_link: nfsEPdfLink
+        })
+        .eq('id', invoice.id);
 
-      if (invoiceUpdateError) throw invoiceUpdateError
+      if (invoiceUpdateError) throw invoiceUpdateError;
 
-      // 2. Fetch the corresponding Student profile
-      const { data: student, error: studentError } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('id', activeInvoice.student_id)
-        .single()
-
-      if (studentError || !student) throw new Error('Student profile not found.')
-
-      // 3. Update the Student's payment status to 'em_dia'
+      // Update student's payment status to in_order ('em_dia')
       const { error: profileUpdateError } = await supabaseAdmin
         .from('profiles')
         .update({ status_pagamento: 'em_dia' })
-        .eq('id', student.id)
+        .eq('id', student.id);
 
-      if (profileUpdateError) throw profileUpdateError
+      if (profileUpdateError) throw profileUpdateError;
 
-      // 4. Generate NFS-e XML and trigger municipal API call (Barueri)
-      const nfseLink = await generateBarueriNfse(student, activeInvoice)
-
-      // 5. Save NFS-e url in the invoice details
-      const { error: finalUpdateError } = await supabaseAdmin
-        .from('invoices')
-        .update({ nfse_url: nfseLink })
-        .eq('id', activeInvoice.id)
-
-      if (finalUpdateError) throw finalUpdateError
+      // Update webhook log processed flag to true
+      if (logRecordId) {
+        await supabaseAdmin
+          .from('webhook_logs')
+          .update({ processed: true })
+          .eq('id', logRecordId);
+      }
 
       return json(res, 200, {
         message: 'Invoice updated and NFS-e generated successfully.',
-        invoice_id: activeInvoice.id,
-        nfse_url: nfseLink
-      })
+        invoice_id: invoice.id,
+        rps_number: rpsNumber,
+        nfs_e_pdf_link: nfsEPdfLink
+      });
+
+    } catch (emissionErr) {
+      // On Failure: Log to console, mark invoice as 'falha_emissao', leave webhook log processed as false
+      console.error('NFS-e Emission failed. Transaction preserved. Details:', emissionErr.message);
+
+      await supabaseAdmin
+        .from('invoices')
+        .update({
+          status: 'falha_emissao',
+          rps_number: rpsNumber
+        })
+        .eq('id', invoice.id);
+
+      return json(res, 500, {
+        error: 'Failed to issue NFS-e. Status set to falha_emissao for manual review.',
+        details: emissionErr.message
+      });
     }
 
-    return json(res, 200, { message: 'Webhook event ignored.' })
   } catch (error) {
-    return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected webhook error.' })
+    console.error('Fatal webhook processing error:', error.message);
+    return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected webhook error.' });
   }
 }
