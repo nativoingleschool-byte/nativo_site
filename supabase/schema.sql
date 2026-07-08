@@ -21,6 +21,7 @@ create table if not exists public.profiles (
   bairro text null,
   cidade text null,
   uf text null,
+  tuition_fee numeric(10,2) null,
   
   -- Teacher specific fields
   chave_pix text null,

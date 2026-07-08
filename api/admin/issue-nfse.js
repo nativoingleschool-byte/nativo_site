@@ -1,0 +1,127 @@
+import { createClient } from '@supabase/supabase-js';
+import { issueBarueriNFSe } from '../../services/barueri/nfse-service.js';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const json = (res, status, body) => {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(body));
+};
+
+const getSupabaseAdmin = () => {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Supabase server environment variables are missing.');
+  }
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+};
+
+const assertAdmin = async (req) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) throw new Error('Missing bearer token.');
+
+  const adminClient = getSupabaseAdmin();
+  const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
+  if (userError || !user) throw new Error('Session could not be verified.');
+
+  const { data: profile, error: profileError } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || profile?.role !== 'admin') {
+    throw new Error('Only admin users can perform this action.');
+  }
+
+  return adminClient;
+};
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return json(res, 405, { error: 'Method not allowed.' });
+  }
+
+  try {
+    // 1. Authenticate & Verify admin role
+    const supabaseAdmin = await assertAdmin(req);
+
+    const { student_id } = req.body || {};
+    if (!student_id) {
+      return json(res, 400, { error: 'Missing student_id.' });
+    }
+
+    // 2. Fetch student details and check tuition_fee configuration
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', student_id)
+      .single();
+
+    if (studentError || !student) {
+      return json(res, 404, { error: 'Student profile not found.' });
+    }
+
+    if (student.role !== 'student') {
+      return json(res, 400, { error: 'Selected user profile is not a student.' });
+    }
+
+    const tuitionFee = Number(student.tuition_fee);
+    if (!tuitionFee || isNaN(tuitionFee)) {
+      return json(res, 400, { error: 'Mensalidade do estudante não cadastrada.' });
+    }
+
+    // 3. Generate RPS Sequence number
+    const { data: rpsNumber, error: rpsError } = await supabaseAdmin
+      .rpc('get_next_barueri_rps');
+
+    if (rpsError || !rpsNumber) {
+      throw new Error(`RPS generation failed: ${rpsError?.message || 'Empty sequence'}`);
+    }
+
+    // 4. Invoke SOAP service to issue NFS-e
+    const nfsEPdfLink = await issueBarueriNFSe(student, tuitionFee, rpsNumber);
+
+    // 5. Create new paid invoice record
+    const { data: invoice, error: invoiceError } = await supabaseAdmin
+      .from('invoices')
+      .insert({
+        student_id: student.id,
+        status: 'pago',
+        rps_number: rpsNumber,
+        nfs_e_pdf_link: nfsEPdfLink
+      })
+      .select('*')
+      .single();
+
+    if (invoiceError) {
+      throw new Error(`Failed to record invoice details: ${invoiceError.message}`);
+    }
+
+    // 6. Update student payment status to 'em_dia'
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ status_pagamento: 'em_dia' })
+      .eq('id', student.id);
+
+    if (profileUpdateError) {
+      console.error('Failed to update student payment status:', profileUpdateError.message);
+    }
+
+    return json(res, 200, {
+      success: true,
+      message: 'NFS-e issued and invoice recorded successfully.',
+      invoice_id: invoice.id,
+      rps_number: rpsNumber,
+      nfs_e_pdf_link: nfsEPdfLink
+    });
+
+  } catch (error) {
+    console.error('Manual NFS-e emission failed:', error.message);
+    return json(res, 500, { error: error.message });
+  }
+}
