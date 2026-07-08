@@ -199,13 +199,13 @@ export default function AdminStudentsTab({
     <>
       {lastIssuedPdf && (
         <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-          <span>Nota Fiscal emitida com sucesso para <strong>{lastIssuedPdf.name}</strong>!</span>
+          <span>{t(language, 'success_invoice_banner').replace('{name}', lastIssuedPdf.name)}</span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <a href={lastIssuedPdf.url} target="_blank" rel="noreferrer" className="primary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}>
-              Visualizar PDF
+              {t(language, 'view_pdf')}
             </a>
             <button className="secondary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setLastIssuedPdf(null)}>
-              Fechar
+              {t(language, 'close')}
             </button>
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function AdminStudentsTab({
       {/* Bulk Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: 'rgba(30, 41, 59, 0.3)', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
         <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-          <strong>{selectedStudentIds.length}</strong> aluno(s) selecionado(s) para emissão.
+          {t(language, 'bulk_invoices_selected').replace('{count}', String(selectedStudentIds.length))}
         </div>
         <button
           className="primary-button"
@@ -267,7 +267,7 @@ export default function AdminStudentsTab({
           onClick={handleBulkIssueNfse}
           disabled={selectedStudentIds.length === 0 || bulkProgress !== null}
         >
-          {bulkProgress ? `Emitindo (${bulkProgress.current} de ${bulkProgress.total})...` : 'Emitir Notas Selecionadas'}
+          {bulkProgress ? t(language, 'bulk_issuing_progress').replace('{current}', String(bulkProgress.current)).replace('{total}', String(bulkProgress.total)) : t(language, 'emit_selected_invoices')}
         </button>
       </div>
 
@@ -287,7 +287,7 @@ export default function AdminStudentsTab({
               <th style={{ padding: '1rem' }}>CPF</th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
-              <th style={{ padding: '1rem' }}>Status NFS-e (Mês Atual)</th>
+              <th style={{ padding: '1rem' }}>{t(language, 'invoices_title')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_habitual_time')}</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
@@ -336,14 +336,14 @@ export default function AdminStudentsTab({
                       const hasInvoice = currentPeriodInvoices[student.id]
                       return (
                         <span className={badgeClass(hasInvoice ? 'em_dia' : 'pendente')}>
-                          {hasInvoice ? 'Emitida' : 'Pendente'}
+                          {hasInvoice ? t(language, 'invoice_issued') : t(language, 'financial_pending')}
                         </span>
                       )
                     })()}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span 
-                      title="Utilize o calendário para alterar horários" 
+                      title={t(language, 'calendar_time_hint')}
                       style={{ borderBottom: '1px dotted #64748b', cursor: 'help', color: '#38bdf8' }}
                     >
                       {scheduleText}
@@ -365,7 +365,7 @@ export default function AdminStudentsTab({
                           onClick={() => void handleIssueNfse(student.id, student.full_name)}
                           disabled={issuingNfseId === student.id || hasInvoice}
                         >
-                          {issuingNfseId === student.id ? 'Emitindo...' : hasInvoice ? 'Nota Emitida' : 'Emitir Nota'}
+                          {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoice ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
                         </button>
                       )
                     })()}
@@ -513,9 +513,9 @@ export default function AdminStudentsTab({
       {historyStudent && (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div className="form-card" style={{ maxWidth: '600px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Histórico de Pagamentos - {historyStudent.full_name}</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
-              <p className="muted">Carregando faturas...</p>
+              <p className="muted">{t(language, 'loading_invoices')}</p>
             ) : (
               <div className="list-stack" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {historyInvoices.map((inv) => {
@@ -523,10 +523,10 @@ export default function AdminStudentsTab({
                   return (
                     <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                       <div>
-                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>NFS-e Ref. {inv.billing_period || 'Sem Período'}</p>
-                        <p className="muted text-xs">Emissão: {new Date(inv.created_at).toLocaleDateString()}</p>
+                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>NFS-e Ref. {inv.billing_period || '-'}</p>
+                        <p className="muted text-xs">{t(language, 'emission_date')}: {new Date(inv.created_at).toLocaleDateString()}</p>
                         <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
-                          {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
+                          {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
                         </span>
                       </div>
                       <div>
@@ -538,22 +538,22 @@ export default function AdminStudentsTab({
                             className="primary-button" 
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
                           >
-                            Ver PDF
+                            {t(language, 'view_pdf')}
                           </a>
                         ) : (
-                          <span className="muted text-xs">Pendente</span>
+                          <span className="muted text-xs">{t(language, 'financial_pending')}</span>
                         )}
                       </div>
                     </div>
                   )
                 })}
                 {historyInvoices.length === 0 && (
-                  <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
+                  <p className="empty-state">{t(language, 'no_invoices_available')}</p>
                 )}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="secondary-button" onClick={() => setHistoryStudent(null)}>Fechar</button>
+              <button className="secondary-button" onClick={() => setHistoryStudent(null)}>{t(language, 'close')}</button>
             </div>
           </div>
         </div>
