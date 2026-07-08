@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { issueBarueriNFSe } from '../barueri/nfse-service.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const SCHOOL_CNPJ = process.env.SCHOOL_CNPJ || '00.000.000/0001-00';
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -18,20 +17,6 @@ const getSupabaseAdmin = () => {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
-};
-
-/**
- * Placeholder function for Phase 3: Barueri NFS-e XML emission.
- * Simulates generating an invoice with the municipal service and returning the PDF link.
- */
-const issueBarueriNFSe = async (studentData, amount, rpsNumber) => {
-  console.log(`[issueBarueriNFSe] Placeholder triggered for RPS ${rpsNumber}, Tomador: ${studentData.full_name}, Amount: ${amount}`);
-  
-  // In a sandbox/mock run, we generate a mock invoice id and visualization url
-  const mockNfseId = Math.floor(100000 + Math.random() * 900000);
-  const cnpjClean = SCHOOL_CNPJ.replace(/\D/g, '');
-  
-  return `https://receita.barueri.sp.gov.br/nfse/visualizar?id=${mockNfseId}&cnpj=${cnpjClean}&rps=${rpsNumber}`;
 };
 
 export default async function handler(req, res) {
