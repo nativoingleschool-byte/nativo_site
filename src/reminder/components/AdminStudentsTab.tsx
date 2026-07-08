@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
@@ -38,8 +39,54 @@ export default function AdminStudentsTab({
 }: AdminStudentsTabProps) {
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
+  const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
+  const [lastIssuedPdf, setLastIssuedPdf] = useState<{ name: string; url: string } | null>(null)
+
+  const handleIssueNfse = async (studentId: string, fullName: string) => {
+    setIssuingNfseId(studentId)
+    setLastIssuedPdf(null)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/issue-nfse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ student_id: studentId })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
+
+      // Display custom in-app success banner (prevents browser popup blockers)
+      setLastIssuedPdf({ name: fullName, url: data.nfs_e_pdf_link })
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIssuingNfseId(null)
+    }
+  }
+
   return (
     <>
+      {lastIssuedPdf && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+          <span>Nota Fiscal emitida com sucesso para <strong>{lastIssuedPdf.name}</strong>!</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <a href={lastIssuedPdf.url} target="_blank" rel="noreferrer" className="primary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}>
+              Visualizar PDF
+            </a>
+            <button className="secondary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setLastIssuedPdf(null)}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
         <form onSubmit={(e) => handleGenerateInviteLink(e)} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
@@ -132,6 +179,14 @@ export default function AdminStudentsTab({
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
                     <button 
+                      className="primary-button" 
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem', background: '#0284c7' }}
+                      onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                      disabled={issuingNfseId === student.id}
+                    >
+                      {issuingNfseId === student.id ? 'Emitindo...' : 'Emitir Nota'}
+                    </button>
+                    <button 
                       className="secondary-button" 
                       style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                       onClick={() => {
@@ -152,7 +207,8 @@ export default function AdminStudentsTab({
                           logradouro: student.logradouro || '',
                           bairro: student.bairro || '',
                           cidade: student.cidade || '',
-                          uf: student.uf || ''
+                          uf: student.uf || '',
+                          tuition_fee: student.tuition_fee
                         })
                       }}
                     >
@@ -188,6 +244,13 @@ export default function AdminStudentsTab({
                 placeholder="CPF"
                 value={userForm.cpf || ''}
                 onChange={(e) => setUserForm({ ...userForm, cpf: e.target.value })}
+              />
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Valor da Mensalidade"
+                value={userForm.tuition_fee ?? ''}
+                onChange={(e) => setUserForm({ ...userForm, tuition_fee: e.target.value === '' ? undefined : Number(e.target.value) })}
               />
               <select
                 value={userForm.data_pagamento_preferencial || 5}
@@ -245,7 +308,8 @@ export default function AdminStudentsTab({
                         logradouro: userForm.logradouro || null,
                         bairro: userForm.bairro || null,
                         cidade: userForm.cidade || null,
-                        uf: userForm.uf || null
+                        uf: userForm.uf || null,
+                        tuition_fee: userForm.tuition_fee ?? null
                       })
                       .eq('id', userForm.id)
                     if (error) throw error
