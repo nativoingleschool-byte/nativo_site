@@ -50,9 +50,32 @@ export default async function handler(req, res) {
     // 1. Authenticate & Verify admin role
     const supabaseAdmin = await assertAdmin(req);
 
-    const { student_id } = req.body || {};
+    const { student_id, billing_period } = req.body || {};
     if (!student_id) {
       return json(res, 400, { error: 'Missing student_id.' });
+    }
+
+    // Calculate current period in Brasilia Time (UTC-3)
+    const today = new Date();
+    const tzOffset = -3 * 60;
+    const localTime = new Date(today.getTime() + tzOffset * 60 * 1000);
+    const currentPeriod = billing_period || localTime.toISOString().substring(0, 7); // 'YYYY-MM'
+
+    // 1.5 Check for duplicate invoice in the current period
+    const { data: existingInvoice, error: checkError } = await supabaseAdmin
+      .from('invoices')
+      .select('id')
+      .eq('student_id', student_id)
+      .eq('billing_period', currentPeriod)
+      .or('status.eq.pago,nfs_e_pdf_link.is.not.null')
+      .maybeSingle();
+
+    if (checkError) {
+      throw new Error(`Database validation failed: ${checkError.message}`);
+    }
+
+    if (existingInvoice) {
+      return json(res, 409, { error: 'Nota fiscal já emitida para este aluno no período atual.' });
     }
 
     // 2. Fetch student details and check tuition_fee configuration
@@ -93,7 +116,8 @@ export default async function handler(req, res) {
         student_id: student.id,
         status: 'pago',
         rps_number: rpsNumber,
-        nfs_e_pdf_link: nfsEPdfLink
+        nfs_e_pdf_link: nfsEPdfLink,
+        billing_period: currentPeriod
       })
       .select('*')
       .single();
