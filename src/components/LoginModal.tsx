@@ -12,8 +12,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotView, setIsForgotView] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setIsForgotView(false);
+    setSuccessMsg('');
+    setError('');
+    onClose();
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -56,7 +65,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         // Redirect to the correct path (in this app, dashboard is at /reminder)
         // The path router in App.tsx will load the ReminderApp which shows the role-specific view
         window.history.pushState({}, '', '/reminder');
-        onClose();
+        handleClose();
       }
     } catch (err: any) {
       setError(err?.message || 'Erro ao realizar login.');
@@ -65,10 +74,29 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   };
 
+  const handleResetPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      });
+      if (error) throw error;
+      setSuccessMsg('Link de recuperação enviado com sucesso para seu e-mail! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao solicitar link de recuperação.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div 
         className="bg-white rounded-[2rem] max-w-md w-full overflow-hidden flex flex-col shadow-2xl border border-outline transition-all duration-300 transform scale-100"
@@ -77,12 +105,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-outline">
           <div className="flex flex-col">
-            <h2 className="text-2xl font-black text-primary tracking-tight">Área do Usuário</h2>
-            <p className="text-xs text-on-surface-variant font-light mt-1">Acesse o sistema Nativo English</p>
+            <h2 className="text-2xl font-black text-primary tracking-tight">
+              {isForgotView ? 'Recuperar Acesso' : 'Área do Usuário'}
+            </h2>
+            <p className="text-xs text-on-surface-variant font-light mt-1">
+              {isForgotView ? 'Insira seu e-mail cadastrado' : 'Acesse o sistema Nativo English'}
+            </p>
           </div>
           <button 
             className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-1.5 hover:bg-background rounded-full"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Fechar"
           >
             <X className="w-5 h-5" />
@@ -91,61 +123,135 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         
         {/* Body */}
         <div className="p-6">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 font-medium">
-                {error}
-              </div>
-            )}
-
-            {/* Email Field */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-primary uppercase tracking-widest block">E-mail</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
-                <input 
-                  type="email"
-                  required
-                  placeholder="exemplo@nativo.com"
-                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors text-sm"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-primary uppercase tracking-widest block">Senha</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
-                <input 
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors text-sm"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Autenticando...</span>
-                </>
-              ) : (
-                <span>Entrar no Sistema</span>
+          {isForgotView ? (
+            <form className="space-y-4" onSubmit={handleResetPassword}>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 font-medium">
+                  {error}
+                </div>
               )}
-            </button>
-          </form>
+              {successMsg && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-2xl text-xs text-green-600 font-medium">
+                  {successMsg}
+                </div>
+              )}
+
+              {/* Email Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-primary uppercase tracking-widest block">E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+                  <input 
+                    type="email"
+                    required
+                    placeholder="exemplo@nativo.com"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors text-sm"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Enviando...</span>
+                    </>
+                  ) : (
+                    <span>Recuperar Senha</span>
+                  )}
+                </button>
+                
+                <button 
+                  type="button"
+                  className="w-full py-4 bg-gray-100 text-gray-700 rounded-full font-bold hover:bg-gray-200 transition-all cursor-pointer text-sm"
+                  onClick={() => {
+                    setIsForgotView(false);
+                    setError('');
+                    setSuccessMsg('');
+                  }}
+                >
+                  Voltar ao Login
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 font-medium">
+                  {error}
+                </div>
+              )}
+
+              {/* Email Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-primary uppercase tracking-widest block">E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+                  <input 
+                    type="email"
+                    required
+                    placeholder="exemplo@nativo.com"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors text-sm"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-primary uppercase tracking-widest block">Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+                  <input 
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors text-sm"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="flex justify-end mt-1">
+                  <button 
+                    type="button" 
+                    className="text-xs text-on-surface-variant hover:text-primary transition-colors font-medium underline cursor-pointer"
+                    onClick={() => {
+                      setIsForgotView(true);
+                      setError('');
+                      setSuccessMsg('');
+                    }}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full mt-2 py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Autenticando...</span>
+                  </>
+                ) : (
+                  <span>Entrar no Sistema</span>
+                )}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
