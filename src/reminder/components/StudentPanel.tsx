@@ -139,7 +139,7 @@ export default function StudentPanel({
         <div className="panel-header">
           <div>
             <p className="section-label">Student</p>
-            <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : studentTab === 'account' ? t(language, 'student_tab_account') : 'Histórico de Pagamentos'}</h2>
+            <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : studentTab === 'account' ? t(language, 'student_tab_account') : t(language, 'student_tab_invoices')}</h2>
           </div>
           {/* Mobile Tab Dropdown */}
           <div className="mobile-tab-select">
@@ -149,7 +149,7 @@ export default function StudentPanel({
             >
               <option value="lessons">{t(language, 'student_tab_lessons')}</option>
               <option value="account">{t(language, 'student_tab_account')}</option>
-              <option value="invoices">Minhas Notas Fiscais</option>
+              <option value="invoices">{t(language, 'student_tab_invoices')}</option>
             </select>
           </div>
 
@@ -174,7 +174,7 @@ export default function StudentPanel({
               className={studentTab === 'invoices' ? 'tab-button tab-button-active' : 'tab-button'}
               onClick={() => setStudentTab('invoices')}
             >
-              Minhas Notas Fiscais
+              {t(language, 'student_tab_invoices')}
             </button>
           </div>
         </div>
@@ -402,9 +402,9 @@ export default function StudentPanel({
         ) : (
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1 }}>
-              <h3>Notas Fiscais de Serviços (NFS-e)</h3>
+              <h3>{t(language, 'invoices_title')}</h3>
               {loadingInvoices ? (
-                <p className="muted">Carregando notas fiscais...</p>
+                <p className="muted">{t(language, 'loading_invoices')}</p>
               ) : (
                 <div className="list-stack">
                   {myInvoices.map((inv) => {
@@ -414,13 +414,13 @@ export default function StudentPanel({
                         <div>
                           <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo English School - NFS-e</p>
                           <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>
-                            <strong>Mês de Referência:</strong> {inv.billing_period || 'Não especificado'}
+                            <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || 'Não especificado'}
                           </p>
                           <p className="muted text-xs">
-                            <strong>Emissão:</strong> {new Date(inv.created_at).toLocaleDateString()}
+                            <strong>{t(language, 'emission_date')}:</strong> {new Date(inv.created_at).toLocaleDateString()}
                           </p>
                           <span className={badgeClass(inv.status)} style={{ marginTop: '0.5rem', display: 'inline-block' }}>
-                            {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
+                            {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
                           </span>
                         </div>
                         <div>
@@ -432,17 +432,17 @@ export default function StudentPanel({
                               className="primary-button" 
                               style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
                             >
-                              Ver PDF
+                              {t(language, 'view_pdf')}
                             </a>
                           ) : (
-                            <span className="muted text-xs">Aguardando emissão</span>
+                            <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>
                           )}
                         </div>
                       </div>
                     )
                   })}
                   {myInvoices.length === 0 && (
-                    <p className="empty-state">Nenhum histórico de pagamentos disponível no momento.</p>
+                    <p className="empty-state">{t(language, 'no_invoices_available')}</p>
                   )}
                 </div>
               )}
