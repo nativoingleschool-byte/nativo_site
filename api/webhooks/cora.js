@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { issueBarueriNFSe } from '../barueri/nfse-service.js';
+import { issueBarueriNFSe } from '../../services/barueri/nfse-service.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
