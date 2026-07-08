@@ -98,7 +98,7 @@ function ReminderAppInner() {
   const [pendingLink, setPendingLink] = useState<PendingLink>({ lessonId: null, intent: null })
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff'>('students')
-  const [studentTab, setStudentTab] = useState<'account' | 'lessons'>('lessons')
+  const [studentTab, setStudentTab] = useState<'account' | 'lessons' | 'invoices'>('lessons')
   const [teacherTab, setTeacherTab] = useState<'calendar' | 'worklog' | 'profile'>('calendar')
   const [teacherNotes, setTeacherNotes] = useState('')
   const [uploadingNf, setUploadingNf] = useState(false)
