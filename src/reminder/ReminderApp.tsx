@@ -123,6 +123,79 @@ function ReminderAppInner() {
   const [updatingPassword, setUpdatingPassword] = useState(false)
   const [updatePasswordError, setUpdatePasswordError] = useState('')
 
+  const renderResetPasswordModal = () => {
+    if (!showResetPasswordModal) return null
+    return (
+      <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div className="form-card" style={{ maxWidth: '400px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
+            {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
+          </h3>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setUpdatePasswordError('');
+            if (newPassword !== confirmNewPassword) {
+              setUpdatePasswordError(language === 'es' ? 'Las contraseñas no coinciden.' : language === 'en' ? 'Passwords do not match.' : 'As senhas não coincidem.');
+              return;
+            }
+            setUpdatingPassword(true);
+            try {
+              const { error } = await supabase.auth.updateUser({ password: newPassword });
+              if (error) throw error;
+              alert(language === 'es' ? 'Contraseña actualizada con éxito.' : language === 'en' ? 'Password updated successfully.' : 'Senha atualizada com sucesso.');
+              setShowResetPasswordModal(false);
+              setNewPassword('');
+              setConfirmNewPassword('');
+            } catch (err: any) {
+              setUpdatePasswordError(err.message || 'Erro ao atualizar senha.');
+            } finally {
+              setUpdatingPassword(false);
+            }
+          }}>
+            <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              <input
+                required
+                type="password"
+                placeholder={language === 'es' ? 'Nueva Contraseña' : language === 'en' ? 'New Password' : 'Nova Senha'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
+              />
+              <input
+                required
+                type="password"
+                placeholder={language === 'es' ? 'Confirmar Nueva Contraseña' : language === 'en' ? 'Confirm New Password' : 'Confirmar Nova Senha'}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
+              />
+              {updatePasswordError && <p className="error-text">{updatePasswordError}</p>}
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="primary-button" style={{ flex: 1 }} disabled={updatingPassword}>
+                {updatingPassword ? (language === 'es' ? 'Guardando...' : language === 'en' ? 'Saving...' : 'Salvando...') : (language === 'es' ? 'Guardar Senha' : language === 'en' ? 'Save Password' : 'Salvar Senha')}
+              </button>
+              <button 
+                type="button" 
+                className="secondary-button" 
+                onClick={() => {
+                  setShowResetPasswordModal(false);
+                  setNewPassword('');
+                  setConfirmNewPassword('');
+                }}
+              >
+                {language === 'es' ? 'Cancelar' : language === 'en' ? 'Cancel' : 'Cancelar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+
   useEffect(() => {
     void registerAppServiceWorker()
   }, [])
@@ -195,6 +268,11 @@ function ReminderAppInner() {
     }
 
     void loadSession()
+
+    if (window.location.hash.includes('type=recovery')) {
+      setShowResetPasswordModal(true)
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
@@ -1030,15 +1108,18 @@ function ReminderAppInner() {
 
   if (!session || !profile) {
     return (
-      <LoginPanel
-        language={language}
-        setupSigningIn={setupSigningIn}
-        loginForm={loginForm}
-        setLoginForm={setLoginForm}
-        loginError={loginError}
-        appError={appError}
-        handleLogin={handleLogin}
-      />
+      <>
+        <LoginPanel
+          language={language}
+          setupSigningIn={setupSigningIn}
+          loginForm={loginForm}
+          setLoginForm={setLoginForm}
+          loginError={loginError}
+          appError={appError}
+          handleLogin={handleLogin}
+        />
+        {renderResetPasswordModal()}
+      </>
     )
   }
 
@@ -1313,74 +1394,7 @@ function ReminderAppInner() {
         )}
       </main>
       </div>
-      {showResetPasswordModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="form-card" style={{ maxWidth: '400px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-              {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
-            </h3>
-            
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setUpdatePasswordError('');
-              if (newPassword !== confirmNewPassword) {
-                setUpdatePasswordError(language === 'es' ? 'Las contraseñas no coinciden.' : language === 'en' ? 'Passwords do not match.' : 'As senhas não coincidem.');
-                return;
-              }
-              setUpdatingPassword(true);
-              try {
-                const { error } = await supabase.auth.updateUser({ password: newPassword });
-                if (error) throw error;
-                alert(language === 'es' ? 'Contraseña actualizada con éxito.' : language === 'en' ? 'Password updated successfully.' : 'Senha atualizada com sucesso.');
-                setShowResetPasswordModal(false);
-                setNewPassword('');
-                setConfirmNewPassword('');
-              } catch (err: any) {
-                setUpdatePasswordError(err.message || 'Erro ao atualizar senha.');
-              } finally {
-                setUpdatingPassword(false);
-              }
-            }}>
-              <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                <input
-                  required
-                  type="password"
-                  placeholder={language === 'es' ? 'Nueva Contraseña' : language === 'en' ? 'New Password' : 'Nova Senha'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
-                />
-                <input
-                  required
-                  type="password"
-                  placeholder={language === 'es' ? 'Confirmar Nueva Contraseña' : language === 'en' ? 'Confirm New Password' : 'Confirmar Nova Senha'}
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
-                />
-                {updatePasswordError && <p className="error-text">{updatePasswordError}</p>}
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="primary-button" style={{ flex: 1 }} disabled={updatingPassword}>
-                  {updatingPassword ? (language === 'es' ? 'Guardando...' : language === 'en' ? 'Saving...' : 'Salvando...') : (language === 'es' ? 'Guardar Senha' : language === 'en' ? 'Save Password' : 'Salvar Senha')}
-                </button>
-                <button 
-                  type="button" 
-                  className="secondary-button" 
-                  onClick={() => {
-                    setShowResetPasswordModal(false);
-                    setNewPassword('');
-                    setConfirmNewPassword('');
-                  }}
-                >
-                  {language === 'es' ? 'Cancelar' : language === 'en' ? 'Cancel' : 'Cancelar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {renderResetPasswordModal()}
     </div>
   )
 }
