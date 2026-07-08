@@ -21,6 +21,7 @@ create table if not exists public.profiles (
   bairro text null,
   cidade text null,
   uf text null,
+  tuition_fee numeric(10,2) null,
   
   -- Teacher specific fields
   chave_pix text null,
@@ -54,9 +55,12 @@ create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.profiles(id) on delete cascade,
   boleto_url text null,
-  status text not null check (status in ('pendente', 'pago', 'atrasado')),
+  status text not null check (status in ('pendente', 'pago', 'atrasado', 'falha_emissao')),
   nfse_url text null,
-  created_at timestamptz not null default timezone('utc', now())
+  created_at timestamptz not null default timezone('utc', now()),
+  rps_number bigint null,
+  nfs_e_pdf_link text null,
+  billing_period varchar(7) null
 );
 
 -- 4. Invitations Table (Magic invitation links)
@@ -140,6 +144,7 @@ with check (
 drop policy if exists "invoices_select" on public.invoices;
 create policy "invoices_select" on public.invoices
 for select
+to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()
@@ -162,3 +167,64 @@ drop policy if exists "invitations_select_anon" on public.invitations;
 create policy "invitations_select_anon" on public.invitations
 for select
 using (true);
+
+-- 5. Barueri Remessa Sequence tracking
+CREATE TABLE IF NOT EXISTS public.barueri_remessa_seq (
+  data_remessa DATE PRIMARY KEY DEFAULT CURRENT_DATE,
+  sequencia INT NOT NULL DEFAULT 1
+);
+
+CREATE OR REPLACE FUNCTION public.get_next_barueri_remessa()
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  next_seq INT;
+BEGIN
+  INSERT INTO public.barueri_remessa_seq (data_remessa, sequencia)
+  VALUES (CURRENT_DATE, 1)
+  ON CONFLICT (data_remessa)
+  DO UPDATE SET sequencia = barueri_remessa_seq.sequencia + 1
+  RETURNING sequencia INTO next_seq;
+  
+END;
+$$;
+
+-- 6. Webhook logs table for Cora Bank
+CREATE TABLE IF NOT EXISTS public.webhook_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  headers JSONB,
+  processed BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+-- 7. Barueri RPS Sequence tracking
+CREATE TABLE IF NOT EXISTS public.barueri_rps_seq (
+  data_rps DATE PRIMARY KEY DEFAULT CURRENT_DATE,
+  sequencia INT NOT NULL DEFAULT 1
+);
+
+CREATE OR REPLACE FUNCTION public.get_next_barueri_rps()
+RETURNS BIGINT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  today_date DATE := CURRENT_DATE;
+  next_seq INT;
+  formatted_rps BIGINT;
+BEGIN
+  INSERT INTO public.barueri_rps_seq (data_rps, sequencia)
+  VALUES (today_date, 1)
+  ON CONFLICT (data_rps)
+  DO UPDATE SET sequencia = barueri_rps_seq.sequencia + 1
+  RETURNING sequencia INTO next_seq;
+
+  formatted_rps := (to_char(today_date, 'YYYYMMDD') || lpad(next_seq::text, 3, '0'))::bigint;
+
+  RETURN formatted_rps;
+END;
+$$;
