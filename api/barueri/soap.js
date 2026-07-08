@@ -1,6 +1,7 @@
 import https from 'https';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
+import { hasBarueriCredentials, getBarueriHttpsAgentConfig } from './security.js';
 
 /**
  * Handles the complete SOAP connection and XML transmission.
@@ -19,7 +20,7 @@ export async function sendBarueriSoapRequest(data) {
   const remessaIdStr = String(remessaId).padStart(3, '0');
   const nomeArquivoRPS = `RPS_${todayStr}_${remessaIdStr}.txt`;
 
-  const hasCerts = process.env.BARUERI_PFX_BASE64 && process.env.BARUERI_PFX_PASSPHRASE;
+  const hasCerts = hasBarueriCredentials();
 
   if (!hasCerts) {
     console.warn('PFX Credentials are not set. Returning mock response for testing/compiles.');
@@ -50,11 +51,7 @@ export async function sendBarueriSoapRequest(data) {
 </soap:Envelope>`;
 
   try {
-    const agent = new https.Agent({
-      pfx: Buffer.from(process.env.BARUERI_PFX_BASE64, 'base64'),
-      passphrase: process.env.BARUERI_PFX_PASSPHRASE,
-      rejectUnauthorized: false // Bypasses SSL handshake errors common with Brazilian municipal cert chains
-    });
+    const agent = new https.Agent(getBarueriHttpsAgentConfig());
 
     const response = await axios.post('https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx', soapEnvelope, {
       headers: {
