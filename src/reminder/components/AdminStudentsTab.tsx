@@ -99,6 +99,78 @@ export default function AdminStudentsTab({
     }
   }
 
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null)
+
+  const selectables = students.filter(
+    (s) => !currentPeriodInvoices[s.id] && s.tuition_fee && Number(s.tuition_fee) > 0
+  )
+
+  const handleToggleAll = () => {
+    if (selectedStudentIds.length === selectables.length) {
+      setSelectedStudentIds([])
+    } else {
+      setSelectedStudentIds(selectables.map((s) => s.id))
+    }
+  }
+
+  const handleToggleStudent = (studentId: string) => {
+    if (selectedStudentIds.includes(studentId)) {
+      setSelectedStudentIds(selectedStudentIds.filter((id) => id !== studentId))
+    } else {
+      setSelectedStudentIds([...selectedStudentIds, studentId])
+    }
+  }
+
+  const handleBulkIssueNfse = async () => {
+    if (selectedStudentIds.length === 0) return
+    const total = selectedStudentIds.length
+    let successCount = 0
+    let failCount = 0
+    setLastIssuedPdf(null)
+
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      let i = 0
+      for (const studentId of selectedStudentIds) {
+        i++
+        setBulkProgress({ current: i, total })
+
+        try {
+          const response = await fetch('/api/admin/issue-nfse', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ student_id: studentId })
+          })
+
+          if (!response.ok) {
+            const errData = await response.json()
+            throw new Error(errData.error || 'Erro na resposta do servidor.')
+          }
+
+          successCount++
+        } catch (err: any) {
+          console.error(`Falha ao emitir nota para o aluno ${studentId}:`, err.message)
+          failCount++
+        }
+      }
+
+      alert(`Emissão em lote concluída!\n\nSucesso: ${successCount} notas emitidas.\nFalhas: ${failCount} notas falharam/já existiam.`)
+      setSelectedStudentIds([])
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setBulkProgress(null)
+    }
+  }
+
   return (
     <>
       {lastIssuedPdf && (
@@ -160,15 +232,38 @@ export default function AdminStudentsTab({
         )}
       </div>
 
+      {/* Bulk Action Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: 'rgba(30, 41, 59, 0.3)', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
+        <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
+          <strong>{selectedStudentIds.length}</strong> aluno(s) selecionado(s) para emissão.
+        </div>
+        <button
+          className="primary-button"
+          style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem', background: '#0284c7' }}
+          onClick={handleBulkIssueNfse}
+          disabled={selectedStudentIds.length === 0 || bulkProgress !== null}
+        >
+          {bulkProgress ? `Emitindo (${bulkProgress.current} de ${bulkProgress.total})...` : 'Emitir Notas Selecionadas'}
+        </button>
+      </div>
+
       <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+              <th style={{ padding: '1rem', width: '40px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedStudentIds.length === selectables.length && selectables.length > 0} 
+                  onChange={handleToggleAll} 
+                />
+              </th>
               <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
               <th style={{ padding: '1rem' }}>Email</th>
               <th style={{ padding: '1rem' }}>CPF</th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
+              <th style={{ padding: '1rem' }}>Status NFS-e (Mês Atual)</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_habitual_time')}</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
@@ -182,6 +277,14 @@ export default function AdminStudentsTab({
 
               return (
                 <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                  <td style={{ padding: '1rem', width: '40px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedStudentIds.includes(student.id)} 
+                      onChange={() => handleToggleStudent(student.id)} 
+                      disabled={currentPeriodInvoices[student.id] || !student.tuition_fee || Number(student.tuition_fee) <= 0}
+                    />
+                  </td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.full_name}</td>
                   <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
                   <td style={{ padding: '1rem' }}>{student.cpf || '-'}</td>
@@ -195,6 +298,16 @@ export default function AdminStudentsTab({
                       {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
                       {!student.status_pagamento && t(language, 'financial_pending')}
                     </span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {(() => {
+                      const hasInvoice = currentPeriodInvoices[student.id]
+                      return (
+                        <span className={badgeClass(hasInvoice ? 'em_dia' : 'pendente')}>
+                          {hasInvoice ? 'Emitida' : 'Pendente'}
+                        </span>
+                      )
+                    })()}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span 
