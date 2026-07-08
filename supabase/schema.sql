@@ -144,6 +144,7 @@ with check (
 drop policy if exists "invoices_select" on public.invoices;
 create policy "invoices_select" on public.invoices
 for select
+to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()

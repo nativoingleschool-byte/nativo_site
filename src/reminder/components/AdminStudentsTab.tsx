@@ -69,6 +69,30 @@ export default function AdminStudentsTab({
     void fetchCurrentInvoices()
   }, [students, lastIssuedPdf])
 
+  const [historyStudent, setHistoryStudent] = useState<Profile | null>(null)
+  const [historyInvoices, setHistoryInvoices] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  const openPaymentHistory = async (student: Profile) => {
+    setHistoryStudent(student)
+    setLoadingHistory(true)
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('billing_period', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setHistoryInvoices(data || [])
+    } catch (err) {
+      console.error('Error fetching student invoices:', err)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   const handleIssueNfse = async (studentId: string, fullName: string) => {
     setIssuingNfseId(studentId)
     setLastIssuedPdf(null)
@@ -285,7 +309,15 @@ export default function AdminStudentsTab({
                       disabled={currentPeriodInvoices[student.id] || !student.tuition_fee || Number(student.tuition_fee) <= 0}
                     />
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.full_name}</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                      onClick={() => void openPaymentHistory(student)}
+                    >
+                      {student.full_name}
+                    </button>
+                  </td>
                   <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
                   <td style={{ padding: '1rem' }}>{student.cpf || '-'}</td>
                   <td style={{ padding: '1rem' }}>
@@ -474,6 +506,54 @@ export default function AdminStudentsTab({
                 {t(language, 'save')}
               </button>
               <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {historyStudent && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="form-card" style={{ maxWidth: '600px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Histórico de Pagamentos - {historyStudent.full_name}</h3>
+            {loadingHistory ? (
+              <p className="muted">Carregando faturas...</p>
+            ) : (
+              <div className="list-stack" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                {historyInvoices.map((inv) => {
+                  const pdfUrl = inv.nfs_e_pdf_link || inv.nfse_url
+                  return (
+                    <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                      <div>
+                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>NFS-e Ref. {inv.billing_period || 'Sem Período'}</p>
+                        <p className="muted text-xs">Emissão: {new Date(inv.created_at).toLocaleDateString()}</p>
+                        <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
+                          {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
+                        </span>
+                      </div>
+                      <div>
+                        {pdfUrl ? (
+                          <a 
+                            href={pdfUrl} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="primary-button" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
+                          >
+                            Ver PDF
+                          </a>
+                        ) : (
+                          <span className="muted text-xs">Pendente</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+                {historyInvoices.length === 0 && (
+                  <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
+                )}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="secondary-button" onClick={() => setHistoryStudent(null)}>Fechar</button>
             </div>
           </div>
         </div>
