@@ -55,11 +55,12 @@ create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.profiles(id) on delete cascade,
   boleto_url text null,
-  status text not null check (status in ('pendente', 'pago', 'atrasado')),
+  status text not null check (status in ('pendente', 'pago', 'atrasado', 'falha_emissao')),
   nfse_url text null,
   created_at timestamptz not null default timezone('utc', now()),
   rps_number bigint null,
-  nfs_e_pdf_link text null
+  nfs_e_pdf_link text null,
+  billing_period varchar(7) null
 );
 
 -- 4. Invitations Table (Magic invitation links)

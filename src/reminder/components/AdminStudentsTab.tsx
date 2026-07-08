@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
@@ -41,6 +41,33 @@ export default function AdminStudentsTab({
 
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
   const [lastIssuedPdf, setLastIssuedPdf] = useState<{ name: string; url: string } | null>(null)
+  const [currentPeriodInvoices, setCurrentPeriodInvoices] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    const fetchCurrentInvoices = async () => {
+      try {
+        const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('student_id, id, status, nfs_e_pdf_link')
+          .eq('billing_period', currentPeriod)
+
+        if (error) throw error
+
+        const mapped: Record<string, boolean> = {}
+        data?.forEach((inv) => {
+          if (inv.status === 'pago' || inv.nfs_e_pdf_link) {
+            mapped[inv.student_id] = true
+          }
+        })
+        setCurrentPeriodInvoices(mapped)
+      } catch (err) {
+        console.error('Error fetching current month invoices:', err)
+      }
+    }
+
+    void fetchCurrentInvoices()
+  }, [students, lastIssuedPdf])
 
   const handleIssueNfse = async (studentId: string, fullName: string) => {
     setIssuingNfseId(studentId)
@@ -178,14 +205,25 @@ export default function AdminStudentsTab({
                     </span>
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    <button 
-                      className="primary-button" 
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem', background: '#0284c7' }}
-                      onClick={() => void handleIssueNfse(student.id, student.full_name)}
-                      disabled={issuingNfseId === student.id}
-                    >
-                      {issuingNfseId === student.id ? 'Emitindo...' : 'Emitir Nota'}
-                    </button>
+                    {(() => {
+                      const hasInvoice = currentPeriodInvoices[student.id]
+                      return (
+                        <button 
+                          className="primary-button" 
+                          style={{ 
+                            padding: '0.4rem 0.8rem', 
+                            fontSize: '0.8rem', 
+                            marginRight: '0.5rem', 
+                            background: hasInvoice ? '#10b981' : '#0284c7',
+                            cursor: hasInvoice ? 'not-allowed' : 'pointer'
+                          }}
+                          onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                          disabled={issuingNfseId === student.id || hasInvoice}
+                        >
+                          {issuingNfseId === student.id ? 'Emitindo...' : hasInvoice ? 'Nota Emitida' : 'Emitir Nota'}
+                        </button>
+                      )
+                    })()}
                     <button 
                       className="secondary-button" 
                       style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
