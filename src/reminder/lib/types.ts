@@ -20,6 +20,7 @@ export type UserFormState = {
   bairro?: string
   cidade?: string
   uf?: string
+  tuition_fee?: number
 }
 
 export type AccountFormState = {
@@ -66,6 +67,7 @@ export type Profile = {
   bairro?: string
   cidade?: string
   uf?: string
+  tuition_fee?: number
 }
 
 export type Lesson = {
