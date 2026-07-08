@@ -206,12 +206,12 @@ export default function RegisterApp() {
 
           {/* CEP */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CEP</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CEP (Opcional)</label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
               <input
                 type="text"
-                required
+
                 placeholder="06401-000"
                 className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
                 value={cep}
@@ -222,12 +222,12 @@ export default function RegisterApp() {
 
           {/* Logradouro */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Endereço (Rua, Nº, Apto)</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Endereço (Rua, Nº, Apto) (Opcional)</label>
             <div className="relative">
               <Home className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
               <input
                 type="text"
-                required
+
                 placeholder="Av. Principal, 123"
                 className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
                 value={logradouro}
@@ -239,10 +239,9 @@ export default function RegisterApp() {
           {/* Bairro, Cidade, UF in grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Bairro</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Bairro (Opcional)</label>
               <input
                 type="text"
-                required
                 placeholder="Centro"
                 className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
                 value={bairro}
@@ -250,10 +249,9 @@ export default function RegisterApp() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Cidade</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Cidade (Opcional)</label>
               <input
                 type="text"
-                required
                 placeholder="Barueri"
                 className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
                 value={cidade}
@@ -261,10 +259,9 @@ export default function RegisterApp() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">UF</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">UF (Opcional)</label>
               <input
                 type="text"
-                required
                 placeholder="SP"
                 maxLength={2}
                 className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm uppercase"

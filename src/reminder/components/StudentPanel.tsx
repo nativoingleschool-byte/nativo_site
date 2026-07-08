@@ -17,8 +17,8 @@ interface StudentPanelProps {
   notificationPermission: BrowserPermission
   disablePush: () => Promise<void>
   requestPushPermission: () => Promise<void>
-  studentTab: 'account' | 'lessons'
-  setStudentTab: (tab: 'account' | 'lessons') => void
+  studentTab: 'account' | 'lessons' | 'invoices'
+  setStudentTab: (tab: 'account' | 'lessons' | 'invoices') => void
   dueStudentFourHourReminders: Lesson[]
   dueStudentStartReminders: Lesson[]
   refreshProfile: (userId: string) => Promise<Profile>
@@ -90,6 +90,31 @@ export default function StudentPanel({
       setSaving(false)
     }
   }
+  const [myInvoices, setMyInvoices] = useState<any[]>([])
+  const [loadingInvoices, setLoadingInvoices] = useState(false)
+
+  useEffect(() => {
+    if (studentTab === 'invoices') {
+      const fetchMyInvoices = async () => {
+        setLoadingInvoices(true)
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('*')
+            .order('billing_period', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false })
+
+          if (error) throw error
+          setMyInvoices(data || [])
+        } catch (err) {
+          console.error('Error fetching student invoices:', err)
+        } finally {
+          setLoadingInvoices(false)
+        }
+      }
+      void fetchMyInvoices()
+    }
+  }, [studentTab])
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const visibleLessons = lessons.filter((lesson) => lesson.student_id === profile.id)
@@ -113,7 +138,7 @@ export default function StudentPanel({
         <div className="panel-header">
           <div>
             <p className="section-label">Student</p>
-            <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : t(language, 'student_tab_account')}</h2>
+            <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : studentTab === 'account' ? t(language, 'student_tab_account') : t(language, 'student_tab_invoices')}</h2>
           </div>
           {/* Mobile Tab Dropdown */}
           <div className="mobile-tab-select">
@@ -123,6 +148,7 @@ export default function StudentPanel({
             >
               <option value="lessons">{t(language, 'student_tab_lessons')}</option>
               <option value="account">{t(language, 'student_tab_account')}</option>
+              <option value="invoices">{t(language, 'student_tab_invoices')}</option>
             </select>
           </div>
 
@@ -141,6 +167,13 @@ export default function StudentPanel({
               onClick={() => setStudentTab('account')}
             >
               {t(language, 'student_tab_account')}
+            </button>
+            <button
+              type="button"
+              className={studentTab === 'invoices' ? 'tab-button tab-button-active' : 'tab-button'}
+              onClick={() => setStudentTab('invoices')}
+            >
+              {t(language, 'student_tab_invoices')}
             </button>
           </div>
         </div>
@@ -227,7 +260,7 @@ export default function StudentPanel({
               </div>
             </section>
           </div>
-        ) : (
+        ) : studentTab === 'account' ? (
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1 }}>
               <h3>Dados Cadastrais</h3>
@@ -345,9 +378,9 @@ export default function StudentPanel({
                         >
                           Boleto
                         </a>
-                        {inv.nfse_url && (
+                        {(inv.nfs_e_pdf_link || inv.nfse_url) && (
                           <a 
-                            href={inv.nfse_url} 
+                            href={inv.nfs_e_pdf_link || inv.nfse_url} 
                             target="_blank" 
                             rel="noreferrer" 
                             className="primary-button" 
@@ -363,6 +396,55 @@ export default function StudentPanel({
                   <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
                 )}
               </div>
+            </section>
+          </div>
+        ) : (
+          <div className="split-column animate-fade-in">
+            <section style={{ flex: 1 }}>
+              <h3>{t(language, 'invoices_title')}</h3>
+              {loadingInvoices ? (
+                <p className="muted">{t(language, 'loading_invoices')}</p>
+              ) : (
+                <div className="list-stack">
+                  {myInvoices.map((inv) => {
+                    const pdfUrl = inv.nfs_e_pdf_link || inv.nfse_url
+                    return (
+                      <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                        <div>
+                          <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo English School - NFS-e</p>
+                          <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>
+                            <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || 'Não especificado'}
+                          </p>
+                          <p className="muted text-xs">
+                            <strong>{t(language, 'emission_date')}:</strong> {new Date(inv.created_at).toLocaleDateString()}
+                          </p>
+                          <span className={badgeClass(inv.status)} style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                            {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
+                          </span>
+                        </div>
+                        <div>
+                          {pdfUrl ? (
+                            <a 
+                              href={pdfUrl} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="primary-button" 
+                              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
+                            >
+                              {t(language, 'view_pdf')}
+                            </a>
+                          ) : (
+                            <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {myInvoices.length === 0 && (
+                    <p className="empty-state">{t(language, 'no_invoices_available')}</p>
+                  )}
+                </div>
+              )}
             </section>
           </div>
         )}
