@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       .select('id')
       .eq('student_id', student_id)
       .eq('billing_period', currentPeriod)
-      .or('status.eq.pago,nfs_e_pdf_link.is.not.null')
+      .or('status.eq.pago,nfs_e_pdf_link.not.is.null')
       .maybeSingle();
 
     if (checkError) {
