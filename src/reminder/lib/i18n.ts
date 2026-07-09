@@ -126,6 +126,8 @@ export const translations: Record<Language, Dictionary> = {
     close: 'Close',
     success_invoice_banner: 'NFS-e successfully issued for {name}!',
     success_lote_envio_banner: 'Batch Sent - Awaiting Processing',
+    check_status: 'Check Status',
+    checking_status: 'Checking...',
     calendar_time_hint: 'Use the calendar to adjust hours'
   },
   pt: {
@@ -214,6 +216,8 @@ export const translations: Record<Language, Dictionary> = {
     close: 'Fechar',
     success_invoice_banner: 'NFS-e emitida com sucesso para {name}!',
     success_lote_envio_banner: 'Lote Enviado - Aguardando Processamento',
+    check_status: 'Verificar Status',
+    checking_status: 'Verificando...',
     calendar_time_hint: 'Utilize o calendário para alterar horários'
   },
   es: {
@@ -302,6 +306,8 @@ export const translations: Record<Language, Dictionary> = {
     close: 'Cerrar',
     success_invoice_banner: '¡NFS-e emitida con éxito para {name}!',
     success_lote_envio_banner: 'Lote Enviado - Esperando Procesamiento',
+    check_status: 'Verificar Estado',
+    checking_status: 'Verificando...',
     calendar_time_hint: 'Utilice el calendario para cambiar horarios'
   },
 }

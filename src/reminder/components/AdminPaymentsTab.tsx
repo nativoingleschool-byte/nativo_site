@@ -25,6 +25,41 @@ export default function AdminPaymentsTab({
   refreshInvoices,
 }: AdminPaymentsTabProps) {
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
+  const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
+
+  const handleCheckStatus = async (invoiceId: string) => {
+    setCheckingStatusId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/check-nfse-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ invoice_id: invoiceId })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
+
+      if (data.status === 'emitida' && data.nfs_e_pdf_link) {
+        alert(t(language, 'success_invoice_banner').replace('{name}', ''))
+      } else if (data.status === 'processando') {
+        alert(data.message || t(language, 'success_lote_envio_banner'))
+      } else if (data.status === 'erro') {
+        alert(`Erro: ${data.message}`)
+      }
+      await refreshInvoices()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setCheckingStatusId(null)
+    }
+  }
 
   const handleIssueNfse = async (studentId: string, fullName: string) => {
     setIssuingNfseId(studentId)
@@ -154,6 +189,15 @@ export default function AdminPaymentsTab({
                         >
                           {t(language, 'view_pdf')}
                         </a>
+                      ) : lastInvoice?.protocolo_recebimento ? (
+                        <button
+                          className="secondary-button"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#f59e0b', borderColor: '#f59e0b', color: '#000' }}
+                          disabled={checkingStatusId === lastInvoice.id}
+                          onClick={() => void handleCheckStatus(lastInvoice.id)}
+                        >
+                          {checkingStatusId === lastInvoice.id ? t(language, 'checking_status') : t(language, 'check_status')}
+                        </button>
                       ) : (
                         <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{t(language, 'awaiting_emission')}</span>
                       )}

@@ -143,7 +143,8 @@ export default async function handler(req, res) {
       message: 'NFS-e issued and invoice recorded successfully.',
       invoice_id: invoice.id,
       rps_number: rpsNumber,
-      nfs_e_pdf_link: nfsEPdfLink
+      nfs_e_pdf_link: invoice.nfs_e_pdf_link || null,
+      protocolo_recebimento: invoice.protocolo_recebimento || null
     });
 
   } catch (error) {
