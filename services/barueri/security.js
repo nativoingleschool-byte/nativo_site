@@ -63,13 +63,20 @@ export function getBarueriKeys() {
     const asn1 = forge.asn1.fromDer(pfxBuffer.toString('binary'), false);
     const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, process.env.BARUERI_PFX_PASSPHRASE);
 
-    // Get private key
-    const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-    const keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0];
+    // Get private key from encrypted shrouded key bags or fallback to plain key bags
+    let keyBag = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0];
     if (!keyBag) {
-      throw new Error('Private key not found in PFX certificate bags.');
+      keyBag = p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag]?.[0];
+    }
+    
+    if (!keyBag || !keyBag.key) {
+      throw new Error('Falha ao extrair a chave privada do certificado. Verifique as variáveis BARUERI_PFX_BASE64 e BARUERI_PFX_PASSPHRASE.');
     }
     const privateKeyPem = forge.pki.privateKeyToPem(keyBag.key);
+
+    if (!privateKeyPem) {
+      throw new Error("Falha ao extrair a chave privada do certificado. Verifique as variáveis BARUERI_PFX_BASE64 e BARUERI_PFX_PASSPHRASE.");
+    }
 
     // Get certificate
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });

@@ -125,6 +125,10 @@ export async function sendBarueriSoapRequest(data) {
     ],
     digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1"
   });
+  if (!privateKeyPem) {
+    throw new Error("Falha ao extrair a chave privada do certificado. Verifique as variáveis BARUERI_PFX_BASE64 e BARUERI_PFX_PASSPHRASE.");
+  }
+  sig.privateKey = privateKeyPem;
   sig.signingKey = privateKeyPem;
   sig.keyInfoProvider = {
     getKeyInfo: () => `<X509Data><X509Certificate>${cleanCert}</X509Certificate></X509Data>`
