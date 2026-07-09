@@ -1,33 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
-import {
-  buildHeaderRow,
-  buildDetailRow,
-  buildFooterRow,
-  assembleRpsFile
-} from './utils.js';
+import { XMLParser } from 'fast-xml-parser';
 import { sendBarueriSoapRequest } from './soap.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 const SCHOOL_IM = process.env.BARUERI_INSCRICAO_MUNICIPAL || '1234567';
-const SCHOOL_CNPJ = process.env.BARUERI_CNPJ_PRESTADOR || '00.000.000/0001-00';
-const RPS_SERIE = process.env.BARUERI_RPS_SERIE || 'RPS';
-const CODIGO_SERVICO = process.env.BARUERI_CODIGO_SERVICO || '02685';
-const DISCRIMINACAO = process.env.BARUERI_DISCRIMINACAO || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO ENGLISH SCHOOL';
-
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
 
 /**
- * Submits the positional layout batch to Barueri City Council Web Service via SOAP NFeLoteEnviarArquivo.
- * Decodes Digital Certificate .pfx from environment securely in-memory.
+ * Submits the ABRASF XML payload to Barueri City Council Web Service via SOAP.
  *
  * @param {object} studentData - Student profile data from Supabase profiles table.
  * @param {number} amount - Final invoice amount.
@@ -35,80 +12,124 @@ const getSupabaseAdmin = () => {
  * @returns {Promise<string>} The deterministic URL to view the generated NFS-e.
  */
 export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
-  const supabaseAdmin = getSupabaseAdmin();
-
-  // 1. Fetch daily batch remessa ID via Supabase RPC
-  const { data: remessaId, error: rpcError } = await supabaseAdmin
-    .rpc('get_next_barueri_remessa');
-
-  if (rpcError || !remessaId) {
-    throw new Error(`Failed to generate daily remessa ID sequence: ${rpcError?.message || 'unknown error'}`);
-  }
-
-  // Get current date in Brasilia Timezone (UTC-3)
-  const today = new Date();
-  const tzOffset = -3 * 60;
-  const localTime = new Date(today.getTime() + tzOffset * 60 * 1000);
-  const todayStr = localTime.toISOString().split('T')[0].replace(/-/g, '');
-
-  // 2. Assemble Positional RPS file records
-  // Header Payload must be exactly 25 characters before CRLF (\r\n)
-  const headerRow = buildHeaderRow(
-    SCHOOL_IM,
-    remessaId
-  );
-
-  // Detail Payload must be exactly 1970 characters before CRLF (\r\n)
-  const detailRow = buildDetailRow({
-    rpsSerie: RPS_SERIE,
-    rpsNumero: String(rpsNumber),
-    dataEmissao: todayStr,
-    codigoServico: CODIGO_SERVICO,
-    valorServico: amount,
-    tomadorCpfCnpj: studentData.cpf || '00000000000',
-    tomadorNome: studentData.full_name,
-    tomadorLogradouro: studentData.logradouro || 'AVENIDA PRINCIPAL, 100',
-    tomadorBairro: studentData.bairro || 'CENTRO',
-    tomadorCidade: studentData.cidade || 'BARUERI',
-    tomadorUf: studentData.uf || 'SP',
-    tomadorCep: studentData.cep || '06401000',
-    tomadorEmail: studentData.email,
-    discriminacaoServico: DISCRIMINACAO
-  });
-
-  // Footer Payload must be exactly 38 characters before CRLF (\r\n)
-  const footerRow = buildFooterRow(
-    3, // Total line count (Header + Detail + Footer)
-    amount
-  );
-
-  // Convert assembled string file to Base64
-  const base64RpsPayload = assembleRpsFile(headerRow, detailRow, footerRow);
-
-  // 3. Dispatch SOAP request to Barueri Web Service
+  // 1. Dispatch SOAP request to Barueri Web Service
   const soapResult = await sendBarueriSoapRequest({
-    inscricaoMunicipal: SCHOOL_IM,
-    cpfCnpjContrib: SCHOOL_CNPJ.replace(/\D/g, ''),
-    remessaId,
-    arquivoRPSBase64: base64RpsPayload
+    student: studentData,
+    amount,
+    rpsNumber
   });
 
   if (soapResult.mock) {
     console.log(`[Mock NFS-e] Emitting in mock/sandbox mode for RPS ${rpsNumber}.`);
-    return `https://receita.barueri.sp.gov.br/nfse/visualizar?id=MOCK-NF-${remessaId}&cnpj=${SCHOOL_CNPJ.replace(/\D/g, '')}&rps=${rpsNumber}`;
+    return soapResult.nfs_e_pdf_link;
   }
 
-  // 4. Response parsing and failure validation
-  const responseText = typeof soapResult.data === 'string' ? soapResult.data : JSON.stringify(soapResult.data);
-  
+  // 2. Response parsing and failure validation
+  const responseData = soapResult.data;
+  let innerXml = responseData;
+  if (typeof responseData === 'object') {
+    innerXml = responseData.GerarNfseResult || responseData.GerarNfseResponse || responseData.output || JSON.stringify(responseData);
+  }
+
+  // Parse inner xml if it's a string containing xml tags
+  let parsedInner = {};
+  if (typeof innerXml === 'string' && innerXml.trim().startsWith('<')) {
+    try {
+      const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+      parsedInner = parser.parse(innerXml);
+    } catch (e) {
+      console.warn('Failed to parse inner response XML, fallback to raw response parsing:', e.message);
+      parsedInner = { raw: innerXml };
+    }
+  } else {
+    parsedInner = responseData;
+  }
+
+  // 3. Robust Error Extraction (<ListaMensagemRetorno> or <Mensagem> or <Erro>)
+  const findErrorMessage = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    
+    // Look for ListaMensagemRetorno
+    const lista = obj.ListaMensagemRetorno || obj.EnviarLoteRpsResposta?.ListaMensagemRetorno || obj.GerarNfseResposta?.ListaMensagemRetorno;
+    if (lista) {
+      const retorno = lista.MensagemRetorno;
+      if (Array.isArray(retorno)) {
+        return retorno.map(r => `${r.Codigo || ''}: ${r.Mensagem || ''} ${r.Correcao ? `(Correção: ${r.Correcao})` : ''}`).join(' | ');
+      } else if (retorno) {
+        return `${retorno.Codigo || ''}: ${retorno.Mensagem || ''} ${retorno.Correcao ? `(Correção: ${retorno.Correcao})` : ''}`;
+      }
+    }
+    
+    // Check specific keys
+    if (obj.Mensagem) return typeof obj.Mensagem === 'object' ? JSON.stringify(obj.Mensagem) : String(obj.Mensagem);
+    if (obj.mensagem) return typeof obj.mensagem === 'object' ? JSON.stringify(obj.mensagem) : String(obj.mensagem);
+    if (obj.Message) return String(obj.Message);
+    if (obj.Erro) return typeof obj.Erro === 'object' ? JSON.stringify(obj.Erro) : String(obj.Erro);
+    if (obj.erro) return typeof obj.erro === 'object' ? JSON.stringify(obj.erro) : String(obj.erro);
+    
+    // Recursively look in child objects
+    for (const key of Object.keys(obj)) {
+      if (obj[key] && typeof obj[key] === 'object') {
+        const msg = findErrorMessage(obj[key]);
+        if (msg) return msg;
+      }
+    }
+    return null;
+  };
+
+  const errorMsg = findErrorMessage(parsedInner);
+  if (errorMsg) {
+    throw new Error(`Prefeitura rejeitou a NFS-e: ${errorMsg}`);
+  }
+
+  // In case raw response text contains clear error signatures
+  const responseText = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
   if (
     responseText.includes('<Erro>') ||
-    responseText.includes('<Codigo>') && (responseText.toLowerCase().includes('erro') || responseText.toLowerCase().includes('falha') || responseText.toLowerCase().includes('rejeitado'))
+    (responseText.includes('<Codigo>') && (responseText.toLowerCase().includes('erro') || responseText.toLowerCase().includes('falha') || responseText.toLowerCase().includes('rejeitado')))
   ) {
-    throw new Error(`Barueri SOAP Gateway rejected RPS upload: ${responseText}`);
+    throw new Error(`Prefeitura rejeitou a NFS-e (validação textual): ${responseText}`);
   }
 
-  // Generate deterministic URL to view the generated NFS-e
+  // 4. Extract Real PDF Link (NFS-e details: Number and Verification Code)
+  const findNfseDetails = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    
+    // Look for standard ABRASF tags
+    const nfse = obj.Nfse || obj.CompNfse || obj.GerarNfseResposta?.CompNfse?.Nfse || obj.GerarNfseResposta?.Nfse;
+    if (nfse && nfse.InfNfse) {
+      return {
+        numero: nfse.InfNfse.Numero,
+        codigoVerificacao: nfse.InfNfse.CodigoVerificacao
+      };
+    }
+    
+    // Fallback: search keys recursively
+    if (obj.Numero && obj.CodigoVerificacao) {
+      return {
+        numero: obj.Numero,
+        codigoVerificacao: obj.CodigoVerificacao
+      };
+    }
+    
+    for (const key of Object.keys(obj)) {
+      if (obj[key] && typeof obj[key] === 'object') {
+        const res = findNfseDetails(obj[key]);
+        if (res) return res;
+      }
+    }
+    return null;
+  };
+
+  const nfseDetails = findNfseDetails(parsedInner);
   const cleanIm = SCHOOL_IM.replace(/\D/g, '');
-  return `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&rps=${rpsNumber}`;
+
+  if (!nfseDetails || !nfseDetails.numero) {
+    console.warn('Could not locate standard Nfse structure in response. Response:', JSON.stringify(parsedInner));
+    // Generates a fallback URL with RPS number
+    return `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&rps=${rpsNumber}`;
+  }
+
+  // Returns precise URL to view generated NFS-e
+  return `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=${nfseDetails.numero}&codVerificacao=${nfseDetails.codigoVerificacao || ''}`;
 }
