@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
@@ -10,10 +11,6 @@ interface AdminPaymentsTabProps {
   setPaymentFilter: (f: 'all' | 'em_dia' | 'pendente' | 'atrasado') => void
   students: Profile[]
   invoices: any[]
-  invoiceForm: { studentId: string; amount: string; dueDate: string } | null
-  setInvoiceForm: (form: { studentId: string; amount: string; dueDate: string } | null) => void
-  invoiceLoading: boolean
-  handleGenerateBoleto: (e: any) => Promise<void>
   refreshInvoices: () => Promise<void>
 }
 
@@ -25,12 +22,40 @@ export default function AdminPaymentsTab({
   setPaymentFilter,
   students,
   invoices,
-  invoiceForm,
-  setInvoiceForm,
-  invoiceLoading,
-  handleGenerateBoleto,
   refreshInvoices,
 }: AdminPaymentsTabProps) {
+  const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
+
+  const handleIssueNfse = async (studentId: string, fullName: string) => {
+    setIssuingNfseId(studentId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/issue-nfse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ student_id: studentId })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
+
+      alert(`Nota Fiscal emitida com sucesso para ${fullName}!`)
+      await refreshInvoices()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIssuingNfseId(null)
+    }
+  }
+
+  const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
+
   return (
     <>
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
@@ -60,7 +85,7 @@ export default function AdminPaymentsTab({
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>{t(language, 'edit_student_title').split(' ').pop()}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
-              <th style={{ padding: '1rem' }}>Last Invoice / Link</th>
+              <th style={{ padding: '1rem' }}>{t(language, 'billing_period_ref')} / {t(language, 'emission_date')}</th>
               <th style={{ padding: '1rem' }}>NFS-e</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
@@ -77,6 +102,9 @@ export default function AdminPaymentsTab({
               .map((student) => {
                 const studentInvoices = invoices.filter(inv => inv.student_id === student.id)
                 const lastInvoice = studentInvoices[0]
+                const hasInvoiceForCurrentMonth = studentInvoices.some(
+                  inv => inv.billing_period === currentPeriod && (inv.status === 'pago' || inv.nfs_e_pdf_link)
+                )
 
                 return (
                   <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
@@ -103,39 +131,42 @@ export default function AdminPaymentsTab({
                     </td>
                     <td style={{ padding: '1rem' }}>
                       {lastInvoice ? (
-                        <a 
-                          href={lastInvoice.boleto_url} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.85rem' }}
-                        >
-                          Invoice ({lastInvoice.status})
-                        </a>
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>{lastInvoice.billing_period || 'Não especificado'}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{new Date(lastInvoice.created_at).toLocaleDateString()}</div>
+                        </div>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No invoice</span>
+                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>-</span>
                       )}
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      {lastInvoice?.nfse_url ? (
+                      {lastInvoice?.nfs_e_pdf_link ? (
                         <a 
-                          href={lastInvoice.nfse_url} 
+                          href={lastInvoice.nfs_e_pdf_link} 
                           target="_blank" 
                           rel="noreferrer" 
-                          style={{ color: '#10b981', textDecoration: 'underline', fontSize: '0.85rem', fontWeight: 'bold' }}
+                          className="primary-button"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
                         >
-                          NFS-e
+                          {t(language, 'view_pdf')}
                         </a>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>No NFS-e</span>
+                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{t(language, 'awaiting_emission')}</span>
                       )}
                     </td>
-                    <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <button
-                        className="secondary-button"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        onClick={() => setInvoiceForm({ studentId: student.id, amount: '340', dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] })}
+                        className="primary-button"
+                        style={{ 
+                          padding: '0.4rem 0.8rem', 
+                          fontSize: '0.8rem', 
+                          background: hasInvoiceForCurrentMonth ? '#10b981' : '#0284c7',
+                          cursor: hasInvoiceForCurrentMonth ? 'not-allowed' : 'pointer'
+                        }}
+                        disabled={issuingNfseId === student.id || hasInvoiceForCurrentMonth || !student.tuition_fee || Number(student.tuition_fee) <= 0}
+                        onClick={() => void handleIssueNfse(student.id, student.full_name)}
                       >
-                        New invoice
+                        {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoiceForCurrentMonth ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
                       </button>
                       <button
                         className="secondary-button"
@@ -160,41 +191,6 @@ export default function AdminPaymentsTab({
           </tbody>
         </table>
       </div>
-
-      {invoiceForm && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="form-card" style={{ maxWidth: '400px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.25rem' }}>Gerar Boleto (Cora API)</h3>
-            <form onSubmit={handleGenerateBoleto} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Valor (R$)</label>
-                <input
-                  required
-                  type="number"
-                  placeholder="Valor da cobrança"
-                  value={invoiceForm.amount}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Data de Vencimento</label>
-                <input
-                  required
-                  type="date"
-                  value={invoiceForm.dueDate}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
-                />
-              </div>
-              <div className="button-stack mt-4" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="submit" className="primary-button" disabled={invoiceLoading}>
-                  {invoiceLoading ? t(language, 'loading_invite') : t(language, 'save')}
-                </button>
-                <button type="button" className="secondary-button" onClick={() => setInvoiceForm(null)}>{t(language, 'cancel')}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </>
   )
 }
