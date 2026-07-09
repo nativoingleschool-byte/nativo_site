@@ -87,7 +87,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       if (error) throw error;
       setSuccessMsg('Link de recuperação enviado com sucesso para seu e-mail! Verifique sua caixa de entrada.');
     } catch (err: any) {
-      setError(err.message || 'Erro ao solicitar link de recuperação.');
+      console.error('Password reset error:', err);
+      let msg = 'Erro ao solicitar link de recuperação.';
+      if (err) {
+        if (typeof err === 'string') msg = err;
+        else if (err.message) msg = String(err.message);
+        else if (err.error_description) msg = String(err.error_description);
+        else if (err.msg) msg = String(err.msg);
+        else msg = err.toString() !== '[object Object]' ? err.toString() : JSON.stringify(err);
+      }
+      if (msg === '{}') {
+        msg = 'Erro de rede ou limite de requisições excedido. Verifique os logs do console.';
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

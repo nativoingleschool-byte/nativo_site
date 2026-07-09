@@ -45,7 +45,23 @@ export default function LoginPanel({
         : 'Um link de recuperação foi enviado para seu e-mail. Por favor, verifique sua caixa de entrada.'
       setResetMessage(successMsg)
     } catch (err: any) {
-      setResetError(err.message || 'Erro ao enviar e-mail de recuperação.')
+      console.error('Password reset error:', err)
+      let msg = language === 'es' ? 'Error al enviar el enlace de recuperación.' : language === 'en' ? 'Error sending recovery link.' : 'Erro ao enviar e-mail de recuperação.';
+      if (err) {
+        if (typeof err === 'string') msg = err;
+        else if (err.message) msg = String(err.message);
+        else if (err.error_description) msg = String(err.error_description);
+        else if (err.msg) msg = String(err.msg);
+        else msg = err.toString() !== '[object Object]' ? err.toString() : JSON.stringify(err);
+      }
+      if (msg === '{}') {
+        msg = language === 'es' 
+          ? 'Error de red o límite de solicitudes excedido. Revise los registros de la consola.' 
+          : language === 'en' 
+          ? 'Network error or rate limit exceeded. Please check the console logs.' 
+          : 'Erro de rede ou limite de requisições excedido. Verifique os logs do console.';
+      }
+      setResetError(msg)
     } finally {
       setResetLoading(false)
     }
