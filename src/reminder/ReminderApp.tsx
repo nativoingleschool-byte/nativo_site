@@ -106,8 +106,6 @@ function ReminderAppInner() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [generatedInviteLink, setGeneratedInviteLink] = useState('')
   const [inviteLoading, setInviteLoading] = useState(false)
-  const [invoiceForm, setInvoiceForm] = useState<{ studentId: string; amount: string; dueDate: string } | null>(null)
-  const [invoiceLoading, setInvoiceLoading] = useState(false)
   const [paymentSearch, setPaymentSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'em_dia' | 'pendente' | 'atrasado'>('all')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
@@ -1027,36 +1025,7 @@ function ReminderAppInner() {
     }
   }
 
-  const handleGenerateBoleto = async (e: any) => {
-    e.preventDefault()
-    if (!invoiceForm) return
-    setInvoiceLoading(true)
-    try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
-      const res = await fetch('/api/billing/generate-boleto', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          student_id: invoiceForm.studentId,
-          amount: Number(invoiceForm.amount),
-          due_date: invoiceForm.dueDate
-        })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao gerar boleto.')
-      alert('Boleto gerado com sucesso!')
-      setInvoiceForm(null)
-      await refreshInvoices()
-    } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setInvoiceLoading(false)
-    }
-  }
+
 
   const handleUpdateTeacherPayout = async (teacherId: string, status: 'pago' | 'pendente') => {
     try {
@@ -1274,10 +1243,6 @@ function ReminderAppInner() {
                 setPaymentFilter={setPaymentFilter}
                 students={students}
                 invoices={invoices}
-                invoiceForm={invoiceForm}
-                setInvoiceForm={setInvoiceForm}
-                invoiceLoading={invoiceLoading}
-                handleGenerateBoleto={handleGenerateBoleto}
                 refreshInvoices={refreshInvoices}
               />
             )}
