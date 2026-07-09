@@ -101,3 +101,82 @@ export async function sendBarueriSoapRequest(data) {
     throw new Error(`Barueri SOAP Gateway Error: ${errorMsg}`);
   }
 }
+
+/**
+ * Sends a consultation SOAP request to check the processing status of a previously submitted batch.
+ * @param {string} inscricaoMunicipal - Municipal registration number.
+ * @param {string} protocolo - The reception protocol returned from the submission.
+ * @returns {Promise<{success: boolean, data: any}>}
+ */
+export async function sendBarueriConsultaRequest(inscricaoMunicipal, protocolo) {
+  const hasCerts = hasBarueriCredentials();
+
+  if (!hasCerts) {
+    console.warn('PFX Credentials are not set. Returning mock consultation response.');
+    return {
+      success: true,
+      mock: true,
+      data: { status: 'concluido', Numero: '99999', CodigoVerificacao: 'MOCK-VERIF' }
+    };
+  }
+
+  const innerXml = `<?xml version="1.0" encoding="utf-8"?>
+<NFeLoteConsultarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
+  <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
+  <Protocolo>${protocolo}</Protocolo>
+</NFeLoteConsultarArquivo>`;
+
+  const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteConsultarArquivo"';
+  const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
+  <soapenv:Body>
+    <nfe:NFeLoteConsultarArquivo>
+      <nfe:VersaoSchema>1</nfe:VersaoSchema>
+      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
+    </nfe:NFeLoteConsultarArquivo>
+  </soapenv:Body>
+</soapenv:Envelope>`;
+
+  const agentConfig = getBarueriHttpsAgentConfig();
+  const agent = new https.Agent({
+    pfx: agentConfig.pfx,
+    passphrase: agentConfig.passphrase,
+    rejectUnauthorized: false
+  });
+
+  const endpoint = process.env.BARUERI_SOAP_ENDPOINT || 'https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx';
+
+  try {
+    const response = await axios.post(endpoint, soapEnvelope, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': soapAction
+      },
+      httpsAgent: agent,
+      timeout: 30000
+    });
+
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      parseTagValue: true
+    });
+
+    const parsedResult = parser.parse(response.data);
+    const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
+    const body = envelope?.['soap:Body'] || envelope?.Body;
+    const responseData = body?.NFeLoteConsultarArquivoResult || body?.NFeLoteConsultarArquivoResponse || body;
+
+    if (!responseData) {
+      throw new Error(`Resposta SOAP de consulta inválida: ${JSON.stringify(parsedResult)}`);
+    }
+
+    return {
+      success: true,
+      data: responseData
+    };
+  } catch (error) {
+    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+    console.error('Barueri SOAP consultation failure:', errorMsg);
+    throw new Error(`Barueri SOAP Consultation Error: ${errorMsg}`);
+  }
+}
