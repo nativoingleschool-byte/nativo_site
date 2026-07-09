@@ -137,15 +137,16 @@ export async function sendBarueriSoapRequest(data) {
   const signedXml = sig.getSignedXml();
 
   // 4. Wrap signed XML in SOAP envelope
-  const soapAction = 'http://www.barueri.sp.gov.br/nfe/GerarNfse';
+  const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteEnviarArquivo"';
   const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <GerarNfseEnvio xmlns="http://www.barueri.sp.gov.br/nfe">
-      <![CDATA[${signedXml}]]>
-    </GerarNfseEnvio>
-  </soap:Body>
-</soap:Envelope>`;
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
+  <soapenv:Body>
+    <nfe:NFeLoteEnviarArquivo>
+      <nfe:VersaoSchema>1</nfe:VersaoSchema>
+      <nfe:MensagemXML><![CDATA[${signedXml}]]></nfe:MensagemXML>
+    </nfe:NFeLoteEnviarArquivo>
+  </soapenv:Body>
+</soapenv:Envelope>`;
 
   // 5. Send POST HTTPS request mTLS
   const agentConfig = getBarueriHttpsAgentConfig();
@@ -177,7 +178,7 @@ export async function sendBarueriSoapRequest(data) {
     // Safe traversal for SOAP body wrappers
     const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
     const body = envelope?.['soap:Body'] || envelope?.Body;
-    const responseData = body?.GerarNfseResult || body?.GerarNfseResponse || body;
+    const responseData = body?.NFeLoteEnviarArquivoResult || body?.NFeLoteEnviarArquivoResponse || body;
 
     if (!responseData) {
       throw new Error(`Resposta SOAP inválida ou malformada: ${JSON.stringify(parsedResult)}`);

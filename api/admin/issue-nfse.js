@@ -106,8 +106,9 @@ export default async function handler(req, res) {
       throw new Error(`RPS generation failed: ${rpsError?.message || 'Empty sequence'}`);
     }
 
-    // 4. Invoke SOAP service to issue NFS-e
-    const nfsEPdfLink = await issueBarueriNFSe(student, tuitionFee, rpsNumber);
+    // 4. Invoke SOAP service to issue NFS-e and receive protocol
+    const result = await issueBarueriNFSe(student, tuitionFee, rpsNumber);
+    const isMockLink = typeof result === 'string' && result.startsWith('http');
 
     // 5. Create new paid invoice record
     const { data: invoice, error: invoiceError } = await supabaseAdmin
@@ -116,7 +117,8 @@ export default async function handler(req, res) {
         student_id: student.id,
         status: 'pago',
         rps_number: rpsNumber,
-        nfs_e_pdf_link: nfsEPdfLink,
+        nfs_e_pdf_link: isMockLink ? result : null,
+        protocolo_recebimento: isMockLink ? null : result,
         billing_period: currentPeriod
       })
       .select('*')
