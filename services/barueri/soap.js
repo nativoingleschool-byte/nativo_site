@@ -40,7 +40,7 @@ export async function sendBarueriSoapRequest(data) {
   <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
   <NomeArquivoRPS>${nomeArquivoRPS}</NomeArquivoRPS>
   <ApenasValidaArq>false</ApenasValidaArq>
-  <ArquivoRPS>${arquivoRPSBase64}</ArquivoRPS>
+  <ArquivoRPSBase64>${arquivoRPSBase64}</ArquivoRPSBase64>
 </NFeLoteEnviarArquivo>`;
 
   // 2. Wrap XML in SOAP envelope
