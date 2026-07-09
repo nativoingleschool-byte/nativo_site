@@ -1,3 +1,5 @@
+import forge from 'node-forge';
+
 /**
  * Barueri digital certificate (.pfx) security utility.
  * Loads and parses certificate data from in-memory environment variables.
@@ -41,5 +43,48 @@ export function getBarueriHttpsAgentConfig() {
   } catch (error) {
     console.error('Failed to decode A1 Digital Certificate (.pfx) from Base64:', error.message);
     throw new Error(`Security configuration error: digital certificate decryption failed.`);
+  }
+}
+
+/**
+ * Decodes the base64 digital certificate and extracts private key and certificate PEM.
+ * @returns {{ privateKeyPem: string, certPem: string }}
+ * @throws {Error} If credentials are not configured or certificate parsing fails.
+ */
+export function getBarueriKeys() {
+  if (!hasBarueriCredentials()) {
+    throw new Error(
+      'Cannot extract keys: BARUERI_PFX_BASE64 or BARUERI_PFX_PASSPHRASE environment variable is missing.'
+    );
+  }
+
+  try {
+    const pfxBuffer = Buffer.from(process.env.BARUERI_PFX_BASE64, 'base64');
+    const asn1 = forge.asn1.fromDer(pfxBuffer.toString('binary'), false);
+    const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, process.env.BARUERI_PFX_PASSPHRASE);
+
+    // Get private key
+    const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+    const keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0];
+    if (!keyBag) {
+      throw new Error('Private key not found in PFX certificate bags.');
+    }
+    const privateKeyPem = forge.pki.privateKeyToPem(keyBag.key);
+
+    // Get certificate
+    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+    const certBag = certBags[forge.pki.oids.certBag]?.[0];
+    if (!certBag) {
+      throw new Error('Certificate not found in PFX bags.');
+    }
+    const certPem = forge.pki.certificateToPem(certBag.cert);
+
+    return {
+      privateKeyPem,
+      certPem
+    };
+  } catch (error) {
+    console.error('Failed to parse PKCS12 / PFX certificate:', error.message);
+    throw new Error(`Security configuration error: digital certificate parsing failed: ${error.message}`);
   }
 }
