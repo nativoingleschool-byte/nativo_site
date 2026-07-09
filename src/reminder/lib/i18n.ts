@@ -125,6 +125,7 @@ export const translations: Record<Language, Dictionary> = {
     bulk_issuing_progress: 'Issuing ({current} of {total})...',
     close: 'Close',
     success_invoice_banner: 'NFS-e successfully issued for {name}!',
+    success_lote_envio_banner: 'Batch Sent - Awaiting Processing',
     calendar_time_hint: 'Use the calendar to adjust hours'
   },
   pt: {
@@ -212,6 +213,7 @@ export const translations: Record<Language, Dictionary> = {
     bulk_issuing_progress: 'Emitindo ({current} de {total})...',
     close: 'Fechar',
     success_invoice_banner: 'NFS-e emitida com sucesso para {name}!',
+    success_lote_envio_banner: 'Lote Enviado - Aguardando Processamento',
     calendar_time_hint: 'Utilize o calendário para alterar horários'
   },
   es: {
@@ -299,9 +301,9 @@ export const translations: Record<Language, Dictionary> = {
     bulk_issuing_progress: 'Emitiendo ({current} de {total})...',
     close: 'Cerrar',
     success_invoice_banner: '¡NFS-e emitida con éxito para {name}!',
+    success_lote_envio_banner: 'Lote Enviado - Esperando Procesamiento',
     calendar_time_hint: 'Utilice el calendario para cambiar horarios'
   },
 }
 
 export const t = (language: Language, key: string) => translations[language]?.[key] ?? translations.en[key] ?? key
-

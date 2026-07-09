@@ -45,7 +45,11 @@ export default function AdminPaymentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
-      alert(`Nota Fiscal emitida com sucesso para ${fullName}!`)
+      if (data.nfs_e_pdf_link) {
+        alert(t(language, 'success_invoice_banner').replace('{name}', fullName))
+      } else {
+        alert(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
+      }
       await refreshInvoices()
     } catch (err: any) {
       alert(err.message)
