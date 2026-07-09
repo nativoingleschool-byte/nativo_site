@@ -185,7 +185,7 @@ export default function AdminStudentsTab({
         }
       }
 
-      alert(`Emissão em lote concluída!\n\nSucesso: ${successCount} notas emitidas.\nFalhas: ${failCount} notas falharam/já existiam.`)
+      alert(`Emissão em lote concluída!\n\nSucesso: ${successCount} lotes enviados para processamento.\nFalhas: ${failCount} falharam/já existiam.`)
       setSelectedStudentIds([])
       await refreshProfiles()
     } catch (err: any) {
@@ -199,11 +199,17 @@ export default function AdminStudentsTab({
     <>
       {lastIssuedPdf && (
         <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-          <span>{t(language, 'success_invoice_banner').replace('{name}', lastIssuedPdf.name)}</span>
+          <span>
+            {lastIssuedPdf.url 
+              ? t(language, 'success_invoice_banner').replace('{name}', lastIssuedPdf.name)
+              : `${t(language, 'success_lote_envio_banner')} (${lastIssuedPdf.name})`}
+          </span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <a href={lastIssuedPdf.url} target="_blank" rel="noreferrer" className="primary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}>
-              {t(language, 'view_pdf')}
-            </a>
+            {lastIssuedPdf.url && (
+              <a href={lastIssuedPdf.url} target="_blank" rel="noreferrer" className="primary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}>
+                {t(language, 'view_pdf')}
+              </a>
+            )}
             <button className="secondary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setLastIssuedPdf(null)}>
               {t(language, 'close')}
             </button>

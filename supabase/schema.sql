@@ -60,7 +60,8 @@ create table if not exists public.invoices (
   created_at timestamptz not null default timezone('utc', now()),
   rps_number bigint null,
   nfs_e_pdf_link text null,
-  billing_period varchar(7) null
+  billing_period varchar(7) null,
+  protocolo_recebimento text null
 );
 
 -- 4. Invitations Table (Magic invitation links)
