@@ -144,6 +144,20 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
                             responseText.includes('sucesso') && responseText.includes('NomeArquivo');
 
   if (isSuccessResponse) {
+    const findProtocol = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.Protocolo) return String(obj.Protocolo);
+      if (obj.protocolo) return String(obj.protocolo);
+      if (obj.ProtocoloRemessa) return String(obj.ProtocoloRemessa);
+      for (const key of Object.keys(obj)) {
+        if (obj[key] && typeof obj[key] === 'object') {
+          const res = findProtocol(obj[key]);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+
     const findFileName = (obj) => {
       if (!obj || typeof obj !== 'object') return null;
       if (obj.NomeArquivo) return String(obj.NomeArquivo);
@@ -156,9 +170,10 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
       }
       return null;
     };
-    const fileName = findFileName(parsedInner);
-    if (fileName) {
-      return fileName;
+
+    const protocolValue = findProtocol(parsedInner) || findFileName(parsedInner);
+    if (protocolValue) {
+      return protocolValue;
     }
     // Fallback filename using date and rps number
     return `RPS_${new Date().toISOString().split('T')[0].replace(/-/g, '')}_${rpsNumber}.txt`;
