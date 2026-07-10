@@ -153,10 +153,11 @@ export function buildFooterRow(totalLines, totalValue) {
  * Mandatory 1:1 with each Type 2 row in PMB004 layout.
  * Payload must be exactly 1970 characters.
  */
-export function buildType4Row(data = {}) {
+export function buildTaxRow(data = {}) {
   const optanteSN = data.optanteSimples || '1'; // 1=Não Optante, 2=MEI, 3=ME/EPP
   const regimeApuracao = optanteSN === '3' ? (data.regimeApuracao || '1') : '0';
   const codigoCidadeIBGE = data.codigoCidadeIBGE || '3505708'; // Barueri
+  const codigoServico = data.codigoServico || '080201220'; // Online language school service code
 
   const payload =
     generatePositionalString('4', 'text', 1) +             // pos 1: Tipo do Registro
@@ -164,10 +165,11 @@ export function buildType4Row(data = {}) {
     generatePositionalString(regimeApuracao, 'text', 1) +   // pos 3: Regime Apuração Simples
     generatePositionalString('', 'text', 3) +               // pos 4-6: reserved
     generatePositionalString(codigoCidadeIBGE, 'numeric_string', 7) + // pos 7-13: Código Cidade IBGE
-    generatePositionalString('', 'text', 1957);             // pos 14-1970: remaining fields (spaces)
+    generatePositionalString(codigoServico, 'numeric_string', 9) +    // pos 14-22: Código de Atividade (080201220)
+    generatePositionalString('', 'text', 1948);             // pos 23-1970: remaining fields (spaces)
 
   if (payload.length !== 1970) {
-    throw new Error(`Type4 payload length mismatch: expected 1970, got ${payload.length}`);
+    throw new Error(`Type4 (TaxRow) payload length mismatch: expected 1970, got ${payload.length}`);
   }
 
   return payload + '\r\n';

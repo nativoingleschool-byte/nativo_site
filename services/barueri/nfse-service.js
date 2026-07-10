@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import {
   buildHeaderRow,
   buildDetailRow,
-  buildType4Row,
+  buildTaxRow,
   buildFooterRow,
   assembleRpsFile
 } from './utils.js';
@@ -87,9 +87,10 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
   });
 
   // Type 4 Row (ADN/Reforma Tributária) - mandatory 1:1 with Type 2 in PMB004
-  const type4Row = buildType4Row({
-    optanteSimples: '1',        // 1 = Não Optante do Simples Nacional
-    codigoCidadeIBGE: '3505708' // Barueri IBGE code
+  const type4Row = buildTaxRow({
+    optanteSimples: '1',        // 1 = Não Optante do Simples Nacional (Lucro Presumido)
+    codigoCidadeIBGE: '3505708', // Barueri IBGE code
+    codigoServico: CODIGO_SERVICO
   });
 
   // Footer Payload must be exactly 38 characters before CRLF (\r\n)
