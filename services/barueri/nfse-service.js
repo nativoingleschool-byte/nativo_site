@@ -234,7 +234,7 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
  * @returns {Promise<{status: string, message?: string, nfs_e_pdf_link?: string}>}
  */
 export async function consultarBarueriNFSe(protocolo) {
-  const cleanIm = SCHOOL_IM.replace(/\D/g, '');
+  const cleanIm = SCHOOL_IM;
   const cleanCnpj = SCHOOL_CNPJ.replace(/\D/g, '');
 
   // 1. Call status request
