@@ -92,6 +92,24 @@ export function buildDetailRow(data) {
   const cleanedDoc = String(data.tomadorCpfCnpj || '').replace(/\D/g, '');
   const tipoDoc = cleanedDoc.length > 11 ? '2' : '1';
 
+  let street = data.tomadorLogradouro || '';
+  let number = 'SN';
+  let complement = '';
+
+  const commaIndex = street.lastIndexOf(',');
+  if (commaIndex !== -1) {
+    const rest = street.substring(commaIndex + 1).trim();
+    street = street.substring(0, commaIndex).trim();
+    
+    const hyphenIndex = rest.indexOf('-');
+    if (hyphenIndex !== -1) {
+      number = rest.substring(0, hyphenIndex).trim() || 'SN';
+      complement = rest.substring(hyphenIndex + 1).trim();
+    } else {
+      number = rest || 'SN';
+    }
+  }
+
   const payload =
     generatePositionalString('2', 'text', 1) +
     generatePositionalString('RPS  ', 'text', 5) +
@@ -114,14 +132,15 @@ export function buildDetailRow(data) {
     generatePositionalString(tipoDoc, 'text', 1) + // pos 504
     generatePositionalString(cleanedDoc, 'numeric_string', 14) + // pos 505-518
     generatePositionalString(data.tomadorNome, 'text', 60) + // pos 519-578
-    generatePositionalString(data.tomadorLogradouro, 'text', 75) + // pos 579-653
-    generatePositionalString('', 'text', 39) + // blank pos 654-692
-    generatePositionalString(data.tomadorBairro, 'text', 40) + // pos 693-732
-    generatePositionalString(data.tomadorCidade, 'text', 40) + // pos 733-772
-    generatePositionalString(data.tomadorUf, 'text', 2) + // pos 773-774
-    generatePositionalString(data.tomadorCep, 'numeric_string', 8) + // pos 775-782
-    generatePositionalString(data.tomadorEmail, 'text', 152) + // pos 783-934
-    generatePositionalString('', 'text', 36) + // blank pos 935-970
+    generatePositionalString(street, 'text', 75) + // pos 579-653
+    generatePositionalString(number, 'text', 10) + // pos 654-663
+    generatePositionalString(complement, 'text', 30) + // pos 664-693
+    generatePositionalString(data.tomadorBairro, 'text', 40) + // pos 694-733
+    generatePositionalString(data.tomadorCidade, 'text', 40) + // pos 734-773
+    generatePositionalString(data.tomadorUf, 'text', 2) + // pos 774-775
+    generatePositionalString(data.tomadorCep, 'numeric_string', 8) + // pos 776-783
+    generatePositionalString(data.tomadorEmail, 'text', 152) + // pos 784-935
+    generatePositionalString('', 'text', 35) + // blank pos 936-970
     formatDiscriminacao(data.discriminacaoServico); // pos 971-1970
 
   if (payload.length !== 1970) {
@@ -139,7 +158,7 @@ export function buildFooterRow(totalLines, totalValue) {
     generatePositionalString('9', 'text', 1) +
     generatePositionalString(totalLines, 'numeric_string', 7) +
     generatePositionalString(totalValue, 'numeric', 15) +
-    generatePositionalString('', 'text', 15);
+    generatePositionalString(0, 'numeric', 15);
 
   if (payload.length !== 38) {
     throw new Error(`Footer payload length mismatch: expected 38, got ${payload.length}`);
