@@ -73,12 +73,13 @@ export default async function handler(req, res) {
       }
 
       for (const student of students) {
-        // 2. Find failed invoices: nfs_e_pdf_link is null
+        // 2. Find invoices for the current period to reset
+        const currentPeriod = new Date().toISOString().substring(0, 7); // 'YYYY-MM'
         const { data: failedInvoices, error: invoiceError } = await supabaseAdmin
           .from('invoices')
           .select('id, billing_period, status, protocolo_recebimento, nfs_e_pdf_link, created_at')
           .eq('student_id', student.id)
-          .is('nfs_e_pdf_link', null);
+          .eq('billing_period', currentPeriod);
 
         if (invoiceError) {
           results.push({ name: student.full_name, error: `Invoice query failed: ${invoiceError.message}` });
