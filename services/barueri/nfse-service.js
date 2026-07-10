@@ -6,7 +6,7 @@ import {
   buildFooterRow,
   assembleRpsFile
 } from './utils.js';
-import { sendBarueriSoapRequest, sendBarueriConsultaRequest } from './soap.js';
+import { sendBarueriSoapRequest, sendBarueriStatusRequest, sendBarueriBaixarRequest } from './soap.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -235,11 +235,12 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
  */
 export async function consultarBarueriNFSe(protocolo) {
   const cleanIm = SCHOOL_IM.replace(/\D/g, '');
+  const cleanCnpj = SCHOOL_CNPJ.replace(/\D/g, '');
 
-  const soapResult = await sendBarueriConsultaRequest(cleanIm, protocolo);
+  // 1. Call status request
+  const statusResult = await sendBarueriStatusRequest(cleanIm, cleanCnpj, protocolo);
 
-  if (soapResult.mock) {
-    console.log(`[Mock Consulta] Returning mock success for protocol ${protocolo}.`);
+  if (statusResult.mock) {
     return {
       status: 'concluido',
       nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=99999&codVerificacao=MOCK-VERIF`
@@ -247,100 +248,146 @@ export async function consultarBarueriNFSe(protocolo) {
   }
 
   // Parse inner response
-  const responseData = soapResult.data;
+  const responseData = statusResult.data;
   let innerXml = responseData;
   if (typeof responseData === 'object') {
-    innerXml = responseData.NFeLoteConsultarArquivoResult || responseData.NFeLoteConsultarArquivoResponse || responseData.output || JSON.stringify(responseData);
+    innerXml = responseData.NFeLoteStatusArquivoResult || responseData.NFeLoteStatusArquivoResponse || responseData.output || JSON.stringify(responseData);
   }
 
   let parsedInner = {};
   if (typeof innerXml === 'string' && innerXml.trim().startsWith('<')) {
     try {
-      const { XMLParser } = await import('fast-xml-parser');
       const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
       parsedInner = parser.parse(innerXml);
     } catch (e) {
-      console.warn('Failed to parse consultation response XML:', e.message);
+      console.warn('Failed to parse status response XML:', e.message);
       parsedInner = { raw: innerXml };
     }
   } else {
     parsedInner = responseData;
   }
 
-  // Check for processing status indicators
-  const responseText = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
-  const lowerText = responseText.toLowerCase();
-
-  if (lowerText.includes('processando') || lowerText.includes('em processamento') || lowerText.includes('aguardando')) {
-    return {
-      status: 'processando',
-      message: 'Lote ainda em processamento pela prefeitura.'
-    };
-  }
-
-  // Check for errors
-  const findErrorMessage = (obj) => {
+  // Find SituacaoArq and NomeArqRetorno
+  const findStatusDetails = (obj) => {
     if (!obj || typeof obj !== 'object') return null;
-    const lista = obj.ListaMensagemRetorno || obj.RetornoEnvioLoteRps?.ListaMensagemRetorno;
-    if (lista) {
-      const retorno = lista.MensagemRetorno;
-      if (Array.isArray(retorno)) {
-        return retorno.map(r => `${r.Codigo || ''}: ${r.Mensagem || ''} ${r.Correcao ? `(Correção: ${r.Correcao})` : ''}`).join(' | ');
-      } else if (retorno) {
-        return `${retorno.Codigo || ''}: ${retorno.Mensagem || ''} ${retorno.Correcao ? `(Correção: ${retorno.Correcao})` : ''}`;
-      }
+    if (obj.SituacaoArq !== undefined) {
+      return {
+        situacao: String(obj.SituacaoArq),
+        nomeArqRetorno: obj.NomeArqRetorno ? String(obj.NomeArqRetorno) : null
+      };
     }
-    if (obj.Mensagem) return typeof obj.Mensagem === 'object' ? JSON.stringify(obj.Mensagem) : String(obj.Mensagem);
-    if (obj.Erro) return typeof obj.Erro === 'object' ? JSON.stringify(obj.Erro) : String(obj.Erro);
-    for (const key of Object.keys(obj)) {
-      if (obj[key] && typeof obj[key] === 'object') {
-        const msg = findErrorMessage(obj[key]);
-        if (msg) return msg;
-      }
-    }
-    return null;
-  };
-
-  if (lowerText.includes('<erro>') || lowerText.includes('rejeitado') || lowerText.includes('falha')) {
-    const errorMsg = findErrorMessage(parsedInner);
-    return {
-      status: 'erro',
-      message: errorMsg || 'A prefeitura rejeitou o lote.'
-    };
-  }
-
-  // Look for NFS-e number and verification code (success scenario)
-  const findNfseDetails = (obj) => {
-    if (!obj || typeof obj !== 'object') return null;
-    if (obj.Numero && obj.CodigoVerificacao) {
-      return { numero: String(obj.Numero), codigoVerificacao: String(obj.CodigoVerificacao) };
-    }
-    const nfse = obj.Nfse || obj.CompNfse?.Nfse;
-    if (nfse?.InfNfse) {
-      return { numero: String(nfse.InfNfse.Numero), codigoVerificacao: String(nfse.InfNfse.CodigoVerificacao || '') };
+    if (obj.situacaoArq !== undefined) {
+      return {
+        situacao: String(obj.situacaoArq),
+        nomeArqRetorno: obj.nomeArqRetorno ? String(obj.nomeArqRetorno) : null
+      };
     }
     for (const key of Object.keys(obj)) {
       if (obj[key] && typeof obj[key] === 'object') {
-        const res = findNfseDetails(obj[key]);
+        const res = findStatusDetails(obj[key]);
         if (res) return res;
       }
     }
     return null;
   };
 
-  const nfseDetails = findNfseDetails(parsedInner);
+  const statusDetails = findStatusDetails(parsedInner);
 
-  if (nfseDetails && nfseDetails.numero) {
+  if (!statusDetails) {
+    console.warn('Could not determine status details. Response:', JSON.stringify(parsedInner));
     return {
-      status: 'concluido',
-      nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=${nfseDetails.numero}&codVerificacao=${nfseDetails.codigoVerificacao || ''}`
+      status: 'processando',
+      message: 'Status não determinado. O lote pode ainda estar em processamento.'
     };
   }
 
-  // If nothing matched, assume still processing
-  console.warn('Could not determine consultation result. Response:', JSON.stringify(parsedInner));
+  const { situacao, nomeArqRetorno } = statusDetails;
+
+  // SituacaoArq: -2 = Awaiting, -1 = Processing, 0 = Validated, 1 = Imported, 2 = Error
+  if (situacao === '-2' || situacao === '-1') {
+    return {
+      status: 'processando',
+      message: 'Lote em processamento pela prefeitura.'
+    };
+  }
+
+  if (situacao === '2') {
+    return {
+      status: 'erro',
+      message: 'A prefeitura rejeitou o lote (processado com erros).'
+    };
+  }
+
+  if ((situacao === '0' || situacao === '1') && nomeArqRetorno) {
+    // 2. Download the return file
+    const downloadResult = await sendBarueriBaixarRequest(cleanIm, cleanCnpj, nomeArqRetorno);
+    
+    let baixarXml = downloadResult.data;
+    if (typeof baixarXml === 'object') {
+      baixarXml = baixarXml.NFeLoteBaixarArquivoResult || baixarXml.NFeLoteBaixarArquivoResponse || baixarXml.output || JSON.stringify(baixarXml);
+    }
+
+    let parsedBaixar = {};
+    if (typeof baixarXml === 'string' && baixarXml.trim().startsWith('<')) {
+      try {
+        const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+        parsedBaixar = parser.parse(baixarXml);
+      } catch (e) {
+        console.warn('Failed to parse download response XML:', e.message);
+        parsedBaixar = { raw: baixarXml };
+      }
+    } else {
+      parsedBaixar = downloadResult.data;
+    }
+
+    // Extract ArquivoRPSBase64
+    const findArquivoBase64 = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.ArquivoRPSBase64) return String(obj.ArquivoRPSBase64);
+      if (obj.arquivoRPSBase64) return String(obj.arquivoRPSBase64);
+      for (const key of Object.keys(obj)) {
+        if (obj[key] && typeof obj[key] === 'object') {
+          const res = findArquivoBase64(obj[key]);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+
+    const base64Data = findArquivoBase64(parsedBaixar);
+    if (!base64Data) {
+      return {
+        status: 'erro',
+        message: 'Lote processado, mas o arquivo de retorno não foi encontrado na resposta de download.'
+      };
+    }
+
+    // Decode return file content (fixed-width positional layout TXT)
+    const fileContent = Buffer.from(base64Data, 'base64').toString('utf8');
+    const lines = fileContent.split(/\r?\n/);
+    let numero = null;
+    let codigoVerificacao = null;
+
+    for (const line of lines) {
+      if (line.startsWith('2')) {
+        // positions 6 to 12 is number (7 chars) -> substring(5, 12)
+        numero = line.substring(5, 12).trim();
+        // positions 27 to 50 is verification code (24 chars) -> substring(26, 50)
+        codigoVerificacao = line.substring(26, 50).trim();
+        break;
+      }
+    }
+
+    if (numero) {
+      return {
+        status: 'concluido',
+        nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=${numero}&codVerificacao=${codigoVerificacao || ''}`
+      };
+    }
+  }
+
   return {
     status: 'processando',
-    message: 'Status não determinado. O lote pode ainda estar em processamento.'
+    message: 'Lote processado com sucesso, mas não foi possível extrair a nota gerada.'
   };
 }

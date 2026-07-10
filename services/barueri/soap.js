@@ -103,37 +103,38 @@ export async function sendBarueriSoapRequest(data) {
 }
 
 /**
- * Sends a consultation SOAP request to check the processing status of a previously submitted batch.
+ * Sends a status query SOAP request to check the processing situation of a previously submitted batch.
  * @param {string} inscricaoMunicipal - Municipal registration number.
- * @param {string} protocolo - The reception protocol returned from the submission.
+ * @param {string} cpfCnpjContrib - CNPJ or CPF of the contributor.
+ * @param {string} protocolo - The filename or reception protocol.
  * @returns {Promise<{success: boolean, data: any}>}
  */
-export async function sendBarueriConsultaRequest(inscricaoMunicipal, protocolo) {
+export async function sendBarueriStatusRequest(inscricaoMunicipal, cpfCnpjContrib, protocolo) {
   const hasCerts = hasBarueriCredentials();
-
   if (!hasCerts) {
-    console.warn('PFX Credentials are not set. Returning mock consultation response.');
+    console.warn('PFX Credentials are not set. Returning mock status response.');
     return {
       success: true,
       mock: true,
-      data: { status: 'concluido', Numero: '99999', CodigoVerificacao: 'MOCK-VERIF' }
+      data: { status: 'concluido', SituacaoArq: '1', NomeArqRetorno: 'MOCK_RET.TXT' }
     };
   }
 
   const innerXml = `<?xml version="1.0" encoding="utf-8"?>
-<NFeLoteConsultarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
+<NFeLoteStatusArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
   <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
-  <Protocolo>${protocolo}</Protocolo>
-</NFeLoteConsultarArquivo>`;
+  <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
+  <ProtocoloRemessa>${protocolo}</ProtocoloRemessa>
+</NFeLoteStatusArquivo>`;
 
-  const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteConsultarArquivo"';
+  const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteStatusArquivo"';
   const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
   <soapenv:Body>
-    <nfe:NFeLoteConsultarArquivo>
+    <nfe:NFeLoteStatusArquivo>
       <nfe:VersaoSchema>1</nfe:VersaoSchema>
       <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
-    </nfe:NFeLoteConsultarArquivo>
+    </nfe:NFeLoteStatusArquivo>
   </soapenv:Body>
 </soapenv:Envelope>`;
 
@@ -156,27 +157,95 @@ export async function sendBarueriConsultaRequest(inscricaoMunicipal, protocolo) 
       timeout: 30000
     });
 
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      parseTagValue: true
-    });
-
+    const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
     const parsedResult = parser.parse(response.data);
     const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
     const body = envelope?.['soap:Body'] || envelope?.Body;
-    const responseData = body?.NFeLoteConsultarArquivoResult || body?.NFeLoteConsultarArquivoResponse || body;
+    const responseData = body?.NFeLoteStatusArquivoResult || body?.NFeLoteStatusArquivoResponse || body;
 
     if (!responseData) {
-      throw new Error(`Resposta SOAP de consulta inválida: ${JSON.stringify(parsedResult)}`);
+      throw new Error(`Resposta SOAP de status inválida: ${JSON.stringify(parsedResult)}`);
     }
 
-    return {
-      success: true,
-      data: responseData
-    };
+    return { success: true, data: responseData };
   } catch (error) {
     const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-    console.error('Barueri SOAP consultation failure:', errorMsg);
-    throw new Error(`Barueri SOAP Consultation Error: ${errorMsg}`);
+    console.error('Barueri SOAP status failure:', errorMsg);
+    throw new Error(`Barueri SOAP Status Error: ${errorMsg}`);
+  }
+}
+
+/**
+ * Sends a request to download the return processing file.
+ * @param {string} inscricaoMunicipal - Municipal registration number.
+ * @param {string} cpfCnpjContrib - CNPJ or CPF of the contributor.
+ * @param {string} nomeArqRetorno - Filename of the return file.
+ * @returns {Promise<{success: boolean, data: any}>}
+ */
+export async function sendBarueriBaixarRequest(inscricaoMunicipal, cpfCnpjContrib, nomeArqRetorno) {
+  const hasCerts = hasBarueriCredentials();
+  if (!hasCerts) {
+    console.warn('PFX Credentials are not set. Returning mock download response.');
+    return {
+      success: true,
+      mock: true,
+      data: {
+        ArquivoRPSBase64: Buffer.from("1HEADER_INFO_MOCK\n2MOCK 99999                      MOCK-VERIFICATION-CODE  \n9FOOTER_INFO_MOCK\n").toString('base64')
+      }
+    };
+  }
+
+  const innerXml = `<?xml version="1.0" encoding="utf-8"?>
+<NFeLoteBaixarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
+  <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
+  <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
+  <NomeArqRetorno>${nomeArqRetorno}</NomeArqRetorno>
+</NFeLoteBaixarArquivo>`;
+
+  const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteBaixarArquivo"';
+  const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
+  <soapenv:Body>
+    <nfe:NFeLoteBaixarArquivo>
+      <nfe:VersaoSchema>1</nfe:VersaoSchema>
+      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
+    </nfe:NFeLoteBaixarArquivo>
+  </soapenv:Body>
+</soapenv:Envelope>`;
+
+  const agentConfig = getBarueriHttpsAgentConfig();
+  const agent = new https.Agent({
+    pfx: agentConfig.pfx,
+    passphrase: agentConfig.passphrase,
+    rejectUnauthorized: false
+  });
+
+  const endpoint = process.env.BARUERI_SOAP_ENDPOINT || 'https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx';
+
+  try {
+    const response = await axios.post(endpoint, soapEnvelope, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': soapAction
+      },
+      httpsAgent: agent,
+      timeout: 30000
+    });
+
+    const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+    const parsedResult = parser.parse(response.data);
+    const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
+    const body = envelope?.['soap:Body'] || envelope?.Body;
+    const responseData = body?.NFeLoteBaixarArquivoResult || body?.NFeLoteBaixarArquivoResponse || body;
+
+    if (!responseData) {
+      throw new Error(`Resposta SOAP de download inválida: ${JSON.stringify(parsedResult)}`);
+    }
+
+    return { success: true, data: responseData };
+  } catch (error) {
+    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+    console.error('Barueri SOAP download failure:', errorMsg);
+    throw new Error(`Barueri SOAP Download Error: ${errorMsg}`);
   }
 }
