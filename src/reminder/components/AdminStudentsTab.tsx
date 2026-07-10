@@ -438,8 +438,8 @@ export default function AdminStudentsTab({
                         )
                       }
                       return (
-                        <span className={badgeClass('em_dia')}>
-                          {t(language, 'invoice_issued')}
+                        <span className={badgeClass('pendente')} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid #38bdf8' }}>
+                          Aguardando Emissão
                         </span>
                       )
                     })()}
@@ -499,12 +499,13 @@ export default function AdminStudentsTab({
                               padding: '0.4rem 0.8rem', 
                               fontSize: '0.8rem', 
                               marginRight: '0.5rem', 
-                              background: '#10b981',
-                              cursor: 'not-allowed'
+                              background: '#0284c7',
+                              cursor: 'pointer'
                             }}
-                            disabled={true}
+                            onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                            disabled={issuingNfseId === student.id}
                           >
-                            {t(language, 'invoice_issued')}
+                            {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'emit_invoice')}
                           </button>
                         )
                       }
