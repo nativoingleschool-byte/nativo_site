@@ -91,27 +91,27 @@ export default async function handler(req, res) {
           continue;
         }
 
-        // 3. Update status to 'erro_layout' to unblock re-issuance
+        // 3. Delete failed invoices to unblock re-issuance
         const invoiceIds = failedInvoices.map(inv => inv.id);
-        const { error: updateError } = await supabaseAdmin
+        const { error: deleteError } = await supabaseAdmin
           .from('invoices')
-          .update({ status: 'erro_layout' })
+          .delete()
           .in('id', invoiceIds);
 
-        if (updateError) {
-          results.push({ name: student.full_name, error: `Update failed: ${updateError.message}` });
+        if (deleteError) {
+          results.push({ name: student.full_name, error: `Delete failed: ${deleteError.message}` });
           continue;
         }
 
         results.push({
           name: student.full_name,
           student_id: student.id,
-          invoices_updated: failedInvoices.length,
+          invoices_deleted: failedInvoices.length,
           invoice_details: failedInvoices.map(inv => ({
             id: inv.id,
             billing_period: inv.billing_period,
             old_status: inv.status,
-            new_status: 'erro_layout',
+            new_status: 'DELETED',
             protocolo: inv.protocolo_recebimento
           }))
         });
