@@ -361,6 +361,47 @@ export async function consultarBarueriNFSe(protocolo) {
   }
 
   if (situacao === '2') {
+    if (nomeArqRetorno) {
+      try {
+        console.log(`Lote rejeitado. Baixando arquivo de retorno com erros: ${nomeArqRetorno}`);
+        const downloadResult = await sendBarueriBaixarRequest(cleanIm, cleanCnpj, nomeArqRetorno);
+        const baixarXml = extractInnerXml(downloadResult.data);
+        
+        let parsedBaixar = {};
+        if (typeof baixarXml === 'string' && baixarXml.trim().startsWith('<')) {
+          const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+          parsedBaixar = parser.parse(baixarXml);
+        } else {
+          parsedBaixar = downloadResult.data;
+        }
+
+        const findArquivoBase64 = (obj) => {
+          if (!obj || typeof obj !== 'object') return null;
+          if (obj.ArquivoRPSBase64) return String(obj.ArquivoRPSBase64);
+          if (obj.arquivoRPSBase64) return String(obj.arquivoRPSBase64);
+          for (const key of Object.keys(obj)) {
+            if (obj[key] && typeof obj[key] === 'object') {
+              const res = findArquivoBase64(obj[key]);
+              if (res) return res;
+            }
+          }
+          return null;
+        };
+
+        const base64Data = findArquivoBase64(parsedBaixar);
+        if (base64Data) {
+          const fileContent = Buffer.from(base64Data, 'base64').toString('utf8');
+          console.warn(`Prefeitura .ERR file contents: ${fileContent}`);
+          return {
+            status: 'erro',
+            message: `A prefeitura rejeitou o lote. Erros: ${fileContent.trim()}`
+          };
+        }
+      } catch (err) {
+        console.warn('Failed to download/parse .ERR return file:', err.message);
+      }
+    }
+
     return {
       status: 'erro',
       message: 'A prefeitura rejeitou o lote (processado com erros).'
