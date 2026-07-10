@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import https from 'https';
 import { XMLParser } from 'fast-xml-parser';
@@ -18,14 +17,25 @@ export default async function handler(req, res) {
   try {
     const im = process.env.BARUERI_INSCRICAO_MUNICIPAL || '4BZ5982';
     const cnpj = (process.env.BARUERI_CNPJ_PRESTADOR || '00000000000100').replace(/\D/g, '');
+    const filename = 'ENV4BZ5985A7220260710070829.ERR';
 
-    const today = new Date();
-    const tzOffset = -3 * 60;
-    const localTime = new Date(today.getTime() + tzOffset * 60 * 1000);
-    const todayStr = localTime.toISOString().split('T')[0];
+    const innerXml = `<?xml version="1.0" encoding="utf-8"?>
+<NFeLoteBaixarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
+  <InscricaoMunicipal>${im}</InscricaoMunicipal>
+  <CPFCNPJContrib>${cnpj}</CPFCNPJContrib>
+  <NomeArqRetorno>${filename}</NomeArqRetorno>
+</NFeLoteBaixarArquivo>`;
 
-    const situations = ['-2', '-1', '0', '1', '2'];
-    const results = {};
+    const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteBaixarArquivo"';
+    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
+  <soapenv:Body>
+    <nfe:NFeLoteBaixarArquivo>
+      <nfe:VersaoSchema>1</nfe:VersaoSchema>
+      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
+    </nfe:NFeLoteBaixarArquivo>
+  </soapenv:Body>
+</soapenv:Envelope>`;
 
     const agentConfig = getBarueriHttpsAgentConfig();
     const agent = new https.Agent({
@@ -35,53 +45,49 @@ export default async function handler(req, res) {
     });
 
     const endpoint = process.env.BARUERI_SOAP_ENDPOINT || 'https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx';
+    const response = await axios.post(endpoint, soapEnvelope, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': soapAction
+      },
+      httpsAgent: agent,
+      timeout: 30000
+    });
+
     const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+    const parsedResult = parser.parse(response.data);
+    const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
+    const body = envelope?.['soap:Body'] || envelope?.Body;
+    const responseData = body?.NFeLoteBaixarArquivoResult || body?.NFeLoteBaixarArquivoResponse || body;
 
-    for (const sit of situations) {
-      const innerXml = `<?xml version="1.0" encoding="utf-8"?>
-<NFeLoteListarArquivos xmlns="http://www.barueri.sp.gov.br/nfe">
-  <InscricaoMunicipal>${im}</InscricaoMunicipal>
-  <CPFCNPJContrib>${cnpj}</CPFCNPJContrib>
-  <DataEnvioArq>${todayStr}</DataEnvioArq>
-  <SituacaoArq>${sit}</SituacaoArq>
-</NFeLoteListarArquivos>`;
+    let base64Data = null;
+    if (responseData) {
+      const findBase64 = (obj) => {
+        if (!obj || typeof obj !== 'object') return null;
+        if (obj.ArquivoRPSBase64) return String(obj.ArquivoRPSBase64);
+        if (obj.arquivoRPSBase64) return String(obj.arquivoRPSBase64);
+        for (const key of Object.keys(obj)) {
+          const val = obj[key];
+          if (val && typeof val === 'object') {
+            const found = findBase64(val);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      base64Data = findBase64(responseData);
+    }
 
-      const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteListarArquivos"';
-      const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
-  <soapenv:Body>
-    <nfe:NFeLoteListarArquivos>
-      <nfe:VersaoSchema>1</nfe:VersaoSchema>
-      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
-    </nfe:NFeLoteListarArquivos>
-  </soapenv:Body>
-</soapenv:Envelope>`;
-
-      try {
-        const response = await axios.post(endpoint, soapEnvelope, {
-          headers: {
-            'Content-Type': 'text/xml; charset=utf-8',
-            'SOAPAction': soapAction
-          },
-          httpsAgent: agent,
-          timeout: 10000
-        });
-
-        const parsedResult = parser.parse(response.data);
-        const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
-        const body = envelope?.['soap:Body'] || envelope?.Body;
-        const responseData = body?.NFeLoteListarArquivosResult || body?.NFeLoteListarArquivosResponse || body;
-
-        results[sit] = responseData;
-      } catch (err) {
-        results[sit] = { error: err.message };
-      }
+    let decodedContent = '';
+    if (base64Data) {
+      decodedContent = Buffer.from(base64Data, 'base64').toString('utf8');
     }
 
     return json(res, 200, {
       success: true,
-      today: todayStr,
-      results
+      filename,
+      raw_response: responseData,
+      decoded: decodedContent
     });
 
   } catch (error) {
