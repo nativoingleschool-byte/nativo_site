@@ -72,12 +72,7 @@ export default async function handler(req, res) {
         const body = envelope?.['soap:Body'] || envelope?.Body;
         const responseData = body?.NFeLoteListarArquivosResult || body?.NFeLoteListarArquivosResponse || body;
 
-        let innerParsed = {};
-        if (responseData && typeof responseData === 'string' && responseData.trim().startsWith('<')) {
-          innerParsed = parser.parse(responseData);
-        }
-
-        results[sit] = innerParsed;
+        results[sit] = responseData;
       } catch (err) {
         results[sit] = { error: err.message };
       }
