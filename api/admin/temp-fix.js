@@ -33,6 +33,7 @@ export default async function handler(req, res) {
   <InscricaoMunicipal>${im}</InscricaoMunicipal>
   <CPFCNPJContrib>${cnpj}</CPFCNPJContrib>
   <DataEnvioArq>${todayStr}</DataEnvioArq>
+  <SituacaoArq>1</SituacaoArq>
 </NFeLoteListarArquivos>`;
 
     const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteListarArquivos"';
