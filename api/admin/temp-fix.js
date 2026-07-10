@@ -122,6 +122,7 @@ export default async function handler(req, res) {
     return json(res, 200, {
       success: true,
       created_new_record: created,
+      debug_im: process.env.BARUERI_INSCRICAO_MUNICIPAL,
       student: {
         id: student.id,
         name: student.full_name
