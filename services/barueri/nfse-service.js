@@ -264,12 +264,29 @@ export async function consultarBarueriNFSe(protocolo) {
     };
   }
 
+  // Helper to robustly extract inner XML from SOAP response objects
+  const extractInnerXml = (data) => {
+    if (!data) return '';
+    if (typeof data === 'string') return data;
+    if (typeof data === 'object') {
+      const result = data.NFeLoteStatusArquivoResult || 
+                     data.NFeLoteStatusArquivoResponse || 
+                     data.NFeLoteBaixarArquivoResult || 
+                     data.NFeLoteBaixarArquivoResponse || 
+                     data.output || 
+                     data;
+      if (typeof result === 'string') return result;
+      if (typeof result === 'object' && result !== null) {
+        if (typeof result.output === 'string') return result.output;
+        return JSON.stringify(result);
+      }
+    }
+    return String(data);
+  };
+
   // Parse inner response
   const responseData = statusResult.data;
-  let innerXml = responseData;
-  if (typeof responseData === 'object') {
-    innerXml = responseData.NFeLoteStatusArquivoResult || responseData.NFeLoteStatusArquivoResponse || responseData.output || JSON.stringify(responseData);
-  }
+  const innerXml = extractInnerXml(responseData);
 
   let parsedInner = {};
   if (typeof innerXml === 'string' && innerXml.trim().startsWith('<')) {
@@ -339,10 +356,7 @@ export async function consultarBarueriNFSe(protocolo) {
     // 2. Download the return file
     const downloadResult = await sendBarueriBaixarRequest(cleanIm, cleanCnpj, nomeArqRetorno);
     
-    let baixarXml = downloadResult.data;
-    if (typeof baixarXml === 'object') {
-      baixarXml = baixarXml.NFeLoteBaixarArquivoResult || baixarXml.NFeLoteBaixarArquivoResponse || baixarXml.output || JSON.stringify(baixarXml);
-    }
+    const baixarXml = extractInnerXml(downloadResult.data);
 
     let parsedBaixar = {};
     if (typeof baixarXml === 'string' && baixarXml.trim().startsWith('<')) {
