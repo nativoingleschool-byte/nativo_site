@@ -3,6 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import {
   buildHeaderRow,
   buildDetailRow,
+  buildType4Row,
   buildFooterRow,
   assembleRpsFile
 } from './utils.js';
@@ -51,6 +52,12 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
   const localTime = new Date(today.getTime() + tzOffset * 60 * 1000);
   const todayStr = localTime.toISOString().split('T')[0].replace(/-/g, '');
 
+  // Compute Brasilia time as HHMMSS for the RPS emission hour
+  const hours = String(localTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(localTime.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(localTime.getUTCSeconds()).padStart(2, '0');
+  const horaEmissao = hours + minutes + seconds;
+
   // 2. Assemble Positional RPS file records
   // Header Payload must be exactly 25 characters before CRLF (\r\n)
   const headerRow = buildHeaderRow(
@@ -63,6 +70,7 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     rpsSerie: RPS_SERIE,
     rpsNumero: String(rpsNumber),
     dataEmissao: todayStr,
+    horaEmissao,
     codigoServico: CODIGO_SERVICO,
     valorServico: amount,
     tomadorCpfCnpj: studentData.cpf || '00000000000',
@@ -76,14 +84,20 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     discriminacaoServico: DISCRIMINACAO
   });
 
+  // Type 4 Row (ADN/Reforma Tributária) - mandatory 1:1 with Type 2 in PMB004
+  const type4Row = buildType4Row({
+    optanteSimples: '1',        // 1 = Não Optante do Simples Nacional
+    codigoCidadeIBGE: '3505708' // Barueri IBGE code
+  });
+
   // Footer Payload must be exactly 38 characters before CRLF (\r\n)
   const footerRow = buildFooterRow(
-    3, // Total line count (Header + Detail + Footer)
+    4, // Total line count (Header + Detail Tipo 2 + Detail Tipo 4 + Footer)
     amount
   );
 
   // Convert assembled string file to Base64
-  const base64RpsPayload = assembleRpsFile(headerRow, detailRow, footerRow);
+  const base64RpsPayload = assembleRpsFile(headerRow, detailRow + type4Row, footerRow);
 
   // 3. Dispatch SOAP request to Barueri Web Service
   const soapResult = await sendBarueriSoapRequest({

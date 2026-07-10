@@ -99,13 +99,15 @@ export function buildDetailRow(data) {
     generatePositionalString('', 'text', 5) + // blank pos 11-15
     generatePositionalString(data.rpsNumero, 'numeric_string', 10) +
     generatePositionalString(data.dataEmissao, 'numeric_string', 8) + // YYYYMMDD
-    generatePositionalString('', 'text', 6) + // blank pos 34-39
+    generatePositionalString(data.horaEmissao, 'numeric_string', 6) + // HHMMSS pos 34-39
     generatePositionalString('E', 'text', 1) + // pos 40
     generatePositionalString('', 'text', 202) + // blank pos 41-242
     generatePositionalString(data.codigoServico, 'numeric_string', 9) + // pos 243-251
-    generatePositionalString('', 'text', 212) + // blank pos 252-463
+    generatePositionalString('', 'text', 206) + // blank pos 252-457
+    generatePositionalString('1', 'numeric_string', 6) + // Qtd Serviço = 1, pos 458-463
     generatePositionalString(data.valorServico, 'numeric', 15) + // pos 464-478
-    generatePositionalString('', 'text', 20) + // blank pos 479-498
+    generatePositionalString('', 'text', 5) + // blank pos 479-483 (reserved)
+    generatePositionalString(0, 'numeric', 15) + // Valor Total Retenções = R$0, pos 484-498
     generatePositionalString('2', 'text', 1) + // pos 499: Tomador Brasileiro
     generatePositionalString('', 'text', 4) + // blank pos 500-503
     generatePositionalString(tipoDoc, 'text', 1) + // pos 504
@@ -140,6 +142,31 @@ export function buildFooterRow(totalLines, totalValue) {
 
   if (payload.length !== 38) {
     throw new Error(`Footer payload length mismatch: expected 38, got ${payload.length}`);
+  }
+
+  return payload + '\r\n';
+}
+
+/**
+ * Detail Row (Type 4) - ADN / Reforma Tributária complementary record.
+ * Mandatory 1:1 with each Type 2 row in PMB004 layout.
+ * Payload must be exactly 1970 characters.
+ */
+export function buildType4Row(data = {}) {
+  const optanteSN = data.optanteSimples || '1'; // 1=Não Optante, 2=MEI, 3=ME/EPP
+  const regimeApuracao = optanteSN === '3' ? (data.regimeApuracao || '1') : '0';
+  const codigoCidadeIBGE = data.codigoCidadeIBGE || '3505708'; // Barueri
+
+  const payload =
+    generatePositionalString('4', 'text', 1) +             // pos 1: Tipo do Registro
+    generatePositionalString(optanteSN, 'text', 1) +        // pos 2: Optante Simples Nacional
+    generatePositionalString(regimeApuracao, 'text', 1) +   // pos 3: Regime Apuração Simples
+    generatePositionalString('', 'text', 3) +               // pos 4-6: reserved
+    generatePositionalString(codigoCidadeIBGE, 'numeric_string', 7) + // pos 7-13: Código Cidade IBGE
+    generatePositionalString('', 'text', 1957);             // pos 14-1970: remaining fields (spaces)
+
+  if (payload.length !== 1970) {
+    throw new Error(`Type4 payload length mismatch: expected 1970, got ${payload.length}`);
   }
 
   return payload + '\r\n';
