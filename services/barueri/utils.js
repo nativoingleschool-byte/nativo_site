@@ -106,7 +106,8 @@ export function buildDetailRow(data) {
     generatePositionalString('', 'text', 206) + // blank pos 252-457
     generatePositionalString('1', 'numeric_string', 6) + // Qtd Serviço = 1, pos 458-463
     generatePositionalString(data.valorServico, 'numeric', 15) + // pos 464-478
-    generatePositionalString('', 'text', 5) + // blank pos 479-483 (reserved)
+    generatePositionalString(data.aliquotaIss || '0200', 'numeric_string', 4) + // Alíquota ISS = 2.00%, pos 479-482
+    generatePositionalString('2', 'text', 1) + // ISS Retido = 2 (Não Retido), pos 483
     generatePositionalString(0, 'numeric', 15) + // Valor Total Retenções = R$0, pos 484-498
     generatePositionalString('2', 'text', 1) + // pos 499: Tomador Brasileiro
     generatePositionalString('', 'text', 4) + // blank pos 500-503

@@ -15,7 +15,8 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SCHOOL_IM = process.env.BARUERI_INSCRICAO_MUNICIPAL || '1234567';
 const SCHOOL_CNPJ = process.env.BARUERI_CNPJ_PRESTADOR || '00.000.000/0001-00';
 const RPS_SERIE = process.env.BARUERI_RPS_SERIE || 'RPS';
-const CODIGO_SERVICO = process.env.BARUERI_CODIGO_SERVICO || '02685';
+const CODIGO_SERVICO = process.env.BARUERI_CODIGO_SERVICO || '080201220';
+const ALIQUOTA_ISS = process.env.BARUERI_ALIQUOTA_ISS || '0200'; // 2.00% → 4-digit positional (pos 479-482)
 const DISCRIMINACAO = process.env.BARUERI_DISCRIMINACAO || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO ENGLISH SCHOOL';
 
 const getSupabaseAdmin = () => {
@@ -81,7 +82,8 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     tomadorUf: studentData.uf || 'SP',
     tomadorCep: studentData.cep || '06401000',
     tomadorEmail: studentData.email,
-    discriminacaoServico: DISCRIMINACAO
+    discriminacaoServico: DISCRIMINACAO,
+    aliquotaIss: ALIQUOTA_ISS
   });
 
   // Type 4 Row (ADN/Reforma Tributária) - mandatory 1:1 with Type 2 in PMB004
