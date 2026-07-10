@@ -73,13 +73,12 @@ export default async function handler(req, res) {
       }
 
       for (const student of students) {
-        // 2. Find failed invoices: have protocolo_recebimento but no nfs_e_pdf_link
+        // 2. Find failed invoices: nfs_e_pdf_link is null
         const { data: failedInvoices, error: invoiceError } = await supabaseAdmin
           .from('invoices')
           .select('id, billing_period, status, protocolo_recebimento, nfs_e_pdf_link, created_at')
           .eq('student_id', student.id)
-          .is('nfs_e_pdf_link', null)
-          .not('protocolo_recebimento', 'is', null);
+          .is('nfs_e_pdf_link', null);
 
         if (invoiceError) {
           results.push({ name: student.full_name, error: `Invoice query failed: ${invoiceError.message}` });
