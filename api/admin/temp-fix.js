@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { consultarBarueriNFSe } from '../../services/barueri/nfse-service.js';
+import axios from 'axios';
+import https from 'https';
+import { XMLParser } from 'fast-xml-parser';
+import { getBarueriHttpsAgentConfig, hasBarueriCredentials } from '../../services/barueri/security.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,134 +13,78 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
-
 export default async function handler(req, res) {
-  // Simple query secret for developer authorization
   if (req.query.secret !== 'antigravity_fix_9876') {
     return json(res, 403, { error: 'Forbidden' });
   }
 
   try {
-    const supabaseAdmin = getSupabaseAdmin();
+    const im = process.env.BARUERI_INSCRICAO_MUNICIPAL || '4BZ5982';
+    const cnpj = (process.env.BARUERI_CNPJ_PRESTADOR || '00000000000100').replace(/\D/g, '');
 
-    // 1. Find Gabriela Teotonio Bueno
-    const { data: profiles, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .ilike('full_name', '%Gabriela%Teotonio%');
+    // Get today's date in Brasília timezone (YYYY-MM-DD)
+    const today = new Date();
+    const tzOffset = -3 * 60;
+    const localTime = new Date(today.getTime() + tzOffset * 60 * 1000);
+    const todayStr = localTime.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    if (profileError || !profiles || profiles.length === 0) {
-      return json(res, 404, { error: 'Gabriela Teotonio Bueno profile not found', details: profileError });
-    }
+    const innerXml = `<?xml version="1.0" encoding="utf-8"?>
+<NFeLoteListarArquivos xmlns="http://www.barueri.sp.gov.br/nfe">
+  <InscricaoMunicipal>${im}</InscricaoMunicipal>
+  <CPFCNPJContrib>${cnpj}</CPFCNPJContrib>
+  <DataEnvioArq>${todayStr}</DataEnvioArq>
+</NFeLoteListarArquivos>`;
 
-    const student = profiles[0];
-    const currentPeriod = '2026-07';
+    const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteListarArquivos"';
+    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
+  <soapenv:Body>
+    <nfe:NFeLoteListarArquivos>
+      <nfe:VersaoSchema>1</nfe:VersaoSchema>
+      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
+    </nfe:NFeLoteListarArquivos>
+  </soapenv:Body>
+</soapenv:Envelope>`;
 
-    // 2. Find highest rps_number in invoices
-    const { data: highestInvoices, error: highestError } = await supabaseAdmin
-      .from('invoices')
-      .select('rps_number')
-      .order('rps_number', { ascending: false })
-      .limit(1);
+    const agentConfig = getBarueriHttpsAgentConfig();
+    const agent = new https.Agent({
+      pfx: agentConfig.pfx,
+      passphrase: agentConfig.passphrase,
+      rejectUnauthorized: false
+    });
 
-    if (highestError) throw highestError;
-    const highestRps = highestInvoices?.[0]?.rps_number || 0;
-    const assumedRps = highestRps + 1;
+    const endpoint = process.env.BARUERI_SOAP_ENDPOINT || 'https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx';
 
-    // 3. Check for existing invoice for Gabriela in 2026-07
-    const { data: existingInvoices, error: checkError } = await supabaseAdmin
-      .from('invoices')
-      .select('*')
-      .eq('student_id', student.id)
-      .eq('billing_period', currentPeriod);
+    const response = await axios.post(endpoint, soapEnvelope, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': soapAction
+      },
+      httpsAgent: agent,
+      timeout: 30000
+    });
 
-    if (checkError) throw checkError;
+    const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+    const parsedResult = parser.parse(response.data);
+    const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
+    const body = envelope?.['soap:Body'] || envelope?.Body;
+    const responseData = body?.NFeLoteListarArquivosResult || body?.NFeLoteListarArquivosResponse || body;
 
-    let invoice = existingInvoices?.[0];
-    let created = false;
-
-    if (!invoice) {
-      // Create invoice record with the protocol returned from her successful request
-      const { data: newInvoice, error: insertError } = await supabaseAdmin
-        .from('invoices')
-        .insert({
-          student_id: student.id,
-          status: 'pago',
-          rps_number: assumedRps,
-          protocolo_recebimento: 'RPS_20260710_20260710002.txt',
-          billing_period: currentPeriod
-        })
-        .select('*')
-        .single();
-
-      if (insertError) throw insertError;
-      invoice = newInvoice;
-      created = true;
-
-      // Update student status to 'em_dia'
-      await supabaseAdmin
-        .from('profiles')
-        .update({ status_pagamento: 'em_dia' })
-        .eq('id', student.id);
-    }
-
-    // 4. Force check status of the protocol
-    let statusUpdate = {};
-    if (invoice.protocolo_recebimento && !invoice.nfs_e_pdf_link) {
-      try {
-        const consultResult = await consultarBarueriNFSe(invoice.protocolo_recebimento);
-        if (consultResult.status === 'concluido' && consultResult.nfs_e_pdf_link) {
-          const { data: updatedInvoice, error: updateError } = await supabaseAdmin
-            .from('invoices')
-            .update({
-              nfs_e_pdf_link: consultResult.nfs_e_pdf_link,
-              status: 'emitida'
-            })
-            .eq('id', invoice.id)
-            .select('*')
-            .single();
-
-          if (!updateError) {
-            invoice = updatedInvoice;
-            statusUpdate = { success: true, newStatus: 'emitida', pdf: consultResult.nfs_e_pdf_link };
-          } else {
-            statusUpdate = { success: false, error: updateError.message };
-          }
-        } else {
-          statusUpdate = { success: false, status: consultResult.status, message: consultResult.message };
-        }
-      } catch (consultError) {
-        statusUpdate = { success: false, error: consultError.message };
-      }
+    let innerParsed = {};
+    if (responseData && typeof responseData === 'string' && responseData.trim().startsWith('<')) {
+      innerParsed = parser.parse(responseData);
+    } else if (responseData) {
+      innerParsed = parser.parse(responseData.NFeLoteListarArquivosResult || responseData.output || JSON.stringify(responseData));
     }
 
     return json(res, 200, {
       success: true,
-      created_new_record: created,
-      debug_im: process.env.BARUERI_INSCRICAO_MUNICIPAL,
-      student: {
-        id: student.id,
-        name: student.full_name
-      },
-      invoice: {
-        id: invoice.id,
-        status: invoice.status,
-        rps_number: invoice.rps_number,
-        protocolo_recebimento: invoice.protocolo_recebimento,
-        nfs_e_pdf_link: invoice.nfs_e_pdf_link
-      },
-      statusUpdate
+      today: todayStr,
+      raw_response: responseData,
+      parsed: innerParsed
     });
 
   } catch (error) {
-    return json(res, 500, { error: error.message });
+    return json(res, 500, { error: error.message, stack: error.stack });
   }
 }
