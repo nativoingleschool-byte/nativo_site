@@ -64,18 +64,17 @@ export default async function handler(req, res) {
     // 1.5 Check for duplicate invoice in the current period
     const { data: existingInvoice, error: checkError } = await supabaseAdmin
       .from('invoices')
-      .select('id')
+      .select('id, nfs_e_pdf_link, protocolo_recebimento')
       .eq('student_id', student_id)
       .eq('billing_period', currentPeriod)
-      .or('status.eq.pago,nfs_e_pdf_link.not.is.null')
       .maybeSingle();
 
     if (checkError) {
       throw new Error(`Database validation failed: ${checkError.message}`);
     }
 
-    if (existingInvoice) {
-      return json(res, 409, { error: 'Nota fiscal já emitida para este aluno no período atual.' });
+    if (existingInvoice && (existingInvoice.nfs_e_pdf_link || existingInvoice.protocolo_recebimento)) {
+      return json(res, 409, { error: 'Nota fiscal já emitida ou em processamento para este aluno no período atual.' });
     }
 
     // 2. Fetch student details and check tuition_fee configuration
@@ -110,19 +109,40 @@ export default async function handler(req, res) {
     const result = await issueBarueriNFSe(student, tuitionFee, rpsNumber);
     const isMockLink = typeof result === 'string' && result.startsWith('http');
 
-    // 5. Create new paid invoice record
-    const { data: invoice, error: invoiceError } = await supabaseAdmin
-      .from('invoices')
-      .insert({
-        student_id: student.id,
-        status: 'pago',
-        rps_number: rpsNumber,
-        nfs_e_pdf_link: isMockLink ? result : null,
-        protocolo_recebimento: isMockLink ? null : result,
-        billing_period: currentPeriod
-      })
-      .select('*')
-      .single();
+    // 5. Create or update paid invoice record
+    let invoice;
+    let invoiceError;
+
+    if (existingInvoice) {
+      const { data: updatedInvoice, error: updateError } = await supabaseAdmin
+        .from('invoices')
+        .update({
+          status: 'pago',
+          rps_number: rpsNumber,
+          nfs_e_pdf_link: isMockLink ? result : null,
+          protocolo_recebimento: isMockLink ? null : result
+        })
+        .eq('id', existingInvoice.id)
+        .select('*')
+        .single();
+      invoice = updatedInvoice;
+      invoiceError = updateError;
+    } else {
+      const { data: insertedInvoice, error: insertError } = await supabaseAdmin
+        .from('invoices')
+        .insert({
+          student_id: student.id,
+          status: 'pago',
+          rps_number: rpsNumber,
+          nfs_e_pdf_link: isMockLink ? result : null,
+          protocolo_recebimento: isMockLink ? null : result,
+          billing_period: currentPeriod
+        })
+        .select('*')
+        .single();
+      invoice = insertedInvoice;
+      invoiceError = insertError;
+    }
 
     if (invoiceError) {
       throw new Error(`Failed to record invoice details: ${invoiceError.message}`);
