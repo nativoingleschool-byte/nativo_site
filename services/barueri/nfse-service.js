@@ -120,6 +120,33 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     parsedInner = responseData;
   }
 
+  // 5. Success Check: If success message is found, extract NomeArquivo as protocol
+  const responseText = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
+  const isSuccessResponse = responseText.includes('Procedimento executado com sucesso') || 
+                            responseText.includes('Lote recebido com sucesso') ||
+                            responseText.includes('sucesso') && responseText.includes('NomeArquivo');
+
+  if (isSuccessResponse) {
+    const findFileName = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.NomeArquivo) return String(obj.NomeArquivo);
+      if (obj.nomeArquivo) return String(obj.nomeArquivo);
+      for (const key of Object.keys(obj)) {
+        if (obj[key] && typeof obj[key] === 'object') {
+          const res = findFileName(obj[key]);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+    const fileName = findFileName(parsedInner);
+    if (fileName) {
+      return fileName;
+    }
+    // Fallback filename using date and rps number
+    return `RPS_${new Date().toISOString().split('T')[0].replace(/-/g, '')}_${rpsNumber}.txt`;
+  }
+
   // 5. Robust Error Extraction (<ListaMensagemRetorno> or <Mensagem> or <Erro>)
   const findErrorMessage = (obj) => {
     if (!obj || typeof obj !== 'object') return null;
@@ -158,7 +185,6 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
   }
 
   // In case raw response text contains clear error signatures
-  const responseText = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
   if (
     responseText.includes('<Erro>') ||
     (responseText.includes('<Codigo>') && (responseText.toLowerCase().includes('erro') || responseText.toLowerCase().includes('falha') || responseText.toLowerCase().includes('rejeitado')))
