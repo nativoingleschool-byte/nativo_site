@@ -76,7 +76,44 @@ export default function AdminStudentsTab({
 
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
   const [lastIssuedPdf, setLastIssuedPdf] = useState<{ name: string; url: string } | null>(null)
-  const [currentPeriodInvoices, setCurrentPeriodInvoices] = useState<Record<string, boolean>>({})
+  const [currentPeriodInvoices, setCurrentPeriodInvoices] = useState<Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }>>({})
+  const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
+
+  const handleCheckStatus = async (invoiceId: string) => {
+    setCheckingStatusId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/check-nfse-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ invoice_id: invoiceId })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
+
+      if (data.status === 'emitida' && data.nfs_e_pdf_link) {
+        alert(t(language, 'success_invoice_banner').replace('{name}', ''))
+      } else if (data.status === 'processando') {
+        alert(data.message || t(language, 'success_lote_envio_banner'))
+      } else if (data.status === 'erro') {
+        alert(`Erro: ${data.message}`)
+      }
+      
+      // Force refresh current invoices state
+      setLastIssuedPdf(prev => prev ? { ...prev } : null)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setCheckingStatusId(null)
+    }
+  }
 
   useEffect(() => {
     const fetchCurrentInvoices = async () => {
@@ -84,15 +121,19 @@ export default function AdminStudentsTab({
         const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
         const { data, error } = await supabase
           .from('invoices')
-          .select('student_id, id, status, nfs_e_pdf_link')
+          .select('student_id, id, status, nfs_e_pdf_link, protocolo_recebimento')
           .eq('billing_period', currentPeriod)
 
         if (error) throw error
 
-        const mapped: Record<string, boolean> = {}
+        const mapped: Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }> = {}
         data?.forEach((inv) => {
           if (inv.status === 'pago' || inv.nfs_e_pdf_link) {
-            mapped[inv.student_id] = true
+            mapped[inv.student_id] = {
+              id: inv.id,
+              hasPdf: !!inv.nfs_e_pdf_link,
+              hasProtocol: !!inv.protocolo_recebimento
+            }
           }
         })
         setCurrentPeriodInvoices(mapped)
@@ -102,7 +143,7 @@ export default function AdminStudentsTab({
     }
 
     void fetchCurrentInvoices()
-  }, [students, lastIssuedPdf])
+  }, [students, lastIssuedPdf, checkingStatusId])
 
   const [historyStudent, setHistoryStudent] = useState<Profile | null>(null)
   const [historyInvoices, setHistoryInvoices] = useState<any[]>([])
@@ -347,7 +388,7 @@ export default function AdminStudentsTab({
                       type="checkbox" 
                       checked={selectedStudentIds.includes(student.id)} 
                       onChange={() => handleToggleStudent(student.id)} 
-                      disabled={currentPeriodInvoices[student.id] || !student.tuition_fee || Number(student.tuition_fee) <= 0}
+                      disabled={!!currentPeriodInvoices[student.id] || !student.tuition_fee || Number(student.tuition_fee) <= 0}
                     />
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
@@ -374,10 +415,31 @@ export default function AdminStudentsTab({
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {(() => {
-                      const hasInvoice = currentPeriodInvoices[student.id]
+                      const invoiceInfo = currentPeriodInvoices[student.id]
+                      if (!invoiceInfo) {
+                        return (
+                          <span className={badgeClass('pendente')}>
+                            {t(language, 'financial_pending')}
+                          </span>
+                        )
+                      }
+                      if (invoiceInfo.hasPdf) {
+                        return (
+                          <span className={badgeClass('em_dia')}>
+                            {t(language, 'invoice_issued')}
+                          </span>
+                        )
+                      }
+                      if (invoiceInfo.hasProtocol) {
+                        return (
+                          <span className={badgeClass('pendente')} style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid #f59e0b' }}>
+                            {t(language, 'success_lote_envio_banner')}
+                          </span>
+                        )
+                      }
                       return (
-                        <span className={badgeClass(hasInvoice ? 'em_dia' : 'pendente')}>
-                          {hasInvoice ? t(language, 'invoice_issued') : t(language, 'financial_pending')}
+                        <span className={badgeClass('em_dia')}>
+                          {t(language, 'invoice_issued')}
                         </span>
                       )
                     })()}
@@ -392,7 +454,60 @@ export default function AdminStudentsTab({
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
                     {(() => {
-                      const hasInvoice = currentPeriodInvoices[student.id]
+                      const invoiceInfo = currentPeriodInvoices[student.id]
+                      if (invoiceInfo) {
+                        if (invoiceInfo.hasPdf) {
+                          return (
+                            <button 
+                              className="primary-button" 
+                              style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                fontSize: '0.8rem', 
+                                marginRight: '0.5rem', 
+                                background: '#10b981',
+                                cursor: 'not-allowed'
+                              }}
+                              disabled={true}
+                            >
+                              {t(language, 'invoice_issued')}
+                            </button>
+                          )
+                        }
+                        if (invoiceInfo.hasProtocol) {
+                          return (
+                            <button 
+                              className="secondary-button" 
+                              style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                fontSize: '0.8rem', 
+                                marginRight: '0.5rem', 
+                                background: '#f59e0b',
+                                borderColor: '#f59e0b',
+                                color: '#000'
+                              }}
+                              disabled={checkingStatusId === invoiceInfo.id}
+                              onClick={() => void handleCheckStatus(invoiceInfo.id)}
+                            >
+                              {checkingStatusId === invoiceInfo.id ? t(language, 'checking_status') : t(language, 'check_status')}
+                            </button>
+                          )
+                        }
+                        return (
+                          <button 
+                            className="primary-button" 
+                            style={{ 
+                              padding: '0.4rem 0.8rem', 
+                              fontSize: '0.8rem', 
+                              marginRight: '0.5rem', 
+                              background: '#10b981',
+                              cursor: 'not-allowed'
+                            }}
+                            disabled={true}
+                          >
+                            {t(language, 'invoice_issued')}
+                          </button>
+                        )
+                      }
                       return (
                         <button 
                           className="primary-button" 
@@ -400,13 +515,13 @@ export default function AdminStudentsTab({
                             padding: '0.4rem 0.8rem', 
                             fontSize: '0.8rem', 
                             marginRight: '0.5rem', 
-                            background: hasInvoice ? '#10b981' : '#0284c7',
-                            cursor: hasInvoice ? 'not-allowed' : 'pointer'
+                            background: '#0284c7',
+                            cursor: 'pointer'
                           }}
                           onClick={() => void handleIssueNfse(student.id, student.full_name)}
-                          disabled={issuingNfseId === student.id || hasInvoice}
+                          disabled={issuingNfseId === student.id}
                         >
-                          {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoice ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
+                          {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'emit_invoice')}
                         </button>
                       )
                     })()}
