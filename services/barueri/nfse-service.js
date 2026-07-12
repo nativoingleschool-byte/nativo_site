@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { XMLParser } from 'fast-xml-parser';
+import axios from 'axios';
 import {
   buildHeaderRow,
   buildDetailRow,
@@ -27,6 +28,39 @@ const getSupabaseAdmin = () => {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 };
+
+/**
+ * Helper to fetch city IBGE code dynamically, with hardcoded fast-lookups.
+ */
+async function getIbgeCode(cidade, uf) {
+  if (!cidade || !uf) {
+    return '3505708'; // Default fallback to Barueri
+  }
+
+  const cleanCity = cidade.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const cleanUf = uf.toUpperCase().trim();
+
+  // Instant local mappings to avoid API overhead for typical locations
+  if (cleanCity === 'barueri' && cleanUf === 'sp') return '3505708';
+  if (cleanCity === 'sao paulo' && cleanUf === 'sp') return '3550308';
+  if (cleanCity === 'itaberai' && cleanUf === 'go') return '5210406';
+
+  try {
+    const url = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${cleanUf}/municipios`;
+    const response = await axios.get(url, { timeout: 3000 });
+    const municipio = response.data.find(m => {
+      const nameNorm = m.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      return nameNorm === cleanCity;
+    });
+    if (municipio) {
+      return String(municipio.id);
+    }
+  } catch (error) {
+    console.warn(`IBGE API lookup failed for ${cidade}-${uf}:`, error.message);
+  }
+
+  return '3505708'; // Default fallback
+}
 
 /**
  * Submits the positional layout batch to Barueri City Council Web Service via SOAP NFeLoteEnviarArquivo.
@@ -86,10 +120,14 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     aliquotaIss: ALIQUOTA_ISS
   });
 
+  // Get student IBGE city code
+  const studentIbgeCode = await getIbgeCode(studentData.cidade, studentData.uf);
+
   // Type 4 Row (ADN/Reforma Tributária) - mandatory 1:1 with Type 2 in PMB004
   const type4Row = buildTaxRow({
-    optanteSimples: '1',        // 1 = Não Optante do Simples Nacional (Lucro Presumido)
-    codigoCidadeIBGE: '3505708', // Barueri IBGE code
+    optanteSimples: '1',         // 1 = Não Optante do Simples Nacional (Lucro Presumido)
+    codigoCidadeIBGE: '3505708',  // Barueri IBGE code
+    tomadorCidadeIBGE: studentIbgeCode,
     codigoServico: CODIGO_SERVICO
   });
 
