@@ -105,8 +105,18 @@ export default async function handler(req, res) {
       throw new Error(`RPS generation failed: ${rpsError?.message || 'Empty sequence'}`);
     }
 
+    // Convert 11-digit RPS to 10-digit YYMMDDnnnn format to fit in 10-char field
+    let rpsVal = String(rpsNumber);
+    if (rpsVal.length === 11) {
+      const year2 = rpsVal.substring(2, 4); // '26'
+      const mmdd = rpsVal.substring(4, 8); // '0712'
+      const seq = rpsVal.substring(8); // '002'
+      rpsVal = `${year2}${mmdd}0${seq}`; // '2607120002'
+    }
+    const finalRpsNumber = Number(rpsVal);
+
     // 4. Invoke SOAP service to issue NFS-e and receive protocol
-    const result = await issueBarueriNFSe(student, tuitionFee, rpsNumber);
+    const result = await issueBarueriNFSe(student, tuitionFee, finalRpsNumber);
     const isMockLink = typeof result === 'string' && result.startsWith('http');
 
     // 5. Create or update paid invoice record
@@ -118,7 +128,7 @@ export default async function handler(req, res) {
         .from('invoices')
         .update({
           status: 'pago',
-          rps_number: rpsNumber,
+          rps_number: finalRpsNumber,
           nfs_e_pdf_link: isMockLink ? result : null,
           protocolo_recebimento: isMockLink ? null : result
         })
@@ -133,7 +143,7 @@ export default async function handler(req, res) {
         .insert({
           student_id: student.id,
           status: 'pago',
-          rps_number: rpsNumber,
+          rps_number: finalRpsNumber,
           nfs_e_pdf_link: isMockLink ? result : null,
           protocolo_recebimento: isMockLink ? null : result,
           billing_period: currentPeriod
