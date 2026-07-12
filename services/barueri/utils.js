@@ -124,8 +124,7 @@ export function buildDetailRow(data) {
     generatePositionalString('', 'text', 206) + // blank pos 252-457
     generatePositionalString('1', 'numeric_string', 6) + // Qtd Serviço = 1, pos 458-463
     generatePositionalString(data.valorServico, 'numeric', 15) + // pos 464-478
-    generatePositionalString(data.aliquotaIss || '0200', 'numeric_string', 4) + // Alíquota ISS = 2.00%, pos 479-482
-    generatePositionalString('2', 'text', 1) + // ISS Retido = 2 (Não Retido), pos 483
+    generatePositionalString(0, 'numeric', 5) + // Alíquota Fora Município = 0, pos 479-483 (PDF layout size 5)
     generatePositionalString(0, 'numeric', 15) + // Valor Total Retenções = R$0, pos 484-498
     generatePositionalString('2', 'text', 1) + // pos 499: Tomador Brasileiro
     generatePositionalString('', 'text', 4) + // blank pos 500-503
@@ -133,14 +132,14 @@ export function buildDetailRow(data) {
     generatePositionalString(cleanedDoc, 'numeric_string', 14) + // pos 505-518
     generatePositionalString(data.tomadorNome, 'text', 60) + // pos 519-578
     generatePositionalString(street, 'text', 75) + // pos 579-653
-    generatePositionalString(number, 'text', 10) + // pos 654-663
-    generatePositionalString(complement, 'text', 30) + // pos 664-693
-    generatePositionalString(data.tomadorBairro, 'text', 40) + // pos 694-733
-    generatePositionalString(data.tomadorCidade, 'text', 40) + // pos 734-773
-    generatePositionalString(data.tomadorUf, 'text', 2) + // pos 774-775
-    generatePositionalString(data.tomadorCep, 'numeric_string', 8) + // pos 776-783
-    generatePositionalString(data.tomadorEmail, 'text', 152) + // pos 784-935
-    generatePositionalString('', 'text', 35) + // blank pos 936-970
+    generatePositionalString(number, 'text', 9) + // pos 654-662 (PDF layout size 9)
+    generatePositionalString(complement, 'text', 30) + // pos 663-692 (PDF layout size 30)
+    generatePositionalString(data.tomadorBairro, 'text', 40) + // pos 693-732 (PDF layout size 40)
+    generatePositionalString(data.tomadorCidade, 'text', 40) + // pos 733-772 (PDF layout size 40)
+    generatePositionalString(data.tomadorUf, 'text', 2) + // pos 773-774 (PDF layout size 2)
+    generatePositionalString(data.tomadorCep, 'numeric_string', 8) + // pos 775-782 (PDF layout size 8)
+    generatePositionalString(data.tomadorEmail, 'text', 152) + // pos 783-934 (PDF layout size 152)
+    generatePositionalString('', 'text', 36) + // blank pos 935-970 (PDF layout size 36)
     formatDiscriminacao(data.discriminacaoServico); // pos 971-1970
 
   if (payload.length !== 1970) {
