@@ -98,22 +98,35 @@ export default async function handler(req, res) {
     }
 
     // 3. Generate RPS Sequence number
-    const { data: rpsNumber, error: rpsError } = await supabaseAdmin
-      .rpc('get_next_barueri_rps');
+    // Query the highest valid sequential RPS number from the database (< 10,000,000)
+    const { data: highestInvoices, error: seqError } = await supabaseAdmin
+      .from('invoices')
+      .select('rps_number')
+      .lt('rps_number', 10000000)
+      .order('rps_number', { ascending: false })
+      .limit(1);
 
-    if (rpsError || !rpsNumber) {
-      throw new Error(`RPS generation failed: ${rpsError?.message || 'Empty sequence'}`);
+    let finalRpsNumber = 1;
+    if (!seqError && highestInvoices && highestInvoices.length > 0) {
+      const maxRps = Number(highestInvoices[0].rps_number);
+      if (!isNaN(maxRps) && maxRps > 0) {
+        finalRpsNumber = maxRps + 1;
+      }
+    } else {
+      // Fallback: If DB query fails or has no small sequence, use the database RPC but format it safely under 10,000,000
+      const { data: rpsNumber, error: rpcRpsError } = await supabaseAdmin
+        .rpc('get_next_barueri_rps');
+      
+      if (!rpcRpsError && rpsNumber) {
+        const rpsStr = String(rpsNumber);
+        const lastDigits = Number(rpsStr.slice(-5)); // Get last 5 digits (e.g. '12003' -> 12003)
+        if (!isNaN(lastDigits) && lastDigits > 0) {
+          finalRpsNumber = lastDigits;
+        } else {
+          finalRpsNumber = 1;
+        }
+      }
     }
-
-    // Convert 11-digit RPS to 10-digit YYMMDDnnnn format to fit in 10-char field
-    let rpsVal = String(rpsNumber);
-    if (rpsVal.length === 11) {
-      const year2 = rpsVal.substring(2, 4); // '26'
-      const mmdd = rpsVal.substring(4, 8); // '0712'
-      const seq = rpsVal.substring(8); // '002'
-      rpsVal = `${year2}${mmdd}0${seq}`; // '2607120002'
-    }
-    const finalRpsNumber = Number(rpsVal);
 
     // 4. Invoke SOAP service to issue NFS-e and receive protocol
     const result = await issueBarueriNFSe(student, tuitionFee, finalRpsNumber);
