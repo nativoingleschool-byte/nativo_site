@@ -174,20 +174,36 @@ export function buildFooterRow(totalLines, totalValue) {
 export function buildTaxRow(data = {}) {
   const optanteSN = data.optanteSimples || '1'; // 1=Não Optante, 2=MEI, 3=ME/EPP
   const regimeApuracao = optanteSN === '3' ? (data.regimeApuracao || '1') : '0';
-  const codigoCidadeIBGE = data.codigoCidadeIBGE || '3505708'; // Barueri
-  const codigoServico = data.codigoServico || '080201220'; // Online language school service code
+  const codigoCidadeIBGE = data.codigoCidadeIBGE || '3505708'; // Barueri local of prestação
+  const tomadorCidadeIBGE = data.tomadorCidadeIBGE || '3505708'; // Student city IBGE code (default Barueri)
 
   const payload =
     generatePositionalString('4', 'text', 1) +             // pos 1: Tipo do Registro
     generatePositionalString(optanteSN, 'text', 1) +        // pos 2: Optante Simples Nacional
     generatePositionalString(regimeApuracao, 'text', 1) +   // pos 3: Regime Apuração Simples
-    generatePositionalString('', 'text', 3) +               // pos 4-6: reserved
-    generatePositionalString(codigoCidadeIBGE, 'numeric_string', 7) + // pos 7-13: Código Cidade IBGE
-    generatePositionalString(codigoServico, 'numeric_string', 9) +    // pos 14-22: Código de Atividade (080201220)
-    generatePositionalString('', 'text', 1948);             // pos 23-1970: remaining fields (spaces)
+    generatePositionalString('', 'text', 3) +               // pos 4-6: reserved / country of service (blank for BR)
+    generatePositionalString(codigoCidadeIBGE, 'numeric_string', 7) + // pos 7-13: Código Cidade IBGE (prestação)
+    generatePositionalString(tomadorCidadeIBGE, 'numeric_string', 7) + // pos 14-20: Código Cidade do Tomador
+    generatePositionalString('', 'text', 40) +              // pos 21-60: NIF for foreign tomador (blank for BR)
+    generatePositionalString('122061300', 'numeric_string', 9) + // pos 61-69: Código NBS (1.2206.13.00: foreign language teaching)
+    generatePositionalString('', 'text', 11) +              // pos 70-80: CEP tomador estrangeiro (blank)
+    generatePositionalString('', 'text', 60) +              // pos 81-140: Estado/Província/Região tomador estrangeiro (blank)
+    generatePositionalString('0', 'text', 1) +              // pos 141: Vínculo entre as partes (0 = Sem vínculo)
+    generatePositionalString('', 'text', 30) +              // pos 142-171: reservado (blank)
+    generatePositionalString('', 'text', 11) +              // pos 172-182: CEP do serviço no exterior (blank)
+    generatePositionalString('', 'text', 60) +              // pos 183-242: Estado/Província/Região serviço exterior (blank)
+    generatePositionalString('', 'text', 255) +             // pos 243-497: Nome do evento (blank)
+    generatePositionalString('', 'text', 8) +               // pos 498-505: Data início evento (blank)
+    generatePositionalString('', 'text', 8) +               // pos 506-513: Data fim evento (blank)
+    generatePositionalString('', 'text', 1) +               // pos 514: Código justificativa cancelamento/substituição (blank)
+    generatePositionalString('030101', 'numeric_string', 6) + // pos 515-520: Código Indicador da operação de fornecimento
+    generatePositionalString('000001', 'numeric_string', 6) + // pos 521-526: Código de Classificação Tributária do IBS e da CBS (Tributado integralmente)
+    generatePositionalString('000', 'numeric_string', 3) +  // pos 527-529: Código de Situação Tributária IBS CBS
+    generatePositionalString('0', 'text', 1) +              // pos 530: Operação de uso ou consumo pessoal (0 = Não)
+    generatePositionalString('0', 'text', 1);               // pos 531: Indicador do Destinatário do Serviço (0 = Tomador)
 
-  if (payload.length !== 1970) {
-    throw new Error(`Type4 (TaxRow) payload length mismatch: expected 1970, got ${payload.length}`);
+  if (payload.length !== 531) {
+    throw new Error(`Type4 (TaxRow) payload length mismatch: expected 531, got ${payload.length}`);
   }
 
   return payload + '\r\n';
@@ -195,8 +211,13 @@ export function buildTaxRow(data = {}) {
 
 /**
  * Combines all records into the full RPS string buffer and returns the Base64 representation.
+ * Flatten and split any inputs by newline, then join strictly using CRLF (\r\n) to guarantee 2-byte line endings.
  */
-export function assembleRpsFile(header, details, footer) {
-  const fileContent = header + details + footer;
+export function assembleRpsFile(...rows) {
+  const flatRows = rows
+    .flatMap(row => (typeof row === 'string' ? row.split(/\r?\n/) : []))
+    .filter(row => row.length > 0);
+  
+  const fileContent = flatRows.join('\r\n') + '\r\n';
   return Buffer.from(fileContent, 'utf-8').toString('base64');
 }

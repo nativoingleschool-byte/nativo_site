@@ -1,6 +1,7 @@
 import {
   buildHeaderRow,
   buildDetailRow,
+  buildTaxRow,
   buildFooterRow,
   generatePositionalString,
   formatDiscriminacao
@@ -69,8 +70,22 @@ function runTests() {
     throw new Error('Detail missing CRLF terminator');
   }
 
+  // Test 5.5: Tax Row (Type 4) line alignment
+  const tax = buildTaxRow({
+    optanteSimples: '1',
+    codigoCidadeIBGE: '3505708',
+    tomadorCidadeIBGE: '5210406'
+  });
+  console.log(`Tax Row length: ${tax.length} characters (Payload: ${tax.replace('\r\n', '').length})`);
+  if (tax.replace('\r\n', '').length !== 531) {
+    throw new Error(`Tax Row payload length invalid: expected 531, got ${tax.replace('\r\n', '').length}`);
+  }
+  if (!tax.endsWith('\r\n')) {
+    throw new Error('Tax Row missing CRLF terminator');
+  }
+
   // Test 6: Footer line alignment
-  const footer = buildFooterRow(3, 340.00);
+  const footer = buildFooterRow(4, 340.00);
   console.log(`Footer Row length: ${footer.length} characters (Payload: ${footer.replace('\r\n', '').length})`);
   if (footer.replace('\r\n', '').length !== 38) {
     throw new Error(`Footer payload length invalid: expected 38, got ${footer.replace('\r\n', '').length}`);
