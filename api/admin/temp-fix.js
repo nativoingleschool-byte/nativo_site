@@ -21,6 +21,49 @@ export default async function handler(req, res) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
+    if (req.query.action === 'cleanup') {
+      const studentNames = ['GABRIELA TEOTONIO BUENO', 'MARTA MARIELLY DA SILVA'];
+      const results = [];
+      for (const name of studentNames) {
+        const { data: students, error: findError } = await supabaseAdmin
+          .from('profiles')
+          .select('id, full_name')
+          .ilike('full_name', `%${name}%`);
+
+        if (findError || !students || students.length === 0) continue;
+
+        for (const student of students) {
+          const currentPeriod = new Date().toISOString().substring(0, 7); // '2026-07'
+          const { data: failedInvoices } = await supabaseAdmin
+            .from('invoices')
+            .select('id')
+            .eq('student_id', student.id)
+            .eq('billing_period', currentPeriod);
+
+          if (failedInvoices && failedInvoices.length > 0) {
+            const ids = failedInvoices.map(inv => inv.id);
+            const { error: deleteError } = await supabaseAdmin
+              .from('invoices')
+              .delete()
+              .in('id', ids);
+
+            results.push({
+              student: student.full_name,
+              deleted_count: failedInvoices.length,
+              success: !deleteError
+            });
+          } else {
+            results.push({
+              student: student.full_name,
+              deleted_count: 0,
+              success: true
+            });
+          }
+        }
+      }
+      return json(res, 200, { success: true, action: 'cleanup', results });
+    }
+
     // 1. Fetch latest invoices
     const { data: invoices, error: invoiceError } = await supabaseAdmin
       .from('invoices')
