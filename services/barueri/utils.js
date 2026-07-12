@@ -111,17 +111,17 @@ export function buildDetailRow(data) {
   }
 
   const payload =
-    generatePositionalString('2', 'text', 1) +
-    generatePositionalString('RPS  ', 'text', 5) +
-    generatePositionalString(data.rpsSerie, 'text', 4) +
-    generatePositionalString('', 'text', 5) + // blank pos 11-15
-    generatePositionalString(data.rpsNumero, 'numeric_string', 10) +
-    generatePositionalString(data.dataEmissao, 'numeric_string', 8) + // YYYYMMDD
-    generatePositionalString(data.horaEmissao, 'numeric_string', 6) + // HHMMSS pos 34-39
-    generatePositionalString('E', 'text', 1) + // pos 40
-    generatePositionalString('', 'text', 202) + // blank pos 41-242
-    generatePositionalString(data.codigoServico, 'numeric_string', 9) + // pos 243-251
-    generatePositionalString('', 'text', 206) + // blank pos 252-457
+    generatePositionalString('2', 'text', 1) +                        // pos 1: Tipo do Registro (2)
+    generatePositionalString('RPS', 'text', 5) +                      // pos 2-6: Tipo do RPS (size 5)
+    generatePositionalString(data.rpsSerie, 'text', 8) +              // pos 7-14: Série do RPS (size 8)
+    generatePositionalString(data.rpsNumero, 'numeric_string', 10) +  // pos 15-24: Número do RPS (size 10)
+    generatePositionalString(data.dataEmissao, 'numeric_string', 8) + // pos 25-32: Data de Emissão (size 8)
+    generatePositionalString(data.horaEmissao, 'numeric_string', 6) + // pos 33-38: Hora de Emissão (size 6)
+    generatePositionalString('E', 'text', 1) +                        // pos 39: Situação do RPS (size 1)
+    generatePositionalString('', 'text', 203) +                       // pos 40-242: blank (size 203)
+    generatePositionalString(data.codigoServico, 'numeric_string', 9) + // pos 243-251: Código do Serviço Prestado (size 9)
+    generatePositionalString('1', 'text', 1) +                        // pos 252: Local da Prestação do Serviço (1 = no Município, size 1)
+    generatePositionalString('', 'text', 205) +                       // pos 253-457: blank (size 205)
     generatePositionalString('1', 'numeric_string', 6) + // Qtd Serviço = 1, pos 458-463
     generatePositionalString(data.valorServico, 'numeric', 15) + // pos 464-478
     generatePositionalString(0, 'numeric', 5) + // Alíquota Fora Município = 0, pos 479-483 (PDF layout size 5)
