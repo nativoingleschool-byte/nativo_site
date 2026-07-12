@@ -21,23 +21,31 @@ export default async function handler(req, res) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // 1. Fetch latest invoice with a protocol
+    // 1. Fetch latest invoices
     const { data: invoices, error: invoiceError } = await supabaseAdmin
       .from('invoices')
       .select('*')
-      .not('protocolo_recebimento', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10);
 
     if (invoiceError) {
       throw new Error(`Database error: ${invoiceError.message}`);
     }
 
     if (!invoices || invoices.length === 0) {
-      return json(res, 200, { message: 'No invoices with protocols found.' });
+      return json(res, 200, { message: 'No invoices found.' });
     }
 
-    const latestInvoice = invoices[0];
+    // Pick target invoice (specific ID or absolute latest)
+    const targetId = req.query.invoice_id;
+    const latestInvoice = targetId 
+      ? invoices.find(inv => inv.id === targetId)
+      : invoices[0];
+
+    if (!latestInvoice) {
+      return json(res, 404, { error: `Selected invoice_id ${targetId} not found in the recent list.` });
+    }
+
     const protocolo = latestInvoice.protocolo_recebimento;
 
     const im = process.env.BARUERI_INSCRICAO_MUNICIPAL || '4BZ5982';
@@ -133,8 +141,16 @@ export default async function handler(req, res) {
         id: latestInvoice.id,
         rps_number: latestInvoice.rps_number,
         protocolo_recebimento: latestInvoice.protocolo_recebimento,
-        created_at: latestInvoice.created_at
+        created_at: latestInvoice.created_at,
+        status: latestInvoice.status
       },
+      recent_invoices: invoices.map(inv => ({
+        id: inv.id,
+        rps_number: inv.rps_number,
+        status: inv.status,
+        protocolo_recebimento: inv.protocolo_recebimento,
+        created_at: inv.created_at
+      })),
       status_details: statusDetails,
       decoded_err_content: decodedErrContent,
       raw_status_response: statusResult.data,
