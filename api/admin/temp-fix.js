@@ -1,7 +1,9 @@
-import axios from 'axios';
-import https from 'https';
+import { createClient } from '@supabase/supabase-js';
 import { XMLParser } from 'fast-xml-parser';
-import { getBarueriHttpsAgentConfig } from '../../services/barueri/security.js';
+import { sendBarueriStatusRequest, sendBarueriBaixarRequest } from '../../services/barueri/soap.js';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -15,79 +17,128 @@ export default async function handler(req, res) {
   }
 
   try {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    // 1. Fetch latest invoice with a protocol
+    const { data: invoices, error: invoiceError } = await supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .not('protocolo_recebimento', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (invoiceError) {
+      throw new Error(`Database error: ${invoiceError.message}`);
+    }
+
+    if (!invoices || invoices.length === 0) {
+      return json(res, 200, { message: 'No invoices with protocols found.' });
+    }
+
+    const latestInvoice = invoices[0];
+    const protocolo = latestInvoice.protocolo_recebimento;
+
     const im = process.env.BARUERI_INSCRICAO_MUNICIPAL || '4BZ5982';
     const cnpj = (process.env.BARUERI_CNPJ_PRESTADOR || '00000000000100').replace(/\D/g, '');
-    const filename = 'ENV4BZ5985A7220260710070829.ERR';
 
-    const innerXml = `<?xml version="1.0" encoding="utf-8"?>
-<NFeLoteBaixarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
-  <InscricaoMunicipal>${im}</InscricaoMunicipal>
-  <CPFCNPJContrib>${cnpj}</CPFCNPJContrib>
-  <NomeArqRetorno>${filename}</NomeArqRetorno>
-</NFeLoteBaixarArquivo>`;
+    // 2. Query status from Prefeitura
+    const statusResult = await sendBarueriStatusRequest(im, cnpj, protocolo);
 
-    const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteBaixarArquivo"';
-    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfe="http://www.barueri.sp.gov.br/nfe">
-  <soapenv:Body>
-    <nfe:NFeLoteBaixarArquivo>
-      <nfe:VersaoSchema>1</nfe:VersaoSchema>
-      <nfe:MensagemXML><![CDATA[${innerXml}]]></nfe:MensagemXML>
-    </nfe:NFeLoteBaixarArquivo>
-  </soapenv:Body>
-</soapenv:Envelope>`;
+    let innerXml = statusResult.data;
+    if (typeof innerXml === 'object') {
+      innerXml = innerXml.NFeLoteStatusArquivoResult || innerXml.NFeLoteStatusArquivoResponse || innerXml.output || JSON.stringify(innerXml);
+    }
 
-    const agentConfig = getBarueriHttpsAgentConfig();
-    const agent = new https.Agent({
-      pfx: agentConfig.pfx,
-      passphrase: agentConfig.passphrase,
-      rejectUnauthorized: false
-    });
+    let parsedInner = {};
+    if (typeof innerXml === 'string' && innerXml.trim().startsWith('<')) {
+      const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+      parsedInner = parser.parse(innerXml);
+    } else {
+      parsedInner = statusResult.data;
+    }
 
-    const endpoint = process.env.BARUERI_SOAP_ENDPOINT || 'https://www.barueri.sp.gov.br/nfeservice/wsrps.asmx';
-    const response = await axios.post(endpoint, soapEnvelope, {
-      headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-        'SOAPAction': soapAction
-      },
-      httpsAgent: agent,
-      timeout: 30000
-    });
+    // Find SituacaoArq and NomeArqRetorno
+    const findStatusDetails = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.SituacaoArq !== undefined) {
+        return {
+          situacao: String(obj.SituacaoArq),
+          nomeArqRetorno: obj.NomeArqRetorno ? String(obj.NomeArqRetorno) : null
+        };
+      }
+      if (obj.situacaoArq !== undefined) {
+        return {
+          situacao: String(obj.situacaoArq),
+          nomeArqRetorno: obj.nomeArqRetorno ? String(obj.nomeArqRetorno) : null
+        };
+      }
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        if (val && typeof val === 'object') {
+          const res = findStatusDetails(val);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
 
-    const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
-    const parsedResult = parser.parse(response.data);
-    const envelope = parsedResult?.['soap:Envelope'] || parsedResult?.Envelope;
-    const body = envelope?.['soap:Body'] || envelope?.Body;
-    const responseData = body?.NFeLoteBaixarArquivoResult || body?.NFeLoteBaixarArquivoResponse || body;
+    const statusDetails = findStatusDetails(parsedInner);
 
-    let base64Data = null;
-    if (responseData) {
-      const findBase64 = (obj) => {
+    let decodedErrContent = null;
+    let rawDownloadResult = null;
+
+    if (statusDetails && statusDetails.nomeArqRetorno) {
+      // 3. Download the .ERR file
+      const downloadResult = await sendBarueriBaixarRequest(im, cnpj, statusDetails.nomeArqRetorno);
+      rawDownloadResult = downloadResult.data;
+
+      let baixarXml = downloadResult.data;
+      if (typeof baixarXml === 'object') {
+        baixarXml = baixarXml.NFeLoteBaixarArquivoResult || baixarXml.NFeLoteBaixarArquivoResponse || baixarXml.output || JSON.stringify(baixarXml);
+      }
+
+      let parsedBaixar = {};
+      if (typeof baixarXml === 'string' && baixarXml.trim().startsWith('<')) {
+        const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
+        parsedBaixar = parser.parse(baixarXml);
+      } else {
+        parsedBaixar = downloadResult.data;
+      }
+
+      const findArquivoBase64 = (obj) => {
         if (!obj || typeof obj !== 'object') return null;
         if (obj.ArquivoRPSBase64) return String(obj.ArquivoRPSBase64);
         if (obj.arquivoRPSBase64) return String(obj.arquivoRPSBase64);
         for (const key of Object.keys(obj)) {
           const val = obj[key];
           if (val && typeof val === 'object') {
-            const found = findBase64(val);
+            const found = findArquivoBase64(val);
             if (found) return found;
           }
         }
         return null;
       };
-      base64Data = findBase64(responseData);
-    }
 
-    let decodedContent = '';
-    if (base64Data) {
-      decodedContent = Buffer.from(base64Data, 'base64').toString('utf8');
+      const base64Data = findArquivoBase64(parsedBaixar);
+      if (base64Data) {
+        decodedErrContent = Buffer.from(base64Data, 'base64').toString('utf8');
+      }
     }
 
     return json(res, 200, {
       success: true,
-      filename,
-      raw_response: responseData,
-      decoded: decodedContent
+      latest_invoice: {
+        id: latestInvoice.id,
+        rps_number: latestInvoice.rps_number,
+        protocolo_recebimento: latestInvoice.protocolo_recebimento,
+        created_at: latestInvoice.created_at
+      },
+      status_details: statusDetails,
+      decoded_err_content: decodedErrContent,
+      raw_status_response: statusResult.data,
+      raw_download_response: rawDownloadResult
     });
 
   } catch (error) {
