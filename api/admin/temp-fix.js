@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     });
 
     if (req.query.action === 'cleanup') {
-      const studentNames = ['GABRIELA TEOTONIO BUENO', 'MARTA MARIELLY DA SILVA'];
+      const studentNames = ['GABRIELA TEOTONIO BUENO', 'MARTA MARIELLY DA SILVA', 'MARCOS'];
       const results = [];
       for (const name of studentNames) {
         const { data: students, error: findError } = await supabaseAdmin
