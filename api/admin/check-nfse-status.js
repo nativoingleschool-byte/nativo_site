@@ -67,9 +67,27 @@ export default async function handler(req, res) {
 
     // If already has PDF link, return it directly
     if (invoice.nfs_e_pdf_link) {
+      let finalLink = invoice.nfs_e_pdf_link;
+      // Auto-correct older broken links
+      if (finalLink.includes('inscricao=14.B.Z59.82-0')) {
+        try {
+          const urlObj = new URL(finalLink);
+          const params = new URLSearchParams(urlObj.search);
+          const nota = params.get('nota');
+          if (nota) params.set('nota', String(nota).padStart(7, '0'));
+          params.set('inscricao', '14BZ5982');
+          urlObj.search = params.toString();
+          finalLink = urlObj.toString();
+          
+          // Asynchronously update db with corrected link
+          supabaseAdmin.from('invoices').update({ nfs_e_pdf_link: finalLink }).eq('id', invoice.id).then();
+        } catch (e) {
+          // ignore
+        }
+      }
       return json(res, 200, {
         status: 'emitida',
-        nfs_e_pdf_link: invoice.nfs_e_pdf_link
+        nfs_e_pdf_link: finalLink
       });
     }
 

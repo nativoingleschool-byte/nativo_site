@@ -321,9 +321,10 @@ export async function consultarBarueriNFSe(protocolo) {
   const statusResult = await sendBarueriStatusRequest(cleanIm, cleanCnpj, protocolo);
 
   if (statusResult.mock) {
+    const visualizerImMock = cleanIm.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     return {
       status: 'concluido',
-      nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=99999&codVerificacao=MOCK-VERIF`
+      nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${visualizerImMock}&nota=0099999&codVerificacao=MOCK-VERIF`
     };
   }
 
@@ -514,10 +515,14 @@ export async function consultarBarueriNFSe(protocolo) {
     }
 
     if (numero) {
-      return {
-        status: 'concluido',
-        nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${cleanIm}&nota=${numero}&codVerificacao=${codigoVerificacao || ''}`
-      };
+        // Format for visualizer: inscricao must be alphanumeric only, nota must be 7 digits
+        const visualizerIm = cleanIm.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const visualizerNota = String(numero).padStart(7, '0');
+        
+        return {
+          status: 'concluido',
+          nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${visualizerIm}&nota=${visualizerNota}&codVerificacao=${codigoVerificacao || ''}`
+        };
     }
   }
 

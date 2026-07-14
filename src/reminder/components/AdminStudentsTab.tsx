@@ -19,6 +19,7 @@ interface AdminStudentsTabProps {
   userForm: UserFormState
   setUserForm: (form: UserFormState) => void
   refreshProfiles: () => Promise<void>
+  invoices: any[]
 }
 
 export default function AdminStudentsTab({
@@ -36,6 +37,7 @@ export default function AdminStudentsTab({
   userForm,
   setUserForm,
   refreshProfiles,
+  invoices,
 }: AdminStudentsTabProps) {
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
@@ -79,6 +81,22 @@ export default function AdminStudentsTab({
   const [currentPeriodInvoices, setCurrentPeriodInvoices] = useState<Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }>>({})
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
 
+  useEffect(() => {
+    const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
+    const mapped: Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }> = {}
+    
+    invoices.forEach((inv) => {
+      if (inv.billing_period === currentPeriod && (inv.status === 'pago' || inv.nfs_e_pdf_link)) {
+        mapped[inv.student_id] = {
+          id: inv.id,
+          hasPdf: !!inv.nfs_e_pdf_link,
+          hasProtocol: !!inv.protocolo_recebimento
+        }
+      }
+    })
+    setCurrentPeriodInvoices(mapped)
+  }, [invoices])
+
   const handleCheckStatus = async (invoiceId: string) => {
     setCheckingStatusId(invoiceId)
     try {
@@ -106,7 +124,6 @@ export default function AdminStudentsTab({
         alert(`Erro: ${data.message}`)
       }
       
-      // Force refresh current invoices state
       setLastIssuedPdf(prev => prev ? { ...prev } : null)
     } catch (err: any) {
       alert(err.message)
@@ -114,36 +131,6 @@ export default function AdminStudentsTab({
       setCheckingStatusId(null)
     }
   }
-
-  useEffect(() => {
-    const fetchCurrentInvoices = async () => {
-      try {
-        const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
-        const { data, error } = await supabase
-          .from('invoices')
-          .select('student_id, id, status, nfs_e_pdf_link, protocolo_recebimento')
-          .eq('billing_period', currentPeriod)
-
-        if (error) throw error
-
-        const mapped: Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }> = {}
-        data?.forEach((inv) => {
-          if (inv.status === 'pago' || inv.nfs_e_pdf_link) {
-            mapped[inv.student_id] = {
-              id: inv.id,
-              hasPdf: !!inv.nfs_e_pdf_link,
-              hasProtocol: !!inv.protocolo_recebimento
-            }
-          }
-        })
-        setCurrentPeriodInvoices(mapped)
-      } catch (err) {
-        console.error('Error fetching current month invoices:', err)
-      }
-    }
-
-    void fetchCurrentInvoices()
-  }, [students, lastIssuedPdf, checkingStatusId])
 
   const [historyStudent, setHistoryStudent] = useState<Profile | null>(null)
   const [historyInvoices, setHistoryInvoices] = useState<any[]>([])
