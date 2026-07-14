@@ -1231,6 +1231,7 @@ function ReminderAppInner() {
                 userForm={userForm}
                 setUserForm={setUserForm}
                 refreshProfiles={refreshProfiles}
+                invoices={invoices}
               />
             )}
 
