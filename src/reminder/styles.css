@@ -191,24 +191,291 @@ body:has(.reminder-app-scope) {
 }
 
 .app-shell.final-shell {
+.reminder-app-scope {
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #f1f5f9;
+  background: #030712;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-width: 100vw;
+  overflow-x: hidden;
+}
+
+.reminder-app-scope * {
+  box-sizing: border-box;
+}
+
+/* Custom Scrollbar Styles for premium feel */
+.reminder-app-scope ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.reminder-app-scope ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+.reminder-app-scope ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+}
+.reminder-app-scope ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+.reminder-app-scope {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.12), transparent 35%),
+    linear-gradient(180deg, #090d16 0%, #030712 100%);
+}
+
+/* Ensure browser html/body background scales properly and doesn't leak white color */
+html:has(.reminder-app-scope),
+body:has(.reminder-app-scope) {
+  background-color: #030712 !important;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.reminder-app-scope button,
+.reminder-app-scope input,
+.reminder-app-scope select {
+  font: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reminder-app-scope button {
+  cursor: pointer;
+  border: none;
+}
+
+.reminder-app-scope h1,
+.reminder-app-scope h2,
+.reminder-app-scope h3,
+.reminder-app-scope p {
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.reminder-app-scope h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.reminder-app-scope h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.reminder-app-scope h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.large-copy {
+  font-size: 1.05rem;
+  max-width: 60ch;
+  color: #cbd5e1;
+}
+
+.tiny-copy {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.inline-code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #e2e8f0;
+}
+
+.eyebrow,
+.section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #818cf8;
+  margin-bottom: 8px;
+}
+
+.login-shell,
+.app-shell {
+  min-height: 100vh;
+}
+
+.login-shell {
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 100%;
 }
 
-.sidebar {
+.topbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(17, 24, 39, 0.65);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 16px;
+  width: 100%;
+}
+
+.topbar-left, .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+}
+
+.topbar-item.bg-panel {
+  background: rgba(15, 23, 42, 0.4);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.compact-select {
+  background: transparent !important;
+  border: none !important;
+  color: #e2e8f0 !important;
+  padding: 0 !important;
+  font-size: 0.85rem !important;
+  cursor: pointer;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: none;
+}
+.compact-select:focus {
+  box-shadow: none !important;
+}
+
+.topbar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.topbar-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.topbar-action-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.topbar-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.login-hero {
+  display: none;
+}
+
+.login-panel,
+.main-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  max-width: 100%;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.feature-card,
+.panel,
+.summary-card,
+.clock-panel,
+.login-panel,
+.user-row,
+.credential-card {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+}
+
+.feature-card:hover,
+.summary-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.feature-card,
+.summary-card,
+.clock-panel,
+.credential-card {
+  padding: 16px;
+}
+
+.login-panel {
+  margin: 0 auto;
+  align-self: center;
+  width: 100%;
+  max-width: 440px;
+}
+
+.app-shell.final-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
 }
 
 .main-content {
-  padding: 16px;
-  padding-bottom: 40px;
+  flex: 1;
   width: 100%;
+  padding: 24px;
 }
 
 .button-row,
@@ -802,216 +1069,9 @@ body:has(.reminder-app-scope) {
     max-width: 440px;
   }
 
-  .app-shell.final-shell {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-  }
-
-  .sidebar {
-    gap: 24px;
-    padding: 30px 24px;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    border-bottom: none;
-  }
-
   .main-content {
-    padding: 24px 40px;
-    gap: 28px;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
-  }
-
-  .panel-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-  }
-
-  .panel {
-    padding: 24px;
-    gap: 20px;
-  }
-
-  .panel-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .feature-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-  }
-
-  .split-column {
-    flex-direction: row;
-    gap: 24px;
-  }
-
-  .user-row {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) 120px;
-    gap: 12px;
-    align-items: center;
-    padding: 16px;
-  }
-
-  .button-row {
-    flex-direction: row;
-    gap: 12px;
-    width: auto;
-    align-items: center;
-  }
-
-  .lesson-card,
-  .reminder-card {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  .status-stack {
-    justify-content: flex-end;
-    margin-top: 0;
-    width: auto;
-  }
-
-  .form-card,
-  .lesson-card,
-  .reminder-card,
-  gap: 2px;
-  z-index: 2;
-  position: relative;
-  text-align: left;
-}
-
-.calendar-event-success {
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.calendar-event-danger {
-  background: rgba(239, 68, 68, 0.16);
-  border-color: rgba(248, 113, 113, 0.35);
-}
-
-.calendar-event-neutral {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(96, 165, 250, 0.25);
-}
-
-.calendar-form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
-  padding-top: 12px;
-}
-
-.selection-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.selection-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(15, 23, 42, 0.55);
-}
-
-/* Navigation Tab Responsiveness */
-.mobile-tab-select {
-  display: block;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.mobile-tab-select select {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(15, 23, 42, 0.95);
-  color: #f8fafc;
-  outline: none;
-  font-size: 16px !important;
-  cursor: pointer;
-}
-
-.desktop-only {
-  display: none !important;
-}
-
-/* Mobile Spacing adjustments */
-@media (max-width: 767px) {
-  .reminder-app-scope h1 {
-    font-size: 1.85rem;
-  }
-  .reminder-app-scope h2 {
-    font-size: 1.3rem;
-  }
-}
-
-/* Desktop Viewport Overrides (Mobile-First) */
-@media (min-width: 768px) {
-  .mobile-tab-select {
-    display: none;
-  }
-  .desktop-only {
-    display: flex !important;
-  }
-
-  .login-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 480px);
-    padding: 0;
-  }
-
-  .login-hero {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 28px;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(10, 15, 30, 0.7);
-    backdrop-filter: blur(20px);
-    padding: 40px;
-  }
-
-  .login-panel {
-    margin: 24px;
-    padding: 24px;
-    max-width: 440px;
-  }
-
-  .app-shell.final-shell {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-  }
-
-  .sidebar {
-    gap: 24px;
-    padding: 30px 24px;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    border-bottom: none;
-  }
-
-  .main-content {
-    padding: 24px 40px;
-    gap: 28px;
+    flex: 1;
+    overflow-y: auto;
   }
 
   .summary-grid {
