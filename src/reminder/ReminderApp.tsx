@@ -29,7 +29,7 @@ import {
 
 import StatCard from './components/StatCard'
 import LoginPanel from './components/LoginPanel'
-import Topbar from './components/Topbar'
+import Sidebar from './components/Sidebar'
 import AdminStudentsTab from './components/AdminStudentsTab'
 import AdminPaymentsTab from './components/AdminPaymentsTab'
 import AdminStaffTab from './components/AdminStaffTab'
@@ -1128,7 +1128,7 @@ function ReminderAppInner() {
   return (
     <div className="reminder-app-scope">
       <div className="app-shell final-shell">
-      <Topbar
+      <Sidebar
         profile={profile}
         language={language}
         setLanguage={setLanguage}
