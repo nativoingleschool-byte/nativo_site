@@ -3,6 +3,8 @@ import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { MoreVertical } from 'lucide-react'
 
 interface AdminStudentsTabProps {
   language: Language
@@ -70,6 +72,38 @@ export default function AdminStudentsTab({
       if (!response.ok) throw new Error(data.error || 'Erro ao deletar estudante.')
 
       alert('Aluno excluído com sucesso!')
+      await refreshProfiles()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleArchiveStudent = async (studentId: string, fullName: string) => {
+    if (!confirm(`Deseja realmente arquivar o aluno ${fullName}? Todas as aulas futuras serão excluídas, mas o histórico e faturas serão mantidos.`)) {
+      return
+    }
+
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'archive',
+          payload: { id: studentId }
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao arquivar estudante.')
+
+      alert('Aluno arquivado com sucesso!')
       await refreshProfiles()
     } catch (err: any) {
       alert(err.message)
@@ -189,7 +223,9 @@ export default function AdminStudentsTab({
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null)
 
-  const selectables = students.filter(
+  const activeStudents = students.filter(s => !s.archived)
+  
+  const selectables = activeStudents.filter(
     (s) => !currentPeriodInvoices[s.id] && s.tuition_fee && Number(s.tuition_fee) > 0
   )
 
@@ -362,7 +398,7 @@ export default function AdminStudentsTab({
             </tr>
           </thead>
           <tbody>
-            {students.map((student) => {
+            {activeStudents.map((student) => {
               const studentLessons = lessons.filter(l => l.student_id === student.id)
               const scheduleText = studentLessons.length > 0 
                 ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || t(language, 'class_scheduled')
@@ -513,41 +549,72 @@ export default function AdminStudentsTab({
                         </button>
                       )
                     })()}
-                    <button 
-                      className="secondary-button" 
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                      onClick={() => {
-                        setSavingUserId(student.id)
-                        setUserForm({
-                          id: student.id,
-                          email: student.email,
-                          full_name: student.full_name,
-                          role: 'student',
-                          class_name: student.class_name || '',
-                          speciality: '',
-                          password: '',
-                          cpf: student.cpf || '',
-                          data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
-                          first_class_at: '',
-                          first_class_teacher_id: '',
-                          cep: student.cep || '',
-                          logradouro: student.logradouro || '',
-                          bairro: student.bairro || '',
-                          cidade: student.cidade || '',
-                          uf: student.uf || '',
-                          tuition_fee: student.tuition_fee
-                        })
-                      }}
-                    >
-                      {t(language, 'edit')}
-                    </button>
-                    <button 
-                      className="danger-button" 
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginLeft: '0.5rem' }}
-                      onClick={() => void handleDeleteStudent(student.id, student.full_name)}
-                    >
-                      Excluir
-                    </button>
+                    
+                    <DropdownMenu.Root>
+                      <DropdownMenu.Trigger asChild>
+                        <button 
+                          className="secondary-button" 
+                          style={{ padding: '0.4rem', border: 'none', background: 'transparent' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Portal>
+                        <DropdownMenu.Content 
+                          align="end"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #334155', 
+                            borderRadius: '0.5rem', 
+                            padding: '0.5rem',
+                            minWidth: '150px',
+                            zIndex: 50,
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                          }}
+                        >
+                          <DropdownMenu.Item 
+                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
+                            onSelect={() => {
+                              setSavingUserId(student.id)
+                              setUserForm({
+                                id: student.id,
+                                email: student.email,
+                                full_name: student.full_name,
+                                role: 'student',
+                                class_name: student.class_name || '',
+                                speciality: '',
+                                password: '',
+                                cpf: student.cpf || '',
+                                data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
+                                first_class_at: '',
+                                first_class_teacher_id: '',
+                                cep: student.cep || '',
+                                logradouro: student.logradouro || '',
+                                bairro: student.bairro || '',
+                                cidade: student.cidade || '',
+                                uf: student.uf || '',
+                                tuition_fee: student.tuition_fee
+                              })
+                            }}
+                          >
+                            {t(language, 'edit')}
+                          </DropdownMenu.Item>
+                          <DropdownMenu.Item 
+                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#f59e0b', borderRadius: '0.25rem' }}
+                            onSelect={() => void handleArchiveStudent(student.id, student.full_name)}
+                          >
+                            Arquivar
+                          </DropdownMenu.Item>
+                          <DropdownMenu.Item 
+                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#ef4444', borderRadius: '0.25rem' }}
+                            onSelect={() => void handleDeleteStudent(student.id, student.full_name)}
+                          >
+                            Excluir
+                          </DropdownMenu.Item>
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Portal>
+                    </DropdownMenu.Root>
                   </td>
                 </tr>
               )

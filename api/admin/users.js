@@ -227,6 +227,23 @@ const deleteUser = async (supabaseAdmin, payload) => {
   return { id: payload.id }
 }
 
+const archiveUser = async (supabaseAdmin, payload) => {
+  if (!payload?.id) {
+    throw new Error('Missing user id.')
+  }
+
+  // Use the RPC to safely archive the student and delete future lessons in a single transaction
+  const { error } = await supabaseAdmin.rpc('archive_student', {
+    student_id_param: payload.id
+  })
+
+  if (error) {
+    throw new Error(`Failed to archive user: ${error.message}`)
+  }
+
+  return { id: payload.id, archived: true }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -254,6 +271,11 @@ export default async function handler(req, res) {
     if (action === 'delete') {
       const deleted = await deleteUser(supabaseAdmin, payload)
       return json(res, 200, { data: deleted })
+    }
+
+    if (action === 'archive') {
+      const archived = await archiveUser(supabaseAdmin, payload)
+      return json(res, 200, { data: archived })
     }
 
     return json(res, 400, { error: 'Unknown action.' })
