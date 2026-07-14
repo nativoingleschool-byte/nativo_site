@@ -88,8 +88,13 @@ export default async function handler(req, res) {
       throw new Error(`Database error: ${invoiceError.message}`);
     }
 
+    const martaResult = await consultarBarueriNFSe('ENV4BZ5984A3120260714181453');
+    const gabrielaResult = await consultarBarueriNFSe('ENV4BZ59857F720260714115203');
+
     return json(res, 200, {
       success: true,
+      marta_result: martaResult,
+      gabriela_result: gabrielaResult,
       recent_invoices: invoices.map(inv => ({
         id: inv.id,
         student_id: inv.student_id,
