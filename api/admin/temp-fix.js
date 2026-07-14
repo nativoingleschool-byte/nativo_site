@@ -64,6 +64,19 @@ export default async function handler(req, res) {
       return json(res, 200, { success: true, action: 'cleanup', results });
     }
 
+    if (req.query.action === 'fix_gabriela') {
+      const { data: updated, error } = await supabaseAdmin
+        .from('invoices')
+        .update({
+          status: 'emitida',
+          nfs_e_pdf_link: 'https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=4BZ5982&nota=0000001&codVerificacao=131W.0268.5572.1478299-Q'
+        })
+        .eq('id', '7068a3c6-4b96-4e67-a844-5408f4f6faa8')
+        .select('*')
+        .single();
+      return json(res, 200, { success: true, updated, error });
+    }
+
     // 1. Fetch latest invoices
     const { data: invoices, error: invoiceError } = await supabaseAdmin
       .from('invoices')
