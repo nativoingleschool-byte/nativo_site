@@ -68,6 +68,7 @@ export type Profile = {
   cidade?: string
   uf?: string
   tuition_fee?: number
+  archived?: boolean
 }
 
 export type Lesson = {

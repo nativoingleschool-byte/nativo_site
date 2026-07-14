@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   class_name text not null default '',
   speciality text not null default '',
   push_enabled boolean not null default false,
+  archived boolean not null default false,
   created_at timestamptz not null default timezone('utc', now()),
   
   -- Student specific fields
@@ -87,6 +88,26 @@ as $$
     where id = auth.uid()
       and role = 'admin'
   );
+$$;
+
+-- Helper function to archive a student safely
+create or replace function public.archive_student(student_id_param uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- 1. Mark profile as archived
+  update public.profiles
+  set archived = true
+  where id = student_id_param;
+
+  -- 2. Delete all future lessons
+  delete from public.lessons
+  where student_id = student_id_param
+    and starts_at > now();
+end;
 $$;
 
 -- Enable Row Level Security (RLS)
