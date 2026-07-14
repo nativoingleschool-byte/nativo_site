@@ -89,11 +89,15 @@ export default async function handler(req, res) {
     }
 
     if (result.status === 'erro') {
-      // Update invoice status to failed
-      await supabaseAdmin
+      // Update invoice status to failed using correct enum falha_emissao
+      const { error: updateError } = await supabaseAdmin
         .from('invoices')
-        .update({ status: 'falha' })
+        .update({ status: 'falha_emissao' })
         .eq('id', invoice_id);
+
+      if (updateError) {
+        console.error('Failed to update invoice to falha_emissao:', updateError);
+      }
 
       return json(res, 200, {
         status: 'erro',
@@ -102,14 +106,18 @@ export default async function handler(req, res) {
     }
 
     if (result.status === 'concluido' && result.nfs_e_pdf_link) {
-      // Update invoice with PDF link and status
-      await supabaseAdmin
+      // Update invoice with PDF link (do not change status to emitida, as it violates constraint)
+      const { error: updateError } = await supabaseAdmin
         .from('invoices')
         .update({
-          nfs_e_pdf_link: result.nfs_e_pdf_link,
-          status: 'emitida'
+          nfs_e_pdf_link: result.nfs_e_pdf_link
         })
         .eq('id', invoice_id);
+
+      if (updateError) {
+        console.error('Failed to update invoice pdf link:', updateError);
+        throw new Error('Database update failed.');
+      }
 
       return json(res, 200, {
         status: 'emitida',
