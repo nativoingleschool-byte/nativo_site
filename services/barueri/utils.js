@@ -53,18 +53,24 @@ export function generatePositionalString(value, type, length) {
  */
 export function formatDiscriminacao(text) {
   const normalized = normalizeText(text || '');
-  const chunks = [];
-  for (let i = 0; i < normalized.length; i += 100) {
-    chunks.push(normalized.substring(i, i + 100));
+  const words = normalized.split(' ');
+  let lines = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    if ((currentLine + ' ' + word).trim().length <= 100) {
+      currentLine = (currentLine + ' ' + word).trim();
+    } else {
+      lines.push(currentLine.padEnd(100, ' '));
+      currentLine = word;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine.padEnd(100, ' '));
   }
   
-  let result = chunks.join('|');
-  if (result.length > 1000) {
-    result = result.substring(0, 1000);
-  } else {
-    result = result.padEnd(1000, ' ');
-  }
-  return result;
+  let result = lines.slice(0, 10).join('|');
+  return result.padEnd(1000, ' ');
 }
 
 /**
@@ -173,7 +179,7 @@ export function buildFooterRow(totalLines, totalValue) {
  * Payload must be exactly 1970 characters.
  */
 export function buildTaxRow(data = {}) {
-  const optanteSN = data.optanteSimples || '1'; // 1=Não Optante, 2=MEI, 3=ME/EPP
+  const optanteSN = process.env.BARUERI_OPTANTE_SIMPLES || data.optanteSimples || '1'; // 1=Não Optante, 2=MEI, 3=ME/EPP
   const regimeApuracao = optanteSN === '3' ? (data.regimeApuracao || '1') : '0';
   const codigoCidadeIBGE = data.codigoCidadeIBGE || '3505708'; // Barueri local of prestação
   const tomadorCidadeIBGE = data.tomadorCidadeIBGE || '3505708'; // Student city IBGE code (default Barueri)

@@ -71,6 +71,16 @@ async function getIbgeCode(cidade, uf) {
  * @returns {Promise<string>} The received reception protocol or mock link.
  */
 export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
+  // 0. Upfront student data validation to prevent municipal API rejections due to malformed sizes
+  const cleanedCpf = String(studentData.cpf || '').replace(/\D/g, '');
+  if (!cleanedCpf || (cleanedCpf.length !== 11 && cleanedCpf.length !== 14)) {
+    throw new Error(`CPF/CNPJ do estudante inválido ou ausente: "${studentData.cpf || ''}" (deve conter 11 ou 14 dígitos numéricos)`);
+  }
+  const cleanedCep = String(studentData.cep || '').replace(/\D/g, '');
+  if (!cleanedCep || cleanedCep.length !== 8) {
+    throw new Error(`CEP do estudante inválido ou ausente: "${studentData.cep || ''}" (deve conter exatamente 8 dígitos numéricos)`);
+  }
+
   const supabaseAdmin = getSupabaseAdmin();
 
   // 1. Fetch daily batch remessa ID via Supabase RPC
