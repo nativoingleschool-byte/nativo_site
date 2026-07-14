@@ -192,7 +192,7 @@ export function buildTaxRow(data = {}) {
     generatePositionalString(codigoCidadeIBGE, 'numeric_string', 7) + // pos 7-13: Código Cidade IBGE (prestação)
     generatePositionalString(tomadorCidadeIBGE, 'numeric_string', 7) + // pos 14-20: Código Cidade do Tomador
     generatePositionalString('', 'text', 40) +              // pos 21-60: NIF for foreign tomador (blank for BR)
-    generatePositionalString('122061300', 'numeric_string', 9) + // pos 61-69: Código NBS (1.2206.13.00: foreign language teaching)
+    generatePositionalString('122051900', 'numeric_string', 9) + // pos 61-69: Código NBS (1.22.05.19.00: educational/training services)
     generatePositionalString('', 'text', 11) +              // pos 70-80: CEP tomador estrangeiro (blank)
     generatePositionalString('', 'text', 60) +              // pos 81-140: Estado/Província/Região tomador estrangeiro (blank)
     generatePositionalString('0', 'text', 1) +              // pos 141: Vínculo entre as partes (0 = Sem vínculo)
