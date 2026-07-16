@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../lib/toast'
 
 interface AdminPaymentsTabProps {
   language: Language
@@ -24,6 +25,7 @@ export default function AdminPaymentsTab({
   invoices,
   refreshInvoices,
 }: AdminPaymentsTabProps) {
+  const { toast } = useToast()
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
 
@@ -47,15 +49,15 @@ export default function AdminPaymentsTab({
       if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
 
       if (data.status === 'emitida' && data.nfs_e_pdf_link) {
-        alert(t(language, 'success_invoice_banner').replace('{name}', ''))
+        toast.success(t(language, 'success_invoice_banner').replace('{name}', ''))
       } else if (data.status === 'processando') {
-        alert(data.message || t(language, 'success_lote_envio_banner'))
+        toast.info(data.message || t(language, 'success_lote_envio_banner'))
       } else if (data.status === 'erro') {
-        alert(`Erro: ${data.message}`)
+        toast.error(`Erro: ${data.message}`)
       }
       await refreshInvoices()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setCheckingStatusId(null)
     }
@@ -81,13 +83,13 @@ export default function AdminPaymentsTab({
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
       if (data.nfs_e_pdf_link) {
-        alert(t(language, 'success_invoice_banner').replace('{name}', fullName))
+        toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
       } else {
-        alert(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
+        toast.info(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
       }
       await refreshInvoices()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setIssuingNfseId(null)
     }
@@ -225,7 +227,7 @@ export default function AdminPaymentsTab({
                           const nextStatus = prompt('Insira o novo status (pendente, pago, atrasado):', lastInvoice.status)
                           if (nextStatus && ['pendente', 'pago', 'atrasado'].includes(nextStatus)) {
                             const { error } = await supabase.from('invoices').update({ status: nextStatus }).eq('id', lastInvoice.id)
-                            if (error) alert(error.message)
+                            if (error) toast.error(error.message)
                             else await refreshInvoices()
                           }
                         }}

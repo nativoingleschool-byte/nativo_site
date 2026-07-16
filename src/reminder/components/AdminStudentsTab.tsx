@@ -5,6 +5,7 @@ import { formatShortDate, badgeClass } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { MoreVertical } from 'lucide-react'
+import { useToast } from '../lib/toast'
 
 interface AdminStudentsTabProps {
   language: Language
@@ -41,6 +42,8 @@ export default function AdminStudentsTab({
   refreshProfiles,
   invoices,
 }: AdminStudentsTabProps) {
+  const { toast } = useToast()
+  const [studentSearch, setStudentSearch] = useState('')
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const handleDeleteStudent = async (studentId: string, fullName: string) => {
@@ -71,10 +74,10 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao deletar estudante.')
 
-      alert('Aluno excluído com sucesso!')
+      toast.success('Aluno excluído com sucesso!')
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -103,10 +106,10 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao arquivar estudante.')
 
-      alert('Aluno arquivado com sucesso!')
+      toast.success('Aluno arquivado com sucesso!')
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -151,16 +154,16 @@ export default function AdminStudentsTab({
       if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
 
       if (data.status === 'emitida' && data.nfs_e_pdf_link) {
-        alert(t(language, 'success_invoice_banner').replace('{name}', ''))
+        toast.success(t(language, 'success_invoice_banner').replace('{name}', ''))
       } else if (data.status === 'processando') {
-        alert(data.message || t(language, 'success_lote_envio_banner'))
+        toast.info(data.message || t(language, 'success_lote_envio_banner'))
       } else if (data.status === 'erro') {
-        alert(`Erro: ${data.message}`)
+        toast.error(`Erro: ${data.message}`)
       }
       
       setLastIssuedPdf(prev => prev ? { ...prev } : null)
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setCheckingStatusId(null)
     }
@@ -214,7 +217,7 @@ export default function AdminStudentsTab({
       setLastIssuedPdf({ name: fullName, url: data.nfs_e_pdf_link })
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setIssuingNfseId(null)
     }
@@ -284,11 +287,11 @@ export default function AdminStudentsTab({
         }
       }
 
-      alert(`Emissão em lote concluída!\n\nSucesso: ${successCount} lotes enviados para processamento.\nFalhas: ${failCount} falharam/já existiam.`)
+      toast.info(`Emissão em lote concluída! ✓ ${successCount} enviados para processamento. ${failCount > 0 ? `✗ ${failCount} falharam.` : ''}`)
       setSelectedStudentIds([])
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setBulkProgress(null)
     }
@@ -352,7 +355,7 @@ export default function AdminStudentsTab({
               className="secondary-button"
               onClick={() => {
                 void navigator.clipboard.writeText(generatedInviteLink)
-                alert(t(language, 'copied_alert'))
+                toast.success(t(language, 'copied_alert'))
               }}
             >
               {t(language, 'copy_link_btn')}
@@ -717,7 +720,7 @@ export default function AdminStudentsTab({
                     setSavingUserId(null)
                     await refreshProfiles()
                   } catch (err: any) {
-                    alert(err.message)
+                    toast.error(err.message)
                   }
                 }}
               >

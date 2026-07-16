@@ -3,6 +3,7 @@ import { BrowserPermission, Lesson, Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, minutesUntil, sortByDateDesc, sortByDateAsc } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../lib/toast'
 
 interface StudentPanelProps {
   language: Language
@@ -43,6 +44,7 @@ export default function StudentPanel({
   dueStudentStartReminders,
   refreshProfile,
 }: StudentPanelProps) {
+  const { toast } = useToast()
   const [fullName, setFullName] = useState(profile.full_name)
   const [email, setEmail] = useState(profile.email)
   const [cpf, setCpf] = useState(profile.cpf || '')
@@ -83,9 +85,9 @@ export default function StudentPanel({
         .eq('id', profile.id)
       if (error) throw error
       await refreshProfile(profile.id)
-      alert('Cadastro atualizado com sucesso!')
+      toast.success('Cadastro atualizado com sucesso!')
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setSaving(false)
     }
