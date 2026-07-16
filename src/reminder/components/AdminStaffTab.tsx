@@ -3,6 +3,7 @@ import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../lib/toast'
 
 const defaultUserForm = (): UserFormState => ({
   full_name: '',
@@ -55,6 +56,7 @@ export default function AdminStaffTab({
   handleUpdateTeacherPayout,
   setAppError,
 }: AdminStaffTabProps) {
+  const { toast } = useToast()
 
   const handleAddStaffSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -72,7 +74,7 @@ export default function AdminStaffTab({
         cnpj: userForm.cnpj || '',
         taxa_hora_aula: userForm.taxa_hora_aula || 56.00,
       })
-      alert(`Membro da equipe ${created.full_name} adicionado com sucesso!`)
+      toast.success(`Membro da equipe ${created.full_name} adicionado com sucesso!`)
       setUserForm(defaultUserForm())
       await refreshProfiles()
     } catch (err: any) {
@@ -332,7 +334,7 @@ export default function AdminStaffTab({
                     setSavingUserId(null)
                     await refreshProfiles()
                   } catch (err: any) {
-                    alert(err.message)
+                    toast.error(err.message)
                   }
                 }}
               >

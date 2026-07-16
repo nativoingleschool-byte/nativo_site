@@ -4,6 +4,7 @@ import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
+import { useToast } from '../lib/toast'
 
 interface TeacherPanelProps {
   language: Language
@@ -87,6 +88,7 @@ export default function TeacherPanel({
   setAccountSaving,
   focusedLessonId,
 }: TeacherPanelProps) {
+  const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const lessonCardClass = (lessonId: string) =>
@@ -115,11 +117,11 @@ export default function TeacherPanel({
         status: 'proposta_pendente'
       })
       if (error) throw error
-      alert('Proposta de aula enviada ao Administrador!')
+      toast.success('Proposta de aula enviada ao Administrador!')
       formEl.reset()
       await refreshLessons()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -133,10 +135,10 @@ export default function TeacherPanel({
           .update({ status_nota_fiscal: 'enviada' })
           .eq('id', profile.id)
         if (error) throw error
-        alert('Nota Fiscal enviada com sucesso!')
+        toast.success('Nota Fiscal enviada com sucesso!')
         await refreshProfile(profile.id)
       } catch (err: any) {
-        alert(err.message)
+        toast.error(err.message)
       } finally {
         setUploadingNf(false)
       }
@@ -158,10 +160,10 @@ export default function TeacherPanel({
         })
         .eq('id', profile.id)
       if (error) throw error
-      alert('Dados atualizados com sucesso!')
+      toast.success('Dados atualizados com sucesso!')
       await refreshProfile(profile.id)
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setAccountSaving(false)
     }
@@ -312,7 +314,7 @@ export default function TeacherPanel({
                   style={{ marginTop: '0.5rem' }}
                   onClick={() => {
                     if (!teacherNotes.trim()) return
-                    alert('Notas enviadas com sucesso ao administrador!')
+                    toast.success('Notas enviadas com sucesso ao administrador!')
                     setTeacherNotes('')
                   }}
                 >

@@ -3,6 +3,7 @@ import { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import AdminCalendar from './components/AdminCalendar'
 import './styles.css'
+import { ToastProvider, useToast } from './lib/toast'
 import { getDeviceLanguage, getStoredLanguage, Language, storeLanguage, t } from './lib/i18n'
 import {
   BrowserPermission,
@@ -77,6 +78,7 @@ const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
 })
 
 function ReminderAppInner() {
+  const { toast } = useToast()
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage() ?? getDeviceLanguage())
   const [appTimeZone, setAppTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
   const [session, setSession] = useState<Session | null>(null)
@@ -141,7 +143,7 @@ function ReminderAppInner() {
             try {
               const { error } = await supabase.auth.updateUser({ password: newPassword });
               if (error) throw error;
-              alert(language === 'es' ? 'Contraseña actualizada con éxito.' : language === 'en' ? 'Password updated successfully.' : 'Senha atualizada com sucesso.');
+              toast.success(language === 'es' ? 'Contraseña actualizada con éxito.' : language === 'en' ? 'Password updated successfully.' : 'Senha atualizada com sucesso.');
               setShowResetPasswordModal(false);
               setNewPassword('');
               setConfirmNewPassword('');
@@ -710,7 +712,7 @@ function ReminderAppInner() {
   const requestPushPermission = (): Promise<void> => {
     if (!profile || !('Notification' in window)) {
       setNotificationPermission('unsupported')
-      alert("Alerta: As notificações push não são suportadas por este navegador. (Nota: Usuários de iOS precisam primeiro adicionar o app à Tela de Início via menu de Compartilhar).")
+      toast.info("As notificações push não são suportadas por este navegador. Em iOS, adicione o app à Tela de Início primeiro.")
       return Promise.resolve()
     }
 
@@ -742,13 +744,13 @@ function ReminderAppInner() {
             }
           })
           .then(() => {
-            alert("Alertas push ativados com sucesso!")
+            toast.success("Alertas push ativados com sucesso!")
           })
           .catch((err) => {
-            alert("Erro ao salvar preferência de push: " + err.message)
+            toast.error("Erro ao salvar preferência de push: " + err.message)
           })
       } else if (permission === 'denied') {
-        alert("A permissão para notificações foi negada. Por favor, redefina as permissões nas configurações do seu navegador para receber alertas.")
+        toast.error("Permissão negada. Redefina as permissões de notificação nas configurações do navegador.")
       }
     }
 
@@ -757,11 +759,11 @@ function ReminderAppInner() {
       const permissionPromise = Notification.requestPermission(handlePermissionResult)
       if (permissionPromise && typeof permissionPromise.then === 'function') {
         permissionPromise.then(handlePermissionResult).catch((err) => {
-          alert("Erro ao solicitar permissão de push: " + err.message)
+          toast.error("Erro ao solicitar permissão de push: " + err.message)
         })
       }
     } catch (err: any) {
-      alert("Erro ao iniciar permissão de push: " + err.message)
+      toast.error("Erro ao iniciar permissão de push: " + err.message)
     }
 
     return Promise.resolve()
@@ -1019,7 +1021,7 @@ function ReminderAppInner() {
       if (!res.ok) throw new Error(data.error || 'Erro ao gerar link de convite.')
       setGeneratedInviteLink(data.invite_link)
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setInviteLoading(false)
     }
@@ -1036,7 +1038,7 @@ function ReminderAppInner() {
       if (error) throw error
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -1050,7 +1052,7 @@ function ReminderAppInner() {
       if (error) throw error
       await refreshProfiles()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -1377,8 +1379,10 @@ function ReminderAppInner() {
 
 export default function ReminderApp() {
   return (
-    <div className="reminder-app-scope bg-[#020617] text-[#e5eefc] min-h-screen">
-      <ReminderAppInner />
-    </div>
+    <ToastProvider>
+      <div className="reminder-app-scope bg-[#020617] text-[#e5eefc] min-h-screen">
+        <ReminderAppInner />
+      </div>
+    </ToastProvider>
   )
 }
