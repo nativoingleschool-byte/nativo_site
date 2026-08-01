@@ -54,6 +54,49 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000
 
+const pad2 = (value: number) => value.toString().padStart(2, '0')
+const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+const zonedPartsFormatter = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+const getZonedParts = (date: Date, timeZone: string) => {
+  const parts = zonedPartsFormatter(timeZone).formatToParts(date)
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return {
+    year: Number(byType.year),
+    month: Number(byType.month),
+    day: Number(byType.day),
+    hour: Number(byType.hour),
+    minute: Number(byType.minute),
+    second: Number(byType.second),
+  }
+}
+
+const formatDateKey = (date: Date) => dateKeyFormatter.format(date)
+
+const utcDateFromKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+}
+
+const addDaysToDateKey = (dateKey: string, days: number) => {
+  const date = utcDateFromKey(dateKey)
+  date.setUTCDate(date.getUTCDate() + days)
+  return formatDateKey(date)
+}
+
+const weekdayIndexFromDateKey = (dateKey: string) => (utcDateFromKey(dateKey).getUTCDay() + 6) % 7
+const startOfWeekDateKey = (dateKey: string) => addDaysToDateKey(dateKey, -weekdayIndexFromDateKey(dateKey))
+
 const defaultUserForm = (): UserFormState => ({
   full_name: '',
   email: '',
@@ -113,8 +156,6 @@ function ReminderAppInner() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [createWithSetupLink, setCreateWithSetupLink] = useState(false)
   const [latestSetupLink, setLatestSetupLink] = useState<string | null>(null)
-  const [setupCredentials, setSetupCredentials] = useState<{ email: string; password: string } | null>(null)
-  const [setupSigningIn, setSetupSigningIn] = useState(false)
   const [accountForm, setAccountForm] = useState<AccountFormState>(() => defaultAccountForm(null))
   const [accountSaving, setAccountSaving] = useState(false)
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false)
@@ -223,18 +264,9 @@ function ReminderAppInner() {
     const params = new URLSearchParams(window.location.search)
     const lessonId = params.get('lessonId')
     const intent = params.get('intent') as ReminderIntent | null
-    const setupEmail = params.get('setup_email')
-    const setupPassword = params.get('setup_password')
 
     if (lessonId || intent) {
       setPendingLink({ lessonId, intent })
-    }
-
-    if (setupEmail && setupPassword) {
-      setSetupCredentials({ email: setupEmail, password: setupPassword })
-    }
-
-    if (lessonId || intent) {
       params.delete('lessonId')
       params.delete('intent')
       const nextQuery = params.toString()
@@ -297,56 +329,7 @@ function ReminderAppInner() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!setupCredentials || setupSigningIn || loading || session || !isSupabaseConfigured) return
 
-    let cancelled = false
-
-    const runSetupSignIn = async () => {
-      const creds = setupCredentials
-      setSetupCredentials(null)
-      setSetupSigningIn(true)
-
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: creds.email, password: creds.password })
-        })
-        const data = await response.json()
-        if (cancelled) return
-
-        if (!response.ok) {
-          setLoginError(data.error || 'This setup link is invalid or has expired.')
-          return
-        }
-
-        const { error } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token
-        })
-
-        if (error) throw error
-
-        setLoginForm({ email: creds.email, password: '' })
-        const params = new URLSearchParams(window.location.search)
-        params.delete('setup_email')
-        params.delete('setup_password')
-        const nextQuery = params.toString()
-        window.history.replaceState({}, document.title, nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
-      } finally {
-        if (!cancelled) {
-          setSetupSigningIn(false)
-        }
-      }
-    }
-
-    void runSetupSignIn()
-
-    return () => {
-      cancelled = true
-    }
-  }, [setupCredentials, setupSigningIn, loading, session])
 
   const refreshProfile = async (userId: string) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
@@ -478,6 +461,19 @@ function ReminderAppInner() {
     if (profile.role === 'teacher') return lessons.filter((lesson) => lesson.teacher_id === profile.id)
     return lessons.filter((lesson) => lesson.student_id === profile.id)
   }, [lessons, profile])
+
+  const lessonsThisWeek = useMemo(() => {
+    const zonedNow = getZonedParts(now, appTimeZone)
+    const todayDateKey = `${zonedNow.year}-${pad2(zonedNow.month)}-${pad2(zonedNow.day)}`
+    const weekStartKey = startOfWeekDateKey(todayDateKey)
+    const weekEndKey = addDaysToDateKey(weekStartKey, 7)
+
+    return lessons.filter((lesson) => {
+      const zoned = getZonedParts(new Date(lesson.starts_at), appTimeZone)
+      const dateKey = `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}`
+      return dateKey >= weekStartKey && dateKey < weekEndKey
+    })
+  }, [lessons, now, appTimeZone])
 
   const studentPastLessons = profile?.role === 'student'
     ? visibleLessons.filter((lesson) => new Date(lesson.starts_at) < now).sort(sortByDateDesc).slice(0, 3)
@@ -1092,7 +1088,6 @@ function ReminderAppInner() {
       <>
         <LoginPanel
           language={language}
-          setupSigningIn={setupSigningIn}
           loginForm={loginForm}
           setLoginForm={setLoginForm}
           loginError={loginError}
@@ -1113,7 +1108,7 @@ function ReminderAppInner() {
         { label: 'Users', value: profiles.length },
         { label: 'Students', value: students.length },
         { label: 'Teachers', value: teachers.length },
-        { label: 'Lessons', value: lessons.length },
+        { label: 'Lessons (This Week)', value: lessonsThisWeek.length },
       ]
     : [
         { label: 'Upcoming lessons', value: isTeacher ? teacherUpcomingTenDays.length : studentUpcomingLessons.length },

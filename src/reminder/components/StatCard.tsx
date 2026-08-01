@@ -5,7 +5,7 @@ function getIcon(label: string) {
   if (l === 'users') return Users
   if (l === 'students') return GraduationCap
   if (l === 'teachers') return Briefcase
-  if (l === 'lessons') return CalendarDays
+  if (l.includes('lesson')) return CalendarDays
   if (l.includes('upcoming')) return Clock
   if (l.includes('past')) return History
   if (l.includes('pending') || l.includes('reminders')) return Bell
