@@ -427,6 +427,30 @@ export default function AdminCalendar({
                   const lesson = lessons.find((item) => item.id === lessonId)
                   return lesson?.student_attendance === 'cancel'
                 }).length
+                const totalStudents = group.lessonIds.length
+
+                let groupStatus: 'confirmed' | 'cancelled' | 'partial' | 'pending' = 'pending'
+                let statusLabel = 'Pendente'
+                let eventClass = 'calendar-event-neutral'
+
+                if (cancelledCount > 0 && cancelledCount < totalStudents) {
+                  groupStatus = 'partial'
+                  statusLabel = `Cancelamento Parcial (${cancelledCount}/${totalStudents} cancelaram)`
+                  eventClass = 'calendar-event-warning'
+                } else if (cancelledCount === totalStudents && totalStudents > 0) {
+                  groupStatus = 'cancelled'
+                  statusLabel = `Cancelada (${cancelledCount}/${totalStudents} cancelaram)`
+                  eventClass = 'calendar-event-danger'
+                } else if (confirmedCount === totalStudents && totalStudents > 0) {
+                  groupStatus = 'confirmed'
+                  statusLabel = `Confirmada (${confirmedCount}/${totalStudents} confirmaram)`
+                  eventClass = 'calendar-event-success'
+                } else {
+                  groupStatus = 'pending'
+                  statusLabel = `Pendente (${confirmedCount}/${totalStudents} confirmaram)`
+                  eventClass = 'calendar-event-neutral'
+                }
+
                 const layout = groupLayouts[group.key] ?? { column: 0, totalColumns: 1 }
                 if (startIndex < 0 || startIndex >= slotCount) return null
 
@@ -434,29 +458,55 @@ export default function AdminCalendar({
                   <button
                     key={group.key}
                     type="button"
-                    className="calendar-event calendar-event-neutral"
+                    className={`calendar-event ${eventClass}`}
                     style={{
                       gridRow: `${startIndex + 1} / span ${span}`,
                       width: `calc(${100 / layout.totalColumns}% - 8px)`,
                       marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
                     }}
-                    title={`${group.subject} • ${studentsForGroup.join(', ')} with ${teacherName}`}
+                    title={`${group.subject} • ${studentsForGroup.join(', ')} com ${teacherName} (${statusLabel})`}
                     onClick={() => openEdit(group)}
                   >
-                    <strong>{group.subject}</strong>
-                    <span className="muted tiny-copy">{teacherName}</span>
-                    <span className="muted tiny-copy">
-                      {studentsForGroup.length} student{studentsForGroup.length === 1 ? '' : 's'}
-                    </span>
-                    <span className="muted tiny-copy">
-                      Confirmed: {confirmedCount} · Cancelled: {cancelledCount}
-                    </span>
+                    <div className="calendar-event-header">
+                      <strong className="calendar-event-title">{group.subject}</strong>
+                      <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
+                    </div>
+                    {span > 1 && (
+                      <div className="calendar-event-details">
+                        <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
+                        <span className="muted tiny-copy calendar-event-sub">
+                          {studentsForGroup.length} {studentsForGroup.length === 1 ? 'aluno' : 'alunos'}
+                        </span>
+                      </div>
+                    )}
                   </button>
                 )
               })}
             </div>
           )
         })}
+      </div>
+
+      <div className="calendar-legend">
+        <span className="calendar-legend-title">Legenda:</span>
+        <div className="calendar-legend-items">
+          <div className="calendar-legend-item">
+            <span className="calendar-status-dot calendar-status-dot-confirmed" />
+            <span>Confirmada (Todos confirmaram)</span>
+          </div>
+          <div className="calendar-legend-item">
+            <span className="calendar-status-dot calendar-status-dot-partial" />
+            <span>Cancelamento Parcial (1+ no grupo cancelou)</span>
+          </div>
+          <div className="calendar-legend-item">
+            <span className="calendar-status-dot calendar-status-dot-cancelled" />
+            <span>Cancelada (Todos cancelaram)</span>
+          </div>
+          <div className="calendar-legend-item">
+            <span className="calendar-status-dot calendar-status-dot-pending" />
+            <span>Pendente (Aguardando confirmação)</span>
+          </div>
+        </div>
       </div>
 
       {showModal && (
