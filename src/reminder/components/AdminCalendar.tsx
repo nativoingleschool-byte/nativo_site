@@ -164,6 +164,14 @@ export default function AdminCalendar({
   })
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDaysToDateKey(weekStart, index)), [weekStart])
+  const sortedStudents = useMemo(
+    () => [...students].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })),
+    [students],
+  )
+  const sortedTeachers = useMemo(
+    () => [...teachers].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })),
+    [teachers],
+  )
   const dayLabels = useMemo(
     () =>
       days.map((day) => ({
@@ -263,12 +271,12 @@ export default function AdminCalendar({
     const minutes = minutesFromMidnight % 60
     resetDrafts()
     setEditingGroupKey(null)
-    setSelectedStudentIds(students[0] ? [students[0].id] : [])
+    setSelectedStudentIds(sortedStudents[0] ? [sortedStudents[0].id] : [])
     setDraft({
       subject: '',
       starts_at: `${dayKey}T${pad2(hours)}:${pad2(minutes)}`,
       duration_minutes: 60,
-      teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : teachers[0]?.id ?? '',
+      teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : sortedTeachers[0]?.id ?? '',
       class_name: '',
     })
     setShowModal(true)
@@ -557,15 +565,22 @@ export default function AdminCalendar({
               )}
 
               <div className="calendar-form-section">
-                <h3>Students</h3>
-                <div className="selection-grid">
-                  {students.map((student) => (
-                    <label key={student.id} className="checkbox-row selection-item">
-                      <input type="checkbox" checked={selectedStudentIds.includes(student.id)} onChange={() => toggleStudent(student.id)} />
+                <h3>Student</h3>
+                <select
+                  required
+                  value={selectedStudentIds[0] ?? ''}
+                  onChange={(event) => {
+                    const val = event.target.value
+                    setSelectedStudentIds(val ? [val] : [])
+                  }}
+                >
+                  <option value="" disabled>Select a student</option>
+                  {sortedStudents.map((student) => (
+                    <option key={student.id} value={student.id}>
                       {student.full_name}
-                    </label>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {allowCreateUsers && (
@@ -616,7 +631,7 @@ export default function AdminCalendar({
 
                 {allowTeacherChange && !createTeacher ? (
                   <select value={draft.teacher_id} onChange={(event) => setDraft({ ...draft, teacher_id: event.target.value })}>
-                    {teachers.map((teacher) => (
+                    {sortedTeachers.map((teacher) => (
                       <option key={teacher.id} value={teacher.id}>
                         {teacher.full_name}
                       </option>
