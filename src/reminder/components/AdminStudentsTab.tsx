@@ -213,7 +213,12 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
-      // Display custom in-app success banner (prevents browser popup blockers)
+      // Auto-check status 700ms after issuance so the PDF link populates without manual click
+      if (data.invoice_id) {
+        await new Promise(resolve => setTimeout(resolve, 700))
+        await handleCheckStatus(data.invoice_id)
+      }
+
       setLastIssuedPdf({ name: fullName, url: data.nfs_e_pdf_link })
       await refreshProfiles()
     } catch (err: any) {

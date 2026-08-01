@@ -82,12 +82,19 @@ export default function AdminPaymentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
-      if (data.nfs_e_pdf_link) {
-        toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+      // Auto-check status 700ms after issuance so the PDF link populates without manual click
+      if (data.invoice_id) {
+        await new Promise(resolve => setTimeout(resolve, 700))
+        await handleCheckStatus(data.invoice_id)
       } else {
-        toast.info(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
+        // Fallback toast if no invoice_id returned
+        if (data.nfs_e_pdf_link) {
+          toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+        } else {
+          toast.info(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
+        }
+        await refreshInvoices()
       }
-      await refreshInvoices()
     } catch (err: any) {
       toast.error(err.message)
     } finally {
