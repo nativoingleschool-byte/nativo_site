@@ -23,6 +23,7 @@ interface AdminStudentsTabProps {
   setUserForm: (form: UserFormState) => void
   refreshProfiles: () => Promise<void>
   invoices: any[]
+  refreshInvoices: () => Promise<void>
 }
 
 export default function AdminStudentsTab({
@@ -41,6 +42,7 @@ export default function AdminStudentsTab({
   setUserForm,
   refreshProfiles,
   invoices,
+  refreshInvoices,
 }: AdminStudentsTabProps) {
   const { toast } = useToast()
   const [studentSearch, setStudentSearch] = useState('')
@@ -162,6 +164,7 @@ export default function AdminStudentsTab({
       }
       
       setLastIssuedPdf(prev => prev ? { ...prev } : null)
+      await refreshInvoices()
     } catch (err: any) {
       toast.error(err.message)
     } finally {
