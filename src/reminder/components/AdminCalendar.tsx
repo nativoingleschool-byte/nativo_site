@@ -303,8 +303,13 @@ export default function AdminCalendar({
     setSaving(false)
   }
 
-  const toggleStudent = (studentId: string) => {
-    setSelectedStudentIds((current) => (current.includes(studentId) ? current.filter((id) => id !== studentId) : [...current, studentId]))
+  const addStudent = (studentId: string) => {
+    if (!studentId) return
+    setSelectedStudentIds((current) => (current.includes(studentId) ? current : [...current, studentId]))
+  }
+
+  const removeStudent = (studentId: string) => {
+    setSelectedStudentIds((current) => current.filter((id) => id !== studentId))
   }
 
   const editingGroup = editingGroupKey ? groupsThisWeek.find((group) => group.key === editingGroupKey) ?? null : null
@@ -565,22 +570,69 @@ export default function AdminCalendar({
               )}
 
               <div className="calendar-form-section">
-                <h3>Student</h3>
+                <h3>Students participating ({selectedStudentIds.length})</h3>
                 <select
-                  required
-                  value={selectedStudentIds[0] ?? ''}
+                  value=""
                   onChange={(event) => {
-                    const val = event.target.value
-                    setSelectedStudentIds(val ? [val] : [])
+                    addStudent(event.target.value)
+                    event.target.value = ''
                   }}
                 >
-                  <option value="" disabled>Select a student</option>
+                  <option value="">+ Select student to add...</option>
                   {sortedStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.full_name}
+                    <option key={student.id} value={student.id} disabled={selectedStudentIds.includes(student.id)}>
+                      {student.full_name} {selectedStudentIds.includes(student.id) ? '(Added)' : ''}
                     </option>
                   ))}
                 </select>
+
+                {selectedStudentIds.length > 0 && (
+                  <div className="selected-students-list">
+                    {selectedStudentIds.map((studentId) => {
+                      const student = profilesById[studentId]
+                      const studentName = student?.full_name ?? 'Student'
+
+                      let attendanceStatus: 'attend' | 'cancel' | 'pending' = 'pending'
+                      if (editingGroup) {
+                        const lesson = lessons.find(
+                          (item) => editingGroup.lessonIds.includes(item.id) && item.student_id === studentId,
+                        )
+                        if (lesson?.student_attendance === 'attend') attendanceStatus = 'attend'
+                        else if (lesson?.student_attendance === 'cancel') attendanceStatus = 'cancel'
+                      }
+
+                      const dotColorClass =
+                        attendanceStatus === 'attend'
+                          ? 'calendar-status-dot-confirmed'
+                          : attendanceStatus === 'cancel'
+                          ? 'calendar-status-dot-cancelled'
+                          : 'calendar-status-dot-pending'
+
+                      const statusTitle =
+                        attendanceStatus === 'attend'
+                          ? 'Confirmed'
+                          : attendanceStatus === 'cancel'
+                          ? 'Cancelled'
+                          : 'Pending'
+
+                      return (
+                        <div key={studentId} className="selected-student-chip">
+                          <span className={`calendar-status-dot ${dotColorClass}`} title={statusTitle} />
+                          <span className="selected-student-name">{studentName}</span>
+                          <button
+                            type="button"
+                            className="chip-remove-button"
+                            onClick={() => removeStudent(studentId)}
+                            title={`Remove ${studentName}`}
+                            aria-label={`Remove ${studentName}`}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {allowCreateUsers && (
