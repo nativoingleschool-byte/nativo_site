@@ -297,6 +297,40 @@ export default function AdminStudentsTab({
     }
   }
 
+  const [sortField, setSortField] = useState<'name' | 'status' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  const handleSort = (field: 'name' | 'status') => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedStudents = [...activeStudents].sort((a, b) => {
+    if (sortField === 'name') {
+      const cmp = (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+      return sortDirection === 'asc' ? cmp : -cmp
+    }
+    if (sortField === 'status') {
+      const getWeight = (status?: string | null) => {
+        if (status === 'em_dia') return 1
+        if (status === 'pendente') return 2
+        if (status === 'atrasado') return 3
+        return 2
+      }
+      const weightA = getWeight(a.status_pagamento)
+      const weightB = getWeight(b.status_pagamento)
+      if (weightA !== weightB) {
+        return sortDirection === 'asc' ? weightA - weightB : weightB - weightA
+      }
+      return (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+    }
+    return 0
+  })
+
   return (
     <>
       {lastIssuedPdf && (
@@ -390,18 +424,40 @@ export default function AdminStudentsTab({
                   onChange={handleToggleAll} 
                 />
               </th>
-              <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
+              <th
+                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('name')}
+                title="Ordenar por Nome"
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{t(language, 'full_name')}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: sortField === 'name' ? 1 : 0.4 }}>
+                    {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </div>
+              </th>
               <th style={{ padding: '1rem' }}>Email</th>
               <th style={{ padding: '1rem' }}>CPF</th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
-              <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
+              <th
+                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('status')}
+                title="Ordenar por Status Financeiro"
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{t(language, 'student_financial_status')}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: sortField === 'status' ? 1 : 0.4 }}>
+                    {sortField === 'status' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </div>
+              </th>
               <th style={{ padding: '1rem' }}>{t(language, 'invoices_title')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'student_habitual_time')}</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
           </thead>
           <tbody>
-            {activeStudents.map((student) => {
+            {sortedStudents.map((student) => {
               const studentLessons = lessons.filter(l => l.student_id === student.id)
               const scheduleText = studentLessons.length > 0 
                 ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || t(language, 'class_scheduled')

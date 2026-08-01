@@ -97,6 +97,49 @@ export default function AdminPaymentsTab({
 
   const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
 
+  const [sortField, setSortField] = useState<'name' | 'status' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  const handleSort = (field: 'name' | 'status') => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch =
+      student.full_name.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+      student.email.toLowerCase().includes(paymentSearch.toLowerCase())
+    const status = student.status_pagamento || 'pendente'
+    const matchesFilter = paymentFilter === 'all' || status === paymentFilter
+    return matchesSearch && matchesFilter
+  })
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    if (sortField === 'name') {
+      const cmp = (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+      return sortDirection === 'asc' ? cmp : -cmp
+    }
+    if (sortField === 'status') {
+      const getWeight = (status?: string | null) => {
+        if (status === 'em_dia') return 1
+        if (status === 'pendente') return 2
+        if (status === 'atrasado') return 3
+        return 2
+      }
+      const weightA = getWeight(a.status_pagamento)
+      const weightB = getWeight(b.status_pagamento)
+      if (weightA !== weightB) {
+        return sortDirection === 'asc' ? weightA - weightB : weightB - weightA
+      }
+      return (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+    }
+    return 0
+  })
+
   return (
     <>
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
@@ -124,23 +167,37 @@ export default function AdminPaymentsTab({
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-              <th style={{ padding: '1rem' }}>{t(language, 'edit_student_title').split(' ').pop()}</th>
-              <th style={{ padding: '1rem' }}>{t(language, 'student_financial_status')}</th>
+              <th
+                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('name')}
+                title="Ordenar por Nome"
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{t(language, 'full_name')}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: sortField === 'name' ? 1 : 0.4 }}>
+                    {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th
+                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('status')}
+                title="Ordenar por Status Financeiro"
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{t(language, 'student_financial_status')}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: sortField === 'status' ? 1 : 0.4 }}>
+                    {sortField === 'status' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </div>
+              </th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_period_ref')} / {t(language, 'emission_date')}</th>
               <th style={{ padding: '1rem' }}>NFS-e</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
           </thead>
           <tbody>
-            {students
-              .filter(student => {
-                const matchesSearch = student.full_name.toLowerCase().includes(paymentSearch.toLowerCase()) || 
-                  student.email.toLowerCase().includes(paymentSearch.toLowerCase())
-                const status = student.status_pagamento || 'pendente'
-                const matchesFilter = paymentFilter === 'all' || status === paymentFilter
-                return matchesSearch && matchesFilter
-              })
-              .map((student) => {
+            {sortedStudents.map((student) => {
                 const studentInvoices = invoices.filter(inv => inv.student_id === student.id)
                 const lastInvoice = studentInvoices[0]
                 const hasInvoiceForCurrentMonth = studentInvoices.some(
