@@ -305,7 +305,7 @@ export default function AdminStudentsTab({
     }
   }
 
-  const [sortField, setSortField] = useState<'name' | 'status' | null>(null)
+  const [sortField, setSortField] = useState<'name' | 'status' | null>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const handleSort = (field: 'name' | 'status') => {
