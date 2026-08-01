@@ -84,7 +84,7 @@ export default function AdminPaymentsTab({
 
       // Auto-check status 700ms after issuance so the PDF link populates without manual click
       if (data.invoice_id) {
-        await new Promise(resolve => setTimeout(resolve, 700))
+        await new Promise(resolve => setTimeout(resolve, 300))
         await handleCheckStatus(data.invoice_id)
       } else {
         // Fallback toast if no invoice_id returned
