@@ -51,11 +51,11 @@ function fmtDate(iso) {
  */
 export async function generateDanfsePdf({ invoice, student }) {
   // School config from env
-  const schoolName  = process.env.BARUERI_SCHOOL_NAME     || 'NATIVO ENGLISH SCHOOL';
+  const schoolName  = process.env.BARUERI_SCHOOL_NAME     || 'NATIVO LANGUAGES BRAZIL LTDA';
   const schoolCnpj  = process.env.BARUERI_CNPJ_PRESTADOR  || '';
   const schoolIm    = process.env.BARUERI_INSCRICAO_MUNICIPAL || '';
   const svcCode     = process.env.BARUERI_CODIGO_SERVICO   || '080201220';
-  const discrimin   = process.env.BARUERI_DISCRIMINACAO    || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO ENGLISH SCHOOL';
+  const discrimin   = process.env.BARUERI_DISCRIMINACAO    || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO LANGUAGES BRAZIL LTDA';
   const aliqStr     = process.env.BARUERI_ALIQUOTA_ISS     || '0200'; // 4-digit positional: 0200 = 2.00%
   const aliq        = parseInt(aliqStr, 10) / 10000;
 
@@ -73,7 +73,7 @@ export async function generateDanfsePdf({ invoice, student }) {
   const doc  = await PDFDocument.create();
   doc.setTitle(`NFS-e ${nfseNum} - ${n(student.full_name)}`);
   doc.setAuthor(n(schoolName));
-  doc.setCreator('Nativo English School - Sistema de Gestao');
+  doc.setCreator('Nativo Languages Brazil LTDA - Sistema de Gestao');
 
   const page         = doc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();

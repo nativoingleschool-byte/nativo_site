@@ -18,7 +18,7 @@ const SCHOOL_CNPJ = process.env.BARUERI_CNPJ_PRESTADOR || '00.000.000/0001-00';
 const RPS_SERIE = process.env.BARUERI_RPS_SERIE || 'RPS';
 const CODIGO_SERVICO = process.env.BARUERI_CODIGO_SERVICO || '080201220';
 const ALIQUOTA_ISS = process.env.BARUERI_ALIQUOTA_ISS || '0200'; // 2.00% → 4-digit positional (pos 479-482)
-const DISCRIMINACAO = process.env.BARUERI_DISCRIMINACAO || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO ENGLISH SCHOOL';
+const DISCRIMINACAO = process.env.BARUERI_DISCRIMINACAO || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO LANGUAGES BRAZIL LTDA';
 
 const getSupabaseAdmin = () => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
