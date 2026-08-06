@@ -130,27 +130,30 @@ export default function TeacherPanel({
     const file = e.target.files[0]
     setUploadingNf(true)
     try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
       const reader = new FileReader()
       reader.onload = async () => {
         try {
           const fileDataUrl = reader.result as string
-          
-          // 1. Update status_nota_fiscal to 'enviada' first
-          const { error: statusErr } = await supabase
-            .from('profiles')
-            .update({ status_nota_fiscal: 'enviada' })
-            .eq('id', profile.id)
 
-          if (statusErr) throw statusErr
+          const res = await fetch('/api/me/upload-nf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              status_nota_fiscal: 'enviada',
+              nota_fiscal_url: fileDataUrl
+            })
+          })
 
-          // 2. Try updating nota_fiscal_url column
-          const { error: urlErr } = await supabase
-            .from('profiles')
-            .update({ nota_fiscal_url: fileDataUrl })
-            .eq('id', profile.id)
-
-          if (urlErr) {
-            console.warn('Could not update nota_fiscal_url to DB column:', urlErr.message)
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: 'Erro ao enviar Nota Fiscal' }))
+            throw new Error(err.error || 'Erro ao enviar Nota Fiscal')
           }
 
           toast.success('Nota Fiscal enviada com sucesso!')
