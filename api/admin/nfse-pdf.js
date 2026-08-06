@@ -13,7 +13,7 @@ const getSupabaseAdmin = () => {
   });
 };
 
-const assertAdmin = async (req) => {
+const assertUserOrAdmin = async (req) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing bearer token.');
@@ -22,17 +22,13 @@ const assertAdmin = async (req) => {
   const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
   if (userError || !user) throw new Error('Session could not be verified.');
 
-  const { data: profile, error: profileError } = await adminClient
+  const { data: profile } = await adminClient
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  if (profileError || profile?.role !== 'admin') {
-    throw new Error('Only admin users can perform this action.');
-  }
-
-  return adminClient;
+  return { user, role: profile?.role || 'student', adminClient };
 };
 
 const jsonErr = (res, status, message) => {
@@ -45,7 +41,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return jsonErr(res, 405, 'Method not allowed.');
 
   try {
-    const supabaseAdmin = await assertAdmin(req);
+    const { user, role, adminClient: supabaseAdmin } = await assertUserOrAdmin(req);
 
     // Parse invoice_id from query string
     const invoiceId =
@@ -62,6 +58,11 @@ export default async function handler(req, res) {
       .single();
 
     if (invoiceError || !invoice) return jsonErr(res, 404, 'Invoice not found.');
+
+    // Enforce authorization: Admin can download any invoice; student can only download their own invoice
+    if (role !== 'admin' && invoice.student_id !== user.id) {
+      return jsonErr(res, 403, 'Acesso negado.');
+    }
 
     // Must have at least a protocol or NFS-e number to generate a meaningful PDF
     if (!invoice.nfse_numero && !invoice.protocolo_recebimento && !invoice.nfs_e_pdf_link) {

@@ -54,6 +54,38 @@ export default function StudentPanel({
   const [cidade, setCidade] = useState(profile.cidade || '')
   const [uf, setUf] = useState(profile.uf || '')
   const [saving, setSaving] = useState(false)
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
+
+  /** Fetch the generated DANFS-e PDF from the server and trigger a browser download for the student. */
+  const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
+    setDownloadingPdfId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Nao autenticado.')
+
+      const res = await fetch(`/api/admin/nfse-pdf?invoice_id=${invoiceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro ao gerar PDF' }))
+        throw new Error(err.error || 'Erro ao gerar PDF')
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download  = `NFS-e_${studentName.replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDownloadingPdfId(null)
+    }
+  }
 
   useEffect(() => {
     setFullName(profile.full_name)
@@ -380,16 +412,15 @@ export default function StudentPanel({
                         >
                           Boleto
                         </a>
-                        {(inv.nfs_e_pdf_link || inv.nfse_url) && (
-                          <a 
-                            href={inv.nfs_e_pdf_link || inv.nfse_url} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="primary-button" 
+                        {(inv.nfs_e_pdf_link || inv.nfse_url || inv.nfse_numero) && (
+                          <button
+                            className="primary-button"
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
+                            disabled={downloadingPdfId === inv.id}
+                            onClick={() => void downloadNfsePdf(inv.id, profile.full_name)}
                           >
-                            NFS-e
-                          </a>
+                            {downloadingPdfId === inv.id ? 'Gerando...' : 'NFS-e'}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -413,7 +444,7 @@ export default function StudentPanel({
                     return (
                       <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                         <div>
-                          <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo English School - NFS-e</p>
+                          <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo Languages Brazil LTDA - NFS-e</p>
                           <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>
                             <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || 'Não especificado'}
                           </p>
@@ -425,16 +456,15 @@ export default function StudentPanel({
                           </span>
                         </div>
                         <div>
-                          {pdfUrl ? (
-                            <a 
-                              href={pdfUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="primary-button" 
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
+                          {(inv.nfs_e_pdf_link || inv.nfse_url || inv.nfse_numero) ? (
+                            <button
+                              className="primary-button"
+                              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981' }}
+                              disabled={downloadingPdfId === inv.id}
+                              onClick={() => void downloadNfsePdf(inv.id, profile.full_name)}
                             >
-                              {t(language, 'view_pdf')}
-                            </a>
+                              {downloadingPdfId === inv.id ? 'Gerando...' : t(language, 'view_pdf')}
+                            </button>
                           ) : (
                             <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>
                           )}
