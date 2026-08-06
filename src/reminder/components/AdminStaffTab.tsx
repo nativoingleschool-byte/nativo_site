@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass } from '../lib/utils'
@@ -297,8 +298,8 @@ export default function AdminStaffTab({
       </div>
 
       {/* Edit Modal Overlay */}
-      {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && createPortal(
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -345,21 +346,24 @@ export default function AdminStaffTab({
               {userForm.role === 'teacher' && (
                 <input
                   type="number"
-                  placeholder="Valor da Hora Aula"
-                  value={userForm.taxa_hora_aula || ''}
-                  onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
+                  step="0.01"
+                  placeholder={t(language, 'value_hour_label')}
+                  value={userForm.taxa_hora_aula ?? ''}
+                  onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: e.target.value === '' ? undefined : Number(e.target.value) })}
                 />
               )}
               <input
-                placeholder="Especialidade"
-                value={userForm.speciality}
+                placeholder={t(language, 'speciality_label')}
+                value={userForm.speciality || ''}
                 onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
               />
             </div>
-            <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+            <div className="button-stack mt-6" style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
               <button 
+                type="button"
                 className="primary-button" 
                 onClick={async () => {
+                  if (!userForm.id) return
                   try {
                     if (userForm.password && userForm.password.trim().length > 0) {
                       if (userForm.password.length < 6) {
@@ -391,12 +395,13 @@ export default function AdminStaffTab({
               <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Change Password Modal Overlay */}
-      {changePasswordStaff && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      {changePasswordStaff && createPortal(
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
               {t(language, 'change_password_title').replace('{name}', changePasswordStaff.full_name)}
@@ -465,7 +470,8 @@ export default function AdminStaffTab({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Payroll Section */}
@@ -609,8 +615,8 @@ export default function AdminStaffTab({
         const currency = selectedTeacherForDetail.moeda_taxa ?? 'BRL'
         const totalAmount = totalHours * Number(hourlyRate)
 
-        return (
-          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        return createPortal(
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
             <div className="form-card animate-fade-in" style={{ maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
               
               {/* Modal Header */}
@@ -870,7 +876,8 @@ export default function AdminStaffTab({
               </div>
 
             </div>
-          </div>
+          </div>,
+          document.body
         )
       })()}
     </>

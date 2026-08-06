@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Lesson, Profile } from '../lib/types'
 
 type LessonDraft = {
@@ -522,8 +523,8 @@ export default function AdminCalendar({
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
+      {showModal && createPortal(
+        <div className="modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
           <div className="modal-card">
             <div className="panel-header">
               <div>
@@ -735,7 +736,8 @@ export default function AdminCalendar({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

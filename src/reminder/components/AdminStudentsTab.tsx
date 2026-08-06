@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
@@ -727,8 +728,8 @@ export default function AdminStudentsTab({
         </table>
       </div>
 
-      {savingUserId && userForm.role === 'student' && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      {savingUserId && userForm.role === 'student' && createPortal(
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -761,9 +762,19 @@ export default function AdminStudentsTab({
                 value={userForm.data_pagamento_preferencial || 5}
                 onChange={(e) => setUserForm({ ...userForm, data_pagamento_preferencial: Number(e.target.value) })}
               >
-                {[1, 5, 10, 15, 20, 25].map(day => (
-                  <option key={day} value={day}>{t(language, 'billing_day_label').replace('{day}', String(day))}</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {t(language, 'billing_day_label').replace('{day}', String(day))}
+                  </option>
                 ))}
+              </select>
+              <select
+                value={userForm.status_pagamento || 'pendente'}
+                onChange={(e) => setUserForm({ ...userForm, status_pagamento: e.target.value as any })}
+              >
+                <option value="em_dia">{t(language, 'financial_ok')}</option>
+                <option value="atrasado">{t(language, 'financial_late')}</option>
+                <option value="pendente">{t(language, 'financial_pending')}</option>
               </select>
               <input
                 placeholder="CEP"
@@ -771,53 +782,53 @@ export default function AdminStudentsTab({
                 onChange={(e) => setUserForm({ ...userForm, cep: e.target.value })}
               />
               <input
-                placeholder="Endereço (Rua, Nº, Apto)"
+                placeholder="Logradouro / Endereço"
                 value={userForm.logradouro || ''}
                 onChange={(e) => setUserForm({ ...userForm, logradouro: e.target.value })}
               />
+              <input
+                placeholder="Bairro"
+                value={userForm.bairro || ''}
+                onChange={(e) => setUserForm({ ...userForm, bairro: e.target.value })}
+              />
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
-                  placeholder="Bairro"
-                  style={{ flex: 1 }}
-                  value={userForm.bairro || ''}
-                  onChange={(e) => setUserForm({ ...userForm, bairro: e.target.value })}
-                />
-                <input
+                  style={{ flex: 2 }}
                   placeholder="Cidade"
-                  style={{ flex: 1 }}
                   value={userForm.cidade || ''}
                   onChange={(e) => setUserForm({ ...userForm, cidade: e.target.value })}
                 />
                 <input
+                  style={{ flex: 1 }}
                   placeholder="UF"
-                  maxLength={2}
-                  style={{ width: '60px' }}
                   value={userForm.uf || ''}
                   onChange={(e) => setUserForm({ ...userForm, uf: e.target.value.toUpperCase() })}
                 />
               </div>
             </div>
             <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-              <button 
-                className="primary-button" 
+              <button
+                type="button"
+                className="primary-button"
                 onClick={async () => {
+                  if (!userForm.id) return
                   try {
-                    const { error } = await supabase
-                      .from('profiles')
-                      .update({
-                        full_name: userForm.full_name,
-                        email: userForm.email,
-                        cpf: userForm.cpf || null,
-                        data_pagamento_preferencial: userForm.data_pagamento_preferencial,
-                        cep: userForm.cep || null,
-                        logradouro: userForm.logradouro || null,
-                        bairro: userForm.bairro || null,
-                        cidade: userForm.cidade || null,
-                        uf: userForm.uf || null,
-                        tuition_fee: userForm.tuition_fee ?? null
-                      })
-                      .eq('id', userForm.id)
-                    if (error) throw error
+                    await callAdminUsersApi('update', {
+                      id: userForm.id,
+                      email: userForm.email,
+                      full_name: userForm.full_name,
+                      role: 'student',
+                      cpf: userForm.cpf || null,
+                      data_pagamento_preferencial: userForm.data_pagamento_preferencial || 5,
+                      status_pagamento: userForm.status_pagamento || 'pendente',
+                      cep: userForm.cep || null,
+                      logradouro: userForm.logradouro || null,
+                      bairro: userForm.bairro || null,
+                      cidade: userForm.cidade || null,
+                      uf: userForm.uf || null,
+                      tuition_fee: userForm.tuition_fee !== undefined ? userForm.tuition_fee : null
+                    })
+                    toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
                     setSavingUserId(null)
                     await refreshProfiles()
                   } catch (err: any) {
@@ -830,10 +841,12 @@ export default function AdminStudentsTab({
               <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-      {historyStudent && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+
+      {historyStudent && createPortal(
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div className="form-card" style={{ maxWidth: '600px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
@@ -841,7 +854,6 @@ export default function AdminStudentsTab({
             ) : (
               <div className="list-stack" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {historyInvoices.map((inv) => {
-                  const pdfUrl = inv.nfs_e_pdf_link || inv.nfse_url
                   return (
                     <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                       <div>
@@ -852,17 +864,17 @@ export default function AdminStudentsTab({
                         </span>
                       </div>
                       <div>
-                        {(inv.id && (inv.nfs_e_pdf_link || inv.nfse_numero)) ? (
-                          <button
-                            className="primary-button"
+                        {(inv.nfs_e_pdf_link || inv.nfse_url || inv.nfse_numero) ? (
+                          <button 
+                            className="primary-button" 
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
                             disabled={downloadingPdfId === inv.id}
-                            onClick={() => void downloadNfsePdf(inv.id, historyStudent?.full_name || 'Aluno')}
+                            onClick={() => void downloadNfsePdf(inv.id, historyStudent.full_name)}
                           >
-                            {downloadingPdfId === inv.id ? 'Gerando...' : t(language, 'view_pdf')}
+                            {downloadingPdfId === inv.id ? 'Gerando...' : 'NFS-e'}
                           </button>
                         ) : (
-                          <span className="muted text-xs">{t(language, 'financial_pending')}</span>
+                          <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>
                         )}
                       </div>
                     </div>
@@ -874,10 +886,11 @@ export default function AdminStudentsTab({
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="secondary-button" onClick={() => setHistoryStudent(null)}>{t(language, 'close')}</button>
+              <button className="secondary-button" onClick={() => setHistoryStudent(null)}>{t(language, 'cancel')}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
