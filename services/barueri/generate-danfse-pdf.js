@@ -1,4 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
 
 // Strip diacritics — required because Helvetica (StandardFont) only covers Latin-1 Basic
 function n(str) {
@@ -44,7 +46,7 @@ function fmtDate(iso) {
 }
 
 /**
- * Generates a DANFS-e style PDF for the given invoice + student.
+ * Generates a modern DANFS-e style PDF for the given invoice + student.
  *
  * @param {{ invoice: object, student: object }} opts
  * @returns {Promise<Buffer>}
@@ -75,6 +77,18 @@ export async function generateDanfsePdf({ invoice, student }) {
   doc.setAuthor(n(schoolName));
   doc.setCreator('Nativo Languages Brazil LTDA - Sistema de Gestao');
 
+  // Load Logo Image if available
+  let logoImage = null;
+  try {
+    const logoPath = path.resolve(process.cwd(), 'public/hero/logo-blue.png');
+    if (fs.existsSync(logoPath)) {
+      const logoBytes = fs.readFileSync(logoPath);
+      logoImage = await doc.embedPng(logoBytes);
+    }
+  } catch (e) {
+    console.warn('Could not load logo for PDF:', e.message);
+  }
+
   const page         = doc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
   const M            = 36;   // margin
@@ -85,18 +99,24 @@ export async function generateDanfsePdf({ invoice, student }) {
   const mono    = await doc.embedFont(StandardFonts.Courier);
   const boldObl = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
 
-  // ── Colour palette ─────────────────────────────────────────────
-  const BLUE     = rgb(0.067, 0.196, 0.490);
-  const BLUE_LT  = rgb(0.835, 0.886, 0.957);
-  const GREEN    = rgb(0.063, 0.502, 0.227);
-  const GREEN_LT = rgb(0.914, 0.973, 0.929);
-  const AMBER    = rgb(0.608, 0.380, 0.024);
-  const AMBER_LT = rgb(0.996, 0.949, 0.875);
-  const GRAY     = rgb(0.35, 0.35, 0.35);
-  const GRAY_LT  = rgb(0.941, 0.945, 0.953);
+  // ── Modern Palette ─────────────────────────────────────────────
+  const NAVY     = rgb(15 / 255, 23 / 255, 42 / 255);    // #0f172a
+  const INDIGO   = rgb(79 / 255, 70 / 255, 229 / 255);   // #4f46e5
+  const INDIGO_BG= rgb(238 / 255, 242 / 255, 255 / 255); // #eef2ff
+  const SLATE_BG = rgb(248 / 255, 250 / 255, 252 / 255); // #f8fafc
+  const BORDER   = rgb(226 / 255, 232 / 255, 240 / 255); // #e2e8f0
+  const BORDER_DK= rgb(203 / 255, 213 / 255, 225 / 255); // #cbd5e1
+  
+  const GREEN    = rgb(16 / 255, 185 / 255, 129 / 255);  // #10b981
+  const GREEN_BG = rgb(240 / 255, 253 / 255, 244 / 255); // #f0fdf4
+  const GREEN_BRD= rgb(187 / 255, 247 / 255, 208 / 255); // #bbf7d0
+  
+  const AMBER    = rgb(217 / 255, 119 / 255, 6 / 255);   // #d97706
+  const AMBER_BG = rgb(254 / 255, 243 / 255, 199 / 255); // #fef3c7
+  
+  const TEXT_PRI = rgb(15 / 255, 23 / 255, 42 / 255);    // #0f172a
+  const TEXT_SEC = rgb(100 / 255, 116 / 255, 139 / 255);  // #64748b
   const WHITE    = rgb(1, 1, 1);
-  const BLACK    = rgb(0, 0, 0);
-  const BORDER   = rgb(0.78, 0.82, 0.90);
 
   // ── Drawing helpers ────────────────────────────────────────────
   let cy = height - M;
@@ -112,7 +132,7 @@ export async function generateDanfsePdf({ invoice, student }) {
     page.drawLine({ start: { x: M, y }, end: { x: M + CW, y }, color, thickness });
 
   /** Draw text, automatically normalising to ASCII */
-  const txt = (str, x, y, { font = reg, size = 9, color = BLACK, maxWidth } = {}) => {
+  const txt = (str, x, y, { font = reg, size = 9, color = TEXT_PRI, maxWidth } = {}) => {
     const s = n(String(str ?? ''));
     if (!s) return;
     page.drawText(s, { x, y, size, font, color, ...(maxWidth ? { maxWidth } : {}) });
@@ -120,62 +140,86 @@ export async function generateDanfsePdf({ invoice, student }) {
 
   /** Render a section header bar */
   const sectionHdr = (label, y) => {
-    rect(M, y, CW, 18, BLUE_LT, BORDER);
-    txt(label, M + 6, y - 13, { font: bold, size: 8, color: BLUE });
-    return y - 18;
+    rect(M, y, CW, 20, INDIGO_BG, BORDER_DK, 0.8);
+    // Accent left indicator line
+    page.drawLine({ start: { x: M, y: y - 1 }, end: { x: M, y: y - 19 }, color: INDIGO, thickness: 3.5 });
+    txt(label, M + 10, y - 14, { font: bold, size: 8.5, color: INDIGO });
+    return y - 20;
   };
 
-  /** Render a white content box */
+  /** Render a soft slate content box */
   const box = (y, h) => {
-    rect(M, y, CW, h, WHITE, BORDER);
+    rect(M, y, CW, h, SLATE_BG, BORDER);
     return y - h;
   };
 
   /** Label + value pair stacked vertically */
   const field = (label, value, x, y, opts = {}) => {
-    txt(label, x, y - 2, { size: 7.5, color: GRAY });
-    txt(value, x, y - 13, { size: opts.large ? 12 : 9.5, font: opts.bold ? bold : reg, color: opts.color || BLACK, maxWidth: opts.maxWidth });
+    txt(label, x, y - 2, { size: 7.5, color: TEXT_SEC });
+    txt(value, x, y - 13, { size: opts.large ? 12 : 9.5, font: opts.bold ? bold : reg, color: opts.color || TEXT_PRI, maxWidth: opts.maxWidth });
   };
 
   // ════════════════════════════════════════════════════════════════
-  // HEADER
+  // MODERN TOP HEADER
   // ════════════════════════════════════════════════════════════════
-  const HH = 72;
-  rect(M, cy, CW, HH, BLUE, BLUE);
+  const HH = 85;
+  rect(M, cy, CW, HH, WHITE, BORDER_DK, 1);
 
-  txt('NOTA FISCAL DE SERVICOS ELETRONICA  -  NFS-e', M + 10, cy - 16, { font: bold, size: 13, color: WHITE });
-  txt(`Prefeitura Municipal de Barueri - SP`, M + 10, cy - 30, { size: 9, color: rgb(0.78, 0.87, 1.0) });
-  txt(`Secretaria Municipal de Financas  |  Inscricao Municipal: ${n(schoolIm)}`, M + 10, cy - 42, { size: 8.5, color: rgb(0.7, 0.82, 1.0) });
+  // Left Column: Logo & Company Name
+  let leftOffset = M + 14;
+  if (logoImage) {
+    const logoHeight = 44;
+    const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+    page.drawImage(logoImage, {
+      x: leftOffset,
+      y: cy - 58,
+      width: logoWidth,
+      height: logoHeight,
+    });
+    leftOffset += logoWidth + 14;
+  }
 
-  // NFS-e number badge (right side)
-  txt('NFS-e No', width - M - 110, cy - 16, { size: 8.5, color: rgb(0.7, 0.82, 1.0) });
-  txt(nfseNum, width - M - 110, cy - 30, { font: bold, size: 18, color: WHITE });
-  txt(`RPS: ${rpsNum}`, width - M - 110, cy - 50, { size: 8.5, color: rgb(0.7, 0.82, 1.0) });
+  txt(n(schoolName), leftOffset, cy - 26, { font: bold, size: 11, color: NAVY });
+  txt('PREFEITURA MUNICIPAL DE BARUERI', leftOffset, cy - 40, { size: 8.5, color: TEXT_SEC });
+  txt(`Inscricao Municipal: ${n(schoolIm)}`, leftOffset, cy - 53, { size: 8, color: TEXT_SEC });
 
-  // Dates strip
-  txt(`Data de Emissao: ${emitDate}`, M + 10, cy - 58, { size: 8, color: rgb(0.65, 0.78, 1.0) });
-  txt(`Competencia: ${n(fmtPeriod(period))}`, M + 200, cy - 58, { size: 8, color: rgb(0.65, 0.78, 1.0) });
+  // Right Column: NFS-e Badge Card
+  const badgeW = 160;
+  const badgeX = width - M - badgeW - 10;
+  rect(badgeX, cy - 8, badgeW, 68, NAVY, NAVY);
 
-  cy -= HH + 10;
+  txt('NOTA FISCAL DE SERVICOS', badgeX + 12, cy - 22, { font: bold, size: 8, color: rgb(199 / 255, 210 / 255, 254 / 255) });
+  txt('ELETRONICA - NFS-e', badgeX + 12, cy - 32, { font: bold, size: 8, color: rgb(199 / 255, 210 / 255, 254 / 255) });
+  txt(`No ${nfseNum}`, badgeX + 12, cy - 50, { font: bold, size: 15, color: WHITE });
+  txt(`RPS: ${rpsNum}`, badgeX + 12, cy - 65, { size: 8, color: rgb(199 / 255, 210 / 255, 254 / 255) });
+
+  // Sub-header Bar: Emission Date & Competency
+  const subBarY = cy - HH;
+  rect(M, subBarY, CW, 20, INDIGO_BG, BORDER_DK, 0.5);
+  txt(`Data de Emissao: ${emitDate}`, M + 14, subBarY - 14, { font: bold, size: 8.5, color: NAVY });
+  txt(`Competencia: ${n(fmtPeriod(period))}`, M + 240, subBarY - 14, { font: bold, size: 8.5, color: NAVY });
+
+  cy = subBarY - 30;
 
   // ════════════════════════════════════════════════════════════════
-  // PRESTADOR
+  // PRESTADOR DE SERVIÇOS
   // ════════════════════════════════════════════════════════════════
-  cy = sectionHdr('PRESTADOR DE SERVICOS', cy);
-  const pBox = box(cy, 44);
-  txt(n(schoolName), M + 8, cy - 12, { font: bold, size: 10.5 });
-  txt(`CNPJ: ${fmtDoc(schoolCnpj)}`, M + 8, cy - 25, { size: 9, color: GRAY });
-  txt(`Municipio de Barueri - SP`, M + 8, cy - 37, { size: 9, color: GRAY });
-  cy = pBox - 8;
+  cy = sectionHdr('PRESTADOR DE SERVICOS (EMISSOR)', cy);
+  const pBox = box(cy, 48);
+  txt(n(schoolName), M + 12, cy - 14, { font: bold, size: 10, color: NAVY });
+  txt(`CNPJ: ${fmtDoc(schoolCnpj)}`, M + 12, cy - 28, { size: 9, color: TEXT_SEC });
+  txt(`Municipio: Barueri - SP`, M + 240, cy - 28, { size: 9, color: TEXT_SEC });
+  txt(`Inscricao Municipal: ${n(schoolIm)}`, M + 12, cy - 40, { size: 8.5, color: TEXT_SEC });
+  cy = pBox - 10;
 
   // ════════════════════════════════════════════════════════════════
-  // TOMADOR
+  // TOMADOR DE SERVIÇOS
   // ════════════════════════════════════════════════════════════════
-  cy = sectionHdr('TOMADOR DE SERVICOS (BENEFICIARIO)', cy);
-  const tBox = box(cy, 58);
-  txt(student.full_name || '-', M + 8, cy - 12, { font: bold, size: 10.5 });
-  txt(`CPF/CNPJ: ${fmtDoc(student.cpf)}`, M + 8, cy - 25, { size: 9, color: GRAY });
-  txt(`E-mail: ${student.email || '-'}`, M + 250, cy - 25, { size: 9, color: GRAY });
+  cy = sectionHdr('TOMADOR DE SERVICOS (ALUNO / BENEFICIARIO)', cy);
+  const tBox = box(cy, 62);
+  txt(student.full_name || '-', M + 12, cy - 14, { font: bold, size: 10.5, color: NAVY });
+  txt(`CPF/CNPJ: ${fmtDoc(student.cpf)}`, M + 12, cy - 28, { size: 9, color: TEXT_SEC });
+  txt(`E-mail: ${student.email || '-'}`, M + 240, cy - 28, { size: 9, color: TEXT_SEC });
 
   const addr = [
     n(student.logradouro),
@@ -183,66 +227,67 @@ export async function generateDanfsePdf({ invoice, student }) {
     student.cidade && student.uf ? `${n(student.cidade)} - ${n(student.uf)}` : n(student.cidade || student.uf || ''),
     student.cep ? `CEP ${fmtCep(student.cep)}` : null,
   ].filter(Boolean).join('  |  ');
-  txt(`Endereco: ${addr}`, M + 8, cy - 38, { size: 9, color: GRAY, maxWidth: CW - 16 });
-  cy = tBox - 8;
+  txt(`Endereco: ${addr}`, M + 12, cy - 44, { size: 8.5, color: TEXT_SEC, maxWidth: CW - 24 });
+  cy = tBox - 10;
 
   // ════════════════════════════════════════════════════════════════
   // DISCRIMINAÇÃO DOS SERVIÇOS
   // ════════════════════════════════════════════════════════════════
-  cy = sectionHdr('DISCRIMINACAO DOS SERVICOS', cy);
-  const dBox = box(cy, 36);
-  txt(n(discrimin), M + 8, cy - 12, { size: 9.5, maxWidth: CW - 16 });
-  txt(`Codigo do Servico: ${svcCode}`, M + 8, cy - 27, { size: 8.5, color: GRAY });
-  txt(`Aliquota ISS: ${(aliq * 100).toFixed(2).replace('.', ',')}%`, M + 200, cy - 27, { size: 8.5, color: GRAY });
-  cy = dBox - 8;
+  cy = sectionHdr('DISCRIMINACAO DOS SERVICOS PRESTADOS', cy);
+  const dBox = box(cy, 42);
+  txt(n(discrimin), M + 12, cy - 14, { font: bold, size: 9.5, color: NAVY, maxWidth: CW - 24 });
+  txt(`Codigo do Servico: ${svcCode}`, M + 12, cy - 30, { size: 8.5, color: TEXT_SEC });
+  txt(`Aliquota ISS: ${(aliq * 100).toFixed(2).replace('.', ',')}%`, M + 240, cy - 30, { size: 8.5, color: TEXT_SEC });
+  cy = dBox - 10;
 
   // ════════════════════════════════════════════════════════════════
-  // VALORES
+  // VALORES E TRIBUTOS
   // ════════════════════════════════════════════════════════════════
-  cy = sectionHdr('VALORES', cy);
-  const vBox = box(cy, 44);
+  cy = sectionHdr('DEMONSTRATIVO DE VALORES E TRIBUTOS', cy);
+  const vBox = box(cy, 48);
   const col = CW / 3;
 
-  field('Valor dos Servicos', fmtBRL(valor), M + 8, cy - 6, { large: true, bold: true });
-  field(`ISS Retido (${(aliq * 100).toFixed(2).replace('.', ',')}%)`, fmtBRL(valorIss), M + 8 + col, cy - 6);
-  field('Valor Liquido do Prestador', fmtBRL(valorLiq), M + 8 + col * 2, cy - 6, { bold: true });
-  cy = vBox - 8;
+  // Background highlights for columns
+  rect(M + col * 2, cy, col, 48, INDIGO_BG, BORDER_DK, 0.5);
+
+  field('Valor Total dos Servicos', fmtBRL(valor), M + 12, cy - 8, { large: true, bold: true, color: NAVY });
+  field(`ISS (${(aliq * 100).toFixed(2).replace('.', ',')}%)`, fmtBRL(valorIss), M + 12 + col, cy - 8, { color: TEXT_SEC });
+  field('VALOR LIQUIDO DA NOTA', fmtBRL(valorLiq), M + 12 + col * 2, cy - 8, { large: true, bold: true, color: INDIGO });
+  cy = vBox - 10;
 
   // ════════════════════════════════════════════════════════════════
-  // CÓDIGO DE VERIFICAÇÃO  (green highlight box)
+  // CÓDIGO DE VERIFICAÇÃO / AUTENTICIDADE
   // ════════════════════════════════════════════════════════════════
-  cy = sectionHdr('CODIGO DE VERIFICACAO / AUTENTICIDADE', cy);
-  const cvH = codVerif ? 68 : 44;
-  rect(M, cy, CW, cvH, GREEN_LT, GREEN, 1.2);
-
+  cy = sectionHdr('CODIGO DE VERIFICACAO E AUTENTICIDADE', cy);
+  const cvH = codVerif ? 72 : 48;
+  
   if (codVerif) {
-    txt(codVerif, M + 10, cy - 16, { font: mono, size: 12.5, color: BLUE });
-    txt('Informe o codigo acima no portal da Prefeitura de Barueri para verificar a autenticidade desta nota.', M + 10, cy - 34, { size: 8, color: GRAY, maxWidth: CW - 20 });
-    txt('Acesse: www.barueri.sp.gov.br/nfe  |  Campos: Inscricao Municipal + Numero da Nota + Codigo', M + 10, cy - 47, { size: 8, color: GREEN, maxWidth: CW - 20 });
-    txt(`Inscricao Municipal: ${n(schoolIm)}  |  Numero da Nota: ${nfseNum}`, M + 10, cy - 59, { size: 8, color: GRAY });
-  } else {
-    txt('Codigo de verificacao nao disponivel. Consulte o portal da Prefeitura: www.barueri.sp.gov.br/nfe', M + 10, cy - 18, { size: 8.5, color: AMBER, maxWidth: CW - 20 });
-    txt(`Inscricao Municipal: ${n(schoolIm)}  |  Numero da Nota: ${nfseNum}  |  RPS: ${rpsNum}`, M + 10, cy - 33, { size: 8, color: GRAY });
-  }
-  cy -= cvH + 10;
+    rect(M, cy, CW, cvH, GREEN_BG, GREEN_BRD, 1.2);
+    
+    // Left decorative status pill
+    rect(M + 12, cy - 12, 100, 18, GREEN, GREEN);
+    txt('AUTENTICADA', M + 24, cy - 24, { font: bold, size: 8, color: WHITE });
 
-  // ════════════════════════════════════════════════════════════════
-  // NOTICE BOX  (amber, if no verification code)
-  // ════════════════════════════════════════════════════════════════
-  if (!codVerif) {
-    rect(M, cy, CW, 30, AMBER_LT, AMBER, 0.8);
-    txt('ATENCAO: Este documento foi gerado a partir dos dados do lote RPS. O codigo de verificacao sera disponibilizado apos o processamento completo pela Prefeitura.', M + 8, cy - 10, { size: 8, color: AMBER, maxWidth: CW - 16 });
-    cy -= 38;
+    txt('Codigo de Verificacao:', M + 120, cy - 24, { font: bold, size: 9, color: NAVY });
+    txt(codVerif, M + 230, cy - 24, { font: mono, size: 12, color: INDIGO });
+    
+    txt('Para verificar a autenticidade deste documento no portal oficial da Prefeitura de Barueri:', M + 12, cy - 44, { size: 8, color: TEXT_SEC });
+    txt(`Acesse www.barueri.sp.gov.br/nfe  |  Inscricao Municipal: ${n(schoolIm)}  |  Nota: ${nfseNum}`, M + 12, cy - 58, { font: bold, size: 8, color: NAVY });
+  } else {
+    rect(M, cy, CW, cvH, AMBER_BG, AMBER, 0.8);
+    txt('DOCUMENTO PROVISORIO (AGUARDANDO CODIGO DE VERIFICACAO)', M + 12, cy - 16, { font: bold, size: 9, color: AMBER });
+    txt('Este lote RPS foi transmitido para a Prefeitura de Barueri. O codigo de autenticidade estara disponivel em breve.', M + 12, cy - 34, { size: 8, color: TEXT_SEC, maxWidth: CW - 24 });
   }
+  cy -= cvH + 12;
 
   // ════════════════════════════════════════════════════════════════
   // FOOTER
   // ════════════════════════════════════════════════════════════════
-  rule(cy);
-  cy -= 6;
-  txt('Este documento e uma representacao grafica da Nota Fiscal de Servicos Eletronica (NFS-e) emitida pela Prefeitura de Barueri.', M, cy - 10, { size: 7, color: GRAY, maxWidth: CW });
-  txt('O documento original e o PDF oficial podem ser consultados no portal municipal mediante autenticacao do contribuinte.', M, cy - 20, { size: 7, color: GRAY, maxWidth: CW });
-  txt(`Gerado em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, M, cy - 32, { size: 7, color: rgb(0.6, 0.6, 0.6) });
+  rule(cy, BORDER_DK);
+  cy -= 8;
+  txt('Este documento e uma representacao grafica da Nota Fiscal de Servicos Eletronica (NFS-e) emitida via sistema de integracao da Prefeitura de Barueri.', M, cy - 10, { size: 7.5, color: TEXT_SEC, maxWidth: CW });
+  txt('O documento original pode ser consultado no portal municipal da Prefeitura de Barueri (www.barueri.sp.gov.br/nfe).', M, cy - 20, { size: 7.5, color: TEXT_SEC, maxWidth: CW });
+  txt(`Documento gerado em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, M, cy - 34, { size: 7.5, color: TEXT_SEC });
 
   const pdfBytes = await doc.save();
   return Buffer.from(pdfBytes);
