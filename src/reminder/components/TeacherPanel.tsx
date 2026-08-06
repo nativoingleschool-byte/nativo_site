@@ -127,22 +127,34 @@ export default function TeacherPanel({
 
   const handleUploadNf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return
+    const file = e.target.files[0]
     setUploadingNf(true)
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ status_nota_fiscal: 'enviada' })
-          .eq('id', profile.id)
-        if (error) throw error
-        toast.success('Nota Fiscal enviada com sucesso!')
-        await refreshProfile(profile.id)
-      } catch (err: any) {
-        toast.error(err.message)
-      } finally {
-        setUploadingNf(false)
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        try {
+          const fileDataUrl = reader.result as string
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              status_nota_fiscal: 'enviada',
+              nota_fiscal_url: fileDataUrl
+            })
+            .eq('id', profile.id)
+          if (error) throw error
+          toast.success('Nota Fiscal enviada com sucesso!')
+          await refreshProfile(profile.id)
+        } catch (err: any) {
+          toast.error(err.message)
+        } finally {
+          setUploadingNf(false)
+        }
       }
-    }, 1500)
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      toast.error(err.message)
+      setUploadingNf(false)
+    }
   }
 
   const handleSaveTeacherData = async (e: FormEvent) => {

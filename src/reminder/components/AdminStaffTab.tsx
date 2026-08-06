@@ -62,6 +62,8 @@ export default function AdminStaffTab({
   const [newPasswordValue, setNewPasswordValue] = useState('')
   const [confirmPasswordValue, setConfirmPasswordValue] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [selectedTeacherForDetail, setSelectedTeacherForDetail] = useState<Profile | null>(null)
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
 
   const handleAddStaffSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -213,7 +215,22 @@ export default function AdminStaffTab({
 
                 return (
                   <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{staff.full_name}</td>
+                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                      {staff.role === 'teacher' ? (
+                        <button
+                          type="button"
+                          style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                          onClick={() => {
+                            setSelectedTeacherForDetail(staff)
+                            setSelectedMonthKey('')
+                          }}
+                        >
+                          {staff.full_name}
+                        </button>
+                      ) : (
+                        staff.full_name
+                      )}
+                    </td>
                     <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
                     <td style={{ padding: '1rem' }}>
                       <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
@@ -507,7 +524,18 @@ export default function AdminStaffTab({
 
               return (
                 <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>{teacher.full_name}</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                      onClick={() => {
+                        setSelectedTeacherForDetail(teacher)
+                        setSelectedMonthKey('')
+                      }}
+                    >
+                      {teacher.full_name}
+                    </button>
+                  </td>
                   <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || '-'}</td>
                   <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || '-'}</td>
                   <td style={{ padding: '1rem' }}>{totalHours.toFixed(1)}h</td>
@@ -542,6 +570,283 @@ export default function AdminStaffTab({
           </tbody>
         </table>
       </div>
+
+      {/* Teacher Detail & History Modal Overlay */}
+      {selectedTeacherForDetail && (() => {
+        const teacherLessons = lessons.filter(l => l.teacher_id === selectedTeacherForDetail.id)
+        
+        // Group months
+        const availableMonthsMap = new Map<string, string>()
+        teacherLessons.forEach(l => {
+          if (l.starts_at) {
+            const key = l.starts_at.slice(0, 7)
+            if (!availableMonthsMap.has(key)) {
+              const [yr, mo] = key.split('-')
+              const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
+              const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })
+              availableMonthsMap.set(key, monthLabel)
+            }
+          }
+        })
+
+        const currentMonthKey = new Date().toISOString().slice(0, 7)
+        if (!availableMonthsMap.has(currentMonthKey)) {
+          const dObj = new Date()
+          const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })
+          availableMonthsMap.set(currentMonthKey, monthLabel)
+        }
+
+        const availableMonths = Array.from(availableMonthsMap.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+        const activeMonthKey = selectedMonthKey && availableMonthsMap.has(selectedMonthKey)
+          ? selectedMonthKey
+          : availableMonths[0][0]
+
+        const monthLessons = teacherLessons.filter(l => l.starts_at && l.starts_at.slice(0, 7) === activeMonthKey)
+        const completedLessons = monthLessons.filter(l => l.teacher_lesson_status === 'happened')
+        const totalMinutes = completedLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0)
+        const totalHours = totalMinutes / 60
+        const hourlyRate = selectedTeacherForDetail.taxa_hora_aula ?? 56.00
+        const currency = selectedTeacherForDetail.moeda_taxa ?? 'BRL'
+        const totalAmount = totalHours * Number(hourlyRate)
+
+        return (
+          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+            <div className="form-card animate-fade-in" style={{ maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+              
+              {/* Modal Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
+                    <span className="badge badge-confirmed" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>Professor</span>
+                  </div>
+                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>{selectedTeacherForDetail.email}</p>
+                </div>
+                <button
+                  className="secondary-button"
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                  onClick={() => setSelectedTeacherForDetail(null)}
+                >
+                  ✕ Fechar
+                </button>
+              </div>
+
+              {/* Grid: Teacher Info & NF Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                
+                {/* Info Card */}
+                <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>Informações de Pagamento</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <div><span style={{ color: '#94a3b8' }}>CPF/CNPJ:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.cnpj || selectedTeacherForDetail.cpf || '-'}</strong></div>
+                    <div><span style={{ color: '#94a3b8' }}>Chave PIX:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.chave_pix || '-'}</strong></div>
+                    <div><span style={{ color: '#94a3b8' }}>Valor/Hora:</span> <strong style={{ color: '#10b981' }}>{currency} {Number(hourlyRate).toFixed(2)}</strong></div>
+                    <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#94a3b8' }}>Status Pagamento:</span>
+                      <span className={badgeClass(selectedTeacherForDetail.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
+                        {selectedTeacherForDetail.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        className="primary-button"
+                        style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', background: '#10b981' }}
+                        onClick={async () => {
+                          await handleUpdateTeacherPayout(selectedTeacherForDetail.id, 'pago')
+                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pago' })
+                        }}
+                      >
+                        Marcar Pago
+                      </button>
+                      <button
+                        className="secondary-button"
+                        style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem' }}
+                        onClick={async () => {
+                          await handleUpdateTeacherPayout(selectedTeacherForDetail.id, 'pendente')
+                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pendente' })
+                        }}
+                      >
+                        Marcar Pendente
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* NF Card */}
+                <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>Notas Fiscais Enviadas</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#94a3b8' }}>Status NF:</span>
+                      <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
+                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'Não se aplica' : 'Pendente ✗'}
+                      </span>
+                    </div>
+
+                    {selectedTeacherForDetail.nota_fiscal_url ? (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem' }}>Arquivo enviado pelo professor:</p>
+                        <a
+                          href={selectedTeacherForDetail.nota_fiscal_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="primary-button"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#0284c7', textDecoration: 'none' }}
+                        >
+                          📄 Visualizar / Baixar Nota Fiscal
+                        </a>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
+                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada'
+                          ? 'NF enviada pelo professor (status marcado como enviado).'
+                          : 'Nenhuma Nota Fiscal anexada para o mês atual.'}
+                      </p>
+                    )}
+
+                    {/* Admin Actions for NF */}
+                    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <label className="secondary-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', padding: '0.35rem 0.7rem', cursor: 'pointer' }}>
+                        <span>{selectedTeacherForDetail.nota_fiscal_url ? 'Substituir NF' : 'Anexar NF'}</span>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            if (!e.target.files?.[0]) return
+                            const file = e.target.files[0]
+                            const reader = new FileReader()
+                            reader.onload = async () => {
+                              const fileUrl = reader.result as string
+                              await supabase.from('profiles').update({
+                                status_nota_fiscal: 'enviada',
+                                nota_fiscal_url: fileUrl
+                              }).eq('id', selectedTeacherForDetail.id)
+                              setSelectedTeacherForDetail({
+                                ...selectedTeacherForDetail,
+                                status_nota_fiscal: 'enviada',
+                                nota_fiscal_url: fileUrl
+                              })
+                              await refreshProfiles()
+                              toast.success('Nota Fiscal anexada com sucesso!')
+                            }
+                            reader.readAsDataURL(file)
+                          }}
+                        />
+                      </label>
+                      <button
+                        className="secondary-button"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem' }}
+                        onClick={async () => {
+                          const nextStatus = selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'pendente' : 'enviada'
+                          await supabase.from('profiles').update({ status_nota_fiscal: nextStatus }).eq('id', selectedTeacherForDetail.id)
+                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_nota_fiscal: nextStatus })
+                          await refreshProfiles()
+                          toast.success('Status da NF atualizado!')
+                        }}
+                      >
+                        Alternar Status
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Monthly Lesson History */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>Histórico de Aulas por Mês</h4>
+                  
+                  {/* Month Selector */}
+                  <select
+                    value={activeMonthKey}
+                    onChange={(e) => setSelectedMonthKey(e.target.value)}
+                    style={{ padding: '0.4rem 0.8rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    {availableMonths.map(([mKey, mLabel]) => (
+                      <option key={mKey} value={mKey}>{mLabel}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Monthly Summary Bar */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Aulas Realizadas</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#fff' }}>{completedLessons.length}</strong>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Horas Trabalhadas</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Valor Apurado</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#10b981' }}>{currency} {totalAmount.toFixed(2)}</strong>
+                  </div>
+                </div>
+
+                {/* Monthly Lessons Table */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
+                        <th style={{ padding: '0.6rem' }}>Data / Hora</th>
+                        <th style={{ padding: '0.6rem' }}>Aluno</th>
+                        <th style={{ padding: '0.6rem' }}>Turma / Matéria</th>
+                        <th style={{ padding: '0.6rem' }}>Duração</th>
+                        <th style={{ padding: '0.6rem' }}>Status</th>
+                        <th style={{ padding: '0.6rem', textAlign: 'right' }}>Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthLessons.map((l) => {
+                        const studentName = profiles.find(p => p.id === l.student_id)?.full_name || 'Aluno'
+                        const isHappened = l.teacher_lesson_status === 'happened'
+                        const lessonHours = (l.duration_minutes || 60) / 60
+                        const lessonVal = isHappened ? lessonHours * Number(hourlyRate) : 0
+
+                        return (
+                          <tr key={l.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                            <td style={{ padding: '0.6rem', color: '#f8fafc' }}>
+                              {new Date(l.starts_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td style={{ padding: '0.6rem', fontWeight: 'bold', color: '#38bdf8' }}>{studentName}</td>
+                            <td style={{ padding: '0.6rem', color: '#94a3b8' }}>{l.subject || l.class_name || '-'}</td>
+                            <td style={{ padding: '0.6rem', color: '#cbd5e1' }}>{l.duration_minutes || 60} min</td>
+                            <td style={{ padding: '0.6rem' }}>
+                              <span className={badgeClass(
+                                l.teacher_lesson_status === 'happened' ? 'confirmed' :
+                                l.teacher_lesson_status === 'student_no_show' ? 'pending' :
+                                l.teacher_lesson_status === 'not_happened' ? 'danger' : 'secondary'
+                              )}>
+                                {l.teacher_lesson_status === 'happened' ? 'Aconteceu ✓' :
+                                 l.teacher_lesson_status === 'student_no_show' ? 'Aluno Faltou' :
+                                 l.teacher_lesson_status === 'not_happened' ? 'Não Aconteceu' : 'Agendada'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isHappened ? '#10b981' : '#64748b' }}>
+                              {currency} {lessonVal.toFixed(2)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {monthLessons.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                            Nenhuma aula registrada neste mês.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }

@@ -59,6 +59,7 @@ export type Profile = {
   chave_pix?: string
   cnpj?: string
   status_nota_fiscal?: 'enviada' | 'pendente' | 'nao_se_aplica' | null
+  nota_fiscal_url?: string | null
   taxa_hora_aula?: number
   moeda_taxa?: string
   status_pagamento_professor?: 'pago' | 'pendente' | null
