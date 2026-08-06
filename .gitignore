@@ -18,3 +18,5 @@ marta_result.json
 # Scratch scripts
 scratch-*.js
 scratch-*.py
+
+.agents/
