@@ -134,14 +134,25 @@ export default function TeacherPanel({
       reader.onload = async () => {
         try {
           const fileDataUrl = reader.result as string
-          const { error } = await supabase
+          
+          // 1. Update status_nota_fiscal to 'enviada' first
+          const { error: statusErr } = await supabase
             .from('profiles')
-            .update({
-              status_nota_fiscal: 'enviada',
-              nota_fiscal_url: fileDataUrl
-            })
+            .update({ status_nota_fiscal: 'enviada' })
             .eq('id', profile.id)
-          if (error) throw error
+
+          if (statusErr) throw statusErr
+
+          // 2. Try updating nota_fiscal_url column
+          const { error: urlErr } = await supabase
+            .from('profiles')
+            .update({ nota_fiscal_url: fileDataUrl })
+            .eq('id', profile.id)
+
+          if (urlErr) {
+            console.warn('Could not update nota_fiscal_url to DB column:', urlErr.message)
+          }
+
           toast.success('Nota Fiscal enviada com sucesso!')
           await refreshProfile(profile.id)
         } catch (err: any) {
@@ -338,23 +349,39 @@ export default function TeacherPanel({
             <section style={{ flex: 0.7 }}>
               <h3>Envio de Nota Fiscal (MEI)</h3>
               <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444'
-                  }} />
-                  <span className="text-sm">
-                    NF Mês Anterior: <strong>{profile.status_nota_fiscal === 'enviada' ? 'Enviada' : 'Pendente'}</strong>
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444'
+                    }} />
+                    <span className="text-sm">
+                      NF Mês Anterior: <strong>{profile.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : 'Pendente ✗'}</strong>
+                    </span>
+                  </div>
+
+                  {profile.nota_fiscal_url && (
+                    <a
+                      href={profile.nota_fiscal_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="primary-button"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7', textDecoration: 'none' }}
+                    >
+                      📄 Ver Arquivo Enviado
+                    </a>
+                  )}
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Selecionar Arquivo PDF da Nota</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                    {profile.status_nota_fiscal === 'enviada' ? 'Substituir / Reenviar Arquivo PDF da Nota' : 'Selecionar Arquivo PDF da Nota'}
+                  </label>
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,image/*"
                     disabled={uploadingNf}
                     onChange={handleUploadNf}
                   />
