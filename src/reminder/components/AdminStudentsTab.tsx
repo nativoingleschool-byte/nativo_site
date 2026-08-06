@@ -46,6 +46,38 @@ export default function AdminStudentsTab({
 }: AdminStudentsTabProps) {
   const { toast } = useToast()
   const [studentSearch, setStudentSearch] = useState('')
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
+
+  /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
+  const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
+    setDownloadingPdfId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Nao autenticado.')
+
+      const res = await fetch(`/api/admin/nfse-pdf?invoice_id=${invoiceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro ao gerar PDF' }))
+        throw new Error(err.error || 'Erro ao gerar PDF')
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download  = `NFS-e_${studentName.replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDownloadingPdfId(null)
+    }
+  }
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const handleDeleteStudent = async (studentId: string, fullName: string) => {
@@ -344,15 +376,25 @@ export default function AdminStudentsTab({
       {lastIssuedPdf && (
         <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
           <span>
-            {lastIssuedPdf.url 
+            {lastIssuedPdf.url
               ? t(language, 'success_invoice_banner').replace('{name}', lastIssuedPdf.name)
               : `${t(language, 'success_lote_envio_banner')} (${lastIssuedPdf.name})`}
           </span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {lastIssuedPdf.url && (
-              <a href={lastIssuedPdf.url} target="_blank" rel="noreferrer" className="primary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}>
+              <button
+                className="primary-button"
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', background: '#10b981' }}
+                disabled={downloadingPdfId !== null}
+                onClick={() => {
+                  // Find the invoice id for this student so we can download
+                  const inv = invoices.find(i => i.nfs_e_pdf_link === lastIssuedPdf.url || i.nfse_numero)
+                  if (inv) void downloadNfsePdf(inv.id, lastIssuedPdf.name)
+                  else window.open(lastIssuedPdf.url, '_blank')
+                }}
+              >
                 {t(language, 'view_pdf')}
-              </a>
+              </button>
             )}
             <button className="secondary-button" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setLastIssuedPdf(null)}>
               {t(language, 'close')}
@@ -548,18 +590,13 @@ export default function AdminStudentsTab({
                       if (invoiceInfo) {
                         if (invoiceInfo.hasPdf) {
                           return (
-                            <button 
-                              className="primary-button" 
-                              style={{ 
-                                padding: '0.4rem 0.8rem', 
-                                fontSize: '0.8rem', 
-                                marginRight: '0.5rem', 
-                                background: '#10b981',
-                                cursor: 'not-allowed'
-                              }}
-                              disabled={true}
+                            <button
+                              className="primary-button"
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem', background: '#10b981' }}
+                              disabled={downloadingPdfId === invoiceInfo.id}
+                              onClick={() => void downloadNfsePdf(invoiceInfo.id, student.full_name)}
                             >
-                              {t(language, 'invoice_issued')}
+                              {downloadingPdfId === invoiceInfo.id ? 'Gerando...' : t(language, 'invoice_issued')}
                             </button>
                           )
                         }
@@ -815,16 +852,15 @@ export default function AdminStudentsTab({
                         </span>
                       </div>
                       <div>
-                        {pdfUrl ? (
-                          <a 
-                            href={pdfUrl} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="primary-button" 
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
+                        {(inv.id && (inv.nfs_e_pdf_link || inv.nfse_numero)) ? (
+                          <button
+                            className="primary-button"
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
+                            disabled={downloadingPdfId === inv.id}
+                            onClick={() => void downloadNfsePdf(inv.id, historyStudent?.full_name || 'Aluno')}
                           >
-                            {t(language, 'view_pdf')}
-                          </a>
+                            {downloadingPdfId === inv.id ? 'Gerando...' : t(language, 'view_pdf')}
+                          </button>
                         ) : (
                           <span className="muted text-xs">{t(language, 'financial_pending')}</span>
                         )}

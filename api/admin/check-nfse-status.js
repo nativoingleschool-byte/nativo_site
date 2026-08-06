@@ -124,11 +124,13 @@ export default async function handler(req, res) {
     }
 
     if (result.status === 'concluido' && result.nfs_e_pdf_link) {
-      // Update invoice with PDF link (do not change status to emitida, as it violates constraint)
+      // Update invoice with PDF link and NFS-e identifiers
       const { error: updateError } = await supabaseAdmin
         .from('invoices')
         .update({
-          nfs_e_pdf_link: result.nfs_e_pdf_link
+          nfs_e_pdf_link: result.nfs_e_pdf_link,
+          nfse_numero: result.nfse_numero || null,
+          nfse_codigo_verificacao: result.nfse_codigo_verificacao || null
         })
         .eq('id', invoice_id);
 
@@ -139,7 +141,9 @@ export default async function handler(req, res) {
 
       return json(res, 200, {
         status: 'emitida',
-        nfs_e_pdf_link: result.nfs_e_pdf_link
+        nfs_e_pdf_link: result.nfs_e_pdf_link,
+        nfse_numero: result.nfse_numero || null,
+        nfse_codigo_verificacao: result.nfse_codigo_verificacao || null
       });
     }
 

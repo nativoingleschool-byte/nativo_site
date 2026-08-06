@@ -7,3 +7,14 @@ coverage/
 .env*
 !.env.example
 .vercel
+
+# Data dumps
+*_dump*.json
+latest_*.json
+*_result*.json
+result*.json
+marta_result.json
+
+# Scratch scripts
+scratch-*.js
+scratch-*.py

@@ -1,0 +1,208 @@
+=== PAGE 7 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+o O campo ´Código NBS – Nomenclatura Brasileira de Serviços’, nas posições 
+nº 61 a 69, deve ser preenchido com o código correspondente aos quatro 
+primeiros dígitos do código do serviço prestado. A tabela contendo a 
+correlação ‘Código de Serviço’ x ‘Código NBS’ está disponível em:  
+ 
+▪ https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica 
+ 
+ 
+o O campo 'Código Indicador de Operação de Fornecimento', nas posições nº 
+515 a 520, destina-se a identificar a natureza da operação de fornecimento 
+do serviço. Deve ser preenchido com o código numérico correspondente ao 
+serviço prestado e ao Código NBS informado. A tabela contendo a correlação 
+entre o ‘Código do Serviço’, ‘Código da operação de fornecimento’ e ‘Código 
+NBS’ está disponível em: 
+ 
+▪ https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 8 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+o O campo ‘Código de Classificação Tributária do IBS/CBS’, nas posições nº 521 
+a 526, deve ser preenchido com o código que identifica a classificação 
+tributária ao serviço prestado, para utilizar o código aplicável ao serviço 
+prestado, consultar:  
+ 
+▪ https://dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria  
+(Relação de Códigos de Classificação Tributária) 
+ 
+▪ https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica 
+(Anexo VIII - Correlação entre Cód. de Serviço e Cód. de Classificação 
+Tributária) 
+ 
+o O campo ‘Código Situação Tributária - CST’, nas posições nº 527 a 529, deve 
+corresponder exatamente aos 3 primeiros dígitos informados no campo 
+‘Código de Classificação Tributária do IBS e da CBS’, a tabela de ‘Código de 
+Situação Tributária IBS e CBS’ está disponível em: 
+ 
+▪ https://dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 9 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+o O campo ‘Indicador de Operação de Uso ou Consumo Pessoal', na posição nº 
+530, deve ser preenchido para sinalizar se a prestação do serviço se destina 
+ao uso ou consumo pessoal, o Artigo 57 da Lei Complementar Federal 
+214/2025 estabelece quando um serviço é de caráter pessoal; 
+ 
+o ‘Indicador do Destinatário do Serviço', na posição nº 531, destina-se a 
+identificar a relação entre o Tomador do Serviço e o Destinatário Final do 
+Serviço. 
+ 
+▪ Preencher com ‘0’ se o tomador do serviço é a mesma pessoa (física 
+ou jurídica) que se beneficiará do serviço (Tomador = Destinatário); 
+ 
+▪ Preencher com ‘1’ quando o destinatário do serviço não é o próprio 
+tomador (Tomador <> Destinatário). 
+ 
+ 
+ 
+ 
+ 
+• Para os demais campos do registro tipo ‘4’, a forma de preenchimento varia 
+conforme a situação de emissão da nota fiscal a ser convertida ou cancelada. As 
+instruções detalhadas para o preenchimento em cada cenário estão neste manual. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 10 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+2.5. Registro Tipo 5 – Detalhe 
+• Registro existente para o repositório de dados do Ambiente de Dados Nacional 
+(ADN) da Nota Fiscal de Serviço Eletrônica no padrão nacional (NFS-e); 
+ 
+• Para cada registro tipo 4 pode haver somente um registro do tipo ‘5’; 
+ 
+• A existência e a obrigatoriedade do preenchimento do Registro Tipo '5' são 
+condicionais e dependem das regras de validação aplicáveis aos campos informados 
+no Registro tipo '4': 
+ 
+o Caso algum campo do Registro '4' ative uma regra que exija dados 
+complementares contidos no Registro '5', a sua inclusão se torna obrigatória. 
+ 
+• Campo 'Código e Classificação do Crédito Presumido IBS e CBS', nas posições nº 2 a 
+3, deve ser preenchido com o código de classificação do crédito presumido do 
+IBS/CBS, conforme a Tabela de Crédito Presumido, disponível em: 
+ 
+o https://dfe-portal.svrs.rs.gov.br/DFE/TabelaCreditoPresumido 
+ 
+o A obrigatoriedade ocorre somente se o 'Código da Classificação Tributária’, 
+informado no Registro 4, exigir um código de crédito presumido;  
+ 
+o A tabela contendo a correspondência com o Código de Classificação 
+Tributária está disponível em: 
+ 
+▪ https://dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria 
+(Aplicar filtro de visão aberta por ‘Classificação Tributária’) 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 11 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+• 'Tipo de Ente Governamental', campo na posição nº 4, destinado para aquisição de 
+serviços pela Administração Pública, deve ser preenchido quando o tomador for um 
+dos órgãos públicos listados nas opções: ‘1 -União’, ‘2 – Estado’, ‘3 - Distrito Federal’ 
+ou ‘4 – Município’; 
+ 
+ 
+• O campo ‘Tipo de operação com entes Governamentais ou sobre bens imóveis’, 
+presente na posição nº 5, é obrigatório quando: 
+ 
+o O serviço tiver códigos iniciados em '25.05', '15.09', '17.12', '10.05'; 
+o OU o campo 'Tipo de Ente Governamental' estiver preenchido  
+ 
+ 
+ 
+• O campo ‘Chave da NFS-e referenciada', nas posições nº 6 a 55, deve ser preenchido 
+com a chave de acesso da NFS-e que está sendo referenciada. Este campo é 
+obrigatório se o campo 'Tipo de Operação com entes Governamentais ou sobre 
+Bens Imóveis' for preenchido com a opção 2 ou 3. 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 12 ===
+  
+ 
+ 
+Rua Campos Sales, 222 – Centro - Barueri - SP - CEP: 06401-000 Fone: (11) 4198-5778 
+suporte.nfe@barueri.sp.gov.br 
+O Registro tipo ‘5’ possui campos destinados a locação de bens móveis, que devem ser 
+informados somente quando o campo ‘Código do Serviço Prestado’ for preenchido com 
+serviços iniciados em ‘990401’ (Locação de Bens Móveis): 
+ 
+• O campo ‘Código da Nomenclatura Comum do Mercosul - NCM do bem móvel 
+objeto de locação’, nas posições nº 56 a 63, deve ser preenchido com um código 
+NCM válido, de acordo com a tabela disponível em: 
+ 
+o https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-
+exterior/classificacao-fiscal-de-mercadorias/download-ncm-nomenclatura-
+comum-do-mercosul 
+ 
+• Preencher o campo ‘Descrição do bem móvel objeto de locação’ nas posições nº 64 
+a 213; 
+ 
+• Informar a qtd. para o bem móvel objeto de locação nas posições nº 214 a 216. 
+ 
+ 
+ 
+•  O campo ‘Indicador de operação de doação’ deve ser preenchido somente quando: 
+o  o campo ‘Código de Classificação Tributária do IBS e da CBS' do registro 4 é 
+preenchido com '410026' ou ‘410003’ 
+ 
+ 
+
+

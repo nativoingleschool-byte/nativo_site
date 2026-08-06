@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 
 interface LoginPanelProps {
   language: Language
-  setupSigningIn: boolean
   loginForm: { email: string; password: string }
   setLoginForm: (form: { email: string; password: string }) => void
   loginError: string
@@ -14,7 +13,6 @@ interface LoginPanelProps {
 
 export default function LoginPanel({
   language,
-  setupSigningIn,
   loginForm,
   setLoginForm,
   loginError,
@@ -111,7 +109,6 @@ export default function LoginPanel({
             </div>
 
             <form className="form-card" onSubmit={handleLogin}>
-              {setupSigningIn && <p className="muted">{t(language, 'opening_setup_link')}</p>}
               <input
                 required
                 type="email"

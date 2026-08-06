@@ -185,10 +185,6 @@ for all
 using (public.is_admin())
 with check (public.is_admin());
 
-drop policy if exists "invitations_select_anon" on public.invitations;
-create policy "invitations_select_anon" on public.invitations
-for select
-using (true);
 
 -- 5. Barueri Remessa Sequence tracking
 CREATE TABLE IF NOT EXISTS public.barueri_remessa_seq (

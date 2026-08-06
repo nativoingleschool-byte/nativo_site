@@ -1,0 +1,719 @@
+--- Page 1 ---
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S Numérico 1 1 1 1
+Inscrição do Contribuinte S Texto 7 2 8 Inscrição do Prestador de Serviço
+Versão do Lay-Out S Texto 6 9 14 Versão do Lay-Out "PMB004"
+Identificação da Remessa do 
+Contribuinte S Numérico 11 15 25
+Identificação exclusiva/única do arquivo por Contribunte.
+Sugestão de preenchimento:
+yyyymmddxxx sendo
+yyyymmdd = ano+mês+dia 
+xxx = número da Remessa
+Obs: O exemplo de preenchimento acima é apenas sugestão. A 
+identificação da Remessa é livre desde que seja exclusiva/única
+Fim de Linha S ASCII(13) +
+ASCII(10) 1 26 26 ASC13 ou CHR13 / ASC10 ou CHR10
+Detalhe - Registro Tipo 2
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S Numérico 1 1 1 2
+Tipo do RPS S Texto 5 2 6 RPS
+Série do RPS N Texto 4 7 10 Série do RPS
+Série da NF-e S* Texto 5 11 15 Série do NF-e. * Obrigatório somente para contribuintes com regime 
+especial.
+Alterações Layout Arquivo Texto RPS V4.4
+Cabeçalho - Registro Tipo 1
+SIT Página 1 28/05/2026
+--- Page 2 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Número do RPS S* Numérico 10 16 25
+Número do RPS, iniciar no número 1, com zeros a esquerda, sendo que 
+obrigatoriamente os 3 primeiros dígitos sejam zero. Exemplo: 
+0000000001. * Obrigatório somente para RPS com situação "E", para 
+RPS com situação "C" enviar zeros exceto para Código do Motivo de 
+Cancelamento 03 (Substituição), neste caso informar o número do novo 
+RPS. Observação os 3 primeiros dígitos são reservados.
+Data do RPS S AAAAMMDD 8 26 33 Data de Emissão do RPS
+Hora do RPS S HHMMSS 6 34 39 Hora de Emissão do RPS
+Situação do RPS S Texto 1 40 40 E para RPS Enviado / C para RPS Cancelado / R para Reenvio, correção 
+de informação após rejeite pelo ADN
+Código de Motivo de 
+Cancelamento S* Texto 2 41 42
+01 para Cancelamento do Serviço / 02 para Dados Incorretos / 03 para 
+Substituição. * Obrigatório somente para os casos de RPS com Situação 
+"C" (cancelado).
+Número da NF-e a ser 
+cancelada/substituida S* Numérico 7 43 49 Número da NF-e a ser cancelada/substituida. * Obrigatório somente 
+para os casos de RPS com Situação "C" (cancelado).
+Série da NF-e a ser 
+cancelada/substituida N Texto 5 50 54
+Série da NF-e a ser cancelada/substituida. * Obrigatório somente para 
+os casos de RPS com Situação "C" (cancelado) e para contribuintes com 
+regime especial.
+Data de emissão da NF-e a ser 
+cancelada/substituida S* AAAAMMDD 8 55 62 Data de emissão da NF-e a ser cancelada/substituida. * Obrigatório 
+somente para os casos de RPS com Situação "C" (cancelado).
+Descricao do Cancelamento S* Texto 180 63 242 Descrição do Motivo de Cancelamento. * Obrigatório somente para os 
+casos de RPS com Situação "C" (cancelado).
+Código do Serviço Prestado S Numérico 9 243 251 Código da Atividade do Serviço Prestado
+Local da Prestação do Serviço S* Texto 1 252 252
+1 para serviço prestado no Município / 2 para serviço prestado 
+fora do Município. * Obrigatório para as atividades relacionadas 
+nas exceções, conforme artigo 39 da LC 118/02.
+SIT Página 2 28/05/2026
+--- Page 3 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Serviço Prestado em Vias Publicas S* Texto 1 253 253
+1 para serviço prestado em vias públicas / 2 para serviço não 
+prestado em vias públicas. * Obrigatório para as atividades da 
+lista de serviços conforme artigo 39 da LC 118/02, não 
+prestados em vias públicas.
+Endereço Logradouro do local do 
+Serviço Prestado S* Texto 75 254 328
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301;
+• Ou se o campo ‘serviço prestado é exportação’ do registro tipo 
+2’ é preenchido com ‘1’ 
+SIT Página 3 28/05/2026
+--- Page 4 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Numero Logradouro  do local do 
+Serviço Prestado S* Texto 9 329 337
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301;
+• Ou se o campo ‘serviço prestado é exportação’ do registro tipo 
+2’ é preenchido com ‘1’ 
+Complemento Logradouro do local 
+do Serviço Prestado S* Texto 30 338 367
+*Quando existir a informação, para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301;
+• Ou se o campo 'serviço prestado é exportação’ é preenchido 
+com ‘1’ 
+SIT Página 4 28/05/2026
+--- Page 5 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Bairro Logradouro do local do 
+Serviço Prestado S* Texto 40 368 407
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301;
+• Ou se o campo ‘serviço prestado é exportação’ do registro tipo 
+2’ é preenchido com ‘1’ 
+Cidade Logradouro do local do 
+Serviço Prestado S* Texto 40 408 447
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' é 
+preenchido com 020101, 020201, 020301;
+• Ou se o campo ‘serviço prestado é exportação’ do registro tipo 
+2’ é preenchido com ‘1’ 
+SIT Página 5 28/05/2026
+--- Page 6 ---
+Alterações Layout Arquivo Texto RPS V4.4
+UF Logradouro do local do Serviço 
+Prestado S* Texto 2 448 449
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301.
+CEP Logradouro do local do 
+Serviço Prestado S* Numérico 8 450 457
+*Obrigatório para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• Ou atividades com código de serviço iniciados em 07.02.01, 
+07.02.02, 07.04.01, 07.05,01, 07.05.02, 07.06.01, 07.06.02, 
+07.07.01, 07.08.01, 07.17.01,07.19.01;
+• Ou atividades com código de serviços iniciados em 12;
+• Ou se o campo 'código indicador op.fornecimento' do Registro 
+'4' é preenchido com 020101, 020201, 020301;   
+Para CEP que não possui os 8 dígitos, completar com zeros a 
+esquerda. Exemplos: 06401220, 01206540
+Quantidade de Serviço S Numérico 6 458 463 Quantidade, somente valor inteiro.
+Valor do Serviço S Numérico 15 464 478
+Valor do Serviço, referente ao valor unitário, valor com 15 posições com 
+zeros a esquerda, sem vírgula e sem ponto. Exemplo: R$10,25 = 
+000000000001025
+SIT Página 6 28/05/2026
+--- Page 7 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Alíquota Fora Município S* Numérico 5 479 483
+*Prencher somente para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• E o campo 'serviço prestado é exportação’ é DIFERENTE de 
+‘1’ 
+Informar a alíquota do serviço quando o ISSQN é devido a outro 
+município. Quando informado, valor com 5 posições com zeros a 
+esquerda, sem vírgula e sem ponto. Exemplo: 2,75 = 00275
+Valor Total das Retenções S Numérico 15 484 498 Somatória das Retenções, valor com 15 posições com zeros a esquerda, 
+sem vírgula e sem ponto. Exemplo: R$10,25  = 000000000001025
+Tomador Estrangeiro S Numérico 1 499 499 1 Para Tomador Estrangeiro 2 para Tomador Brasileiro
+Pais da Nacionalidade do 
+Tomador Estrangeiro S* Numérico 3 500 502 Código do pais de nacionalidade do tomador, conforme tabela de paises, 
+quando o tomador for estrangeiro. *Exceto para tomadores brasileiros.
+Serviço Prestado é exportação S* Numérico 1 503 503 1 Para Serviço exportado 2 para Serviço não exportado.
+Indicador do CPF/CNPJ do 
+Tomador, pegar do Pessoas a 
+constante
+S* Numérico 1 504 504 1 para CPF / 2 para CNPJ    * Exceto para Tomador estrangeiro
+CPF/ CNPJ do Tomador S* Texto 14 505 518 Número do Documento do Tomador * Exceto para Tomador estrangeiro
+Razão Social / Nome do Tomador S Texto 60 519 578
+Endereço Logradouro Tomador S Texto 75 579 653
+Numero Logradouro Tomador S Texto 9 654 662
+Complemento Logradouro 
+Tomador S* Texto 30 663 692 *Quando existir a informação
+SIT Página 7 28/05/2026
+--- Page 8 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Bairro Logradouro Tomador S Texto 40 693 732
+Cidade Logradouro Tomador S Texto 40 733 772
+UF Logradouro Tomador S* Texto 2 773 774 * Exceto para Tomador estrangeiro
+CEP Logradouro Tomador S* Numérico 8 775 782
+* Exceto para Tomador estrangeiro
+Para CEP que não possui os 8 dígitos, completar com zeros a esquerda. 
+Exemplos: 06401220, 00206540
+e-mail Tomador S* Texto 152 783 934
+*Obrigatório somente para Tomador Pessoa Juridica:
+Permitido no máximo 3 e-mails, usando o caracter "|" (pipe ou barra 
+vertical) como delimitador de e-mail, sendo o primeiro considerado 
+principal.
+Fatura N Numérico 6 935 940 Número da Fatura
+Valor Fatura S* Numérico 15 941 955
+Valor da Fatura, valor com 15 posições com zeros a esquerda, sem 
+vírgula e sem ponto.Exemplo: R$10,25  = 000000000001025. * 
+Obigatório quando for informado o número da fatura.
+Forma de Pagamento S* Texto 15 956 970 Forma de pagamento da Fatura.* Obigatório quando for informado o 
+número da fatura.
+Discriminação do Serviço S Texto 1000 971 1970
+Descritivo do Serviço Prestado (Este campo será impresso em um 
+retângulo com até 100 caracteres por linha (largura) e 13 linhas 
+(altura). Usar o caracter "|" (pipe ou barra vertical) como delimitador de 
+quebra de linha. A cada 100 caracteres é obrigatório o caracter de 
+quebra "|", não deverá ser colocado esse delimitador na 13º linha 
+(última linha).
+Caracter de Fim de Linha S ASCII(13) +
+ASCII(10) 1 1971 1971 ASC13 ou CHR13 / ASC10 ou CHR10
+SIT Página 8 28/05/2026
+--- Page 9 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Detalhe - Registro Tipo 3 Registro existente somente para valores superiores a zero, caso contrário não deve constar no arquivo.
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S* Numérico 1 1 1
+3 *Obrigatório para lançamento de Retenção (apenas valores retidos na 
+nota) ou Lançamento de Valor não Incluso na Base de Cálculo de 
+Serviço. Este registro deverá repetir para cada código conforme campo 
+"Código de Outros Valores".
+Código de Outros Valores S Texto 2 2 3
+01 - para IRRF
+02 - para PIS/PASEP
+03 - para COFINS
+04 - para CSLL
+05 - para Contribuição Previdenciária
+VN - para Valor não Incluso na Base de Cálculo (exceto tributos 
+federais). Esse campo somado ao valor total dos serviços resulta no 
+Valor total da nota.
+Valor S Numérico 15 4 18
+Valor da retenção informada, valor com 15 posições com zeros a 
+esquerda, sem vírgula e sem ponto. Exemplo: R$10,25 = 
+000000000001025
+Fim de Linha S ASCII(13) +
+ASCII(10) 1 19 19 ASC13 ou CHR13 / ASC10 ou CHR10
+SIT Página 9 28/05/2026
+--- Page 10 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Detalhe - Registro Tipo 4 Registro existente para o repositório de dados do Ambiente de Dados Nacional da NFS-e.
+Os valores e informações fornecidos neste registro não têm finalidade de apuração para geração de guia.
+O envio dessas informações é necessário para atender às exigências do ADN, que requer o registro a cada nota emitida pelo município
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S Numérico 1 1 1 4
+Enquadramento do Prestador do 
+serviço no ‘Simples Nacional’ S Numérico 1 2 2
+Situação do prestador/contribuinte perante o Simples Nacional: 
+1 - Não Optante; 
+2 - Optante - Microempreendedor Individual (MEI);
+3 - Optante - Microempresa ou Empresa de Pequeno Porte (ME/EPP);
+Regime de Apuração Tributária 
+pelo Simples Nacional do 
+Prestador do Serviço
+S* Numérico 1 3 3
+*Informar somente quando o campo ‘Enquadramento do Prestador de 
+Serviço no Simples Nacional’ estiver preenchido com a opção ‘3’:
+  1 – Regime de apuração dos tributos federais e municipal pelo Simples 
+Nacional;
+  2 – Regime de apuração dos tributos federais pelo Simples Nacional e 
+o ISSQN pela NFS-e conforme respectiva legislação municipal do 
+tributo;
+  3 – Regime de apuração dos tributos federais e municipal pela NFS-e 
+conforme respectivas legilações federal e municipal de cada tributo;
+Opção para que o contribuinte optante pelo Simples Nacional ME/EPP 
+possa indicar, ao emitir o documento fiscal, em qual regime de apuração 
+os tributos federais e municipal estão inseridos, caso tenha ultrapassado 
+algum sublimite ou limite definido para o Simples Nacional
+Código do País do local do Serviço 
+Prestado S* Numérico 3 4 6
+Código do pais do local do serviço prestado, conforme tabela de 
+paises, informado conforme o campo “Serviço prestado é 
+exportação” no registro tipo “2”. *Exceto para serviços prestados 
+no Brasil.
+SIT Página 10 28/05/2026
+--- Page 11 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código da Cidade do Local da 
+Prestação do Serviço S* Numérico 7 7 13
+*Somente para serviços prestados no Brasil.
+Código do município ref. ao local da prestação do serviço, 
+conforme tabela do IBGE.
+Tabela disponível em:
+https://www.ibge.gov.br/explica/codigos-dos-municipios.php
+Código Cidade do Tomador S* Numérico 7 14 20
+*Exceto para Tomador estrangeiro.
+Código do município do endereço do Tomador conforme tabela 
+do IBGE.
+Tabela disponível em:
+https://www.ibge.gov.br/explica/codigos-dos-municipios.php
+NIF S* Texto 40 21 60
+*Obrigatório para tomador de serviço estrangeiro, identificado no 
+Registro tipo “2”
+Número de identificação fiscal fornecido por órgão de administração 
+tributária no exterior. 
+Código NBS S Numérico 9 61 69
+Código NBS - Nomenclatura Brasileira de Serviços, Intangíveis e 
+outras Operações que produzam Variações no Patrimônio 
+correspondente ao serviço prestado.
+Tabela disponível em:
+https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica
+* O Código NBS deve corresponder ao respectivo código de 
+serviço prestado. Essa correspondência deve considerar os 
+quatro primeiros dígitos do código de serviço (Item da LC 116/03 
+x NBS), conforme a Tabela do Anexo VIII - 
+CorrelaçãoItemNBSIndOp
+SIT Página 11 28/05/2026
+--- Page 12 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código de Endereço Postal - 
+Tomador Estrangeiro S* Texto 11 70 80
+*Obrigatório para tomador de serviço estrangeiro, identificado no 
+Registro tipo “2”
+Código alfanumérico do Endereçamento Postal no exterior do tomador 
+do serviço.
+Estado/Província/Região - 
+Tomador Estrangeiro S* Texto 60 81 140
+*Obrigatório para tomador de serviço estrangeiro, identificado no 
+Registro tipo “2”
+Estado/província/região no exerior do tomador do serviço.
+Vinculo entre as partes do 
+negócio S* Numérico 1 141 141
+*Obrigatório para tomador de serviço estrangeiro, identificado no 
+Registro tipo “2” ou quando o local de prestação do serviço é no exterior 
+(campo ‘serviço prestado é exportação’ no registro tipo ‘2’)
+0 - Sem vínculo com o Tomador / Prestador
+1 - Controlada;
+2 - Controladora;
+3 - Coligada;
+4 - Matriz;
+5 - Filial ou sucursal;
+6 - Outro vínculo;
+Reservado N Texto 30 142 171
+Código de Endereço Postal - 
+Serviço prestado no Exterior S* Texto 11 172 182
+* Obrigatório quando o local de prestação do serviço é no exterior 
+(campo ‘serviço prestado é exportação’ no registro tipo ‘2’)
+Código de Endereçamento Postal alfanumérico do endereço quando o 
+serviço é prestado no exterior 
+Estado/Província/Região - 
+Serviço prestado no Exterior S* Texto 60 183 242
+* Obrigatório quando o local de prestação do serviço é no exterior 
+(campo ‘serviço prestado é exportação’ no registro tipo ‘2’)
+Estado/província/região no exterior do local de prestação do serviço
+SIT Página 12 28/05/2026
+--- Page 13 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Nome do Evento S* Texto 255 243 497
+* Obrigatório para  atividades com código de serviço  iniciados em 12 
+(Serviços relativos à atividades de eventos,  diversões, lazer, 
+entretenimento e congeneres).
+Nome do evento Artístico, Cultural, Esportivo, entre outros.
+Data de início da atividade de 
+evento S* AAAAMMDD 8 498 505
+* Obrigatório para  atividades com código de serviço  iniciados em 12 
+(Serviços relativos à atividades de eventos,  diversões, lazer, 
+entretenimento e congeneres).
+Data de início da atividade de evento.
+Ano, Mês e Dia (AAAAMMDD).
+Data de fim da atividade de 
+evento S* AAAAMMDD 8 506 513
+* Obrigatório para  atividades com código de serviço  iniciados em 12 
+(Serviços relativos à atividades de eventos,  diversões, lazer, 
+entretenimento e congeneres).
+Data de fim da atividade de evento.
+Ano, Mês e Dia (AAAAMMDD)
+Código de justificativa de 
+cancelamento substituição: S* Numérico 1 514 514
+*Obrigatório somente para os casos de RPS com Código de Motivo de 
+Cancelamento “03 - Substitução” no registro Tipo “2
+Código de justificativa de cancelamento substituição:
+1 - Desenquadramento de NFS-e do Simples Nacional;
+2 - Enquadramento de NFS-e no Simples Nacional;
+3 - Inclusão Retroativa de Imunidade/Isenção para NFS-e;
+4 - Exclusão Retroativa de Imunidade/Isenção para NFS-e;
+5 - Rejeição de NFS-e pelo tomador ou pelo intermediário se 
+responsável pelo recolhimento do tributo;
+9 - Outros;
+SIT Página 13 28/05/2026
+--- Page 14 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código Indicador da operação de 
+fornecimento S Numérico 6 515 520
+Código indicador da operação de fornecimento, conforme tabela 
+do Anexo VII - Indicador de Operações)
+*O código Indicador de Operação informado deve corresponder:
+• Aos 4 primeiros dígitos do código do serviço prestado, 
+conforme relação do Anexo VIII (Item LC116 x indOp);
+• Ao código NBS informado, de acordo com o Anexo VIII - (NBS 
+x indOp);
+Os Anexos VII e VIII estão disponíveis em:
+https://www.gov.br/nfse/pt-br/biblioteca/documentacao-
+tecnica/rtc
+SIT Página 14 28/05/2026
+--- Page 15 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código de Classificação Tributária 
+do IBS e da CBS S Numérico 6 521 526
+Código de Classificação Tributária do IBS e da CBS.
+Tabela disponível em:
+https://dfe-
+portal.svrs.rs.gov.br/DFE/TabelaClassificacaoTributaria
+*O código de classificação tributária informado deve 
+corresponder:
+• Aos 4 primeiros dígitos do código do serviço prestado, 
+conforme relação do Anexo VIII (Item LC116 x cClassTrib);
+• Ao código NBS informado, de acordo com o Anexo VIII - (NBS 
+x cClassTrib);
+•  Ao Código Indicador de Operação conforme relação do Anexo 
+VIII (indOp x cClassTrib);
+Anexo VIII - correlação LC116 X cClassTrib disponível em:
+https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica
+SIT Página 15 28/05/2026
+--- Page 16 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código de Situação Tributária IBS 
+CBS S Numérico 3 527 529
+Código de Situação Tributária do IBS e da CBS
+Tabela disponível em:
+https://dfe-
+portal.svrs.rs.gov.br/DFE/TabelaClassificacaoTributaria
+* O código de situação tributária deve corresponder exatamente 
+aos 3 primeiros dígitos do código informado no campo "Código 
+de Classificação Tributária do IBS e da CBS".
+Operação de uso ou consumo 
+pessoal S Numérico 1 530 530
+Indicar se a operação da nota fiscal de serviços é de uso ou consumo 
+pessoal. (O Art. 57 LC 214/2025 estabelece situação onde um bem ou 
+serviço adquirido é de caráter pessoal.)
+Opções:
+0=Não
+1=Sim
+Indicador do Destinatário do 
+Serviço S Numérico 1 531 531
+A respeito do Destinatário do Serviço:
+0 – Destinatário é o próprio tomador/adquirente identificado na NFS-e 
+(tomador=adquirente=destinatário);
+1 – Destinatário não é o próprio adquirente, podendo ser outra pessoa, 
+física ou jurídica (ou equiparada), ou um estabelecimento diferente do 
+indicado como tomador (tomador=adquirente≠destinatário);
+Fim de Linha S ASCII(13) +
+ASCII(10) 1 532 532 ASC13 ou CHR13 / ASC10 ou CHR10
+SIT Página 16 28/05/2026
+--- Page 17 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Detalhe - Registro Tipo 5 Registro existente para o repositório de dados do Ambiente de Dados Nacional da NFS-e.
+Os valores e informações fornecidos neste registro não têm finalidade de apuração para geração de guia.
+Caso algum campo do Registro '4' ative uma regra que exija dado contidos no Registro '5', a sua inclusão se torna obrigatória.
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S Numérico 1 1 1 5
+Código e classificação do crédito 
+presumido IBS e CBS. S* Numérico 2 2 3
+Código e classificação do crédito presumido: IBS e CBS.
+*Obrigatório somente quando :
+ • Código da classificação tributária informado no Registro 4 
+exigir a informação do código do crédito presumido.
+Preencher com valor da Tabela de Crédito Presumido IBS/CBS, 
+disponível em:
+https://dfe-portal.svrs.rs.gov.br/DFE/TabelaCreditoPresumido
+O codigo de crédito presumido deve corresponder à 
+Classificação Tributária, conforme tabela disponível abaixo, é 
+necessário aplicar o filtro de visão aberta por cClassTrib:
+https://dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria 
+SIT Página 17 28/05/2026
+--- Page 18 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Tipo de Ente Governamental  para 
+o caso de aquisição de serviços 
+pela administração pública 
+N Numérico 1 4 4
+*Obrigatório para compras governamentais.
+Este campo deve ser preenchido quando o adquirente/tomador do 
+serviço for um dos órgãos públicos listados abaixo.
+Tipo de Ente Governamental:
+1 = União 
+2 = Estado 
+3 = Distrito Federal 
+4 = Município
+Tipo de Operação com entes 
+Governamentais ou sobre bens 
+imóveis.
+S* Numérico 1 5 5
+*Obrigatório para as seguintes situações:
+• Atividade com código de serviço iniciado em '25.05'  OU
+• Atividade com código de serviço iniciado em '15.09'  OU
+• Atividade com código de serviço iniciado em '17.12'  OU
+• Atividade com código de serviço iniciado em '10.05' OU
+• Campo 'tipo de ente governamental em aquisiçao pela adminstração 
+pública é preenchido'
+Opções:
+1 – Fornecimento com pagamento posterior;
+2 - Recebimento do pagamento com fornecimento já realizado;
+3 – Fornecimento com pagamento já realizado;
+4 – Recebimento do pagamento com fornecimento posterior;
+5 – Fornecimento e recebimento do pagamento concomitantes.
+Chave da NFS-e referenciada S* Numérico 50 6 55
+Preencher com a chave da NFS-e referenciada.
+*Obrigatório para as seguintes situações:
+• Campo 'Tipo de Operação com entes Governamentais ou sobre bens 
+imóveis" é preenchido com 2;
+OU
+Campo 'Tipo de Operação om entes Governamentais ou sobre bens 
+imóveis" é preenchido com 3.
+SIT Página 18 28/05/2026
+--- Page 19 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código da Nomenclatura Comum 
+do Mercosul - NCM do bem móvel 
+objeto de locação
+S* Numérico 8 56 63
+Código da Nomenclatura Comum do Mercosul (NCM) do bem 
+móvel objeto da locação.
+*Obrigatório quando:
+ • O código de serviço prestado iniciar com '990401'.
+Tabela NCM disponível em:
+https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-
+comercio-exterior/classificacao-fiscal-de-mercadorias/download-
+ncm-nomenclatura-comum-do-mercosul
+Descrição do bem móvel objeto 
+de locação S* Texto 150 64 213
+Descrição do bem móvel objeto de locação
+*Obrigatório quando:
+• O código de serviço prestado é iniciado em '990401'.
+Quantidade para bem móvel 
+objeto de locação S* Numérico 3 214 216
+Informar a quantidade ref. a operação com bem móvel objeto de 
+locação.
+*Obrigatório quando:
+• O código de serviço prestado é iniciado com '990401'.
+SIT Página 19 28/05/2026
+--- Page 20 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Indicador de operação de doação S* Numérico 1 217 217
+Indicador de operação de doação.
+*Obrigatório para as seguintes situações:
+• Se o campo 'Código de Classificação Tributária IBS CBS' do registro 4 é 
+preenchido com '410003';
+• OU se o campo 'Código de Classificação Tributária do IBS e da CBS' do 
+registro 4 é preenchido com '410026'.
+1 - Doação com contraprestação 
+2 - Doação sem contraprestação
+Destinatário do serviço é 
+estrangeiro? S* Numérico 1 218 218
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+Opções:
+ 1 - Sim 
+ 2 - Não
+CPF/ CNPJ do Destinatário do 
+Serviço S* Numérico 14 219 232
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+ E
+• Se o campo 'Destinarário do serviço é estrangeiro?' é preenchido com  
+'2'- Não. 
+Razão Social / Nome do  
+Destinatário do Serviço S* Texto 60 233 292
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+SIT Página 20 28/05/2026
+--- Page 21 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Endereço Logradouro do  
+Destinatário do Serviço S* Texto 75 293 367
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+Numero Logradouro do  
+Destinatário do Serviço S* Texto 9 368 376
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+Complemento Logradouro do  
+Destinatário do Serviço S* Texto 30 377 406
+*Quando existir a informação, obrigatório para as situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+Bairro Logradouro do  
+Destinatário do Serviço S* Texto 40 407 446
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+Cidade Logradouro do  
+Destinatário do Serviço S* Texto 40 447 486
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 4 é 
+preenchido com '1'.
+SIT Página 21 28/05/2026
+--- Page 22 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Código da Cidade do Destinatário 
+do Serviço S* Numérico 7 487 493
+*Obrigatório para as seguintes situações:
+• Se o campo 'Indicador do Destinatário do Serviço' do Registro 
+4 é preenchido com '1'
+ E
+ • Se o campo 'Destinarário do serviço é estrangeiro?' do 
+Registro 5 é preenchido com  '2' (Não). 
+Preencher com o código do município conforme tabela do IBGE, 
+disponível em:
+https://www.ibge.gov.br/explica/codigos-dos-municipios.php
+UF Logradouro do Destinatário do 
+Serviço S* Texto 2 494 495
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com 
+'1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  
+'2 - Não';
+Código do País do Destinatário do 
+Serviço S* Texto 3 496 498
+Código do País do Destinatário do Serviço - conforme tabela de paises.
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com 
+'1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  
+'1 -Sim';
+SIT Página 22 28/05/2026
+--- Page 23 ---
+Alterações Layout Arquivo Texto RPS V4.4
+CEP Logradouro do Destinatário 
+do Serviço S* Numérico 8 499 506
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com 
+'1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  
+'2 - Não';
+e-mail do Destinatário do Serviço N Texto 80 507 586
+Permitido no máximo 3 e-mails, usando o caracter "|" (pipe ou barra 
+vertical) como delimitador de e-mail, sendo o primeiro considerado 
+principal.
+* Poderá ser preenchido quando o campo Destinatário do Serviço'do 
+Registro 4  é preenchido com '1'; 
+NIF do Destinatário S* Texto 40 587 626
+Número de identificação fiscal do destinatário fornecido por órgão de 
+administração tributária no exterior. 
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com '1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  '1 -Sim';
+Código de Endereço Postal - 
+Destinatário Estrangeiro S* Texto 11 627 637
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com 
+'1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  
+'1 -Sim';
+SIT Página 23 28/05/2026
+--- Page 24 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Estado/Província/Região - 
+Destinatário Estrangeiro S* Texto 60 638 697
+*Obrigatório para as seguintes situações: 
+• Se o campo 'Indicador do Destinatário do Serviço' é preenchido com 
+'1';
+E
+• Se o campo 'Destinatário do Serviço é estrangeiro?' é preenchido com  
+'1 -Sim';
+Fim de Linha S ASCII(13) +
+ASCII(10) 1 698 698 ASC13 ou CHR13 / ASC10 ou CHR10
+SIT Página 24 28/05/2026
+--- Page 25 ---
+Alterações Layout Arquivo Texto RPS V4.4
+Rodapé - Registro Tipo 9
+Descrição Obrigatório Tipo Tamanho Posição Inicial Posição Final Conteúdo
+Tipo do Registro S Numérico 1 1 1 9
+Número Total de Linhas  do 
+Arquivo S Numérico 7 2 8 Total de Número de Linhas do Arquivo do Tipo 1,2,3,4,5 e 9.
+Valor Total dos Serviços contidos 
+no Arquivo S Numérico 15 9 23 Valor Total dos Serviços contidos no Arquivo (Soma dos valores 
+unitários dos serviços multiplicados pelas quantidades de cada serviço)
+Valor Total dos Valores contidos 
+no registro 3 S Numérico 15 24 38 Valor Total das Retenções e outros valores informados no registro 3 
+Caracter de Fim de Linha S ASCII(13) +
+ASCII(10) 1 39 39 ASC13 ou CHR13 / ASC10 ou CHR10
+SIT Página 25 28/05/2026
+--- Page 26 ---
+Detalhe - Registro Tipo 2
+Descrição do Campo Obrigatório Tipo Tamanho Posição Inicial Posição Final Obs
+Alíquota Fora Município S* Numérico 5 479 483
+*Prencher somente para as seguintes situações:
+ 
+• Atividades listadas no artigo 39 da LC 118/02;
+• E o campo 'serviço prestado é exportação’ é DIFERENTE de ‘1’ 
+Informar a alíquota do serviço quando o ISSQN é devido a outro
+município. Quando informado, valor com 5 posições com zeros a
+esquerda, sem vírgula e sem ponto. Exemplo: 2,75 = 00275
+Alterações Layout Arquivo Texto RPS V4.4
+Registro/Campo AlteradoRegistro/Campo Novo
+Registro/Campo Excluído
+ Descritivo Alterado
+SIT Página 26 28/05/2026

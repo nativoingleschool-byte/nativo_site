@@ -521,6 +521,8 @@ export async function consultarBarueriNFSe(protocolo) {
         
         return {
           status: 'concluido',
+          nfse_numero: numero,
+          nfse_codigo_verificacao: (codigoVerificacao || '').trim(),
           nfs_e_pdf_link: `https://www.barueri.sp.gov.br/nfe/visualizar.aspx?inscricao=${visualizerIm}&nota=${visualizerNota}&codVerificacao=${codigoVerificacao || ''}`
         };
     }

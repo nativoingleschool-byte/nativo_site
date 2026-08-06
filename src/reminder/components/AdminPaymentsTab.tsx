@@ -28,6 +28,37 @@ export default function AdminPaymentsTab({
   const { toast } = useToast()
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
+
+  /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
+  const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
+    setDownloadingPdfId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Nao autenticado.')
+      const res = await fetch(`/api/admin/nfse-pdf?invoice_id=${invoiceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro ao gerar PDF' }))
+        throw new Error(err.error || 'Erro ao gerar PDF')
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download  = `NFS-e_${studentName.replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDownloadingPdfId(null)
+    }
+  }
 
   const handleCheckStatus = async (invoiceId: string) => {
     setCheckingStatusId(invoiceId)
@@ -246,15 +277,14 @@ export default function AdminPaymentsTab({
                     </td>
                     <td style={{ padding: '1rem' }}>
                       {lastInvoice?.nfs_e_pdf_link ? (
-                        <a 
-                          href={lastInvoice.nfs_e_pdf_link} 
-                          target="_blank" 
-                          rel="noreferrer" 
+                        <button
                           className="primary-button"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', textDecoration: 'none', display: 'inline-block' }}
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981' }}
+                          disabled={downloadingPdfId === lastInvoice.id}
+                          onClick={() => void downloadNfsePdf(lastInvoice.id, student.full_name)}
                         >
-                          {t(language, 'view_pdf')}
-                        </a>
+                          {downloadingPdfId === lastInvoice.id ? 'Gerando...' : t(language, 'view_pdf')}
+                        </button>
                       ) : lastInvoice?.protocolo_recebimento ? (
                         <button
                           className="secondary-button"

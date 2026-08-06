@@ -4,6 +4,19 @@ import { XMLParser } from 'fast-xml-parser';
 import { hasBarueriCredentials, getBarueriHttpsAgentConfig } from './security.js';
 
 /**
+ * Escape special XML characters to prevent injection.
+ * Defensive measure for values interpolated into SOAP XML templates.
+ */
+function escapeXml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
  * Handles the complete SOAP connection and XML transmission.
  * Packages the Base64 positional text file layout inside the custom XML wrapper,
  * wraps it in a SOAP envelope, and handles secure HTTPS Client Certificate loading.
@@ -36,11 +49,11 @@ export async function sendBarueriSoapRequest(data) {
   // 1. Build the inner XML document using template string
   const innerXml = `<?xml version="1.0" encoding="utf-8"?>
 <NFeLoteEnviarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
-  <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
-  <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
-  <NomeArquivoRPS>${nomeArquivoRPS}</NomeArquivoRPS>
+  <InscricaoMunicipal>${escapeXml(inscricaoMunicipal)}</InscricaoMunicipal>
+  <CPFCNPJContrib>${escapeXml(cpfCnpjContrib)}</CPFCNPJContrib>
+  <NomeArquivoRPS>${escapeXml(nomeArquivoRPS)}</NomeArquivoRPS>
   <ApenasValidaArq>false</ApenasValidaArq>
-  <ArquivoRPSBase64>${arquivoRPSBase64}</ArquivoRPSBase64>
+  <ArquivoRPSBase64>${escapeXml(arquivoRPSBase64)}</ArquivoRPSBase64>
 </NFeLoteEnviarArquivo>`;
 
   // 2. Wrap XML in SOAP envelope
@@ -122,9 +135,9 @@ export async function sendBarueriStatusRequest(inscricaoMunicipal, cpfCnpjContri
 
   const innerXml = `<?xml version="1.0" encoding="utf-8"?>
 <NFeLoteStatusArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
-  <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
-  <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
-  <ProtocoloRemessa>${protocolo}</ProtocoloRemessa>
+  <InscricaoMunicipal>${escapeXml(inscricaoMunicipal)}</InscricaoMunicipal>
+  <CPFCNPJContrib>${escapeXml(cpfCnpjContrib)}</CPFCNPJContrib>
+  <ProtocoloRemessa>${escapeXml(protocolo)}</ProtocoloRemessa>
 </NFeLoteStatusArquivo>`;
 
   const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteStatusArquivo"';
@@ -197,9 +210,9 @@ export async function sendBarueriBaixarRequest(inscricaoMunicipal, cpfCnpjContri
 
   const innerXml = `<?xml version="1.0" encoding="utf-8"?>
 <NFeLoteBaixarArquivo xmlns="http://www.barueri.sp.gov.br/nfe">
-  <InscricaoMunicipal>${inscricaoMunicipal}</InscricaoMunicipal>
-  <CPFCNPJContrib>${cpfCnpjContrib}</CPFCNPJContrib>
-  <NomeArqRetorno>${nomeArqRetorno}</NomeArqRetorno>
+  <InscricaoMunicipal>${escapeXml(inscricaoMunicipal)}</InscricaoMunicipal>
+  <CPFCNPJContrib>${escapeXml(cpfCnpjContrib)}</CPFCNPJContrib>
+  <NomeArqRetorno>${escapeXml(nomeArqRetorno)}</NomeArqRetorno>
 </NFeLoteBaixarArquivo>`;
 
   const soapAction = '"http://www.barueri.sp.gov.br/nfe/NFeLoteBaixarArquivo"';
