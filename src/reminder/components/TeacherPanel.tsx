@@ -366,15 +366,41 @@ export default function TeacherPanel({
                   </div>
 
                   {profile.nota_fiscal_url && (
-                    <a
-                      href={profile.nota_fiscal_url}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
                       className="primary-button"
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7', textDecoration: 'none' }}
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7' }}
+                      onClick={() => {
+                        try {
+                          const url = profile.nota_fiscal_url!
+                          if (url.startsWith('data:')) {
+                            const parts = url.split(',')
+                            const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf'
+                            const bstr = atob(parts[1])
+                            let n = bstr.length
+                            const u8arr = new Uint8Array(n)
+                            while (n--) {
+                              u8arr[n] = bstr.charCodeAt(n)
+                            }
+                            const blob = new Blob([u8arr], { type: mime })
+                            const blobUrl = URL.createObjectURL(blob)
+                            const win = window.open(blobUrl, '_blank')
+                            if (!win) {
+                              const a = document.createElement('a')
+                              a.href = blobUrl
+                              a.download = `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
+                              a.click()
+                            }
+                          } else {
+                            window.open(url, '_blank')
+                          }
+                        } catch (e) {
+                          window.open(profile.nota_fiscal_url!, '_blank')
+                        }
+                      }}
                     >
                       📄 Ver Arquivo Enviado
-                    </a>
+                    </button>
                   )}
                 </div>
 

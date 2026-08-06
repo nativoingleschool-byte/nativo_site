@@ -686,15 +686,41 @@ export default function AdminStaffTab({
                     {selectedTeacherForDetail.nota_fiscal_url ? (
                       <div style={{ marginTop: '0.5rem' }}>
                         <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem' }}>Arquivo enviado pelo professor:</p>
-                        <a
-                          href={selectedTeacherForDetail.nota_fiscal_url}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
                           className="primary-button"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#0284c7', textDecoration: 'none' }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#0284c7' }}
+                          onClick={() => {
+                            try {
+                              const url = selectedTeacherForDetail.nota_fiscal_url!
+                              if (url.startsWith('data:')) {
+                                const parts = url.split(',')
+                                const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf'
+                                const bstr = atob(parts[1])
+                                let n = bstr.length
+                                const u8arr = new Uint8Array(n)
+                                while (n--) {
+                                  u8arr[n] = bstr.charCodeAt(n)
+                                }
+                                const blob = new Blob([u8arr], { type: mime })
+                                const blobUrl = URL.createObjectURL(blob)
+                                const win = window.open(blobUrl, '_blank')
+                                if (!win) {
+                                  const a = document.createElement('a')
+                                  a.href = blobUrl
+                                  a.download = `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                                  a.click()
+                                }
+                              } else {
+                                window.open(url, '_blank')
+                              }
+                            } catch (e) {
+                              window.open(selectedTeacherForDetail.nota_fiscal_url!, '_blank')
+                            }
+                          }}
                         >
                           📄 Visualizar / Baixar Nota Fiscal
-                        </a>
+                        </button>
                       </div>
                     ) : (
                       <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
