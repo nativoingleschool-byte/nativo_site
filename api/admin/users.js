@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -39,7 +40,7 @@ const normalizeEmail = (email, fullName) => {
   return fallbackEmail(fullName)
 }
 
-const randomPassword = () => `Setup!${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`
+const randomPassword = () => `Setup!${crypto.randomBytes(12).toString('base64url')}`
 
 const getBaseUrl = (req) => {
   const proto = req.headers['x-forwarded-proto'] || 'https'
@@ -130,7 +131,17 @@ const inviteUser = async (supabaseAdmin, req, payload) => {
   }
 
   const user = data.user
-  const inviteLink = `${getBaseUrl(req)}/?setup_email=${encodeURIComponent(email)}&setup_password=${encodeURIComponent(tempPassword)}`
+
+  // Generate a one-time magic link — no password in URL
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: { redirectTo: getBaseUrl(req) + '/' }
+  })
+  if (linkError || !linkData?.properties?.action_link) {
+    throw new Error(linkError?.message || 'Failed to generate setup link.')
+  }
+  const inviteLink = linkData.properties.action_link
 
   const profilePayload = {
     id: user.id,
@@ -172,6 +183,9 @@ const updateUser = async (supabaseAdmin, payload) => {
     role: payload.role,
     class_name: payload.role === 'student' ? payload.class_name || '' : '',
     speciality: payload.role === 'student' ? '' : payload.speciality || '',
+    ...(payload.cnpj !== undefined ? { cnpj: payload.cnpj || null } : {}),
+    ...(payload.chave_pix !== undefined ? { chave_pix: payload.chave_pix || null } : {}),
+    ...(payload.taxa_hora_aula !== undefined ? { taxa_hora_aula: payload.role === 'teacher' ? payload.taxa_hora_aula : null } : {}),
   }
 
   const { error: profileError } = await supabaseAdmin.from('profiles').update(profilePayload).eq('id', payload.id)

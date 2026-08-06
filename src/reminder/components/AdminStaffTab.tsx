@@ -1,4 +1,4 @@
-import { FormEvent } from 'react'
+import { FormEvent, useState } from 'react'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass } from '../lib/utils'
@@ -57,6 +57,11 @@ export default function AdminStaffTab({
   setAppError,
 }: AdminStaffTabProps) {
   const { toast } = useToast()
+
+  const [changePasswordStaff, setChangePasswordStaff] = useState<Profile | null>(null)
+  const [newPasswordValue, setNewPasswordValue] = useState('')
+  const [confirmPasswordValue, setConfirmPasswordValue] = useState('')
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
   const handleAddStaffSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -221,7 +226,18 @@ export default function AdminStaffTab({
                       {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <button
+                          className="secondary-button"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                          onClick={() => {
+                            setChangePasswordStaff(staff)
+                            setNewPasswordValue('')
+                            setConfirmPasswordValue('')
+                          }}
+                        >
+                          {t(language, 'change_password')}
+                        </button>
                         <button
                           className="secondary-button"
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
@@ -282,6 +298,16 @@ export default function AdminStaffTab({
                 value={userForm.email}
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'new_password')}</label>
+                <input
+                  type="password"
+                  placeholder={t(language, 'new_password_placeholder')}
+                  value={userForm.password || ''}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
               <select
                 value={userForm.role}
                 onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
@@ -318,19 +344,24 @@ export default function AdminStaffTab({
                 className="primary-button" 
                 onClick={async () => {
                   try {
-                    const { error } = await supabase
-                      .from('profiles')
-                      .update({
-                        full_name: userForm.full_name,
-                        email: userForm.email,
-                        role: userForm.role,
-                        cnpj: userForm.cnpj || null,
-                        chave_pix: userForm.chave_pix || null,
-                        taxa_hora_aula: userForm.role === 'teacher' ? userForm.taxa_hora_aula : null,
-                        speciality: userForm.speciality || null
-                      })
-                      .eq('id', userForm.id)
-                    if (error) throw error
+                    if (userForm.password && userForm.password.trim().length > 0) {
+                      if (userForm.password.length < 6) {
+                        toast.error(t(language, 'password_too_short'))
+                        return
+                      }
+                    }
+                    await callAdminUsersApi('update', {
+                      id: userForm.id,
+                      email: userForm.email,
+                      full_name: userForm.full_name,
+                      role: userForm.role,
+                      cnpj: userForm.cnpj || null,
+                      chave_pix: userForm.chave_pix || null,
+                      taxa_hora_aula: userForm.role === 'teacher' ? userForm.taxa_hora_aula : null,
+                      speciality: userForm.speciality || null,
+                      ...(userForm.password && userForm.password.trim().length > 0 ? { password: userForm.password } : {})
+                    })
+                    toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
                     setSavingUserId(null)
                     await refreshProfiles()
                   } catch (err: any) {
@@ -342,6 +373,80 @@ export default function AdminStaffTab({
               </button>
               <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal Overlay */}
+      {changePasswordStaff && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="form-card" style={{ maxWidth: '450px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
+              {t(language, 'change_password_title').replace('{name}', changePasswordStaff.full_name)}
+            </h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (newPasswordValue.length < 6) {
+                  toast.error(t(language, 'password_too_short'))
+                  return
+                }
+                if (newPasswordValue !== confirmPasswordValue) {
+                  toast.error(t(language, 'passwords_do_not_match'))
+                  return
+                }
+                setIsUpdatingPassword(true)
+                try {
+                  await callAdminUsersApi('update', {
+                    id: changePasswordStaff.id,
+                    email: changePasswordStaff.email,
+                    full_name: changePasswordStaff.full_name,
+                    role: changePasswordStaff.role,
+                    password: newPasswordValue,
+                  })
+                  toast.success(t(language, 'password_updated_success'))
+                  setChangePasswordStaff(null)
+                  setNewPasswordValue('')
+                  setConfirmPasswordValue('')
+                } catch (err: any) {
+                  toast.error(err.message || 'Erro ao alterar senha.')
+                } finally {
+                  setIsUpdatingPassword(false)
+                }
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'new_password')}</label>
+                <input
+                  required
+                  type="password"
+                  placeholder={t(language, 'new_password')}
+                  value={newPasswordValue}
+                  onChange={(e) => setNewPasswordValue(e.target.value)}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'confirm_new_password')}</label>
+                <input
+                  required
+                  type="password"
+                  placeholder={t(language, 'confirm_new_password')}
+                  value={confirmPasswordValue}
+                  onChange={(e) => setConfirmPasswordValue(e.target.value)}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div className="button-stack mt-6" style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                <button type="submit" className="primary-button" disabled={isUpdatingPassword}>
+                  {isUpdatingPassword ? t(language, 'save') + '...' : t(language, 'save')}
+                </button>
+                <button type="button" className="secondary-button" onClick={() => setChangePasswordStaff(null)}>
+                  {t(language, 'cancel')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

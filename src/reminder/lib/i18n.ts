@@ -128,7 +128,15 @@ export const translations: Record<Language, Dictionary> = {
     success_lote_envio_banner: 'Batch Sent - Awaiting Processing',
     check_status: 'Check Status',
     checking_status: 'Checking...',
-    calendar_time_hint: 'Use the calendar to adjust hours'
+    calendar_time_hint: 'Use the calendar to adjust hours',
+    change_password: 'Change Password',
+    new_password: 'New Password',
+    new_password_placeholder: 'New password (leave blank to keep current)',
+    change_password_title: 'Change Password for {name}',
+    confirm_new_password: 'Confirm New Password',
+    password_updated_success: 'Password updated successfully!',
+    passwords_do_not_match: 'Passwords do not match.',
+    password_too_short: 'Password must be at least 6 characters.'
   },
   pt: {
     language: 'Idioma',
@@ -218,7 +226,15 @@ export const translations: Record<Language, Dictionary> = {
     success_lote_envio_banner: 'Lote Enviado - Aguardando Processamento',
     check_status: 'Verificar Status',
     checking_status: 'Verificando...',
-    calendar_time_hint: 'Utilize o calendário para alterar horários'
+    calendar_time_hint: 'Utilize o calendário para alterar horários',
+    change_password: 'Alterar Senha',
+    new_password: 'Nova Senha',
+    new_password_placeholder: 'Nova senha (deixe em branco para não alterar)',
+    change_password_title: 'Alterar Senha de {name}',
+    confirm_new_password: 'Confirmar Nova Senha',
+    password_updated_success: 'Senha atualizada com sucesso!',
+    passwords_do_not_match: 'As senhas não coincidem.',
+    password_too_short: 'A senha deve ter no mínimo 6 caracteres.'
   },
   es: {
     language: 'Idioma',
@@ -308,7 +324,15 @@ export const translations: Record<Language, Dictionary> = {
     success_lote_envio_banner: 'Lote Enviado - Esperando Procesamiento',
     check_status: 'Verificar Estado',
     checking_status: 'Verificando...',
-    calendar_time_hint: 'Utilice el calendario para cambiar horarios'
+    calendar_time_hint: 'Utilice el calendario para cambiar horarios',
+    change_password: 'Cambiar Contraseña',
+    new_password: 'Nueva Contraseña',
+    new_password_placeholder: 'Nueva contraseña (dejar en blanco para no cambiar)',
+    change_password_title: 'Cambiar Contraseña de {name}',
+    confirm_new_password: 'Confirmar Nueva Contraseña',
+    password_updated_success: '¡Contraseña actualizada con éxito!',
+    passwords_do_not_match: 'Las contraseñas no coinciden.',
+    password_too_short: 'La contraseña debe tener al menos 6 caracteres.'
   },
 }
 
