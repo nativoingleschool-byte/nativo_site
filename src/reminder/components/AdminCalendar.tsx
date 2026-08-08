@@ -153,6 +153,7 @@ export default function AdminCalendar({
   const [repeatCount, setRepeatCount] = useState(4)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(students[0] ? [students[0].id] : [])
   const [initialDraftState, setInitialDraftState] = useState<string>('')
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const calendarCardRef = useRef<HTMLDivElement>(null)
   const [createStudent, setCreateStudent] = useState(false)
   const [createTeacher, setCreateTeacher] = useState(false)
@@ -537,13 +538,11 @@ export default function AdminCalendar({
           aria-modal="true"
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
+            if (calendarCardRef.current && !calendarCardRef.current.contains(e.target as Node)) {
               const currentSt = JSON.stringify({ draft, selectedStudentIds })
               const isDirty = initialDraftState && currentSt !== initialDraftState
               if (isDirty) {
-                alert('Please save or cancel your changes first.')
-                const btn = calendarCardRef.current?.querySelector('.button-stack') || calendarCardRef.current?.querySelector('.primary-button')
-                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                setShowUnsavedWarning(true)
               } else {
                 closeModal()
               }
@@ -760,6 +759,42 @@ export default function AdminCalendar({
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedWarning && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowUnsavedWarning(false)
+          }}
+        >
+          <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
+              Alterações não salvas
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Por favor, salve ou cancele suas alterações primeiro.
+            </p>
+            <button
+              type="button"
+              className="primary-button"
+              style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
+              onClick={() => {
+                setShowUnsavedWarning(false)
+                if (calendarCardRef.current) {
+                  const btn = calendarCardRef.current.querySelector('.button-stack') || calendarCardRef.current.querySelector('.primary-button')
+                  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                }
+              }}
+            >
+              Entendido (Ir para Salvar)
+            </button>
           </div>
         </div>,
         document.body

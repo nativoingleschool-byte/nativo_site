@@ -164,6 +164,7 @@ function ReminderAppInner() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [updatingPassword, setUpdatingPassword] = useState(false)
   const [updatePasswordError, setUpdatePasswordError] = useState('')
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const resetPasswordCardRef = useRef<HTMLDivElement>(null)
 
   const renderResetPasswordModal = () => {
@@ -173,12 +174,10 @@ function ReminderAppInner() {
         className="reminder-app-scope modal-overlay"
         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
         onClick={(e) => {
-          if (e.target === e.currentTarget) {
+          if (resetPasswordCardRef.current && !resetPasswordCardRef.current.contains(e.target as Node)) {
             const isDirty = newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0
             if (isDirty) {
-              alert(t(language, 'save_or_cancel_first'))
-              const btn = resetPasswordCardRef.current?.querySelector('button[type="submit"]') || resetPasswordCardRef.current?.querySelector('.primary-button')
-              btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              setShowUnsavedWarning(true)
             } else {
               setShowResetPasswordModal(false)
               setNewPassword('')
@@ -274,6 +273,42 @@ function ReminderAppInner() {
             </div>
           </form>
         </div>
+
+        {/* Unsaved Changes Warning Modal */}
+        {showUnsavedWarning && createPortal(
+          <div
+            className="reminder-app-scope modal-overlay"
+            style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowUnsavedWarning(false)
+            }}
+          >
+            <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
+                {language === 'es' ? 'Cambios no guardados' : language === 'en' ? 'Unsaved Changes' : 'Alterações não salvas'}
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                {t(language, 'save_or_cancel_first')}
+              </p>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
+                onClick={() => {
+                  setShowUnsavedWarning(false)
+                  if (resetPasswordCardRef.current) {
+                    const btn = resetPasswordCardRef.current.querySelector('button[type="submit"]') || resetPasswordCardRef.current.querySelector('.primary-button')
+                    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                  }
+                }}
+              >
+                {language === 'es' ? 'Entendido (Ir a guardar)' : language === 'en' ? 'Got it (Go to Save)' : 'Entendido (Ir para Salvar)'}
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>,
       document.body
     )

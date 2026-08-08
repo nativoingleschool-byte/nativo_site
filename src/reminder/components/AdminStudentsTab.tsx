@@ -49,7 +49,10 @@ export default function AdminStudentsTab({
   const [studentSearch, setStudentSearch] = useState('')
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
   const [initialUserForm, setInitialUserForm] = useState<UserFormState | null>(null)
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
+  const activeCardRef = useRef<HTMLDivElement | null>(null)
   const editStudentCardRef = useRef<HTMLDivElement>(null)
+  const historyStudentCardRef = useRef<HTMLDivElement>(null)
 
   /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
@@ -832,23 +835,26 @@ export default function AdminStudentsTab({
                 onClick={async () => {
                   if (!userForm.id) return
                   try {
-                    await callAdminUsersApi('update', {
-                      id: userForm.id,
-                      email: userForm.email,
-                      full_name: userForm.full_name,
-                      role: 'student',
-                      cpf: userForm.cpf || null,
-                      data_pagamento_preferencial: userForm.data_pagamento_preferencial || 5,
-                      status_pagamento: userForm.status_pagamento || 'pendente',
-                      cep: userForm.cep || null,
-                      logradouro: userForm.logradouro || null,
-                      bairro: userForm.bairro || null,
-                      cidade: userForm.cidade || null,
-                      uf: userForm.uf || null,
-                      tuition_fee: userForm.tuition_fee !== undefined ? userForm.tuition_fee : null
-                    })
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({
+                        full_name: userForm.full_name,
+                        email: userForm.email,
+                        cpf: userForm.cpf || null,
+                        data_pagamento_preferencial: userForm.data_pagamento_preferencial || 5,
+                        status_pagamento: userForm.status_pagamento || 'pendente',
+                        cep: userForm.cep || null,
+                        logradouro: userForm.logradouro || null,
+                        bairro: userForm.bairro || null,
+                        cidade: userForm.cidade || null,
+                        uf: userForm.uf || null,
+                        tuition_fee: userForm.tuition_fee !== undefined ? userForm.tuition_fee : null
+                      })
+                      .eq('id', userForm.id)
+                    if (error) throw error
                     toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
                     setSavingUserId(null)
+                    setInitialUserForm(null)
                     await refreshProfiles()
                   } catch (err: any) {
                     toast.error(err.message)
@@ -869,12 +875,12 @@ export default function AdminStudentsTab({
           className="reminder-app-scope modal-overlay"
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
+            if (historyStudentCardRef.current && !historyStudentCardRef.current.contains(e.target as Node)) {
               setHistoryStudent(null)
             }
           }}
         >
-          <div className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div ref={historyStudentCardRef} className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
               <p className="muted">{t(language, 'loading_invoices')}</p>
@@ -915,6 +921,42 @@ export default function AdminStudentsTab({
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="secondary-button" onClick={() => setHistoryStudent(null)}>{t(language, 'cancel')}</button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedWarning && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowUnsavedWarning(false)
+          }}
+        >
+          <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
+              {language === 'es' ? 'Cambios no guardados' : language === 'en' ? 'Unsaved Changes' : 'Alterações não salvas'}
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              {t(language, 'save_or_cancel_first')}
+            </p>
+            <button
+              type="button"
+              className="primary-button"
+              style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
+              onClick={() => {
+                setShowUnsavedWarning(false)
+                if (activeCardRef.current) {
+                  const btn = activeCardRef.current.querySelector('.button-stack') || activeCardRef.current.querySelector('.primary-button')
+                  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                }
+              }}
+            >
+              {language === 'es' ? 'Entendido (Ir a guardar)' : language === 'en' ? 'Got it (Go to Save)' : 'Entendido (Ir para Salvar)'}
+            </button>
           </div>
         </div>,
         document.body
