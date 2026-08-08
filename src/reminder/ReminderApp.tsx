@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
@@ -164,12 +164,30 @@ function ReminderAppInner() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [updatingPassword, setUpdatingPassword] = useState(false)
   const [updatePasswordError, setUpdatePasswordError] = useState('')
+  const resetPasswordCardRef = useRef<HTMLDivElement>(null)
 
   const renderResetPasswordModal = () => {
     if (!showResetPasswordModal) return null
     return createPortal(
-      <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-        <div className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+      <div
+        className="reminder-app-scope modal-overlay"
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            const isDirty = newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0
+            if (isDirty) {
+              alert(t(language, 'save_or_cancel_first'))
+              const btn = resetPasswordCardRef.current?.querySelector('button[type="submit"]') || resetPasswordCardRef.current?.querySelector('.primary-button')
+              btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            } else {
+              setShowResetPasswordModal(false)
+              setNewPassword('')
+              setConfirmNewPassword('')
+            }
+          }
+        }}
+      >
+        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
             {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
           </h3>

@@ -136,7 +136,8 @@ export const translations: Record<Language, Dictionary> = {
     confirm_new_password: 'Confirm New Password',
     password_updated_success: 'Password updated successfully!',
     passwords_do_not_match: 'Passwords do not match.',
-    password_too_short: 'Password must be at least 6 characters.'
+    password_too_short: 'Password must be at least 6 characters.',
+    save_or_cancel_first: 'Please save or cancel your changes first.'
   },
   pt: {
     language: 'Idioma',
@@ -234,7 +235,8 @@ export const translations: Record<Language, Dictionary> = {
     confirm_new_password: 'Confirmar Nova Senha',
     password_updated_success: 'Senha atualizada com sucesso!',
     passwords_do_not_match: 'As senhas não coincidem.',
-    password_too_short: 'A senha deve ter no mínimo 6 caracteres.'
+    password_too_short: 'A senha deve ter no mínimo 6 caracteres.',
+    save_or_cancel_first: 'Por favor, salve ou cancele suas alterações primeiro.'
   },
   es: {
     language: 'Idioma',
@@ -332,7 +334,8 @@ export const translations: Record<Language, Dictionary> = {
     confirm_new_password: 'Confirmar Nueva Contraseña',
     password_updated_success: '¡Contraseña actualizada con éxito!',
     passwords_do_not_match: 'Las contraseñas no coinciden.',
-    password_too_short: 'La contraseña debe tener al menos 6 caracteres.'
+    password_too_short: 'La contraseña debe tener al menos 6 caracteres.',
+    save_or_cancel_first: 'Por favor, guarda o cancela tus cambios primero.'
   },
 }
 

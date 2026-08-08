@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
@@ -65,6 +65,11 @@ export default function AdminStaffTab({
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
   const [selectedTeacherForDetail, setSelectedTeacherForDetail] = useState<Profile | null>(null)
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
+
+  const [initialUserForm, setInitialUserForm] = useState<UserFormState | null>(null)
+  const editStaffCardRef = useRef<HTMLDivElement>(null)
+  const changePasswordCardRef = useRef<HTMLDivElement>(null)
+  const teacherDetailCardRef = useRef<HTMLDivElement>(null)
 
   const handleAddStaffSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -261,7 +266,7 @@ export default function AdminStaffTab({
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                           onClick={() => {
                             setSavingUserId(staff.id)
-                            setUserForm({
+                            const initial = {
                               id: staff.id,
                               email: staff.email,
                               full_name: staff.full_name,
@@ -276,7 +281,9 @@ export default function AdminStaffTab({
                               data_pagamento_preferencial: 5,
                               first_class_at: '',
                               first_class_teacher_id: ''
-                            })
+                            }
+                            setUserForm(initial)
+                            setInitialUserForm(initial)
                           }}
                         >
                           {t(language, 'edit')}
@@ -299,8 +306,23 @@ export default function AdminStaffTab({
 
       {/* Edit Modal Overlay */}
       {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && createPortal(
-        <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-          <div className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              const isDirty = initialUserForm && JSON.stringify(userForm) !== JSON.stringify(initialUserForm)
+              if (isDirty) {
+                toast.info(t(language, 'save_or_cancel_first'))
+                const btn = editStaffCardRef.current?.querySelector('.button-stack') || editStaffCardRef.current?.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              } else {
+                setSavingUserId(null)
+              }
+            }
+          }}
+        >
+          <div ref={editStaffCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
@@ -401,8 +423,23 @@ export default function AdminStaffTab({
 
       {/* Change Password Modal Overlay */}
       {changePasswordStaff && createPortal(
-        <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-          <div className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              const isDirty = newPasswordValue.trim().length > 0 || confirmPasswordValue.trim().length > 0
+              if (isDirty) {
+                toast.info(t(language, 'save_or_cancel_first'))
+                const btn = changePasswordCardRef.current?.querySelector('.button-stack') || changePasswordCardRef.current?.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              } else {
+                setChangePasswordStaff(null)
+              }
+            }
+          }}
+        >
+          <div ref={changePasswordCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
               {t(language, 'change_password_title').replace('{name}', changePasswordStaff.full_name)}
             </h3>
@@ -616,8 +653,16 @@ export default function AdminStaffTab({
         const totalAmount = totalHours * Number(hourlyRate)
 
         return createPortal(
-          <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-            <div className="form-card animate-fade-in" style={{ maxWidth: '850px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div
+            className="reminder-app-scope modal-overlay"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedTeacherForDetail(null)
+              }
+            }}
+          >
+            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '850px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
               
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>

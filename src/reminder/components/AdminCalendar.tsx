@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { Lesson, Profile } from '../lib/types'
 
@@ -152,6 +152,8 @@ export default function AdminCalendar({
   const [repeatWeekly, setRepeatWeekly] = useState(false)
   const [repeatCount, setRepeatCount] = useState(4)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(students[0] ? [students[0].id] : [])
+  const [initialDraftState, setInitialDraftState] = useState<string>('')
+  const calendarCardRef = useRef<HTMLDivElement>(null)
   const [createStudent, setCreateStudent] = useState(false)
   const [createTeacher, setCreateTeacher] = useState(false)
   const [studentDraft, setStudentDraft] = useState<NewUserDraft>({ full_name: '', email: '', password: '', class_name: '' })
@@ -272,29 +274,34 @@ export default function AdminCalendar({
     const minutes = minutesFromMidnight % 60
     resetDrafts()
     setEditingGroupKey(null)
-    setSelectedStudentIds(sortedStudents[0] ? [sortedStudents[0].id] : [])
-    setDraft({
+    const newDraft = {
       subject: '',
       starts_at: `${dayKey}T${pad2(hours)}:${pad2(minutes)}`,
       duration_minutes: 60,
       teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : sortedTeachers[0]?.id ?? '',
       class_name: '',
-    })
+    }
+    const initialSts = sortedStudents[0] ? [sortedStudents[0].id] : []
+    setDraft(newDraft)
+    setSelectedStudentIds(initialSts)
+    setInitialDraftState(JSON.stringify({ draft: newDraft, selectedStudentIds: initialSts }))
     setShowModal(true)
   }
 
   const openEdit = (group: CalendarGroup) => {
     resetDrafts()
     setEditingGroupKey(group.key)
-    setSelectedStudentIds(group.student_ids)
     const zoned = getZonedParts(new Date(group.starts_at), timeZone)
-    setDraft({
+    const newDraft = {
       subject: group.subject,
       starts_at: `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}T${pad2(zoned.hour)}:${pad2(zoned.minute)}`,
       duration_minutes: group.duration_minutes,
       teacher_id: group.teacher_id,
       class_name: group.class_name,
-    })
+    }
+    setDraft(newDraft)
+    setSelectedStudentIds(group.student_ids)
+    setInitialDraftState(JSON.stringify({ draft: newDraft, selectedStudentIds: group.student_ids }))
     setShowModal(true)
   }
 
@@ -524,8 +531,26 @@ export default function AdminCalendar({
       </div>
 
       {showModal && createPortal(
-        <div className="reminder-app-scope modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-          <div className="modal-card" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+        <div
+          className="reminder-app-scope modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              const currentSt = JSON.stringify({ draft, selectedStudentIds })
+              const isDirty = initialDraftState && currentSt !== initialDraftState
+              if (isDirty) {
+                alert('Please save or cancel your changes first.')
+                const btn = calendarCardRef.current?.querySelector('.button-stack') || calendarCardRef.current?.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              } else {
+                closeModal()
+              }
+            }
+          }}
+        >
+          <div ref={calendarCardRef} className="modal-card" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
             <div className="panel-header">
               <div>
                 <p className="section-label">{editingGroup ? 'Edit class' : 'New class'}</p>

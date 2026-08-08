@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
@@ -48,6 +48,8 @@ export default function AdminStudentsTab({
   const { toast } = useToast()
   const [studentSearch, setStudentSearch] = useState('')
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
+  const [initialUserForm, setInitialUserForm] = useState<UserFormState | null>(null)
+  const editStudentCardRef = useRef<HTMLDivElement>(null)
 
   /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
@@ -682,7 +684,7 @@ export default function AdminStudentsTab({
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
                             onSelect={() => {
                               setSavingUserId(student.id)
-                              setUserForm({
+                              const initial = {
                                 id: student.id,
                                 email: student.email,
                                 full_name: student.full_name,
@@ -700,7 +702,9 @@ export default function AdminStudentsTab({
                                 cidade: student.cidade || '',
                                 uf: student.uf || '',
                                 tuition_fee: student.tuition_fee
-                              })
+                              }
+                              setUserForm(initial)
+                              setInitialUserForm(initial)
                             }}
                           >
                             {t(language, 'edit')}
@@ -729,8 +733,23 @@ export default function AdminStudentsTab({
       </div>
 
       {savingUserId && userForm.role === 'student' && createPortal(
-        <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
-          <div className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              const isDirty = initialUserForm && JSON.stringify(userForm) !== JSON.stringify(initialUserForm)
+              if (isDirty) {
+                toast.info(t(language, 'save_or_cancel_first'))
+                const btn = editStudentCardRef.current?.querySelector('.button-stack') || editStudentCardRef.current?.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              } else {
+                setSavingUserId(null)
+              }
+            }
+          }}
+        >
+          <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
@@ -846,7 +865,15 @@ export default function AdminStudentsTab({
       )}
 
       {historyStudent && createPortal(
-        <div className="reminder-app-scope modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setHistoryStudent(null)
+            }
+          }}
+        >
           <div className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
