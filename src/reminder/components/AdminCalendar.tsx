@@ -310,6 +310,7 @@ export default function AdminCalendar({
     setShowModal(false)
     setEditingGroupKey(null)
     setSaving(false)
+    setShowUnsavedWarning(false)
   }
 
   const addStudent = (studentId: string) => {
@@ -543,6 +544,8 @@ export default function AdminCalendar({
               const isDirty = initialDraftState && currentSt !== initialDraftState
               if (isDirty) {
                 setShowUnsavedWarning(true)
+                const btn = calendarCardRef.current.querySelector('.button-row') || calendarCardRef.current.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
               } else {
                 closeModal()
               }
@@ -750,6 +753,30 @@ export default function AdminCalendar({
                 )}
               </div>
 
+              {showUnsavedWarning && (
+                <div
+                  className="animate-fade-in"
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.2)',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '0.75rem',
+                    padding: '0.85rem 1rem',
+                    marginTop: '1rem',
+                    marginBottom: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    color: '#fbbf24',
+                    fontSize: '0.88rem',
+                    fontWeight: 600,
+                    boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)'
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                  <span>Please save or cancel your changes first.</span>
+                </div>
+              )}
+
               <div className="button-row wrap">
                 <button className="secondary-button" type="button" onClick={closeModal} disabled={saving}>
                   Cancel
@@ -759,42 +786,6 @@ export default function AdminCalendar({
                 </button>
               </div>
             </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Unsaved Changes Warning Modal */}
-      {showUnsavedWarning && createPortal(
-        <div
-          className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowUnsavedWarning(false)
-          }}
-        >
-          <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
-              Alterações não salvas
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              Por favor, salve ou cancele suas alterações primeiro.
-            </p>
-            <button
-              type="button"
-              className="primary-button"
-              style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
-              onClick={() => {
-                setShowUnsavedWarning(false)
-                if (calendarCardRef.current) {
-                  const btn = calendarCardRef.current.querySelector('.button-stack') || calendarCardRef.current.querySelector('.primary-button')
-                  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                }
-              }}
-            >
-              Entendido (Ir para Salvar)
-            </button>
           </div>
         </div>,
         document.body

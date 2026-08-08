@@ -740,14 +740,30 @@ export default function AdminStudentsTab({
           className="reminder-app-scope modal-overlay"
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              const isDirty = initialUserForm && JSON.stringify(userForm) !== JSON.stringify(initialUserForm)
+            if (editStudentCardRef.current && !editStudentCardRef.current.contains(e.target as Node)) {
+              const isDirty = initialUserForm ? (
+                userForm.full_name !== initialUserForm.full_name ||
+                userForm.email !== initialUserForm.email ||
+                (userForm.cpf || '') !== (initialUserForm.cpf || '') ||
+                Number(userForm.data_pagamento_preferencial || 5) !== Number(initialUserForm.data_pagamento_preferencial || 5) ||
+                (userForm.status_pagamento || 'pendente') !== (initialUserForm.status_pagamento || 'pendente') ||
+                (userForm.cep || '') !== (initialUserForm.cep || '') ||
+                (userForm.logradouro || '') !== (initialUserForm.logradouro || '') ||
+                (userForm.bairro || '') !== (initialUserForm.bairro || '') ||
+                (userForm.cidade || '') !== (initialUserForm.cidade || '') ||
+                (userForm.uf || '') !== (initialUserForm.uf || '') ||
+                Number(userForm.tuition_fee || 0) !== Number(initialUserForm.tuition_fee || 0)
+              ) : false
+
               if (isDirty) {
-                toast.info(t(language, 'save_or_cancel_first'))
-                const btn = editStudentCardRef.current?.querySelector('.button-stack') || editStudentCardRef.current?.querySelector('.primary-button')
+                setShowUnsavedWarning(true)
+                const btn = editStudentCardRef.current.querySelector('.button-stack') || editStudentCardRef.current.querySelector('.primary-button')
                 btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                toast.error(t(language, 'save_or_cancel_first'))
               } else {
                 setSavingUserId(null)
+                setInitialUserForm(null)
+                setShowUnsavedWarning(false)
               }
             }
           }}
@@ -828,6 +844,30 @@ export default function AdminStudentsTab({
                 />
               </div>
             </div>
+
+            {showUnsavedWarning && (
+              <div
+                className="animate-fade-in"
+                style={{
+                  background: 'rgba(245, 158, 11, 0.2)',
+                  border: '1px solid #f59e0b',
+                  borderRadius: '0.75rem',
+                  padding: '0.85rem 1rem',
+                  marginTop: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  color: '#fbbf24',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)'
+                }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                <span>{t(language, 'save_or_cancel_first')}</span>
+              </div>
+            )}
+
             <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
               <button
                 type="button"
@@ -855,6 +895,7 @@ export default function AdminStudentsTab({
                     toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
                     setSavingUserId(null)
                     setInitialUserForm(null)
+                    setShowUnsavedWarning(false)
                     await refreshProfiles()
                   } catch (err: any) {
                     toast.error(err.message)
@@ -863,7 +904,16 @@ export default function AdminStudentsTab({
               >
                 {t(language, 'save')}
               </button>
-              <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setSavingUserId(null)
+                  setInitialUserForm(null)
+                  setShowUnsavedWarning(false)
+                }}
+              >
+                {t(language, 'cancel')}
+              </button>
             </div>
           </div>
         </div>,
@@ -921,42 +971,6 @@ export default function AdminStudentsTab({
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="secondary-button" onClick={() => setHistoryStudent(null)}>{t(language, 'cancel')}</button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Unsaved Changes Warning Modal */}
-      {showUnsavedWarning && createPortal(
-        <div
-          className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowUnsavedWarning(false)
-          }}
-        >
-          <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
-              {language === 'es' ? 'Cambios no guardados' : language === 'en' ? 'Unsaved Changes' : 'Alterações não salvas'}
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              {t(language, 'save_or_cancel_first')}
-            </p>
-            <button
-              type="button"
-              className="primary-button"
-              style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
-              onClick={() => {
-                setShowUnsavedWarning(false)
-                if (activeCardRef.current) {
-                  const btn = activeCardRef.current.querySelector('.button-stack') || activeCardRef.current.querySelector('.primary-button')
-                  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                }
-              }}
-            >
-              {language === 'es' ? 'Entendido (Ir a guardar)' : language === 'en' ? 'Got it (Go to Save)' : 'Entendido (Ir para Salvar)'}
-            </button>
           </div>
         </div>,
         document.body

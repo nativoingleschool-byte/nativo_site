@@ -313,13 +313,26 @@ export default function AdminStaffTab({
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (editStaffCardRef.current && !editStaffCardRef.current.contains(e.target as Node)) {
-              const isDirty = initialUserForm && JSON.stringify(userForm) !== JSON.stringify(initialUserForm)
+              const isDirty = initialUserForm ? (
+                userForm.full_name !== initialUserForm.full_name ||
+                userForm.email !== initialUserForm.email ||
+                (userForm.password || '') !== (initialUserForm.password || '') ||
+                userForm.role !== initialUserForm.role ||
+                (userForm.cnpj || '') !== (initialUserForm.cnpj || '') ||
+                (userForm.chave_pix || '') !== (initialUserForm.chave_pix || '') ||
+                (userForm.speciality || '') !== (initialUserForm.speciality || '') ||
+                Number(userForm.taxa_hora_aula || 0) !== Number(initialUserForm.taxa_hora_aula || 0)
+              ) : false
+
               if (isDirty) {
-                activeCardRef.current = editStaffCardRef.current
                 setShowUnsavedWarning(true)
+                const btn = editStaffCardRef.current.querySelector('.button-stack') || editStaffCardRef.current.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                toast.error(t(language, 'save_or_cancel_first'))
               } else {
                 setSavingUserId(null)
                 setInitialUserForm(null)
+                setShowUnsavedWarning(false)
               }
             }
           }}
@@ -382,6 +395,30 @@ export default function AdminStaffTab({
               onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
             />
           </div>
+
+          {showUnsavedWarning && (
+            <div
+              className="animate-fade-in"
+              style={{
+                background: 'rgba(245, 158, 11, 0.2)',
+                border: '1px solid #f59e0b',
+                borderRadius: '0.75rem',
+                padding: '0.85rem 1rem',
+                marginTop: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                color: '#fbbf24',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)'
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+              <span>{t(language, 'save_or_cancel_first')}</span>
+            </div>
+          )}
+
           <div className="button-stack mt-6" style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
             <button 
               type="button"
@@ -406,10 +443,11 @@ export default function AdminStaffTab({
                     speciality: userForm.speciality || null,
                     ...(userForm.password && userForm.password.trim().length > 0 ? { password: userForm.password } : {})
                   })
-                    toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
-                    setSavingUserId(null)
-                    setInitialUserForm(null)
-                    await refreshProfiles()
+                  toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
+                  setSavingUserId(null)
+                  setInitialUserForm(null)
+                  setShowUnsavedWarning(false)
+                  await refreshProfiles()
                 } catch (err: any) {
                   toast.error(err.message)
                 }
@@ -417,7 +455,16 @@ export default function AdminStaffTab({
             >
               {t(language, 'save')}
             </button>
-            <button className="secondary-button" onClick={() => setSavingUserId(null)}>{t(language, 'cancel')}</button>
+            <button
+              className="secondary-button"
+              onClick={() => {
+                setSavingUserId(null)
+                setInitialUserForm(null)
+                setShowUnsavedWarning(false)
+              }}
+            >
+              {t(language, 'cancel')}
+            </button>
           </div>
         </div>
       </div>,
@@ -433,10 +480,13 @@ export default function AdminStaffTab({
             if (changePasswordCardRef.current && !changePasswordCardRef.current.contains(e.target as Node)) {
               const isDirty = newPasswordValue.trim().length > 0 || confirmPasswordValue.trim().length > 0
               if (isDirty) {
-                activeCardRef.current = changePasswordCardRef.current
                 setShowUnsavedWarning(true)
+                const btn = changePasswordCardRef.current.querySelector('.button-stack') || changePasswordCardRef.current.querySelector('.primary-button')
+                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                toast.error(t(language, 'save_or_cancel_first'))
               } else {
                 setChangePasswordStaff(null)
+                setShowUnsavedWarning(false)
               }
             }
           }}
@@ -927,42 +977,6 @@ export default function AdminStaffTab({
           document.body
         )
       })()}
-
-      {/* Unsaved Changes Warning Modal */}
-      {showUnsavedWarning && createPortal(
-        <div
-          className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', inset: 0, zIndex: 100001, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowUnsavedWarning(false)
-          }}
-        >
-          <div className="form-card animate-fade-in" style={{ maxWidth: '420px', width: '100%', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: '1.5rem', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f8fafc', marginBottom: '0.5rem' }}>
-              {language === 'es' ? 'Cambios no guardados' : language === 'en' ? 'Unsaved Changes' : 'Alterações não salvas'}
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              {t(language, 'save_or_cancel_first')}
-            </p>
-            <button
-              type="button"
-              className="primary-button"
-              style={{ width: '100%', background: '#f59e0b', color: '#000', fontWeight: 'bold', padding: '0.75rem', border: 'none', cursor: 'pointer' }}
-              onClick={() => {
-                setShowUnsavedWarning(false)
-                if (activeCardRef.current) {
-                  const btn = activeCardRef.current.querySelector('.button-stack') || activeCardRef.current.querySelector('.primary-button')
-                  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                }
-              }}
-            >
-              {language === 'es' ? 'Entendido (Ir a guardar)' : language === 'en' ? 'Got it (Go to Save)' : 'Entendido (Ir para Salvar)'}
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
     </>
   )
 }
