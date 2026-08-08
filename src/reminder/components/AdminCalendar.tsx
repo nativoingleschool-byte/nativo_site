@@ -524,7 +524,8 @@ export default function AdminCalendar({
       </div>
 
       {showModal && createPortal(
-        <div className="modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
+        <div className="reminder-app-scope" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, pointerEvents: 'none' }}>
+          <div className="modal-overlay" role="dialog" aria-modal="true" style={{ pointerEvents: 'auto', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
           <div className="modal-card">
             <div className="panel-header">
               <div>
@@ -736,6 +737,7 @@ export default function AdminCalendar({
               </div>
             </form>
           </div>
+        </div>
         </div>,
         document.body
       )}
