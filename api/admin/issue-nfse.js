@@ -73,8 +73,13 @@ export default async function handler(req, res) {
       throw new Error(`Database validation failed: ${checkError.message}`);
     }
 
-    if (existingInvoice && (existingInvoice.nfs_e_pdf_link || existingInvoice.protocolo_recebimento)) {
-      return json(res, 409, { error: 'Nota fiscal já emitida ou em processamento para este aluno no período atual.' });
+    if (existingInvoice) {
+      // If force_retry is requested OR if there is no valid issued PDF link, clean up the previous stuck/failed record to allow retrying
+      if (req.body.force_retry || !existingInvoice.nfs_e_pdf_link) {
+        await supabaseAdmin.from('invoices').delete().eq('id', existingInvoice.id);
+      } else {
+        return json(res, 409, { error: 'Nota fiscal já emitida com sucesso para este aluno no período atual.' });
+      }
     }
 
     // 2. Fetch student details and check tuition_fee configuration

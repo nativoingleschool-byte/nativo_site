@@ -113,7 +113,7 @@ export default function AdminPaymentsTab({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ student_id: studentId })
+        body: JSON.stringify({ student_id: studentId, force_retry: true })
       })
 
       const data = await response.json()
@@ -137,6 +137,40 @@ export default function AdminPaymentsTab({
       setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
       toast.error(`${t(language, 'emission_error')} (${fullName}): ${errMsg}`)
     } finally {
+      setIssuingNfseId(null)
+    }
+  }
+
+  const handleResetAndRetryNfse = async (studentId: string, fullName: string) => {
+    setIssuingNfseId(studentId)
+    setNfseErrors(prev => {
+      const next = { ...prev }
+      delete next[studentId]
+      return next
+    })
+
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      await fetch('/api/admin/cleanup-failed-invoices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ student_names: [fullName] })
+      })
+
+      const currentPeriod = new Date().toISOString().substring(0, 7)
+      await supabase.from('invoices').delete().eq('student_id', studentId).eq('billing_period', currentPeriod)
+
+      toast.info(`Sistema resetado para ${fullName}. Re-emitindo NFS-e...`)
+      await refreshInvoices()
+      await handleIssueNfse(studentId, fullName)
+    } catch (err: any) {
+      toast.error(`Erro ao resetar: ${err.message}`)
       setIssuingNfseId(null)
     }
   }
@@ -340,14 +374,24 @@ export default function AdminPaymentsTab({
                           {downloadingPdfId === lastInvoice.id ? 'Gerando...' : t(language, 'view_pdf')}
                         </button>
                       ) : lastInvoice?.protocolo_recebimento ? (
-                        <button
-                          className="secondary-button"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#f59e0b', borderColor: '#f59e0b', color: '#000' }}
-                          disabled={checkingStatusId === lastInvoice.id}
-                          onClick={() => void handleCheckStatus(lastInvoice.id)}
-                        >
-                          {checkingStatusId === lastInvoice.id ? t(language, 'checking_status') : t(language, 'check_status')}
-                        </button>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button
+                            className="secondary-button"
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#f59e0b', borderColor: '#f59e0b', color: '#000' }}
+                            disabled={checkingStatusId === lastInvoice.id}
+                            onClick={() => void handleCheckStatus(lastInvoice.id)}
+                          >
+                            {checkingStatusId === lastInvoice.id ? t(language, 'checking_status') : t(language, 'check_status')}
+                          </button>
+                          <button
+                            className="primary-button"
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#ef4444', borderColor: '#ef4444', cursor: 'pointer' }}
+                            disabled={issuingNfseId === student.id}
+                            onClick={() => void handleResetAndRetryNfse(student.id, student.full_name)}
+                          >
+                            🔄 Re-emitir
+                          </button>
+                        </div>
                       ) : (
                         <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{t(language, 'awaiting_emission')}</span>
                       )}
