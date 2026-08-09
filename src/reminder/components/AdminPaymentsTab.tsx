@@ -29,6 +29,7 @@ export default function AdminPaymentsTab({
   const [issuingNfseId, setIssuingNfseId] = useState<string | null>(null)
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
+  const [nfseErrors, setNfseErrors] = useState<Record<string, string>>({})
 
   /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
@@ -96,6 +97,11 @@ export default function AdminPaymentsTab({
 
   const handleIssueNfse = async (studentId: string, fullName: string) => {
     setIssuingNfseId(studentId)
+    setNfseErrors(prev => {
+      const next = { ...prev }
+      delete next[studentId]
+      return next
+    })
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
@@ -127,7 +133,9 @@ export default function AdminPaymentsTab({
         await refreshInvoices()
       }
     } catch (err: any) {
-      toast.error(err.message)
+      const errMsg = err.message || 'Erro ao emitir NFS-e'
+      setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
+      toast.error(`${t(language, 'emission_error')} (${fullName}): ${errMsg}`)
     } finally {
       setIssuingNfseId(null)
     }
@@ -200,6 +208,52 @@ export default function AdminPaymentsTab({
           </select>
         </div>
       </div>
+
+      {/* NFS-e Emission Errors Retry Banner */}
+      {Object.keys(nfseErrors).length > 0 && (
+        <div
+          className="animate-fade-in mb-4"
+          style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '0.75rem',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            color: '#f87171'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <div>
+              <strong style={{ display: 'block', fontSize: '0.9rem' }}>
+                {t(language, 'emission_error')} ({Object.keys(nfseErrors).length})
+              </strong>
+              <span style={{ fontSize: '0.82rem', opacity: 0.9 }}>
+                {Object.entries(nfseErrors).map(([id, err]) => {
+                  const st = activeStudents.find(s => s.id === id)
+                  return `${st?.full_name || 'Aluno'}: ${err}`
+                }).join(' | ')}
+              </span>
+            </div>
+          </div>
+          <button
+            className="primary-button"
+            style={{ background: '#ef4444', borderColor: '#ef4444', whiteSpace: 'nowrap', fontSize: '0.82rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
+            onClick={() => {
+              Object.keys(nfseErrors).forEach(studentId => {
+                const st = activeStudents.find(s => s.id === studentId)
+                if (st) void handleIssueNfse(st.id, st.full_name)
+              })
+            }}
+          >
+            🔄 {t(language, 'try_again')}
+          </button>
+        </div>
+      )}
 
       <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -299,19 +353,55 @@ export default function AdminPaymentsTab({
                       )}
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <button
-                        className="primary-button"
-                        style={{ 
-                          padding: '0.4rem 0.8rem', 
-                          fontSize: '0.8rem', 
-                          background: hasInvoiceForCurrentMonth ? '#10b981' : '#0284c7',
-                          cursor: hasInvoiceForCurrentMonth ? 'not-allowed' : 'pointer'
-                        }}
-                        disabled={issuingNfseId === student.id || hasInvoiceForCurrentMonth || !student.tuition_fee || Number(student.tuition_fee) <= 0}
-                        onClick={() => void handleIssueNfse(student.id, student.full_name)}
-                      >
-                        {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoiceForCurrentMonth ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
-                      </button>
+                      {nfseErrors[student.id] ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span
+                            title={nfseErrors[student.id]}
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#f87171',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '0.4rem',
+                              maxWidth: '160px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            ⚠️ {nfseErrors[student.id]}
+                          </span>
+                          <button
+                            className="primary-button"
+                            style={{ 
+                              padding: '0.4rem 0.8rem', 
+                              fontSize: '0.8rem', 
+                              background: '#ef4444',
+                              borderColor: '#ef4444',
+                              cursor: 'pointer'
+                            }}
+                            disabled={issuingNfseId === student.id}
+                            onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                          >
+                            🔄 {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'try_again')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="primary-button"
+                          style={{ 
+                            padding: '0.4rem 0.8rem', 
+                            fontSize: '0.8rem', 
+                            background: hasInvoiceForCurrentMonth ? '#10b981' : '#0284c7',
+                            cursor: hasInvoiceForCurrentMonth ? 'not-allowed' : 'pointer'
+                          }}
+                          disabled={issuingNfseId === student.id || hasInvoiceForCurrentMonth || !student.tuition_fee || Number(student.tuition_fee) <= 0}
+                          onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                        >
+                          {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoiceForCurrentMonth ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
+                        </button>
+                      )}
                       <button
                         className="secondary-button"
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', opacity: lastInvoice ? 1 : 0.5 }}

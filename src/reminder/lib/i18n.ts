@@ -137,7 +137,9 @@ export const translations: Record<Language, Dictionary> = {
     password_updated_success: 'Password updated successfully!',
     passwords_do_not_match: 'Passwords do not match.',
     password_too_short: 'Password must be at least 6 characters.',
-    save_or_cancel_first: 'Please save or cancel your changes first.'
+    save_or_cancel_first: 'Please save or cancel your changes first.',
+    try_again: 'Try again',
+    emission_error: 'Error issuing NFS-e'
   },
   pt: {
     language: 'Idioma',
@@ -236,7 +238,9 @@ export const translations: Record<Language, Dictionary> = {
     password_updated_success: 'Senha atualizada com sucesso!',
     passwords_do_not_match: 'As senhas não coincidem.',
     password_too_short: 'A senha deve ter no mínimo 6 caracteres.',
-    save_or_cancel_first: 'Por favor, salve ou cancele suas alterações primeiro.'
+    save_or_cancel_first: 'Por favor, salve ou cancele suas alterações primeiro.',
+    try_again: 'Tentar novamente',
+    emission_error: 'Erro ao emitir NFS-e'
   },
   es: {
     language: 'Idioma',
@@ -335,7 +339,9 @@ export const translations: Record<Language, Dictionary> = {
     password_updated_success: '¡Contraseña actualizada con éxito!',
     passwords_do_not_match: 'Las contraseñas no coinciden.',
     password_too_short: 'La contraseña debe tener al menos 6 caracteres.',
-    save_or_cancel_first: 'Por favor, guarda o cancela tus cambios primero.'
+    save_or_cancel_first: 'Por favor, guarda o cancela tus cambios primero.',
+    try_again: 'Intentar de nuevo',
+    emission_error: 'Error al emitir NFS-e'
   },
 }
 

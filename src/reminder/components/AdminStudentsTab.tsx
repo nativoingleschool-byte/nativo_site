@@ -157,6 +157,7 @@ export default function AdminStudentsTab({
   const [lastIssuedPdf, setLastIssuedPdf] = useState<{ name: string; url: string } | null>(null)
   const [currentPeriodInvoices, setCurrentPeriodInvoices] = useState<Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }>>({})
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
+  const [nfseErrors, setNfseErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
@@ -237,6 +238,11 @@ export default function AdminStudentsTab({
   const handleIssueNfse = async (studentId: string, fullName: string) => {
     setIssuingNfseId(studentId)
     setLastIssuedPdf(null)
+    setNfseErrors(prev => {
+      const next = { ...prev }
+      delete next[studentId]
+      return next
+    })
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
@@ -263,7 +269,9 @@ export default function AdminStudentsTab({
       setLastIssuedPdf({ name: fullName, url: data.nfs_e_pdf_link })
       await refreshProfiles()
     } catch (err: any) {
-      toast.error(err.message)
+      const errMsg = err.message || 'Erro ao emitir NFS-e'
+      setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
+      toast.error(`${t(language, 'emission_error')} (${fullName}): ${errMsg}`)
     } finally {
       setIssuingNfseId(null)
     }
@@ -329,6 +337,8 @@ export default function AdminStudentsTab({
           successCount++
         } catch (err: any) {
           console.error(`Falha ao emitir nota para o aluno ${studentId}:`, err.message)
+          const errMsg = err.message || 'Erro na emissão em lote'
+          setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
           failCount++
         }
       }
@@ -468,6 +478,52 @@ export default function AdminStudentsTab({
           {bulkProgress ? t(language, 'bulk_issuing_progress').replace('{current}', String(bulkProgress.current)).replace('{total}', String(bulkProgress.total)) : t(language, 'emit_selected_invoices')}
         </button>
       </div>
+
+      {/* NFS-e Emission Errors Retry Banner */}
+      {Object.keys(nfseErrors).length > 0 && (
+        <div
+          className="animate-fade-in mb-4"
+          style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '0.75rem',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            color: '#f87171'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <div>
+              <strong style={{ display: 'block', fontSize: '0.9rem' }}>
+                {t(language, 'emission_error')} ({Object.keys(nfseErrors).length})
+              </strong>
+              <span style={{ fontSize: '0.82rem', opacity: 0.9 }}>
+                {Object.entries(nfseErrors).map(([id, err]) => {
+                  const st = students.find(s => s.id === id)
+                  return `${st?.full_name || 'Aluno'}: ${err}`
+                }).join(' | ')}
+              </span>
+            </div>
+          </div>
+          <button
+            className="primary-button"
+            style={{ background: '#ef4444', borderColor: '#ef4444', whiteSpace: 'nowrap', fontSize: '0.82rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
+            onClick={() => {
+              Object.keys(nfseErrors).forEach(studentId => {
+                const st = students.find(s => s.id === studentId)
+                if (st) void handleIssueNfse(st.id, st.full_name)
+              })
+            }}
+          >
+            🔄 {t(language, 'try_again')}
+          </button>
+        </div>
+      )}
 
       <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -640,6 +696,44 @@ export default function AdminStudentsTab({
                           >
                             {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'emit_invoice')}
                           </button>
+                        )
+                      }
+                      if (nfseErrors[student.id]) {
+                        return (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span
+                              title={nfseErrors[student.id]}
+                              style={{
+                                fontSize: '0.75rem',
+                                color: '#f87171',
+                                background: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '0.4rem',
+                                maxWidth: '160px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              ⚠️ {nfseErrors[student.id]}
+                            </span>
+                            <button
+                              className="primary-button"
+                              style={{
+                                padding: '0.4rem 0.8rem',
+                                fontSize: '0.8rem',
+                                marginRight: '0.5rem',
+                                background: '#ef4444',
+                                borderColor: '#ef4444',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                              disabled={issuingNfseId === student.id}
+                            >
+                              🔄 {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'try_again')}
+                            </button>
+                          </div>
                         )
                       }
                       return (
