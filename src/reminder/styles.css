@@ -727,46 +727,137 @@ body:has(.reminder-app-scope) {
   align-items: center;
 }
 
+.calendar-mobile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.calendar-mobile-nav-btn {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.calendar-mobile-nav-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.calendar-mobile-nav-btn.active {
+  background: rgba(99, 102, 241, 0.22);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
 .calendar-grid {
   display: grid;
-  grid-template-columns: 72px repeat(7, minmax(0, 1fr));
-  border-radius: 18px;
-  overflow: hidden;
+  grid-template-columns: 46px repeat(7, calc((100% - 46px) / 3));
+  border-radius: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: rgba(2, 6, 23, 0.2);
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+.calendar-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.calendar-grid::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.calendar-grid::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
 }
 
 .calendar-header-spacer {
-  background: rgba(15, 23, 42, 0.78);
+  background: rgba(15, 23, 42, 0.96);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  position: sticky;
+  left: 0;
+  z-index: 20;
 }
 
 .calendar-header-cell {
-  padding: 12px 10px;
+  padding: 8px 4px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   background: rgba(15, 23, 42, 0.78);
   border-left: 1px solid rgba(148, 163, 184, 0.12);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  scroll-snap-align: start;
+}
+
+.calendar-header-cell-today {
+  background: rgba(99, 102, 241, 0.16);
+  border-bottom-color: rgba(99, 102, 241, 0.6);
+}
+
+.calendar-header-cell-today strong {
+  color: #a5b4fc;
+}
+
+.calendar-today-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 1px;
 }
 
 .calendar-time-column {
   display: grid;
   grid-template-rows: repeat(32, 26px);
-  background: rgba(15, 23, 42, 0.65);
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.96);
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.35);
 }
 
 .calendar-time-slot {
-  padding: 4px 10px;
-  font-size: 0.75rem;
+  padding: 4px 4px;
+  font-size: 0.7rem;
   color: rgba(148, 163, 184, 0.9);
   border-top: 1px solid rgba(148, 163, 184, 0.08);
+  text-align: center;
 }
 
 .calendar-time-slot-hour {
   color: #bfdbfe;
+  font-weight: 600;
 }
 
 .calendar-day-column {
@@ -774,6 +865,8 @@ body:has(.reminder-app-scope) {
   display: grid;
   grid-template-rows: repeat(32, 26px);
   border-left: 1px solid rgba(148, 163, 184, 0.12);
+  scroll-snap-align: start;
+  touch-action: pan-x pan-y;
 }
 
 .calendar-slot {
@@ -1146,6 +1239,42 @@ body:has(.reminder-app-scope) {
   .reminder-card,
   .install-note {
     padding: 20px;
+  }
+
+  .calendar-mobile-nav {
+    display: none !important;
+  }
+
+  .calendar-grid {
+    grid-template-columns: 72px repeat(7, minmax(0, 1fr));
+    overflow-x: hidden;
+    scroll-snap-type: none;
+    border-radius: 18px;
+  }
+
+  .calendar-header-spacer {
+    position: static;
+    z-index: auto;
+    background: rgba(15, 23, 42, 0.78);
+  }
+
+  .calendar-header-cell {
+    padding: 12px 10px;
+    gap: 4px;
+  }
+
+  .calendar-time-column {
+    position: static;
+    z-index: auto;
+    background: rgba(15, 23, 42, 0.65);
+    border-right: 1px solid rgba(148, 163, 184, 0.12);
+    box-shadow: none;
+  }
+
+  .calendar-time-slot {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    text-align: left;
   }
 }
 

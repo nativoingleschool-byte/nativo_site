@@ -12,6 +12,7 @@ export type UserFormState = {
   first_class_teacher_id: string
   cpf?: string
   data_pagamento_preferencial?: number
+  status_pagamento?: 'em_dia' | 'atrasado' | 'pendente' | null
   chave_pix?: string
   cnpj?: string
   taxa_hora_aula?: number

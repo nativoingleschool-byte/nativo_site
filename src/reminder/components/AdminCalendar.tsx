@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState, useRef } from 'react'
+import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { Lesson, Profile } from '../lib/types'
 
@@ -166,6 +166,10 @@ export default function AdminCalendar({
     teacher_id: currentTeacherId ?? teachers[0]?.id ?? '',
     class_name: '',
   })
+
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [activeMobileRange, setActiveMobileRange] = useState<number>(0)
+  const todayKey = useMemo(() => todayDateKeyInTimeZone(timeZone), [timeZone])
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDaysToDateKey(weekStart, index)), [weekStart])
   const sortedStudents = useMemo(
@@ -379,6 +383,53 @@ export default function AdminCalendar({
     }
   }
 
+  const scrollToDay = (dayIndex: number) => {
+    if (!gridRef.current) return
+    const container = gridRef.current
+    const timeColWidth = 46
+    const availableWidth = container.clientWidth - timeColWidth
+    const dayColWidth = availableWidth / 3
+    const targetScroll = Math.max(0, dayIndex * dayColWidth)
+    container.scrollTo({ left: targetScroll, behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.innerWidth >= 768) return
+    const todayIndex = days.indexOf(todayKey)
+    if (todayIndex >= 0) {
+      const targetIndex = todayIndex >= 5 ? 4 : todayIndex >= 3 ? 3 : 0
+      const rangeIdx = todayIndex >= 5 ? 2 : todayIndex >= 3 ? 1 : 0
+      setActiveMobileRange(rangeIdx)
+      const timer = setTimeout(() => {
+        scrollToDay(targetIndex)
+      }, 80)
+      return () => clearTimeout(timer)
+    } else {
+      setActiveMobileRange(0)
+      const timer = setTimeout(() => {
+        scrollToDay(0)
+      }, 80)
+      return () => clearTimeout(timer)
+    }
+  }, [days, todayKey])
+
+  const handleGridScroll = () => {
+    if (!gridRef.current || (typeof window !== 'undefined' && window.innerWidth >= 768)) return
+    const container = gridRef.current
+    const timeColWidth = 46
+    const availableWidth = container.clientWidth - timeColWidth
+    const dayColWidth = availableWidth / 3
+    const scrollPos = container.scrollLeft
+    const activeIdx = Math.round(scrollPos / dayColWidth)
+    if (activeIdx >= 4) {
+      setActiveMobileRange(2)
+    } else if (activeIdx >= 2) {
+      setActiveMobileRange(1)
+    } else {
+      setActiveMobileRange(0)
+    }
+  }
+
   return (
     <div className="calendar-shell">
       <div className="calendar-toolbar">
@@ -399,14 +450,51 @@ export default function AdminCalendar({
         </div>
       </div>
 
-      <div className="calendar-grid">
+      <div className="calendar-mobile-nav">
+        <button
+          type="button"
+          className={`calendar-mobile-nav-btn ${activeMobileRange === 0 ? 'active' : ''}`}
+          onClick={() => {
+            setActiveMobileRange(0)
+            scrollToDay(0)
+          }}
+        >
+          {dayLabels[0]?.short} - {dayLabels[2]?.short}
+        </button>
+        <button
+          type="button"
+          className={`calendar-mobile-nav-btn ${activeMobileRange === 1 ? 'active' : ''}`}
+          onClick={() => {
+            setActiveMobileRange(1)
+            scrollToDay(3)
+          }}
+        >
+          {dayLabels[3]?.short} - {dayLabels[5]?.short}
+        </button>
+        <button
+          type="button"
+          className={`calendar-mobile-nav-btn ${activeMobileRange === 2 ? 'active' : ''}`}
+          onClick={() => {
+            setActiveMobileRange(2)
+            scrollToDay(4)
+          }}
+        >
+          {dayLabels[4]?.short} - {dayLabels[6]?.short}
+        </button>
+      </div>
+
+      <div ref={gridRef} onScroll={handleGridScroll} className="calendar-grid">
         <div className="calendar-header-spacer" />
-        {dayLabels.map((label) => (
-          <div key={label.key} className="calendar-header-cell">
-            <strong>{label.short}</strong>
-            <span className="muted tiny-copy">{label.day}</span>
-          </div>
-        ))}
+        {dayLabels.map((label) => {
+          const isToday = label.key === todayKey
+          return (
+            <div key={label.key} className={`calendar-header-cell ${isToday ? 'calendar-header-cell-today' : ''}`}>
+              <strong>{label.short}</strong>
+              <span className="muted tiny-copy">{label.day}</span>
+              {isToday && <span className="calendar-today-badge">Hoje</span>}
+            </div>
+          )
+        })}
 
         <div className="calendar-time-column">
           {slots.map((minute) => {

@@ -838,7 +838,7 @@ export default function AdminStudentsTab({
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
                             onSelect={() => {
                               setSavingUserId(student.id)
-                              const initial = {
+                              const initial: UserFormState = {
                                 id: student.id,
                                 email: student.email,
                                 full_name: student.full_name,
@@ -848,6 +848,7 @@ export default function AdminStudentsTab({
                                 password: '',
                                 cpf: student.cpf || '',
                                 data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
+                                status_pagamento: student.status_pagamento || 'pendente',
                                 first_class_at: '',
                                 first_class_teacher_id: '',
                                 cep: student.cep || '',

@@ -268,7 +268,7 @@ export default function AdminPaymentsTab({
               </strong>
               <span style={{ fontSize: '0.82rem', opacity: 0.9 }}>
                 {Object.entries(nfseErrors).map(([id, err]) => {
-                  const st = activeStudents.find(s => s.id === id)
+                  const st = students.find(s => s.id === id)
                   return `${st?.full_name || 'Aluno'}: ${err}`
                 }).join(' | ')}
               </span>
@@ -279,7 +279,7 @@ export default function AdminPaymentsTab({
             style={{ background: '#ef4444', borderColor: '#ef4444', whiteSpace: 'nowrap', fontSize: '0.82rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
             onClick={() => {
               Object.keys(nfseErrors).forEach(studentId => {
-                const st = activeStudents.find(s => s.id === studentId)
+                const st = students.find(s => s.id === studentId)
                 if (st) void handleIssueNfse(st.id, st.full_name)
               })
             }}
