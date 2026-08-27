@@ -1,8 +1,36 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
+
+const getBillingPeriods = () => {
+  const today = new Date()
+  const tzOffset = -3 * 60 // UTC-3 (Brasília)
+  const localTime = new Date(today.getTime() + tzOffset * 60 * 1000)
+  
+  const currentPeriod = localTime.toISOString().substring(0, 7) // 'YYYY-MM'
+  
+  // Previous month in Brasília timezone
+  const prevYear = localTime.getUTCMonth() === 0 ? localTime.getUTCFullYear() - 1 : localTime.getUTCFullYear()
+  const prevMonthNum = localTime.getUTCMonth() === 0 ? 12 : localTime.getUTCMonth()
+  const previousPeriod = `${prevYear}-${String(prevMonthNum).padStart(2, '0')}`
+  
+  return { currentPeriod, previousPeriod }
+}
+
+const formatBillingPeriod = (period: string, language: Language = 'pt') => {
+  if (!period || !period.includes('-')) return period
+  const [yearStr, monthStr] = period.split('-')
+  const year = parseInt(yearStr, 10)
+  const month = parseInt(monthStr, 10) - 1
+  const date = new Date(Date.UTC(year, month, 15))
+  const locale = language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US'
+  const monthName = date.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
+  const capitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+  return `${capitalized}/${year}`
+}
 
 interface AdminPaymentsTabProps {
   language: Language
@@ -30,6 +58,11 @@ export default function AdminPaymentsTab({
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null)
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
   const [nfseErrors, setNfseErrors] = useState<Record<string, string>>({})
+  const [monthModalData, setMonthModalData] = useState<{
+    student: Profile;
+    currentPeriod: string;
+    previousPeriod: string;
+  } | null>(null)
 
   /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
@@ -115,7 +148,25 @@ export default function AdminPaymentsTab({
     }
   }
 
-  const handleIssueNfse = async (studentId: string, fullName: string) => {
+  const handleInitiateIssueNfse = (student: Profile) => {
+    const { currentPeriod, previousPeriod } = getBillingPeriods()
+    const studentInvoices = invoices.filter(inv => inv.student_id === student.id)
+    const hasPrevInvoice = studentInvoices.some(
+      inv => inv.billing_period === previousPeriod && (inv.status === 'pago' || !!inv.nfs_e_pdf_link)
+    )
+
+    if (!hasPrevInvoice) {
+      setMonthModalData({
+        student,
+        currentPeriod,
+        previousPeriod
+      })
+    } else {
+      void handleIssueNfse(student.id, student.full_name, currentPeriod)
+    }
+  }
+
+  const handleIssueNfse = async (studentId: string, fullName: string, billingPeriod?: string) => {
     setIssuingNfseId(studentId)
     setNfseErrors(prev => {
       const next = { ...prev }
@@ -127,13 +178,20 @@ export default function AdminPaymentsTab({
       const token = sessionData.data.session?.access_token
       if (!token) throw new Error('Não autenticado.')
 
+      const { currentPeriod } = getBillingPeriods()
+      const targetPeriod = billingPeriod || currentPeriod
+
       const response = await fetch('/api/admin/issue-nfse', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ student_id: studentId, force_retry: true })
+        body: JSON.stringify({ 
+          student_id: studentId, 
+          billing_period: targetPeriod,
+          force_retry: true 
+        })
       })
 
       const data = await response.json()
@@ -144,7 +202,7 @@ export default function AdminPaymentsTab({
         await new Promise(resolve => setTimeout(resolve, 300))
         const statusResult = await checkNfseStatus(data.invoice_id, token, 3)
         if (statusResult.status === 'emitida' && statusResult.nfs_e_pdf_link) {
-          toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+          toast.success(t(language, 'success_invoice_banner').replace('{name}', `${fullName} (${formatBillingPeriod(targetPeriod, language)})`))
         } else if (statusResult.status === 'erro') {
           throw new Error(statusResult.message || 'Erro ao processar lote na prefeitura.')
         } else {
@@ -153,7 +211,7 @@ export default function AdminPaymentsTab({
       } else {
         // Fallback toast if no invoice_id returned
         if (data.nfs_e_pdf_link) {
-          toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+          toast.success(t(language, 'success_invoice_banner').replace('{name}', `${fullName} (${formatBillingPeriod(targetPeriod, language)})`))
         } else {
           toast.info(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
         }
@@ -190,7 +248,7 @@ export default function AdminPaymentsTab({
         body: JSON.stringify({ student_names: [fullName] })
       })
 
-      const currentPeriod = new Date().toISOString().substring(0, 7)
+      const { currentPeriod } = getBillingPeriods()
       await supabase.from('invoices').delete().eq('student_id', studentId).eq('billing_period', currentPeriod)
 
       toast.info(`Sistema resetado para ${fullName}. Re-emitindo NFS-e...`)
@@ -202,7 +260,7 @@ export default function AdminPaymentsTab({
     }
   }
 
-  const currentPeriod = new Date().toISOString().substring(0, 7) // 'YYYY-MM'
+  const { currentPeriod } = getBillingPeriods()
 
   const [sortField, setSortField] = useState<'name' | 'status' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -307,7 +365,7 @@ export default function AdminPaymentsTab({
             onClick={() => {
               Object.keys(nfseErrors).forEach(studentId => {
                 const st = students.find(s => s.id === studentId)
-                if (st) void handleIssueNfse(st.id, st.full_name)
+                if (st) handleInitiateIssueNfse(st)
               })
             }}
           >
@@ -453,7 +511,7 @@ export default function AdminPaymentsTab({
                               cursor: 'pointer'
                             }}
                             disabled={issuingNfseId === student.id}
-                            onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                            onClick={() => handleInitiateIssueNfse(student)}
                           >
                             🔄 {issuingNfseId === student.id ? t(language, 'issuing') : t(language, 'try_again')}
                           </button>
@@ -468,7 +526,7 @@ export default function AdminPaymentsTab({
                             cursor: hasInvoiceForCurrentMonth ? 'not-allowed' : 'pointer'
                           }}
                           disabled={issuingNfseId === student.id || hasInvoiceForCurrentMonth || !student.tuition_fee || Number(student.tuition_fee) <= 0}
-                          onClick={() => void handleIssueNfse(student.id, student.full_name)}
+                          onClick={() => handleInitiateIssueNfse(student)}
                         >
                           {issuingNfseId === student.id ? t(language, 'issuing') : hasInvoiceForCurrentMonth ? t(language, 'invoice_issued') : t(language, 'emit_invoice')}
                         </button>
@@ -496,6 +554,111 @@ export default function AdminPaymentsTab({
           </tbody>
         </table>
       </div>
+
+      {monthModalData && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            background: 'rgba(2, 6, 23, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            overflowY: 'auto'
+          }}
+          onClick={() => setMonthModalData(null)}
+        >
+          <div
+            className="form-card"
+            style={{
+              maxWidth: '480px',
+              width: '100%',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
+              borderRadius: '1.5rem',
+              padding: '2rem',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
+              📅 {t(language, 'select_reference_month_title')}
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              {t(language, 'missing_prev_month_notice')
+                .replace('{name}', monthModalData.student.full_name)
+                .replace('{prevMonth}', formatBillingPeriod(monthModalData.previousPeriod, language))}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <button
+                type="button"
+                className="primary-button"
+                style={{
+                  padding: '0.85rem 1.25rem',
+                  fontSize: '0.9rem',
+                  background: '#0284c7',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  const student = monthModalData.student
+                  const period = monthModalData.previousPeriod
+                  setMonthModalData(null)
+                  void handleIssueNfse(student.id, student.full_name, period)
+                }}
+              >
+                <span>⬅️ {t(language, 'previous_month').replace('{month}', formatBillingPeriod(monthModalData.previousPeriod, language))}</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.85, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.previousPeriod}</span>
+              </button>
+
+              <button
+                type="button"
+                className="primary-button"
+                style={{
+                  padding: '0.85rem 1.25rem',
+                  fontSize: '0.9rem',
+                  background: '#10b981',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  const student = monthModalData.student
+                  const period = monthModalData.currentPeriod
+                  setMonthModalData(null)
+                  void handleIssueNfse(student.id, student.full_name, period)
+                }}
+              >
+                <span>⭐ {t(language, 'current_month').replace('{month}', formatBillingPeriod(monthModalData.currentPeriod, language))}</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.85, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.currentPeriod}</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+                onClick={() => setMonthModalData(null)}
+              >
+                {t(language, 'cancel')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   )
 }

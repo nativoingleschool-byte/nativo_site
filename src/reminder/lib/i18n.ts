@@ -140,7 +140,12 @@ export const translations: Record<Language, Dictionary> = {
     password_too_short: 'Password must be at least 6 characters.',
     save_or_cancel_first: 'Please save or cancel your changes first.',
     try_again: 'Try again',
-    emission_error: 'Error issuing NFS-e'
+    emission_error: 'Error issuing NFS-e',
+    select_reference_month_title: 'NFS-e Reference Month',
+    missing_prev_month_notice: 'No NFS-e was issued for {name} in the previous month ({prevMonth}). Which reference month would you like to issue this invoice for?',
+    previous_month: 'Previous Month ({month})',
+    current_month: 'Current Month ({month})',
+    another_month: 'Another Month'
   },
   pt: {
     language: 'Idioma',
@@ -238,11 +243,15 @@ export const translations: Record<Language, Dictionary> = {
     change_password_title: 'Alterar Senha de {name}',
     confirm_new_password: 'Confirmar Nova Senha',
     password_updated_success: 'Senha atualizada com sucesso!',
-    passwords_do_not_match: 'As senhas não coincidem.',
     password_too_short: 'A senha deve ter no mínimo 6 caracteres.',
     save_or_cancel_first: 'Por favor, salve ou cancele suas alterações primeiro.',
     try_again: 'Tentar novamente',
-    emission_error: 'Erro ao emitir NFS-e'
+    emission_error: 'Erro ao emitir NFS-e',
+    select_reference_month_title: 'Mês de Referência da NFS-e',
+    missing_prev_month_notice: 'Não foi encontrada NFS-e emitida para {name} no mês anterior ({prevMonth}). Para qual mês de referência deseja emitir esta nota fiscal?',
+    previous_month: 'Mês Anterior ({month})',
+    current_month: 'Mês Atual ({month})',
+    another_month: 'Outro Mês'
   },
   es: {
     language: 'Idioma',
@@ -286,7 +295,7 @@ export const translations: Record<Language, Dictionary> = {
     add_staff_title: 'Agregar Nuevo Miembro del Equipo',
     staff_list_title: 'Lista de Miembros del Equipo',
     payout_teachers_title: 'Nómina de Profesores',
-    role_label: 'Cargo / Función',
+    role_label: 'Cargo / Função',
     speciality_label: 'Especialidad (Opcional)',
     pix_label: 'Clave PIX (Profesores)',
     cnpj_label: 'CNPJ / CPF (Profesores)',
@@ -344,8 +353,13 @@ export const translations: Record<Language, Dictionary> = {
     password_too_short: 'La contraseña debe tener al menos 6 caracteres.',
     save_or_cancel_first: 'Por favor, guarda o cancela tus cambios primero.',
     try_again: 'Intentar de nuevo',
-    emission_error: 'Error al emitir NFS-e'
-  },
+    emission_error: 'Error al emitir NFS-e',
+    select_reference_month_title: 'Mes de Referencia de la NFS-e',
+    missing_prev_month_notice: 'No se encontró NFS-e emitida para {name} en el mes anterior ({prevMonth}). ¿Para qué mes de referencia desea emitir esta factura?',
+    previous_month: 'Mes Anterior ({month})',
+    current_month: 'Mes Actual ({month})',
+    another_month: 'Otro Mes'
+  }
 }
 
 export const t = (language: Language, key: string) => translations[language]?.[key] ?? translations.en[key] ?? key
