@@ -458,10 +458,10 @@ export default function AdminStudentsTab({
     }
   }
 
-  const [sortField, setSortField] = useState<'name' | 'status' | null>('name')
+  const [sortField, setSortField] = useState<'name' | 'status' | 'fee' | null>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
-  const handleSort = (field: 'name' | 'status') => {
+  const handleSort = (field: 'name' | 'status' | 'fee') => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
     } else {
@@ -474,6 +474,14 @@ export default function AdminStudentsTab({
     if (sortField === 'name') {
       const cmp = (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
       return sortDirection === 'asc' ? cmp : -cmp
+    }
+    if (sortField === 'fee') {
+      const feeA = Number(a.tuition_fee) || 0
+      const feeB = Number(b.tuition_fee) || 0
+      if (feeA !== feeB) {
+        return sortDirection === 'asc' ? feeA - feeB : feeB - feeA
+      }
+      return (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
     }
     if (sortField === 'status') {
       const getWeight = (status?: string | null) => {
@@ -653,6 +661,18 @@ export default function AdminStudentsTab({
                   </span>
                 </div>
               </th>
+              <th
+                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('fee')}
+                title="Ordenar por Mensalidade"
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{t(language, 'monthly_fee')}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: sortField === 'fee' ? 1 : 0.4 }}>
+                    {sortField === 'fee' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </div>
+              </th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
@@ -689,29 +709,22 @@ export default function AdminStudentsTab({
                     />
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left', fontSize: '0.9rem' }}
-                        onClick={() => void openPaymentHistory(student)}
-                      >
-                        {student.full_name}
-                      </button>
-                      {student.tuition_fee !== undefined && student.tuition_fee !== null && Number(student.tuition_fee) > 0 && (
-                        <span style={{
-                          fontSize: '0.78rem',
-                          fontWeight: '600',
-                          color: '#10b981',
-                          background: 'rgba(16, 185, 129, 0.12)',
-                          border: '1px solid rgba(16, 185, 129, 0.25)',
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '0.375rem',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          R$ {Number(student.tuition_fee).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                      onClick={() => void openPaymentHistory(student)}
+                    >
+                      {student.full_name}
+                    </button>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {student.tuition_fee !== undefined && student.tuition_fee !== null && Number(student.tuition_fee) > 0 ? (
+                      <span style={{ fontWeight: '600', color: '#10b981' }}>
+                        R$ {Number(student.tuition_fee).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#64748b', fontSize: '0.85rem' }}>-</span>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {student.data_pagamento_preferencial ? t(language, 'billing_day_label').replace('{day}', String(student.data_pagamento_preferencial)) : '-'}
