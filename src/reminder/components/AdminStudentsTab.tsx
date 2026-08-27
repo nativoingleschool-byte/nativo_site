@@ -653,8 +653,6 @@ export default function AdminStudentsTab({
                   </span>
                 </div>
               </th>
-              <th style={{ padding: '1rem' }}>Email</th>
-              <th style={{ padding: '1rem' }}>CPF</th>
               <th style={{ padding: '1rem' }}>{t(language, 'billing_day')}</th>
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
@@ -691,16 +689,30 @@ export default function AdminStudentsTab({
                     />
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                    <button
-                      type="button"
-                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
-                      onClick={() => void openPaymentHistory(student)}
-                    >
-                      {student.full_name}
-                    </button>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left', fontSize: '0.9rem' }}
+                        onClick={() => void openPaymentHistory(student)}
+                      >
+                        {student.full_name}
+                      </button>
+                      {student.tuition_fee !== undefined && student.tuition_fee !== null && Number(student.tuition_fee) > 0 && (
+                        <span style={{
+                          fontSize: '0.78rem',
+                          fontWeight: '600',
+                          color: '#10b981',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.25)',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '0.375rem',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          R$ {Number(student.tuition_fee).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td style={{ padding: '1rem', color: '#94a3b8' }}>{student.email}</td>
-                  <td style={{ padding: '1rem' }}>{student.cpf || '-'}</td>
                   <td style={{ padding: '1rem' }}>
                     {student.data_pagamento_preferencial ? t(language, 'billing_day_label').replace('{day}', String(student.data_pagamento_preferencial)) : '-'}
                   </td>
