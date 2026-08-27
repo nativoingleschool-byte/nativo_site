@@ -175,13 +175,10 @@ export default function AdminStudentsTab({
     setCurrentPeriodInvoices(mapped)
   }, [invoices])
 
-  const handleCheckStatus = async (invoiceId: string) => {
-    setCheckingStatusId(invoiceId)
-    try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Não autenticado.')
-
+  const checkNfseStatus = async (invoiceId: string, token: string, maxRetries = 3): Promise<{ status: string; nfs_e_pdf_link?: string; message?: string }> => {
+    let attempts = 0
+    while (attempts < maxRetries) {
+      attempts++
       const response = await fetch('/api/admin/check-nfse-status', {
         method: 'POST',
         headers: {
@@ -190,9 +187,32 @@ export default function AdminStudentsTab({
         },
         body: JSON.stringify({ invoice_id: invoiceId })
       })
-
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao verificar status.')
+      }
+
+      if (data.status === 'emitida' || data.status === 'erro') {
+        return data
+      }
+
+      if (data.status === 'processando' && attempts < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } else {
+        return data
+      }
+    }
+    return { status: 'processando', message: 'Lote em processamento pela prefeitura.' }
+  }
+
+  const handleCheckStatus = async (invoiceId: string) => {
+    setCheckingStatusId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const data = await checkNfseStatus(invoiceId, token, 1)
 
       if (data.status === 'emitida' && data.nfs_e_pdf_link) {
         toast.success(t(language, 'success_invoice_banner').replace('{name}', ''))
@@ -260,13 +280,28 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
-      // Auto-check status 700ms after issuance so the PDF link populates without manual click
+      let pdfUrl = data.nfs_e_pdf_link
+
+      // Auto-check status 300ms after issuance so the PDF link populates without manual click
       if (data.invoice_id) {
         await new Promise(resolve => setTimeout(resolve, 300))
-        await handleCheckStatus(data.invoice_id)
+        const statusResult = await checkNfseStatus(data.invoice_id, token, 3)
+        if (statusResult.status === 'emitida' && statusResult.nfs_e_pdf_link) {
+          pdfUrl = statusResult.nfs_e_pdf_link
+          toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+        } else if (statusResult.status === 'erro') {
+          throw new Error(statusResult.message || 'Erro ao processar lote na prefeitura.')
+        } else {
+          toast.info(statusResult.message || t(language, 'success_lote_envio_banner'))
+        }
+      } else if (pdfUrl) {
+        toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
       }
 
-      setLastIssuedPdf({ name: fullName, url: data.nfs_e_pdf_link })
+      if (pdfUrl) {
+        setLastIssuedPdf({ name: fullName, url: pdfUrl })
+      }
+      await refreshInvoices()
       await refreshProfiles()
     } catch (err: any) {
       const errMsg = err.message || 'Erro ao emitir NFS-e'
@@ -359,33 +394,62 @@ export default function AdminStudentsTab({
       for (const studentId of selectedStudentIds) {
         i++
         setBulkProgress({ current: i, total })
+        const student = students.find(s => s.id === studentId)
+        const fullName = student?.full_name || 'Aluno'
 
         try {
+          // 1. Issue NFS-e with force_retry: true
           const response = await fetch('/api/admin/issue-nfse', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify({ student_id: studentId })
+            body: JSON.stringify({ student_id: studentId, force_retry: true })
           })
 
+          const data = await response.json()
           if (!response.ok) {
-            const errData = await response.json()
-            throw new Error(errData.error || 'Erro na resposta do servidor.')
+            throw new Error(data.error || 'Erro na resposta do servidor.')
           }
 
+          // 2. Automatically check status immediately after issuance (same as single issue)
+          if (data.invoice_id) {
+            await new Promise(resolve => setTimeout(resolve, 300))
+            const statusResult = await checkNfseStatus(data.invoice_id, token, 3)
+            if (statusResult.status === 'erro') {
+              throw new Error(statusResult.message || 'Erro ao processar lote na prefeitura.')
+            }
+          }
+
+          // Clear any previous errors for this student
+          setNfseErrors(prev => {
+            const next = { ...prev }
+            delete next[studentId]
+            return next
+          })
           successCount++
+
+          // Real-time update of invoices in UI as each student finishes
+          await refreshInvoices()
         } catch (err: any) {
-          console.error(`Falha ao emitir nota para o aluno ${studentId}:`, err.message)
+          console.error(`Falha ao emitir nota para o aluno ${fullName} (${studentId}):`, err.message)
           const errMsg = err.message || 'Erro na emissão em lote'
           setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
           failCount++
         }
       }
 
-      toast.info(`Emissão em lote concluída! ✓ ${successCount} enviados para processamento. ${failCount > 0 ? `✗ ${failCount} falharam.` : ''}`)
+      if (successCount > 0 && failCount === 0) {
+        toast.success(`Emissão em lote concluída! ✓ ${successCount} NFS-e emitidas com sucesso.`)
+      } else if (successCount > 0 && failCount > 0) {
+        toast.info(`Emissão em lote concluída: ✓ ${successCount} emitidas com sucesso | ✗ ${failCount} falharam.`)
+      } else {
+        toast.error(`Falha na emissão em lote: todas as ${failCount} notas falharam.`)
+      }
+
       setSelectedStudentIds([])
+      await refreshInvoices()
       await refreshProfiles()
     } catch (err: any) {
       toast.error(err.message)

@@ -61,13 +61,10 @@ export default function AdminPaymentsTab({
     }
   }
 
-  const handleCheckStatus = async (invoiceId: string) => {
-    setCheckingStatusId(invoiceId)
-    try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Não autenticado.')
-
+  const checkNfseStatus = async (invoiceId: string, token: string, maxRetries = 3): Promise<{ status: string; nfs_e_pdf_link?: string; message?: string }> => {
+    let attempts = 0
+    while (attempts < maxRetries) {
+      attempts++
       const response = await fetch('/api/admin/check-nfse-status', {
         method: 'POST',
         headers: {
@@ -76,9 +73,32 @@ export default function AdminPaymentsTab({
         },
         body: JSON.stringify({ invoice_id: invoiceId })
       })
-
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao verificar status.')
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao verificar status.')
+      }
+
+      if (data.status === 'emitida' || data.status === 'erro') {
+        return data
+      }
+
+      if (data.status === 'processando' && attempts < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } else {
+        return data
+      }
+    }
+    return { status: 'processando', message: 'Lote em processamento pela prefeitura.' }
+  }
+
+  const handleCheckStatus = async (invoiceId: string) => {
+    setCheckingStatusId(invoiceId)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const data = await checkNfseStatus(invoiceId, token, 1)
 
       if (data.status === 'emitida' && data.nfs_e_pdf_link) {
         toast.success(t(language, 'success_invoice_banner').replace('{name}', ''))
@@ -119,10 +139,17 @@ export default function AdminPaymentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao emitir nota fiscal.')
 
-      // Auto-check status 700ms after issuance so the PDF link populates without manual click
+      // Auto-check status 300ms after issuance so the PDF link populates without manual click
       if (data.invoice_id) {
         await new Promise(resolve => setTimeout(resolve, 300))
-        await handleCheckStatus(data.invoice_id)
+        const statusResult = await checkNfseStatus(data.invoice_id, token, 3)
+        if (statusResult.status === 'emitida' && statusResult.nfs_e_pdf_link) {
+          toast.success(t(language, 'success_invoice_banner').replace('{name}', fullName))
+        } else if (statusResult.status === 'erro') {
+          throw new Error(statusResult.message || 'Erro ao processar lote na prefeitura.')
+        } else {
+          toast.info(statusResult.message || t(language, 'success_lote_envio_banner'))
+        }
       } else {
         // Fallback toast if no invoice_id returned
         if (data.nfs_e_pdf_link) {
@@ -130,8 +157,8 @@ export default function AdminPaymentsTab({
         } else {
           toast.info(`${t(language, 'success_lote_envio_banner')} (${fullName})`)
         }
-        await refreshInvoices()
       }
+      await refreshInvoices()
     } catch (err: any) {
       const errMsg = err.message || 'Erro ao emitir NFS-e'
       setNfseErrors(prev => ({ ...prev, [studentId]: errMsg }))
