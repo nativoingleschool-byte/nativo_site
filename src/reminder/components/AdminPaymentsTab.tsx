@@ -310,7 +310,7 @@ export default function AdminPaymentsTab({
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
         <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
           <input
-            placeholder={`${t(language, 'edit_student_title').split(' ')[0]}...`}
+            placeholder={t(language, 'search_student_placeholder')}
             value={paymentSearch}
             onChange={(e) => setPaymentSearch(e.target.value)}
             style={{ flex: 2 }}
@@ -320,10 +320,10 @@ export default function AdminPaymentsTab({
             onChange={(e) => setPaymentFilter(e.target.value as any)}
             style={{ flex: 1 }}
           >
-            <option value="all">All status</option>
-            <option value="em_dia">Green ({t(language, 'financial_ok')})</option>
-            <option value="pendente">Yellow ({t(language, 'financial_pending')})</option>
-            <option value="atrasado">Red ({t(language, 'financial_late')})</option>
+            <option value="all">{t(language, 'all_status')}</option>
+            <option value="em_dia">{t(language, 'green_status')}</option>
+            <option value="pendente">{t(language, 'yellow_status')}</option>
+            <option value="atrasado">{t(language, 'red_status')}</option>
           </select>
         </div>
       </div>
@@ -354,7 +354,7 @@ export default function AdminPaymentsTab({
               <span style={{ fontSize: '0.82rem', opacity: 0.9 }}>
                 {Object.entries(nfseErrors).map(([id, err]) => {
                   const st = students.find(s => s.id === id)
-                  return `${st?.full_name || 'Aluno'}: ${err}`
+                  return `${st?.full_name || t(language, 'role_student')}: ${err}`
                 }).join(' | ')}
               </span>
             </div>
@@ -381,7 +381,7 @@ export default function AdminPaymentsTab({
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => handleSort('name')}
-                title="Ordenar por Nome"
+                title={t(language, 'order_by_name')}
               >
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span>{t(language, 'full_name')}</span>
@@ -393,7 +393,7 @@ export default function AdminPaymentsTab({
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => handleSort('status')}
-                title="Ordenar por Status Financeiro"
+                title={t(language, 'order_by_status')}
               >
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span>{t(language, 'student_financial_status')}</span>
@@ -441,7 +441,7 @@ export default function AdminPaymentsTab({
                     <td style={{ padding: '1rem' }}>
                       {lastInvoice ? (
                         <div>
-                          <div style={{ fontWeight: 'bold' }}>{lastInvoice.billing_period || 'Não especificado'}</div>
+                          <div style={{ fontWeight: 'bold' }}>{lastInvoice.billing_period || t(language, 'not_specified')}</div>
                           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{new Date(lastInvoice.created_at).toLocaleDateString()}</div>
                         </div>
                       ) : (
@@ -456,7 +456,7 @@ export default function AdminPaymentsTab({
                           disabled={downloadingPdfId === lastInvoice.id}
                           onClick={() => void downloadNfsePdf(lastInvoice.id, student.full_name)}
                         >
-                          {downloadingPdfId === lastInvoice.id ? 'Gerando...' : t(language, 'view_pdf')}
+                          {downloadingPdfId === lastInvoice.id ? t(language, 'generating_pdf') : t(language, 'view_pdf')}
                         </button>
                       ) : lastInvoice?.protocolo_recebimento ? (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -474,7 +474,7 @@ export default function AdminPaymentsTab({
                             disabled={issuingNfseId === student.id}
                             onClick={() => void handleResetAndRetryNfse(student.id, student.full_name)}
                           >
-                            🔄 Re-emitir
+                            {t(language, 'reissue_reset')}
                           </button>
                         </div>
                       ) : (
