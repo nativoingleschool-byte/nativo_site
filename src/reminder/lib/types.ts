@@ -104,3 +104,21 @@ export type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
+
+export type BankTransactionStatus = 'pending' | 'matched' | 'issued' | 'failed' | 'ignored'
+
+export type BankTransaction = {
+  id: string
+  fitid?: string | null
+  transaction_date: string
+  amount: number
+  memo: string
+  student_id?: string | null
+  nfse_id?: string | null
+  status: BankTransactionStatus
+  raw_data?: any
+  created_at?: string
+  student?: Profile | null
+  errorMessage?: string | null
+}
+

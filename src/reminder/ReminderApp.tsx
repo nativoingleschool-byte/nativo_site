@@ -35,9 +35,11 @@ import Topbar from './components/Topbar'
 import AdminStudentsTab from './components/AdminStudentsTab'
 import AdminPaymentsTab from './components/AdminPaymentsTab'
 import AdminStaffTab from './components/AdminStaffTab'
+import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import { registerAppServiceWorker } from './pwa'
+import { Receipt } from 'lucide-react'
 
 type AccountFormState = {
   full_name: string
@@ -143,7 +145,7 @@ function ReminderAppInner() {
   const [now, setNow] = useState(new Date())
   const [pendingLink, setPendingLink] = useState<PendingLink>({ lessonId: null, intent: null })
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
-  const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff'>('students')
+  const [adminTab, setAdminTab] = useState<'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation'>('students')
   const [studentTab, setStudentTab] = useState<'account' | 'lessons' | 'invoices'>('lessons')
   const [teacherTab, setTeacherTab] = useState<'calendar' | 'worklog' | 'profile'>('calendar')
   const [teacherNotes, setTeacherNotes] = useState('')
@@ -1272,6 +1274,8 @@ function ReminderAppInner() {
         installPrompt={installPrompt}
         promptInstall={promptInstall}
         handleLogout={handleLogout}
+        adminTab={adminTab}
+        setAdminTab={setAdminTab}
       />
 
       <main className="main-content">
@@ -1297,6 +1301,7 @@ function ReminderAppInner() {
                   {adminTab === 'payments' && t(language, 'payments')}
                   {adminTab === 'calendar' && t(language, 'calendar')}
                   {adminTab === 'staff' && t(language, 'staff_control')}
+                  {adminTab === 'reconciliation' && t(language, 'bank_reconciliation')}
                 </h2>
               </div>
               {/* Mobile Tab Dropdown */}
@@ -1309,6 +1314,7 @@ function ReminderAppInner() {
                   <option value="payments">{t(language, 'payments')}</option>
                   <option value="calendar">{t(language, 'calendar')}</option>
                   <option value="staff">{t(language, 'staff_control')}</option>
+                  <option value="reconciliation">{t(language, 'bank_reconciliation')}</option>
                 </select>
               </div>
 
@@ -1341,6 +1347,14 @@ function ReminderAppInner() {
                   onClick={() => setAdminTab('staff')}
                 >
                   {t(language, 'staff_control')}
+                </button>
+                <button
+                  type="button"
+                  className={adminTab === 'reconciliation' ? 'tab-button tab-button-active flex items-center gap-1.5' : 'tab-button flex items-center gap-1.5'}
+                  onClick={() => setAdminTab('reconciliation')}
+                >
+                  <Receipt size={16} />
+                  <span>{t(language, 'bank_reconciliation')}</span>
                 </button>
               </div>
             </div>
@@ -1442,6 +1456,14 @@ function ReminderAppInner() {
                 handleBatchUpdatePayout={handleBatchUpdatePayout}
                 handleUpdateTeacherPayout={handleUpdateTeacherPayout}
                 setAppError={setAppError}
+              />
+            )}
+
+            {adminTab === 'reconciliation' && (
+              <BankReconciliationTab
+                language={language}
+                students={students}
+                refreshInvoices={refreshInvoices}
               />
             )}
           </section>

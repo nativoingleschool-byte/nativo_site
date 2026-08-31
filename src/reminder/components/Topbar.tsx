@@ -1,7 +1,7 @@
 import { BrowserPermission, InstallPromptEvent, Profile } from '../lib/types'
 import { Language, supportedLanguages, t } from '../lib/i18n'
 import { formatDateTime } from '../lib/utils'
-import { LogOut, Bell, BellOff, Download, Globe, Clock, User } from 'lucide-react'
+import { LogOut, Bell, BellOff, Download, Globe, Clock, User, Receipt } from 'lucide-react'
 
 const appTimeZones = [
   { value: 'America/Sao_Paulo', label: 'BRT' },
@@ -28,6 +28,8 @@ interface TopbarProps {
   installPrompt: InstallPromptEvent | null
   promptInstall: () => Promise<void>
   handleLogout: () => Promise<void>
+  adminTab?: 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation'
+  setAdminTab?: (tab: 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation') => void
 }
 
 export default function Topbar({
@@ -44,6 +46,8 @@ export default function Topbar({
   installPrompt,
   promptInstall,
   handleLogout,
+  adminTab,
+  setAdminTab,
 }: TopbarProps) {
   const isPushEnabled = notificationPermission === 'granted' && profile.push_enabled
   const roleLabel = profile.role === 'admin' 
@@ -65,6 +69,65 @@ export default function Topbar({
           </span>
         </div>
       </div>
+
+      {/* Center: Admin Navigation Bar */}
+      {profile.role === 'admin' && adminTab && setAdminTab && (
+        <nav className="topbar-section hidden lg:flex items-center gap-1.5">
+          <button
+            type="button"
+            className={adminTab === 'students' ? 'tab-button tab-button-active text-xs py-1 px-3' : 'tab-button text-xs py-1 px-3'}
+            onClick={() => setAdminTab('students')}
+          >
+            {t(language, 'student_pool')}
+          </button>
+          <button
+            type="button"
+            className={adminTab === 'payments' ? 'tab-button tab-button-active text-xs py-1 px-3' : 'tab-button text-xs py-1 px-3'}
+            onClick={() => setAdminTab('payments')}
+          >
+            {t(language, 'payments')}
+          </button>
+          <button
+            type="button"
+            className={adminTab === 'calendar' ? 'tab-button tab-button-active text-xs py-1 px-3' : 'tab-button text-xs py-1 px-3'}
+            onClick={() => setAdminTab('calendar')}
+          >
+            {t(language, 'calendar')}
+          </button>
+          <button
+            type="button"
+            className={adminTab === 'staff' ? 'tab-button tab-button-active text-xs py-1 px-3' : 'tab-button text-xs py-1 px-3'}
+            onClick={() => setAdminTab('staff')}
+          >
+            {t(language, 'staff_control')}
+          </button>
+          <button
+            type="button"
+            className={adminTab === 'reconciliation' ? 'tab-button tab-button-active text-xs py-1 px-3 flex items-center gap-1.5' : 'tab-button text-xs py-1 px-3 flex items-center gap-1.5'}
+            onClick={() => setAdminTab('reconciliation')}
+          >
+            <Receipt size={14} />
+            <span>{t(language, 'bank_reconciliation')}</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Mobile Admin Nav Selector */}
+      {profile.role === 'admin' && adminTab && setAdminTab && (
+        <div className="lg:hidden">
+          <select
+            className="topbar-select text-xs bg-slate-900/90 border border-slate-700/60 rounded px-2 py-1"
+            value={adminTab}
+            onChange={(e) => setAdminTab(e.target.value as any)}
+          >
+            <option value="students">{t(language, 'student_pool')}</option>
+            <option value="payments">{t(language, 'payments')}</option>
+            <option value="calendar">{t(language, 'calendar')}</option>
+            <option value="staff">{t(language, 'staff_control')}</option>
+            <option value="reconciliation">{t(language, 'bank_reconciliation')}</option>
+          </select>
+        </div>
+      )}
 
       {/* Right: controls */}
       <div className="topbar-section">
