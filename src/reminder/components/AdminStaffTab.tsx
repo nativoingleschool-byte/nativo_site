@@ -89,7 +89,7 @@ export default function AdminStaffTab({
         cnpj: userForm.cnpj || '',
         taxa_hora_aula: userForm.taxa_hora_aula || 56.00,
       })
-      toast.success(`Membro da equipe ${created.full_name} adicionado com sucesso!`)
+      toast.success(t(language, 'staff_member_added').replace('{name}', created.full_name))
       setUserForm(defaultUserForm())
       await refreshProfiles()
     } catch (err: any) {
@@ -721,7 +721,7 @@ export default function AdminStaffTab({
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
-                    <span className="badge badge-confirmed" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>Professor</span>
+                    <span className="badge badge-confirmed" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>{t(language, 'teacher')}</span>
                   </div>
                   <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>{selectedTeacherForDetail.email}</p>
                 </div>
@@ -730,7 +730,7 @@ export default function AdminStaffTab({
                   style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                   onClick={() => setSelectedTeacherForDetail(null)}
                 >
-                  ✕ Fechar
+                  ✕ {t(language, 'close')}
                 </button>
               </div>
 
@@ -739,13 +739,13 @@ export default function AdminStaffTab({
                 
                 {/* Info Card */}
                 <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>Informações de Pagamento</h4>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>{t(language, 'payment_info_title')}</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
                     <div><span style={{ color: '#94a3b8' }}>CPF/CNPJ:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.cnpj || selectedTeacherForDetail.cpf || '-'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>Chave PIX:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.chave_pix || '-'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>Valor/Hora:</span> <strong style={{ color: '#10b981' }}>{currency} {Number(hourlyRate).toFixed(2)}</strong></div>
+                    <div><span style={{ color: '#94a3b8' }}>{t(language, 'pix_label')}:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.chave_pix || '-'}</strong></div>
+                    <div><span style={{ color: '#94a3b8' }}>{t(language, 'rate_hour')}:</span> <strong style={{ color: '#10b981' }}>{currency} {Number(hourlyRate).toFixed(2)}</strong></div>
                     <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Status Pagamento:</span>
+                      <span style={{ color: '#94a3b8' }}>{t(language, 'status')}:</span>
                       <span className={badgeClass(selectedTeacherForDetail.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
                         {selectedTeacherForDetail.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
                       </span>
@@ -759,7 +759,7 @@ export default function AdminStaffTab({
                           setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pago' })
                         }}
                       >
-                        Marcar Pago
+                        {t(language, 'mark_paid_btn')}
                       </button>
                       <button
                         className="secondary-button"
@@ -769,7 +769,7 @@ export default function AdminStaffTab({
                           setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pendente' })
                         }}
                       >
-                        Marcar Pendente
+                        {t(language, 'mark_pending_btn')}
                       </button>
                     </div>
                   </div>
@@ -777,18 +777,18 @@ export default function AdminStaffTab({
 
                 {/* NF Card */}
                 <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>Notas Fiscais Enviadas</h4>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>{t(language, 'sent_invoices_title')}</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ color: '#94a3b8' }}>Status NF:</span>
                       <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
-                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'Não se aplica' : 'Pendente ✗'}
+                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? t(language, 'nf_status_na') : t(language, 'nf_status_pending')}
                       </span>
                     </div>
 
                     {selectedTeacherForDetail.nota_fiscal_url ? (
                       <div style={{ marginTop: '0.5rem' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem' }}>Arquivo enviado pelo professor:</p>
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem' }}>{t(language, 'file_sent_by_teacher')}</p>
                         <button
                           type="button"
                           className="primary-button"
@@ -822,21 +822,21 @@ export default function AdminStaffTab({
                             }
                           }}
                         >
-                          📄 Visualizar / Baixar Nota Fiscal
+                          {t(language, 'view_download_nf')}
                         </button>
                       </div>
                     ) : (
                       <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
                         {selectedTeacherForDetail.status_nota_fiscal === 'enviada'
-                          ? 'NF enviada pelo professor (status marcado como enviado).'
-                          : 'Nenhuma Nota Fiscal anexada para o mês atual.'}
+                          ? t(language, 'nf_marked_sent')
+                          : t(language, 'no_nf_attached_month')}
                       </p>
                     )}
 
                     {/* Admin Actions for NF */}
                     <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <label className="secondary-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', padding: '0.35rem 0.7rem', cursor: 'pointer' }}>
-                        <span>{selectedTeacherForDetail.nota_fiscal_url ? 'Substituir NF' : 'Anexar NF'}</span>
+                        <span>{selectedTeacherForDetail.nota_fiscal_url ? t(language, 'replace_nf_btn') : t(language, 'attach_nf_btn')}</span>
                         <input
                           type="file"
                           accept="application/pdf,image/*"
@@ -857,7 +857,7 @@ export default function AdminStaffTab({
                                 nota_fiscal_url: fileUrl
                               })
                               await refreshProfiles()
-                              toast.success('Nota Fiscal anexada com sucesso!')
+                              toast.success(t(language, 'nf_upload_success'))
                             }
                             reader.readAsDataURL(file)
                           }}
@@ -871,10 +871,10 @@ export default function AdminStaffTab({
                           await supabase.from('profiles').update({ status_nota_fiscal: nextStatus }).eq('id', selectedTeacherForDetail.id)
                           setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_nota_fiscal: nextStatus })
                           await refreshProfiles()
-                          toast.success('Status da NF atualizado!')
+                          toast.success(t(language, 'data_updated_success'))
                         }}
                       >
-                        Alternar Status
+                        {t(language, 'toggle_status_btn')}
                       </button>
                     </div>
                   </div>
@@ -885,7 +885,7 @@ export default function AdminStaffTab({
               {/* Monthly Lesson History */}
               <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>Histórico de Aulas por Mês</h4>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'monthly_class_history')}</h4>
                   
                   {/* Month Selector */}
                   <select
@@ -902,15 +902,15 @@ export default function AdminStaffTab({
                 {/* Monthly Summary Bar */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
                   <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Aulas Realizadas</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'classes_conducted')}</span>
                     <strong style={{ fontSize: '1.1rem', color: '#fff' }}>{completedLessons.length}</strong>
                   </div>
                   <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Horas Trabalhadas</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'total_hours_worked')}</span>
                     <strong style={{ fontSize: '1.1rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
                   </div>
                   <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Valor Apurado</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'calculated_amount')}</span>
                     <strong style={{ fontSize: '1.1rem', color: '#10b981' }}>{currency} {totalAmount.toFixed(2)}</strong>
                   </div>
                 </div>
@@ -920,17 +920,17 @@ export default function AdminStaffTab({
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
-                        <th style={{ padding: '0.6rem' }}>Data / Hora</th>
-                        <th style={{ padding: '0.6rem' }}>Aluno</th>
-                        <th style={{ padding: '0.6rem' }}>Turma / Matéria</th>
-                        <th style={{ padding: '0.6rem' }}>Duração</th>
-                        <th style={{ padding: '0.6rem' }}>Status</th>
-                        <th style={{ padding: '0.6rem', textAlign: 'right' }}>Valor</th>
+                        <th style={{ padding: '0.6rem' }}>{t(language, 'date_time_col')}</th>
+                        <th style={{ padding: '0.6rem' }}>{t(language, 'student_col')}</th>
+                        <th style={{ padding: '0.6rem' }}>{t(language, 'class_subject_col')}</th>
+                        <th style={{ padding: '0.6rem' }}>{t(language, 'duration_col')}</th>
+                        <th style={{ padding: '0.6rem' }}>{t(language, 'status')}</th>
+                        <th style={{ padding: '0.6rem', textAlign: 'right' }}>{t(language, 'value_col')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {monthLessons.map((l) => {
-                        const studentName = profiles.find(p => p.id === l.student_id)?.full_name || 'Aluno'
+                        const studentName = profiles.find(p => p.id === l.student_id)?.full_name || t(language, 'role_student')
                         const isHappened = l.teacher_lesson_status === 'happened'
                         const lessonHours = (l.duration_minutes || 60) / 60
                         const lessonVal = isHappened ? lessonHours * Number(hourlyRate) : 0
@@ -938,7 +938,7 @@ export default function AdminStaffTab({
                         return (
                           <tr key={l.id} style={{ borderBottom: '1px solid #1e293b' }}>
                             <td style={{ padding: '0.6rem', color: '#f8fafc' }}>
-                              {new Date(l.starts_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(l.starts_at).toLocaleString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td style={{ padding: '0.6rem', fontWeight: 'bold', color: '#38bdf8' }}>{studentName}</td>
                             <td style={{ padding: '0.6rem', color: '#94a3b8' }}>{l.subject || l.class_name || '-'}</td>
@@ -949,9 +949,9 @@ export default function AdminStaffTab({
                                 l.teacher_lesson_status === 'student_no_show' ? 'pending' :
                                 l.teacher_lesson_status === 'not_happened' ? 'danger' : 'secondary'
                               )}>
-                                {l.teacher_lesson_status === 'happened' ? 'Aconteceu ✓' :
-                                 l.teacher_lesson_status === 'student_no_show' ? 'Aluno Faltou' :
-                                 l.teacher_lesson_status === 'not_happened' ? 'Não Aconteceu' : 'Agendada'}
+                                {l.teacher_lesson_status === 'happened' ? t(language, 'status_happened') :
+                                 l.teacher_lesson_status === 'student_no_show' ? t(language, 'status_student_noshow') :
+                                 l.teacher_lesson_status === 'not_happened' ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
                               </span>
                             </td>
                             <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isHappened ? '#10b981' : '#64748b' }}>
@@ -963,7 +963,7 @@ export default function AdminStaffTab({
                       {monthLessons.length === 0 && (
                         <tr>
                           <td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
-                            Nenhuma aula registrada neste mês.
+                            {t(language, 'no_classes_month')}
                           </td>
                         </tr>
                       )}
