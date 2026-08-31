@@ -126,13 +126,14 @@ export default function BankReconciliationTab({
           const content = e.target?.result as string
           if (!content) throw new Error('Arquivo vazio ou ilegível.')
 
-          const response = await fetch('/api/admin/parse-statement', {
+          const response = await fetch('/api/admin/reconciliation', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`
             },
             body: JSON.stringify({
+              action: 'parse',
               file_content: content,
               filename: file.name
             })
@@ -233,13 +234,14 @@ export default function BankReconciliationTab({
       const token = sessionData.data.session?.access_token
       if (!token) throw new Error('Não autenticado.')
 
-      const response = await fetch('/api/admin/issue-single-statement-nf', {
+      const response = await fetch('/api/admin/reconciliation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
+          action: 'issue-single',
           transaction_id: tx.id,
           student_id: tx.student_id
         })
@@ -319,13 +321,14 @@ export default function BankReconciliationTab({
         setIssuingTxId(item.id)
 
         try {
-          const response = await fetch('/api/admin/issue-single-statement-nf', {
+          const response = await fetch('/api/admin/reconciliation', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`
             },
             body: JSON.stringify({
+              action: 'issue-single',
               transaction_id: item.id,
               student_id: item.student_id
             })
