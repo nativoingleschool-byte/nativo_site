@@ -18,7 +18,10 @@ import {
   AlertTriangle,
   ArrowRight,
   Filter,
-  Check
+  Check,
+  Trash2,
+  RotateCcw,
+  X
 } from 'lucide-react'
 
 interface BankReconciliationTabProps {
@@ -73,6 +76,11 @@ export default function BankReconciliationTab({
   } | null>(null)
   const [issuingTxId, setIssuingTxId] = useState<string | null>(null)
   const [txErrors, setTxErrors] = useState<Record<string, string>>({})
+
+  // Reset & Delete states
+  const [showResetModal, setShowResetModal] = useState<boolean>(false)
+  const [isResetting, setIsResetting] = useState<boolean>(false)
+  const [resetIncludeIssued, setResetIncludeIssued] = useState<boolean>(false)
 
   // 1. Fetch recent transactions on mount
   const fetchTransactions = async () => {
@@ -389,6 +397,88 @@ export default function BankReconciliationTab({
     abortBatchRef.current = true
   }
 
+  // 6. Reset Statement Info Handler
+  const handleConfirmResetStatement = async () => {
+    setIsResetting(true)
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/reconciliation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'reset',
+          include_issued: resetIncludeIssued
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao resetar extrato.')
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      setSelectedIds(new Set())
+      setTxErrors({})
+      setShowResetModal(false)
+      setResetIncludeIssued(false)
+
+      toast.success(t(language, 'reset_statement_success'))
+      await fetchTransactions()
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao resetar extrato.')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
+  // 7. Delete specific transactions (single or bulk)
+  const handleDeleteTransactions = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return
+    if (!confirm(t(language, 'delete_transactions_confirm'))) return
+
+    try {
+      const sessionData = await supabase.auth.getSession()
+      const token = sessionData.data.session?.access_token
+      if (!token) throw new Error('Não autenticado.')
+
+      const response = await fetch('/api/admin/reconciliation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          transaction_ids: ids
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao excluir transações.')
+      }
+
+      setTransactions(prev => prev.filter(t => !ids.includes(t.id)))
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        ids.forEach(id => next.delete(id))
+        return next
+      })
+
+      toast.success(`${ids.length} transação(ões) excluída(s) com sucesso.`)
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir transações.')
+    }
+  }
+
   // Toggle selection
   const toggleSelectAll = () => {
     const matchedFiltered = filteredTransactions.filter(t => t.status === 'matched')
@@ -451,7 +541,7 @@ export default function BankReconciliationTab({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="file"
               ref={fileInputRef}
@@ -462,10 +552,22 @@ export default function BankReconciliationTab({
                 if (file) handleFileUpload(file)
               }}
             />
+            {transactions.length > 0 && (
+              <button
+                type="button"
+                className="secondary-button flex items-center gap-2 text-sm text-slate-300 hover:text-rose-300 hover:border-rose-500/40 transition-colors"
+                disabled={isUploading || isBatchRunning || isResetting}
+                onClick={() => setShowResetModal(true)}
+                title="Limpar dados do extrato importado"
+              >
+                <RotateCcw size={15} />
+                <span>{t(language, 'reset_statement')}</span>
+              </button>
+            )}
             <button
               type="button"
               className="primary-button flex items-center gap-2"
-              disabled={isUploading || isBatchRunning}
+              disabled={isUploading || isBatchRunning || isResetting}
               onClick={() => fileInputRef.current?.click()}
             >
               {isUploading ? (
@@ -606,8 +708,20 @@ export default function BankReconciliationTab({
           </div>
         </div>
 
-        {/* Batch action button */}
-        <div className="flex items-center gap-3">
+        {/* Batch action button & Bulk delete */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              className="danger-button flex items-center gap-1.5 text-xs py-1.5 px-3"
+              onClick={() => handleDeleteTransactions(Array.from(selectedIds))}
+              title="Excluir transações selecionadas"
+            >
+              <Trash2 size={13} />
+              <span>{t(language, 'delete_selected_transactions')} ({selectedIds.size})</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="secondary-button flex items-center gap-2 text-sm"
@@ -791,24 +905,38 @@ export default function BankReconciliationTab({
 
                       {/* Actions */}
                       <td className="p-3.5 text-center">
-                        {tx.status === 'issued' ? (
-                          <span className="text-xs text-slate-500">Concluído</span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={!tx.student_id || isIssuingThis || isBatchRunning}
-                            onClick={() => handleEmitSingleNfse(tx)}
-                            className="primary-button text-xs py-1 px-2.5 flex items-center gap-1 mx-auto disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={!tx.student_id ? 'Vincule um aluno primeiro' : 'Emitir NFS-e individualmente'}
-                          >
-                            {isIssuingThis ? (
-                              <RefreshCw size={12} className="animate-spin" />
-                            ) : (
-                              <Play size={12} className="fill-current" />
-                            )}
-                            <span>{isIssuingThis ? 'Emitindo...' : 'Emitir NFS-e'}</span>
-                          </button>
-                        )}
+                        <div className="flex items-center justify-center gap-1.5">
+                          {tx.status === 'issued' ? (
+                            <span className="text-xs text-slate-500">Concluído</span>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={!tx.student_id || isIssuingThis || isBatchRunning}
+                                onClick={() => handleEmitSingleNfse(tx)}
+                                className="primary-button text-xs py-1 px-2.5 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={!tx.student_id ? 'Vincule um aluno primeiro' : 'Emitir NFS-e individualmente'}
+                              >
+                                {isIssuingThis ? (
+                                  <RefreshCw size={12} className="animate-spin" />
+                                ) : (
+                                  <Play size={12} className="fill-current" />
+                                )}
+                                <span>{isIssuingThis ? 'Emitindo...' : 'Emitir'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={isBatchRunning || isIssuingThis}
+                                onClick={() => handleDeleteTransactions([tx.id])}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-800/40 transition-colors"
+                                title="Remover transação do extrato"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -818,6 +946,79 @@ export default function BankReconciliationTab({
           </table>
         </div>
       </div>
+
+      {/* 6. Reset Statement Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                  <RotateCcw size={20} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-100">
+                    {t(language, 'reset_statement')}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Limpar dados importados do extrato
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-300">
+              {t(language, 'reset_statement_confirm')}
+            </p>
+
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={resetIncludeIssued}
+                  onChange={(e) => setResetIncludeIssued(e.target.checked)}
+                  className="rounded border-slate-700 text-rose-500 focus:ring-rose-500 mt-0.5"
+                />
+                <span>
+                  <strong className="text-slate-200 block">Excluir também transações já emitidas</strong>
+                  Por padrão, transações com NFS-e emitida são mantidas no histórico. Marque esta opção se desejar apagar todo o histórico de extratos.
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="secondary-button text-sm py-2 px-4"
+                disabled={isResetting}
+              >
+                {t(language, 'cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetStatement}
+                disabled={isResetting}
+                className="danger-button flex items-center gap-2 text-sm py-2 px-4"
+              >
+                {isResetting ? (
+                  <RefreshCw size={15} className="animate-spin" />
+                ) : (
+                  <Trash2 size={15} />
+                )}
+                <span>{isResetting ? 'Resetando...' : 'Confirmar e Resetar'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -211,6 +211,59 @@ async function handleIssueSingle(supabaseAdmin, req, res, body) {
   });
 }
 
+/**
+ * Handles action: "reset" -> deletes uploaded bank transactions
+ * Default: deletes unissued transactions (status != 'issued')
+ * If include_issued: true -> deletes all bank transactions
+ */
+async function handleReset(supabaseAdmin, req, res, body) {
+  const { include_issued } = body || {};
+
+  let query = supabaseAdmin.from('bank_transactions').delete();
+  if (include_issued) {
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+  } else {
+    query = query.neq('status', 'issued');
+  }
+
+  const { data, error } = await query.select('id');
+  if (error) {
+    throw new Error(`Falha ao resetar extrato bancário: ${error.message}`);
+  }
+
+  return json(res, 200, {
+    success: true,
+    deleted_count: data?.length || 0,
+    message: 'Extrato resetado com sucesso.'
+  });
+}
+
+/**
+ * Handles action: "delete" -> deletes specific bank transaction IDs
+ */
+async function handleDelete(supabaseAdmin, req, res, body) {
+  const { transaction_ids } = body || {};
+  if (!Array.isArray(transaction_ids) || transaction_ids.length === 0) {
+    return json(res, 400, { error: 'Missing or empty transaction_ids array.' });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('bank_transactions')
+    .delete()
+    .in('id', transaction_ids)
+    .select('id');
+
+  if (error) {
+    throw new Error(`Falha ao remover transações: ${error.message}`);
+  }
+
+  return json(res, 200, {
+    success: true,
+    deleted_count: data?.length || 0,
+    message: 'Transações removidas com sucesso.'
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' });
@@ -235,8 +288,12 @@ export default async function handler(req, res) {
       return await handleParse(supabaseAdmin, req, res, body);
     } else if (action === 'issue-single') {
       return await handleIssueSingle(supabaseAdmin, req, res, body);
+    } else if (action === 'reset') {
+      return await handleReset(supabaseAdmin, req, res, body);
+    } else if (action === 'delete') {
+      return await handleDelete(supabaseAdmin, req, res, body);
     } else {
-      return json(res, 400, { error: `Invalid or missing action: "${action}". Expected "parse" or "issue-single".` });
+      return json(res, 400, { error: `Invalid or missing action: "${action}". Expected "parse", "issue-single", "reset", or "delete".` });
     }
 
   } catch (error) {
