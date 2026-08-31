@@ -41,17 +41,97 @@ const assertAdmin = async (req) => {
   return adminClient;
 };
 
+async function handleCleanup(supabaseAdmin, req, res, student_names) {
+  const results = [];
+
+  for (const name of student_names) {
+    const { data: students, error: findError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name')
+      .ilike('full_name', `%${name}%`);
+
+    if (findError) {
+      results.push({ name, error: `Search failed: ${findError.message}` });
+      continue;
+    }
+
+    if (!students || students.length === 0) {
+      results.push({ name, error: 'Student not found.' });
+      continue;
+    }
+
+    for (const student of students) {
+      const currentPeriod = new Date().toISOString().substring(0, 7);
+      const { data: failedInvoices, error: invoiceError } = await supabaseAdmin
+        .from('invoices')
+        .select('id, billing_period, status, protocolo_recebimento, nfs_e_pdf_link, created_at')
+        .eq('student_id', student.id)
+        .eq('billing_period', currentPeriod);
+
+      if (invoiceError) {
+        results.push({ name: student.full_name, error: `Invoice query failed: ${invoiceError.message}` });
+        continue;
+      }
+
+      if (!failedInvoices || failedInvoices.length === 0) {
+        results.push({ name: student.full_name, message: 'No failed invoices found.', invoices_updated: 0 });
+        continue;
+      }
+
+      const invoiceIds = failedInvoices.map(inv => inv.id);
+      const { error: deleteError } = await supabaseAdmin
+        .from('invoices')
+        .delete()
+        .in('id', invoiceIds);
+
+      if (deleteError) {
+        results.push({ name: student.full_name, error: `Delete failed: ${deleteError.message}` });
+        continue;
+      }
+
+      results.push({
+        name: student.full_name,
+        student_id: student.id,
+        invoices_deleted: failedInvoices.length,
+        invoice_details: failedInvoices.map(inv => ({
+          id: inv.id,
+          billing_period: inv.billing_period,
+          old_status: inv.status,
+          new_status: 'DELETED',
+          protocolo: inv.protocolo_recebimento
+        }))
+      });
+    }
+  }
+
+  return json(res, 200, { success: true, results });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' });
   }
 
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      return json(res, 400, { error: 'Invalid JSON payload.' });
+    }
+  }
+
   try {
     const supabaseAdmin = await assertAdmin(req);
 
-    const { invoice_id } = req.body || {};
+    // Support cleanup action
+    if (body?.student_names && Array.isArray(body.student_names)) {
+      return await handleCleanup(supabaseAdmin, req, res, body.student_names);
+    }
+
+    const { invoice_id } = body || {};
     if (!invoice_id) {
-      return json(res, 400, { error: 'Missing invoice_id.' });
+      return json(res, 400, { error: 'Missing invoice_id or student_names.' });
     }
 
     // 1. Fetch invoice from database
@@ -68,7 +148,6 @@ export default async function handler(req, res) {
     // If already has PDF link, return it directly
     if (invoice.nfs_e_pdf_link) {
       let finalLink = invoice.nfs_e_pdf_link;
-      // Auto-correct older broken links
       if (finalLink.includes('inscricao=14.B.Z59.82-0')) {
         try {
           const urlObj = new URL(finalLink);
@@ -79,7 +158,6 @@ export default async function handler(req, res) {
           urlObj.search = params.toString();
           finalLink = urlObj.toString();
           
-          // Asynchronously update db with corrected link
           supabaseAdmin.from('invoices').update({ nfs_e_pdf_link: finalLink }).eq('id', invoice.id).then();
         } catch (e) {
           // ignore
@@ -107,7 +185,6 @@ export default async function handler(req, res) {
     }
 
     if (result.status === 'erro') {
-      // Update invoice status to failed using correct enum falha_emissao
       const { error: updateError } = await supabaseAdmin
         .from('invoices')
         .update({ status: 'falha_emissao' })
@@ -124,7 +201,6 @@ export default async function handler(req, res) {
     }
 
     if (result.status === 'concluido' && result.nfs_e_pdf_link) {
-      // Update invoice with PDF link and NFS-e identifiers
       const { error: updateError } = await supabaseAdmin
         .from('invoices')
         .update({
@@ -147,7 +223,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Fallback
     return json(res, 200, {
       status: 'desconhecido',
       message: 'Resposta inesperada da prefeitura.',

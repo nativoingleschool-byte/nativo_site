@@ -383,7 +383,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       const token = sessionData.data.session?.access_token
       if (!token) throw new Error('Não autenticado.')
 
-      await fetch('/api/admin/cleanup-failed-invoices', {
+      await fetch('/api/admin/check-nfse-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
