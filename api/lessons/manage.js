@@ -72,13 +72,22 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     throw new Error('At least one student is required.')
   }
 
+  const startsAt = new Date(payload.starts_at)
+  const duration = Number(payload.duration_minutes) || 60
+  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
+  const teacherLessonStatus = payload.teacher_lesson_status ?? null
+  const status = payload.status ?? (teacherLessonStatus === 'happened' ? 'concluida' : 'agendada')
+
   const rows = studentIds.map((studentId) => ({
     subject: payload.subject.trim(),
     class_name: payload.class_name ?? '',
     student_id: studentId,
     teacher_id: teacherId,
-    starts_at: payload.starts_at,
-    duration_minutes: Number(payload.duration_minutes) || 60,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt,
+    duration_minutes: duration,
+    teacher_lesson_status: teacherLessonStatus,
+    status: status,
   }))
 
   const { data, error } = await supabaseAdmin.from('lessons').insert(rows).select('*')
@@ -108,12 +117,31 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   ensureTeacherPermission(profile, currentTeacherId)
   ensureTeacherPermission(profile, nextTeacherId)
 
+  const duration = Number(payload.duration_minutes) || existingLessons[0].duration_minutes || 60
+  const startsAtStr = payload.starts_at ?? existingLessons[0].starts_at
+  const startsAt = new Date(startsAtStr)
+  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
+
   const sharedUpdate = {
     subject: String(payload.subject ?? existingLessons[0].subject).trim(),
     class_name: String(payload.class_name ?? existingLessons[0].class_name),
     teacher_id: nextTeacherId,
-    starts_at: payload.starts_at ?? existingLessons[0].starts_at,
-    duration_minutes: Number(payload.duration_minutes) || existingLessons[0].duration_minutes,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt,
+    duration_minutes: duration,
+  }
+
+  if (payload.teacher_lesson_status !== undefined) {
+    sharedUpdate.teacher_lesson_status = payload.teacher_lesson_status
+    if (payload.teacher_lesson_status === 'happened') {
+      sharedUpdate.status = 'concluida'
+    } else if (payload.teacher_lesson_status === 'not_happened') {
+      sharedUpdate.status = 'cancelada'
+    }
+  }
+
+  if (payload.status !== undefined) {
+    sharedUpdate.status = payload.status
   }
 
   const { error: updateError } = await supabaseAdmin.from('lessons').update(sharedUpdate).in('id', lessonIds)
@@ -152,6 +180,137 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   return refreshedLessons ?? []
 }
 
+const createLesson = async (supabaseAdmin, profile, payload) => {
+  const teacherId = payload.teacher_id || profile.id
+  ensureTeacherPermission(profile, teacherId)
+
+  if (!payload.student_id) {
+    throw new Error('Student is required.')
+  }
+  if (!payload.subject?.trim()) {
+    throw new Error('Subject is required.')
+  }
+  if (!payload.starts_at) {
+    throw new Error('Start time is required.')
+  }
+
+  const startsAt = new Date(payload.starts_at)
+  const duration = Number(payload.duration_minutes) || 60
+  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
+  const teacherLessonStatus = payload.teacher_lesson_status ?? 'happened'
+  const status = payload.status ?? (teacherLessonStatus === 'happened' ? 'concluida' : 'agendada')
+
+  const row = {
+    subject: payload.subject.trim(),
+    class_name: payload.class_name ?? '',
+    student_id: payload.student_id,
+    teacher_id: teacherId,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt,
+    duration_minutes: duration,
+    teacher_lesson_status: teacherLessonStatus,
+    status: status,
+  }
+
+  const { data, error } = await supabaseAdmin.from('lessons').insert([row]).select('*').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+const updateLesson = async (supabaseAdmin, profile, payload) => {
+  if (!payload.lesson_id) {
+    throw new Error('Lesson ID is required.')
+  }
+
+  const { data: existingLesson, error: fetchError } = await supabaseAdmin
+    .from('lessons')
+    .select('*')
+    .eq('id', payload.lesson_id)
+    .single()
+
+  if (fetchError || !existingLesson) {
+    throw new Error('The lesson could not be found.')
+  }
+
+  const currentTeacherId = existingLesson.teacher_id
+  const nextTeacherId = payload.teacher_id || currentTeacherId
+  ensureTeacherPermission(profile, currentTeacherId)
+  ensureTeacherPermission(profile, nextTeacherId)
+
+  const duration = Number(payload.duration_minutes) || existingLesson.duration_minutes || 60
+  const startsAtStr = payload.starts_at ?? existingLesson.starts_at
+  const startsAt = new Date(startsAtStr)
+  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
+
+  const updateData = {
+    subject: String(payload.subject ?? existingLesson.subject).trim(),
+    class_name: String(payload.class_name ?? existingLesson.class_name ?? ''),
+    student_id: payload.student_id ?? existingLesson.student_id,
+    teacher_id: nextTeacherId,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt,
+    duration_minutes: duration,
+  }
+
+  if (payload.teacher_lesson_status !== undefined) {
+    updateData.teacher_lesson_status = payload.teacher_lesson_status
+    if (payload.teacher_lesson_status === 'happened') {
+      updateData.status = 'concluida'
+    } else if (payload.teacher_lesson_status === 'not_happened') {
+      updateData.status = 'cancelada'
+    }
+  }
+
+  if (payload.status !== undefined) {
+    updateData.status = payload.status
+  }
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('lessons')
+    .update(updateData)
+    .eq('id', payload.lesson_id)
+    .select('*')
+    .single()
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+
+  return updated
+}
+
+const deleteLesson = async (supabaseAdmin, profile, payload) => {
+  if (!payload.lesson_id) {
+    throw new Error('Lesson ID is required.')
+  }
+
+  const { data: existingLesson, error: fetchError } = await supabaseAdmin
+    .from('lessons')
+    .select('*')
+    .eq('id', payload.lesson_id)
+    .single()
+
+  if (fetchError || !existingLesson) {
+    throw new Error('The lesson could not be found.')
+  }
+
+  ensureTeacherPermission(profile, existingLesson.teacher_id)
+
+  const { error: deleteError } = await supabaseAdmin
+    .from('lessons')
+    .delete()
+    .eq('id', payload.lesson_id)
+
+  if (deleteError) {
+    throw new Error(deleteError.message)
+  }
+
+  return { success: true, id: payload.lesson_id }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -171,9 +330,25 @@ export default async function handler(req, res) {
       return json(res, 200, { data: updated })
     }
 
+    if (action === 'create_lesson') {
+      const created = await createLesson(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: created })
+    }
+
+    if (action === 'update_lesson') {
+      const updated = await updateLesson(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: updated })
+    }
+
+    if (action === 'delete_lesson') {
+      const result = await deleteLesson(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: result })
+    }
+
     return json(res, 400, { error: 'Unknown action.' })
   } catch (error) {
     return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected server error.' })
   }
 }
+
 

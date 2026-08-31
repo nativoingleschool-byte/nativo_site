@@ -86,3 +86,77 @@ export const getStoredNotificationKeys = () => {
 export const storeNotificationKeys = (keys: string[]) => {
   localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(keys))
 }
+
+const pad2 = (value: number) => value.toString().padStart(2, '0')
+
+const zonedPartsFormatter = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+export const getZonedParts = (date: Date, timeZone: string) => {
+  try {
+    const parts = zonedPartsFormatter(timeZone).formatToParts(date)
+    const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+    return {
+      year: Number(byType.year),
+      month: Number(byType.month),
+      day: Number(byType.day),
+      hour: Number(byType.hour),
+      minute: Number(byType.minute),
+      second: Number(byType.second),
+    }
+  } catch {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      second: date.getSeconds(),
+    }
+  }
+}
+
+export const isoToDateTimeLocal = (isoString?: string | null, timeZone = 'UTC'): string => {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return ''
+  const parts = getZonedParts(date, timeZone)
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:${pad2(parts.minute)}`
+}
+
+export const dateTimeLocalToIso = (dateTimeLocal: string, timeZone = 'UTC'): string => {
+  if (!dateTimeLocal) return new Date().toISOString()
+  if (dateTimeLocal.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateTimeLocal)) {
+    return new Date(dateTimeLocal).toISOString()
+  }
+  const [datePart, timePart = '00:00'] = dateTimeLocal.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hour, minute] = timePart.split(':').map(Number)
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0)
+
+  try {
+    const parts = getZonedParts(new Date(utcGuess), timeZone)
+    const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+    const offset = (asUtc - utcGuess) / 60000
+    let timestamp = utcGuess - offset * 60000
+    const nextParts = getZonedParts(new Date(timestamp), timeZone)
+    const nextAsUtc = Date.UTC(nextParts.year, nextParts.month - 1, nextParts.day, nextParts.hour, nextParts.minute, nextParts.second)
+    const nextOffset = (nextAsUtc - timestamp) / 60000
+    if (nextOffset !== offset) {
+      timestamp = utcGuess - nextOffset * 60000
+    }
+    return new Date(timestamp).toISOString()
+  } catch {
+    return new Date(utcGuess).toISOString()
+  }
+}
+

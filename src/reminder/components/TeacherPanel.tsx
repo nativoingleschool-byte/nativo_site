@@ -1,7 +1,8 @@
-import { FormEvent } from 'react'
-import { Lesson, Profile, AccountFormState } from '../lib/types'
+import { FormEvent, useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { Lesson, Profile, AccountFormState, TeacherLessonStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass } from '../lib/utils'
+import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
 import { useToast } from '../lib/toast'
@@ -44,6 +45,28 @@ interface TeacherPanelProps {
     password: string
     speciality?: string
   }) => Promise<Profile>
+  createTeacherSingleLesson?: (draft: {
+    subject: string
+    class_name?: string
+    student_id: string
+    teacher_id?: string
+    starts_at: string
+    duration_minutes: number
+    teacher_lesson_status?: TeacherLessonStatus
+    status?: 'agendada' | 'concluida' | 'cancelada'
+  }) => Promise<Lesson | undefined>
+  updateTeacherSingleLesson?: (draft: {
+    lesson_id: string
+    subject?: string
+    class_name?: string
+    student_id?: string
+    teacher_id?: string
+    starts_at?: string
+    duration_minutes?: number
+    teacher_lesson_status?: TeacherLessonStatus
+    status?: 'agendada' | 'concluida' | 'cancelada'
+  }) => Promise<Lesson | undefined>
+  deleteTeacherSingleLesson?: (lessonId: string) => Promise<void>
   profilesById: Record<string, Profile>
   selectedMonth: number
   setSelectedMonth: (month: number) => void
@@ -73,6 +96,9 @@ export default function TeacherPanel({
   updateTeacherLessonGroup,
   createStudentLoginFromCalendar,
   createTeacherLoginFromCalendar,
+  createTeacherSingleLesson,
+  updateTeacherSingleLesson,
+  deleteTeacherSingleLesson,
   profilesById,
   selectedMonth,
   setSelectedMonth,
@@ -91,8 +117,365 @@ export default function TeacherPanel({
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
+  // Worklog Month & Filter states
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'happened' | 'scheduled' | 'issues'>('all')
+
+  // Modals for adding and editing classes
+  const [showAddLessonModal, setShowAddLessonModal] = useState(false)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Add Lesson Form State
+  const [newLessonStudentId, setNewLessonStudentId] = useState('')
+  const [newLessonSubject, setNewLessonSubject] = useState('')
+  const [newLessonStartsAt, setNewLessonStartsAt] = useState('')
+  const [newLessonDuration, setNewLessonDuration] = useState(60)
+  const [newLessonStatus, setNewLessonStatus] = useState<TeacherLessonStatus>('happened')
+
+  // Edit Lesson Form State
+  const [editLessonStudentId, setEditLessonStudentId] = useState('')
+  const [editLessonSubject, setEditLessonSubject] = useState('')
+  const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
+  const [editLessonDuration, setEditLessonDuration] = useState(60)
+  const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
+
+  const addModalRef = useRef<HTMLDivElement>(null)
+  const editModalRef = useRef<HTMLDivElement>(null)
+
+  const sortedStudents = useMemo(
+    () => [...students].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })),
+    [students]
+  )
+
+  // Filter lessons for this teacher
+  const teacherLessons = useMemo(
+    () => lessons.filter((l) => l.teacher_id === profile.id),
+    [lessons, profile.id]
+  )
+
+  // Generate available months list from teacher lessons
+  const availableMonths = useMemo(() => {
+    const monthsMap = new Map<string, string>()
+    teacherLessons.forEach((l) => {
+      if (l.starts_at) {
+        const key = l.starts_at.slice(0, 7)
+        if (!monthsMap.has(key)) {
+          const [yr, mo] = key.split('-')
+          const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
+          const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
+            month: 'long',
+            year: 'numeric',
+          })
+          monthsMap.set(key, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+        }
+      }
+    })
+
+    const currentMonthKey = new Date().toISOString().slice(0, 7)
+    if (!monthsMap.has(currentMonthKey)) {
+      const dObj = new Date()
+      const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
+        month: 'long',
+        year: 'numeric',
+      })
+      monthsMap.set(currentMonthKey, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+    }
+
+    return Array.from(monthsMap.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+  }, [teacherLessons, language])
+
+  // Active Month Key
+  const activeMonthKey = useMemo(() => {
+    if (selectedMonthKey && availableMonths.some(([k]) => k === selectedMonthKey)) {
+      return selectedMonthKey
+    }
+    return availableMonths[0]?.[0] || new Date().toISOString().slice(0, 7)
+  }, [selectedMonthKey, availableMonths])
+
+  // Month lessons list
+  const monthLessons = useMemo(() => {
+    return teacherLessons
+      .filter((l) => l.starts_at && l.starts_at.slice(0, 7) === activeMonthKey)
+      .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+  }, [teacherLessons, activeMonthKey])
+
+  // Completed lessons and metrics
+  const completedLessons = useMemo(
+    () => monthLessons.filter((l) => l.teacher_lesson_status === 'happened'),
+    [monthLessons]
+  )
+  const scheduledLessons = useMemo(
+    () => monthLessons.filter((l) => !l.teacher_lesson_status || l.teacher_lesson_status === null),
+    [monthLessons]
+  )
+  const issueLessons = useMemo(
+    () => monthLessons.filter((l) => l.teacher_lesson_status === 'student_no_show' || l.teacher_lesson_status === 'not_happened'),
+    [monthLessons]
+  )
+
+  const totalMinutes = useMemo(
+    () => completedLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0),
+    [completedLessons]
+  )
+  const totalHours = totalMinutes / 60
+  const hourlyRate = profile.taxa_hora_aula ?? 56.0
+  const currency = profile.moeda_taxa ?? 'BRL'
+  const totalAmount = totalHours * Number(hourlyRate)
+
+  // Filtered lessons for display
+  const displayedLessons = useMemo(() => {
+    if (statusFilter === 'happened') return completedLessons
+    if (statusFilter === 'scheduled') return scheduledLessons
+    if (statusFilter === 'issues') return issueLessons
+    return monthLessons
+  }, [monthLessons, completedLessons, scheduledLessons, issueLessons, statusFilter])
+
   const lessonCardClass = (lessonId: string) =>
     focusedLessonId === lessonId ? 'lesson-card lesson-card-focus' : 'lesson-card'
+
+  // Open Add Lesson Modal
+  const handleOpenAddLesson = () => {
+    const defaultStudent = sortedStudents[0]?.id || ''
+    setNewLessonStudentId(defaultStudent)
+    setNewLessonSubject(t(language, 'individual_class'))
+    setNewLessonDuration(60)
+    setNewLessonStatus('happened')
+
+    // Set initial date within active month
+    const now = new Date()
+    const currentMonthPrefix = now.toISOString().slice(0, 7)
+    let initialDateStr = ''
+    if (activeMonthKey === currentMonthPrefix) {
+      initialDateStr = isoToDateTimeLocal(now.toISOString(), appTimeZone)
+    } else {
+      const [yr, mo] = activeMonthKey.split('-')
+      const targetDate = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 15, 14, 0, 0)
+      initialDateStr = isoToDateTimeLocal(targetDate.toISOString(), appTimeZone)
+    }
+    setNewLessonStartsAt(initialDateStr)
+    setShowAddLessonModal(true)
+  }
+
+  // Submit Add Lesson
+  const handleAddLessonSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!newLessonStudentId || !newLessonSubject.trim() || !newLessonStartsAt) {
+      toast.error(t(language, 'fill_required_fields'))
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const utcIso = dateTimeLocalToIso(newLessonStartsAt, appTimeZone)
+      const studentProfile = profilesById[newLessonStudentId]
+      const className = studentProfile?.class_name || ''
+
+      if (createTeacherSingleLesson) {
+        await createTeacherSingleLesson({
+          student_id: newLessonStudentId,
+          teacher_id: profile.id,
+          subject: newLessonSubject.trim(),
+          class_name: className,
+          starts_at: utcIso,
+          duration_minutes: newLessonDuration,
+          teacher_lesson_status: newLessonStatus,
+          status: newLessonStatus === 'happened' ? 'concluida' : 'agendada',
+        })
+      } else {
+        // Direct API fallback
+        const sessionData = await supabase.auth.getSession()
+        const token = sessionData.data.session?.access_token
+        if (!token) throw new Error(t(language, 'unauthenticated_error'))
+
+        const res = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'create_lesson',
+            payload: {
+              student_id: newLessonStudentId,
+              teacher_id: profile.id,
+              subject: newLessonSubject.trim(),
+              class_name: className,
+              starts_at: utcIso,
+              duration_minutes: newLessonDuration,
+              teacher_lesson_status: newLessonStatus,
+              status: newLessonStatus === 'happened' ? 'concluida' : 'agendada',
+            },
+          }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: t(language, 'error_adding_lesson') }))
+          throw new Error(err.error || t(language, 'error_adding_lesson'))
+        }
+        await refreshLessons()
+      }
+
+      toast.success(t(language, 'lesson_added_success'))
+      setShowAddLessonModal(false)
+    } catch (err: any) {
+      toast.error(err.message || t(language, 'error_registering_lesson'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Open Edit Lesson Modal
+  const handleOpenEditLesson = (lesson: Lesson) => {
+    setEditingLesson(lesson)
+    setEditLessonStudentId(lesson.student_id)
+    setEditLessonSubject(lesson.subject)
+    setEditLessonDuration(lesson.duration_minutes || 60)
+    setEditLessonStatus(lesson.teacher_lesson_status ?? null)
+    setEditLessonStartsAt(isoToDateTimeLocal(lesson.starts_at, appTimeZone))
+  }
+
+  // Submit Edit Lesson
+  const handleEditLessonSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!editingLesson) return
+    if (!editLessonStudentId || !editLessonSubject.trim() || !editLessonStartsAt) {
+      toast.error(t(language, 'fill_required_fields'))
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const utcIso = dateTimeLocalToIso(editLessonStartsAt, appTimeZone)
+      const studentProfile = profilesById[editLessonStudentId]
+      const className = studentProfile?.class_name || editingLesson.class_name || ''
+
+      if (updateTeacherSingleLesson) {
+        await updateTeacherSingleLesson({
+          lesson_id: editingLesson.id,
+          student_id: editLessonStudentId,
+          teacher_id: profile.id,
+          subject: editLessonSubject.trim(),
+          class_name: className,
+          starts_at: utcIso,
+          duration_minutes: editLessonDuration,
+          teacher_lesson_status: editLessonStatus,
+          status: editLessonStatus === 'happened' ? 'concluida' : editLessonStatus === 'not_happened' ? 'cancelada' : 'agendada',
+        })
+      } else {
+        // Direct API fallback
+        const sessionData = await supabase.auth.getSession()
+        const token = sessionData.data.session?.access_token
+        if (!token) throw new Error(t(language, 'unauthenticated_error'))
+
+        const res = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'update_lesson',
+            payload: {
+              lesson_id: editingLesson.id,
+              student_id: editLessonStudentId,
+              teacher_id: profile.id,
+              subject: editLessonSubject.trim(),
+              class_name: className,
+              starts_at: utcIso,
+              duration_minutes: editLessonDuration,
+              teacher_lesson_status: editLessonStatus,
+              status: editLessonStatus === 'happened' ? 'concluida' : editLessonStatus === 'not_happened' ? 'cancelada' : 'agendada',
+            },
+          }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: t(language, 'error_updating_lesson') }))
+          throw new Error(err.error || t(language, 'error_updating_lesson'))
+        }
+        await refreshLessons()
+      }
+
+      toast.success(t(language, 'lesson_updated_success'))
+      setEditingLesson(null)
+    } catch (err: any) {
+      toast.error(err.message || t(language, 'error_updating_lesson'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Quick Status Change directly from list
+  const handleQuickStatusChange = async (lesson: Lesson, newStatus: TeacherLessonStatus) => {
+    try {
+      if (updateTeacherSingleLesson) {
+        await updateTeacherSingleLesson({
+          lesson_id: lesson.id,
+          teacher_lesson_status: newStatus,
+          status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
+        })
+      } else {
+        const { error } = await supabase
+          .from('lessons')
+          .update({
+            teacher_lesson_status: newStatus,
+            status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
+          })
+          .eq('id', lesson.id)
+
+        if (error) throw error
+        await refreshLessons()
+      }
+      toast.success(t(language, 'lesson_status_updated'))
+    } catch (err: any) {
+      toast.error(err.message || t(language, 'error_updating_status'))
+    }
+  }
+
+  // Delete Lesson
+  const handleDeleteLesson = async (lessonId: string) => {
+    const confirmed = window.confirm(t(language, 'delete_lesson_confirm'))
+    if (!confirmed) return
+
+    setIsSubmitting(true)
+    try {
+      if (deleteTeacherSingleLesson) {
+        await deleteTeacherSingleLesson(lessonId)
+      } else {
+        const sessionData = await supabase.auth.getSession()
+        const token = sessionData.data.session?.access_token
+        if (!token) throw new Error(t(language, 'unauthenticated_error'))
+
+        const res = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'delete_lesson',
+            payload: { lesson_id: lessonId },
+          }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: t(language, 'error_removing_lesson') }))
+          throw new Error(err.error || t(language, 'error_removing_lesson'))
+        }
+        await refreshLessons()
+      }
+
+      toast.success(t(language, 'lesson_removed_success'))
+      if (editingLesson?.id === lessonId) {
+        setEditingLesson(null)
+      }
+    } catch (err: any) {
+      toast.error(err.message || t(language, 'error_removing_lesson'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleProposeClass = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -104,7 +487,7 @@ export default function TeacherPanel({
 
     try {
       const startsAt = new Date(start)
-      const endsAt = new Date(startsAt.getTime() + 60*60*1000) // 1h duration
+      const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000) // 1h duration
 
       const { error } = await supabase.from('lessons').insert({
         subject,
@@ -114,10 +497,10 @@ export default function TeacherPanel({
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         duration_minutes: 60,
-        status: 'proposta_pendente'
+        status: 'proposta_pendente',
       })
       if (error) throw error
-      toast.success('Proposta de aula enviada ao Administrador!')
+      toast.success(t(language, 'proposal_sent_success'))
       formEl.reset()
       await refreshLessons()
     } catch (err: any) {
@@ -132,7 +515,7 @@ export default function TeacherPanel({
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Não autenticado.')
+      if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const reader = new FileReader()
       reader.onload = async () => {
@@ -143,20 +526,20 @@ export default function TeacherPanel({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               status_nota_fiscal: 'enviada',
-              nota_fiscal_url: fileDataUrl
-            })
+              nota_fiscal_url: fileDataUrl,
+            }),
           })
 
           if (!res.ok) {
-            const err = await res.json().catch(() => ({ error: 'Erro ao enviar Nota Fiscal' }))
-            throw new Error(err.error || 'Erro ao enviar Nota Fiscal')
+            const err = await res.json().catch(() => ({ error: t(language, 'error_uploading_nf') }))
+            throw new Error(err.error || t(language, 'error_uploading_nf'))
           }
 
-          toast.success('Nota Fiscal enviada com sucesso!')
+          toast.success(t(language, 'nf_upload_success'))
           await refreshProfile(profile.id)
         } catch (err: any) {
           toast.error(err.message)
@@ -182,11 +565,11 @@ export default function TeacherPanel({
           full_name: accountForm.full_name,
           email: accountForm.email,
           chave_pix: (targetForm.elements.namedItem('chavePix') as HTMLInputElement).value,
-          cnpj: (targetForm.elements.namedItem('cnpj') as HTMLInputElement).value
+          cnpj: (targetForm.elements.namedItem('cnpj') as HTMLInputElement).value,
         })
         .eq('id', profile.id)
       if (error) throw error
-      toast.success('Dados atualizados com sucesso!')
+      toast.success(t(language, 'data_updated_success'))
       await refreshProfile(profile.id)
     } catch (err: any) {
       toast.error(err.message)
@@ -200,22 +583,19 @@ export default function TeacherPanel({
       <article className="panel">
         <div className="panel-header animate-fade-in">
           <div>
-            <p className="section-label">Professor</p>
+            <p className="section-label">{t(language, 'role_teacher')}</p>
             <h2>
-              {teacherTab === 'calendar' && 'Minha Agenda'}
-              {teacherTab === 'worklog' && 'Registro de Trabalho & Notas'}
-              {teacherTab === 'profile' && 'Meu Perfil Professor'}
+              {teacherTab === 'calendar' && t(language, 'my_schedule')}
+              {teacherTab === 'worklog' && t(language, 'worklog_notes')}
+              {teacherTab === 'profile' && t(language, 'teacher_profile_title')}
             </h2>
           </div>
           {/* Mobile Tab Dropdown */}
           <div className="mobile-tab-select">
-            <select
-              value={teacherTab}
-              onChange={(e) => setTeacherTab(e.target.value as any)}
-            >
-              <option value="calendar">Agenda</option>
-              <option value="worklog">Folha & NF</option>
-              <option value="profile">Dados</option>
+            <select value={teacherTab} onChange={(e) => setTeacherTab(e.target.value as any)}>
+              <option value="calendar">{t(language, 'tab_schedule')}</option>
+              <option value="worklog">{t(language, 'tab_worklog_nf')}</option>
+              <option value="profile">{t(language, 'tab_profile_data')}</option>
             </select>
           </div>
 
@@ -226,41 +606,48 @@ export default function TeacherPanel({
               className={teacherTab === 'calendar' ? 'tab-button tab-button-active' : 'tab-button'}
               onClick={() => setTeacherTab('calendar')}
             >
-              Agenda
+              {t(language, 'tab_schedule')}
             </button>
             <button
               type="button"
               className={teacherTab === 'worklog' ? 'tab-button tab-button-active' : 'tab-button'}
               onClick={() => setTeacherTab('worklog')}
             >
-              Folha & NF
+              {t(language, 'tab_worklog_nf')}
             </button>
             <button
               type="button"
               className={teacherTab === 'profile' ? 'tab-button tab-button-active' : 'tab-button'}
               onClick={() => setTeacherTab('profile')}
             >
-              Dados
+              {t(language, 'tab_profile_data')}
             </button>
           </div>
         </div>
 
         {teacherTab === 'calendar' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="form-card mb-6" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>Propor Nova Aula (Aprovação do Admin)</h3>
-              <form 
-                onSubmit={handleProposeClass}
-                className="form-grid" 
-                style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}
-              >
+            <div
+              className="form-card mb-6"
+              style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
+            >
+              <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
+                {t(language, 'propose_new_class_title')}
+              </h3>
+              <form onSubmit={handleProposeClass} className="form-grid" style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}>
                 <select name="studentId" required style={{ flex: 1, minWidth: '150px' }}>
-                  <option value="">Selecione o Aluno</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                  <option value="">{t(language, 'select_student')}</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.full_name}
+                    </option>
+                  ))}
                 </select>
-                <input name="subject" required placeholder="Matéria/Tema" style={{ flex: 1, minWidth: '150px' }} />
+                <input name="subject" required placeholder={t(language, 'subject_topic')} style={{ flex: 1, minWidth: '150px' }} />
                 <input name="start" required type="datetime-local" style={{ flex: 1, minWidth: '180px' }} />
-                <button className="primary-button" style={{ padding: '0.75rem 1.5rem' }}>Propor Horário</button>
+                <button className="primary-button" style={{ padding: '0.75rem 1.5rem' }}>
+                  {t(language, 'propose_time_btn')}
+                </button>
               </form>
             </div>
 
@@ -270,6 +657,7 @@ export default function TeacherPanel({
               students={students}
               teachers={teachers}
               timeZone={appTimeZone}
+              language={language}
               role="teacher"
               currentTeacherId={profile.id}
               allowCreateUsers={false}
@@ -284,84 +672,406 @@ export default function TeacherPanel({
 
         {teacherTab === 'worklog' && (
           <div className="split-column animate-fade-in">
-            <section style={{ flex: 1.3 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3>Aulas Ministradas no Mês</h3>
-                <select 
-                  value={selectedMonth} 
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  style={{ width: 'auto', padding: '0.4rem 1.5rem' }}
-                >
-                  <option value={new Date().getMonth()}>Mês Atual</option>
-                  <option value={new Date().getMonth() - 1}>Mês Anterior</option>
-                  <option value={new Date().getMonth() - 2}>2 Meses Atrás</option>
-                </select>
+            <section style={{ flex: 1.4 }}>
+              {/* Header with Month Selector & Add Lesson Button */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1.25rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'classes_taught_month')}</h3>
+                  <p className="muted text-xs">{t(language, 'manage_classes_subtitle')}</p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <select
+                    value={activeMonthKey}
+                    onChange={(e) => setSelectedMonthKey(e.target.value)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#090d16',
+                      border: '1px solid #334155',
+                      borderRadius: '0.6rem',
+                      color: '#fff',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {availableMonths.map(([mKey, mLabel]) => (
+                      <option key={mKey} value={mKey}>
+                        {mLabel}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    className="primary-button"
+                    style={{ padding: '0.5rem 1.1rem', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={handleOpenAddLesson}
+                  >
+                    <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span>
+                    <span>{t(language, 'add_class')}</span>
+                  </button>
+                </div>
               </div>
 
+              {/* Monthly KPI Summary Bar */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '0.75rem',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t(language, 'classes_conducted')}
+                  </span>
+                  <strong style={{ fontSize: '1.3rem', color: '#fff' }}>
+                    {completedLessons.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthLessons.length}</span>
+                  </strong>
+                </div>
+
+                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t(language, 'total_hours_worked')}
+                  </span>
+                  <strong style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
+                </div>
+
+                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t(language, 'calculated_amount')}
+                  </span>
+                  <strong style={{ fontSize: '1.3rem', color: '#10b981' }}>
+                    {currency === 'BRL' ? 'R$' : currency} {totalAmount.toFixed(2)}
+                  </strong>
+                </div>
+
+                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t(language, 'payments')}
+                  </span>
+                  <span className={badgeClass(profile.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')} style={{ marginTop: '4px', display: 'inline-block' }}>
+                    {profile.status_pagamento_professor === 'pago' ? `${t(language, 'paid')} ✓` : t(language, 'pending')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Filter Tabs */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.4rem',
+                  marginBottom: '1rem',
+                  flexWrap: 'wrap',
+                  borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
+                  paddingBottom: '0.5rem',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    background: statusFilter === 'all' ? '#38bdf8' : 'transparent',
+                    color: statusFilter === 'all' ? '#0f172a' : '#94a3b8',
+                  }}
+                >
+                  {t(language, 'all_filter')} ({monthLessons.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('happened')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    background: statusFilter === 'happened' ? '#10b981' : 'transparent',
+                    color: statusFilter === 'happened' ? '#0f172a' : '#94a3b8',
+                  }}
+                >
+                  {t(language, 'status_happened')} ({completedLessons.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('scheduled')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    background: statusFilter === 'scheduled' ? '#818cf8' : 'transparent',
+                    color: statusFilter === 'scheduled' ? '#0f172a' : '#94a3b8',
+                  }}
+                >
+                  {t(language, 'scheduled_badge')} ({scheduledLessons.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('issues')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    background: statusFilter === 'issues' ? '#f59e0b' : 'transparent',
+                    color: statusFilter === 'issues' ? '#0f172a' : '#94a3b8',
+                  }}
+                >
+                  {t(language, 'issues_filter')} ({issueLessons.length})
+                </button>
+              </div>
+
+              {/* Lessons List with Quick Actions & Modify Button */}
               <div className="list-stack">
-                {lessons
-                  .filter(l => {
-                    const lessonDate = new Date(l.starts_at)
-                    return l.teacher_id === profile.id && 
-                      l.teacher_lesson_status === 'happened' && 
-                      lessonDate.getMonth() === selectedMonth
-                  })
-                  .map((lesson) => (
-                    <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                      <div>
-                        <h3>{lesson.subject}</h3>
-                        <p className="muted">
-                          Aluno: {profilesById[lesson.student_id]?.full_name} · {formatShortDateLabel(lesson.starts_at)}
-                        </p>
+                {displayedLessons.map((lesson) => {
+                  const studentName = profilesById[lesson.student_id]?.full_name || t(language, 'role_student')
+                  const isHappened = lesson.teacher_lesson_status === 'happened'
+                  const isNoShow = lesson.teacher_lesson_status === 'student_no_show'
+                  const isNotHappened = lesson.teacher_lesson_status === 'not_happened'
+                  const isScheduled = !lesson.teacher_lesson_status
+
+                  const lessonHours = (lesson.duration_minutes || 60) / 60
+                  const lessonValue = isHappened ? lessonHours * Number(hourlyRate) : 0
+
+                  return (
+                    <div
+                      key={lesson.id}
+                      className={lessonCardClass(lesson.id)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                        padding: '1rem',
+                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : 'rgba(15, 23, 42, 0.6)',
+                        border: isHappened ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(148, 163, 184, 0.12)',
+                        borderRadius: '0.85rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <strong style={{ fontSize: '1rem', color: '#fff' }}>{lesson.subject || t(language, 'individual_class')}</strong>
+                            {lesson.class_name && (
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(51, 65, 85, 0.5)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
+                                {lesson.class_name}
+                              </span>
+                            )}
+                          </div>
+                          <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                            👤 {t(language, 'student_colon')} <strong style={{ color: '#38bdf8' }}>{studentName}</strong> · 📅 {formatShortDateLabel(lesson.starts_at)} ({lesson.duration_minutes || 60} min)
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span
+                            className={badgeClass(
+                              isHappened ? 'confirmed' : isNoShow ? 'pending' : isNotHappened ? 'danger' : 'secondary'
+                            )}
+                          >
+                            {isHappened ? `${t(language, 'status_happened')}` : isNoShow ? t(language, 'status_student_noshow') : isNotHappened ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
+                          </span>
+
+                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isHappened ? '#10b981' : '#64748b' }}>
+                            {currency === 'BRL' ? 'R$' : currency} {lessonValue.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <span className={badgeClass('confirmed')}>Confirmada</span>
+
+                      {/* Card Actions Toolbar */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          borderTop: '1px solid rgba(148, 163, 184, 0.08)',
+                          paddingTop: '0.6rem',
+                          flexWrap: 'wrap',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        {/* Quick Status Buttons */}
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', marginRight: '0.2rem' }}>{t(language, 'status')}:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(lesson, 'happened')}
+                            style={{
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '0.4rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: isHappened ? '#10b981' : 'rgba(16, 185, 129, 0.15)',
+                              color: isHappened ? '#0f172a' : '#10b981',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                            }}
+                            title={t(language, 'status_happened')}
+                          >
+                            ✓ {t(language, 'status_happened')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(lesson, 'student_no_show')}
+                            style={{
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '0.4rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: isNoShow ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
+                              color: isNoShow ? '#0f172a' : '#fbbf24',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                            }}
+                            title={t(language, 'status_student_noshow')}
+                          >
+                            {t(language, 'status_student_noshow')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(lesson, 'not_happened')}
+                            style={{
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '0.4rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: isNotHappened ? '#ef4444' : 'rgba(239, 68, 68, 0.12)',
+                              color: isNotHappened ? '#fff' : '#f87171',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                            }}
+                            title={t(language, 'status_not_happened')}
+                          >
+                            {t(language, 'status_not_happened')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(lesson, null)}
+                            style={{
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '0.4rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: isScheduled ? '#6366f1' : 'rgba(99, 102, 241, 0.12)',
+                              color: isScheduled ? '#fff' : '#818cf8',
+                              border: '1px solid rgba(99, 102, 241, 0.3)',
+                            }}
+                            title={t(language, 'scheduled_badge')}
+                          >
+                            {t(language, 'scheduled_badge')}
+                          </button>
+                        </div>
+
+                        {/* Edit and Delete Buttons */}
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditLesson(lesson)}
+                            className="secondary-button"
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.78rem' }}
+                          >
+                            ✏️ {t(language, 'edit')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLesson(lesson.id)}
+                            style={{
+                              padding: '0.3rem 0.55rem',
+                              fontSize: '0.78rem',
+                              background: 'transparent',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              borderRadius: '0.5rem',
+                            }}
+                            title={t(language, 'delete_class_btn')}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                {lessons.filter(l => {
-                  const lessonDate = new Date(l.starts_at)
-                  return l.teacher_id === profile.id && 
-                    l.teacher_lesson_status === 'happened' && 
-                    lessonDate.getMonth() === selectedMonth
-                }).length === 0 && (
-                  <p className="empty-state">Nenhuma aula ministrada encontrada para este mês.</p>
+                  )
+                })}
+
+                {displayedLessons.length === 0 && (
+                  <div
+                    style={{
+                      padding: '2.5rem 1rem',
+                      textAlign: 'center',
+                      background: 'rgba(15, 23, 42, 0.3)',
+                      borderRadius: '1rem',
+                      border: '1px dashed #334155',
+                    }}
+                  >
+                    <p className="empty-state" style={{ margin: 0, marginBottom: '0.75rem' }}>
+                      {t(language, 'no_classes_month_empty')}
+                    </p>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}
+                      onClick={handleOpenAddLesson}
+                    >
+                      + {t(language, 'add_class')}
+                    </button>
+                  </div>
                 )}
               </div>
 
-              <h3 className="mt-8" style={{ marginTop: '2rem' }}>Notas e Justificativas ao Admin</h3>
+              {/* Justifications to Admin */}
+              <h3 className="mt-8" style={{ marginTop: '2rem' }}>
+                {t(language, 'notes_to_admin_title')}
+              </h3>
               <div className="form-card">
                 <textarea
-                  placeholder="Escreva aqui quaisquer observações ou justificativas de faltas/ajustes para enviar à administração..."
+                  placeholder={t(language, 'notes_placeholder')}
                   value={teacherNotes}
                   onChange={(e) => setTeacherNotes(e.target.value)}
                   style={{ width: '100%', height: '100px', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
                 />
-                <button 
-                  className="secondary-button mt-2" 
+                <button
+                  className="secondary-button mt-2"
                   style={{ marginTop: '0.5rem' }}
                   onClick={() => {
                     if (!teacherNotes.trim()) return
-                    toast.success('Notas enviadas com sucesso ao administrador!')
+                    toast.success(t(language, 'notes_sent_success'))
                     setTeacherNotes('')
                   }}
                 >
-                  Enviar Notas
+                  {t(language, 'send_notes_btn')}
                 </button>
               </div>
             </section>
 
-            <section style={{ flex: 0.7 }}>
-              <h3>Envio de Nota Fiscal (MEI)</h3>
+            {/* MEI Invoice Upload Section */}
+            <section style={{ flex: 0.8 }}>
+              <h3>{t(language, 'nf_submission_title')}</h3>
               <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444'
-                    }} />
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444',
+                      }}
+                    />
                     <span className="text-sm">
-                      NF Mês Anterior: <strong>{profile.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : 'Pendente ✗'}</strong>
+                      {t(language, 'nf_previous_month')} <strong>{profile.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : t(language, 'nf_status_pending')}</strong>
                     </span>
                   </div>
 
@@ -399,23 +1109,18 @@ export default function TeacherPanel({
                         }
                       }}
                     >
-                      📄 Ver Arquivo Enviado
+                      {t(language, 'view_sent_file')}
                     </button>
                   )}
                 </div>
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    {profile.status_nota_fiscal === 'enviada' ? 'Substituir / Reenviar Arquivo PDF da Nota' : 'Selecionar Arquivo PDF da Nota'}
+                    {profile.status_nota_fiscal === 'enviada' ? t(language, 'replace_resend_nf') : t(language, 'select_nf_file')}
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,image/*"
-                    disabled={uploadingNf}
-                    onChange={handleUploadNf}
-                  />
+                  <input type="file" accept=".pdf,image/*" disabled={uploadingNf} onChange={handleUploadNf} />
                 </div>
-                <p className="muted tiny-copy">A nota fiscal precisa conter o valor exato acumulado da folha de pagamento.</p>
+                <p className="muted tiny-copy">{t(language, 'nf_exact_value_notice')}</p>
               </div>
             </section>
           </div>
@@ -423,18 +1128,16 @@ export default function TeacherPanel({
 
         {teacherTab === 'profile' && (
           <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
-            <form 
-              onSubmit={handleSaveTeacherData}
-              className="form-card" 
-              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-            >
+            <form onSubmit={handleSaveTeacherData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '1rem' }}>
-                <p className="text-amber-400 font-bold text-xs uppercase tracking-widest block mb-1">Atenção MEI</p>
-                <p className="muted text-xs">É obrigatório possuir cadastro ativo de MEI para a prestação de serviços à escola, recebimento dos pagamentos e emissão de NFS-e.</p>
+                <p className="text-amber-400 font-bold text-xs uppercase tracking-widest block mb-1">{t(language, 'teacher_mei_alert_title')}</p>
+                <p className="muted text-xs">
+                  {t(language, 'teacher_mei_alert_desc')}
+                </p>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Nome Completo</label>
+                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'full_name')}</label>
                 <input
                   required
                   value={accountForm.full_name}
@@ -443,7 +1146,7 @@ export default function TeacherPanel({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">E-mail</label>
+                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'email_optional')}</label>
                 <input
                   required
                   type="email"
@@ -453,30 +1156,384 @@ export default function TeacherPanel({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CNPJ MEI</label>
-                <input
-                  name="cnpj"
-                  placeholder="00.000.000/0001-00"
-                  defaultValue={profile.cnpj || ''}
-                />
+                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cnpj_label')}</label>
+                <input name="cnpj" placeholder="00.000.000/0001-00" defaultValue={profile.cnpj || ''} />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Chave Pix para Recebimento</label>
-                <input
-                  name="chavePix"
-                  placeholder="CPF, E-mail ou Telefone"
-                  defaultValue={profile.chave_pix || ''}
-                />
+                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'pix_label')}</label>
+                <input name="chavePix" placeholder="CPF, E-mail..." defaultValue={profile.chave_pix || ''} />
               </div>
 
               <button className="primary-button mt-4" disabled={accountSaving} style={{ marginTop: '1rem' }}>
-                {accountSaving ? 'Salvando...' : 'Salvar Dados de Professor'}
+                {accountSaving ? t(language, 'saving_label') : t(language, 'save_teacher_data_btn')}
               </button>
             </form>
           </div>
         )}
       </article>
+
+      {/* Modal: Adicionar Aula ao Mês */}
+      {showAddLessonModal &&
+        createPortal(
+          <div
+            className="reminder-app-scope modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 99999,
+              background: 'rgba(2, 6, 23, 0.8)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => {
+              if (addModalRef.current && !addModalRef.current.contains(e.target as Node)) {
+                setShowAddLessonModal(false)
+              }
+            }}
+          >
+            <div
+              ref={addModalRef}
+              className="modal-card animate-fade-in"
+              style={{
+                maxWidth: '520px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                background: '#0f172a',
+                border: '1px solid #1e293b',
+                borderRadius: '1.5rem',
+                padding: '2rem',
+              }}
+            >
+              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+                <div>
+                  <p className="section-label">{t(language, 'tab_worklog_nf')}</p>
+                  <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'add_class')}</h2>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_colon')} *</label>
+                  <select
+                    required
+                    value={newLessonStudentId}
+                    onChange={(e) => setNewLessonStudentId(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  >
+                    <option value="">{t(language, 'select_student')}...</option>
+                    {sortedStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'subject_topic')} *</label>
+                  <input
+                    required
+                    placeholder={t(language, 'subject_placeholder')}
+                    value={newLessonSubject}
+                    onChange={(e) => setNewLessonSubject(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                    {['Conversação', 'Inglês Geral', 'Business English', 'Gramática', 'Reforço'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNewLessonSubject(preset)}
+                        style={{
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '0.4rem',
+                          fontSize: '0.72rem',
+                          background: 'rgba(51, 65, 85, 0.4)',
+                          color: '#cbd5e1',
+                          border: '1px solid rgba(148, 163, 184, 0.1)',
+                        }}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'date_and_time')} *</label>
+                    <input
+                      required
+                      type="datetime-local"
+                      value={newLessonStartsAt}
+                      onChange={(e) => setNewLessonStartsAt(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                    <input
+                      required
+                      type="number"
+                      min={15}
+                      step={5}
+                      value={newLessonDuration}
+                      onChange={(e) => setNewLessonDuration(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
+                      {[30, 45, 60, 90].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setNewLessonDuration(mins)}
+                          style={{
+                            flex: 1,
+                            padding: '0.2rem',
+                            borderRadius: '0.3rem',
+                            fontSize: '0.72rem',
+                            background: newLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
+                            color: newLessonDuration === mins ? '#0f172a' : '#cbd5e1',
+                            fontWeight: newLessonDuration === mins ? 'bold' : 'normal',
+                          }}
+                        >
+                          {mins}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
+                  <select
+                    value={newLessonStatus || 'agendada'}
+                    onChange={(e) => setNewLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  >
+                    <option value="happened">✓ {t(language, 'status_happened')}</option>
+                    <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
+                    <option value="not_happened">{t(language, 'status_not_happened')}</option>
+                    <option value="agendada">{t(language, 'scheduled_badge')}</option>
+                  </select>
+                </div>
+
+                <div className="button-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setShowAddLessonModal(false)}
+                    disabled={isSubmitting}
+                  >
+                    {t(language, 'cancel')}
+                  </button>
+                  <button type="submit" className="primary-button" disabled={isSubmitting}>
+                    {isSubmitting ? t(language, 'saving_label') : t(language, 'add_class')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Modal: Modificar Aula */}
+      {editingLesson &&
+        createPortal(
+          <div
+            className="reminder-app-scope modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 99999,
+              background: 'rgba(2, 6, 23, 0.8)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => {
+              if (editModalRef.current && !editModalRef.current.contains(e.target as Node)) {
+                setEditingLesson(null)
+              }
+            }}
+          >
+            <div
+              ref={editModalRef}
+              className="modal-card animate-fade-in"
+              style={{
+                maxWidth: '520px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                background: '#0f172a',
+                border: '1px solid #1e293b',
+                borderRadius: '1.5rem',
+                padding: '2rem',
+              }}
+            >
+              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+                <div>
+                  <p className="section-label">{t(language, 'adjust_class_label')}</p>
+                  <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'modify_class_details')}</h2>
+                </div>
+              </div>
+
+              <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_colon')} *</label>
+                  <select
+                    required
+                    value={editLessonStudentId}
+                    onChange={(e) => setEditLessonStudentId(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  >
+                    {sortedStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'subject_topic')} *</label>
+                  <input
+                    required
+                    value={editLessonSubject}
+                    onChange={(e) => setEditLessonSubject(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  />
+                </div>
+
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'date_and_time')} *</label>
+                    <input
+                      required
+                      type="datetime-local"
+                      value={editLessonStartsAt}
+                      onChange={(e) => setEditLessonStartsAt(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                    <input
+                      required
+                      type="number"
+                      min={15}
+                      step={5}
+                      value={editLessonDuration}
+                      onChange={(e) => setEditLessonDuration(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
+                      {[30, 45, 60, 90].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setEditLessonDuration(mins)}
+                          style={{
+                            flex: 1,
+                            padding: '0.2rem',
+                            borderRadius: '0.3rem',
+                            fontSize: '0.72rem',
+                            background: editLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
+                            color: editLessonDuration === mins ? '#0f172a' : '#cbd5e1',
+                            fontWeight: editLessonDuration === mins ? 'bold' : 'normal',
+                          }}
+                        >
+                          {mins}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
+                  <select
+                    value={editLessonStatus || 'agendada'}
+                    onChange={(e) => setEditLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  >
+                    <option value="happened">✓ {t(language, 'status_happened')}</option>
+                    <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
+                    <option value="not_happened">{t(language, 'status_not_happened')}</option>
+                    <option value="agendada">{t(language, 'scheduled_badge')}</option>
+                  </select>
+                </div>
+
+                <div
+                  className="button-row"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginTop: '1.25rem',
+                    borderTop: '1px solid #1e293b',
+                    paddingTop: '1rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteLesson(editingLesson.id)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    🗑️ {t(language, 'delete_class_btn')}
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setEditingLesson(null)}
+                      disabled={isSubmitting}
+                    >
+                      {t(language, 'cancel')}
+                    </button>
+                    <button type="submit" className="primary-button" disabled={isSubmitting}>
+                      {isSubmitting ? t(language, 'saving_label') : t(language, 'save_changes_btn')}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </section>
   )
 }
+

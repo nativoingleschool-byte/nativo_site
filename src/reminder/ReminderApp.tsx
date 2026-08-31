@@ -892,7 +892,10 @@ function ReminderAppInner() {
     return result.data
   }
 
-  const callLessonsApi = async <T,>(action: 'create_group' | 'update_group', payload: unknown): Promise<T> => {
+  const callLessonsApi = async <T,>(
+    action: 'create_group' | 'update_group' | 'create_lesson' | 'update_lesson' | 'delete_lesson',
+    payload: unknown
+  ): Promise<T> => {
     if (!session?.access_token) {
       throw new Error('You are not signed in.')
     }
@@ -916,6 +919,70 @@ function ReminderAppInner() {
     }
 
     return result.data
+  }
+
+  const createTeacherSingleLesson = async (draft: {
+    subject: string
+    class_name?: string
+    student_id: string
+    teacher_id?: string
+    starts_at: string
+    duration_minutes: number
+    teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
+    status?: 'agendada' | 'concluida' | 'cancelada'
+  }) => {
+    setAppError('')
+    const payload = {
+      ...draft,
+      teacher_id: draft.teacher_id || profile?.id,
+      starts_at: /[zZ]$|[+-]\d{2}:\d{2}$/.test(draft.starts_at) ? draft.starts_at : new Date(draft.starts_at).toISOString(),
+    }
+    try {
+      const created = await callLessonsApi<Lesson>('create_lesson', payload)
+      await refreshLessons()
+      return created
+    } catch (error) {
+      setAppError(error instanceof Error ? error.message : 'Could not create the class.')
+      throw error
+    }
+  }
+
+  const updateTeacherSingleLesson = async (draft: {
+    lesson_id: string
+    subject?: string
+    class_name?: string
+    student_id?: string
+    teacher_id?: string
+    starts_at?: string
+    duration_minutes?: number
+    teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
+    status?: 'agendada' | 'concluida' | 'cancelada'
+  }) => {
+    setAppError('')
+    const payload = {
+      ...draft,
+      teacher_id: draft.teacher_id || profile?.id,
+      starts_at: draft.starts_at ? (/[zZ]$|[+-]\d{2}:\d{2}$/.test(draft.starts_at) ? draft.starts_at : new Date(draft.starts_at).toISOString()) : undefined,
+    }
+    try {
+      const updated = await callLessonsApi<Lesson>('update_lesson', payload)
+      await refreshLessons()
+      return updated
+    } catch (error) {
+      setAppError(error instanceof Error ? error.message : 'Could not update the class.')
+      throw error
+    }
+  }
+
+  const deleteTeacherSingleLesson = async (lessonId: string) => {
+    setAppError('')
+    try {
+      await callLessonsApi('delete_lesson', { lesson_id: lessonId })
+      await refreshLessons()
+    } catch (error) {
+      setAppError(error instanceof Error ? error.message : 'Could not delete the class.')
+      throw error
+    }
   }
 
   const createLessonFromDraft = async (draft: {
@@ -1416,6 +1483,9 @@ function ReminderAppInner() {
             updateTeacherLessonGroup={updateTeacherLessonGroup}
             createStudentLoginFromCalendar={createStudentLoginFromCalendar}
             createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
+            createTeacherSingleLesson={createTeacherSingleLesson}
+            updateTeacherSingleLesson={updateTeacherSingleLesson}
+            deleteTeacherSingleLesson={deleteTeacherSingleLesson}
             profilesById={profilesById}
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}

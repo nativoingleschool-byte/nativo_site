@@ -62,14 +62,14 @@ export default function StudentPanel({
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Nao autenticado.')
+      if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const res = await fetch(`/api/admin/nfse-pdf?invoice_id=${invoiceId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Erro ao gerar PDF' }))
-        throw new Error(err.error || 'Erro ao gerar PDF')
+        const err = await res.json().catch(() => ({ error: t(language, 'error_generating_pdf') }))
+        throw new Error(err.error || t(language, 'error_generating_pdf'))
       }
       const blob = await res.blob()
       const url  = URL.createObjectURL(blob)
@@ -117,7 +117,7 @@ export default function StudentPanel({
         .eq('id', profile.id)
       if (error) throw error
       await refreshProfile(profile.id)
-      toast.success('Cadastro atualizado com sucesso!')
+      toast.success(t(language, 'student_registration_updated'))
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -171,7 +171,7 @@ export default function StudentPanel({
       <article className="panel">
         <div className="panel-header">
           <div>
-            <p className="section-label">Student</p>
+            <p className="section-label">{t(language, 'role_student')}</p>
             <h2>{studentTab === 'lessons' ? t(language, 'student_tab_lessons') : studentTab === 'account' ? t(language, 'student_tab_account') : t(language, 'student_tab_invoices')}</h2>
           </div>
           {/* Mobile Tab Dropdown */}
@@ -215,21 +215,23 @@ export default function StudentPanel({
         {studentTab === 'lessons' ? (
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1.3 }}>
-              <h3>Lembretes de Aulas Ativas</h3>
+              <h3>{t(language, 'active_lesson_reminders')}</h3>
               <div className="list-stack">
                 {/* 4-hour reminders */}
                 {dueStudentFourHourReminders.map((lesson) => (
                   <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
                     <p className="reminder-title">{lesson.subject}</p>
                     <p className="muted">
-                      Inicia em {minutesUntil(now, lesson.starts_at)} minutes às {formatShortDateLabel(lesson.starts_at)}
+                      {t(language, 'starts_in_minutes')
+                        .replace('{minutes}', String(minutesUntil(now, lesson.starts_at)))
+                        .replace('{time}', formatShortDateLabel(lesson.starts_at))}
                     </p>
                     <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                       <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
-                        Vou comparecer
+                        {t(language, 'will_attend_btn')}
                       </button>
                       <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
-                        Preciso cancelar
+                        {t(language, 'need_cancel_btn')}
                       </button>
                     </div>
                   </div>
@@ -239,45 +241,45 @@ export default function StudentPanel({
                 {dueStudentStartReminders.map((lesson) => (
                   <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
                     <p className="reminder-title">{lesson.subject}</p>
-                    <p className="muted">Sua aula agendada começou. Confirme se ela aconteceu:</p>
+                    <p className="muted">{t(language, 'class_started_notice')}</p>
                     <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                       <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
-                        Tive a aula
+                        {t(language, 'had_class_btn')}
                       </button>
                       <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
-                        Não tive a aula
+                        {t(language, 'did_not_have_class_btn')}
                       </button>
                     </div>
                   </div>
                 ))}
 
                 {dueStudentFourHourReminders.length === 0 && dueStudentStartReminders.length === 0 && (
-                  <p className="empty-state">Nenhum lembrete ou pendência de aula ativa no momento.</p>
+                  <p className="empty-state">{t(language, 'no_active_reminders')}</p>
                 )}
               </div>
 
-              <h3 className="mt-8" style={{ marginTop: '2rem' }}>Minhas Próximas Aulas</h3>
+              <h3 className="mt-8" style={{ marginTop: '2rem' }}>{t(language, 'my_upcoming_lessons')}</h3>
               <div className="list-stack">
                 {studentUpcomingLessons.map((lesson) => (
                   <div key={lesson.id} className={lessonCardClass(lesson.id)}>
                     <div>
                       <h3>{lesson.subject}</h3>
                       <p className="muted">
-                        {formatShortDateLabel(lesson.starts_at)} com {profilesById[lesson.teacher_id]?.full_name}
+                        {formatShortDateLabel(lesson.starts_at)} {t(language, 'with_teacher_label')} {profilesById[lesson.teacher_id]?.full_name}
                       </p>
                     </div>
-                    <span className={badgeClass('agendada')}>Agendada</span>
+                    <span className={badgeClass('agendada')}>{t(language, 'scheduled_badge')}</span>
                   </div>
                 ))}
-                {studentUpcomingLessons.length === 0 && <p className="empty-state">Nenhuma aula agendada nos próximos dias.</p>}
+                {studentUpcomingLessons.length === 0 && <p className="empty-state">{t(language, 'no_upcoming_lessons')}</p>}
               </div>
             </section>
 
             <section style={{ flex: 0.7 }}>
-              <h3>Configurações de Alerta</h3>
+              <h3>{t(language, 'alert_settings_title')}</h3>
               <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
                 <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
-                  Ative as notificações do sistema para receber avisos sobre aulas 4h antes e no início da aula.
+                  {t(language, 'alert_settings_desc')}
                 </p>
                 <button 
                   className={notificationPermission === 'granted' && profile.push_enabled ? 'danger-button full-width' : 'primary-button full-width'} 
@@ -289,7 +291,7 @@ export default function StudentPanel({
                     }
                   }}
                 >
-                  {notificationPermission === 'granted' && profile.push_enabled ? 'Desativar Alertas' : 'Ativar Alertas PWA'}
+                  {notificationPermission === 'granted' && profile.push_enabled ? t(language, 'disable_alerts_btn') : t(language, 'enable_pwa_alerts_btn')}
                 </button>
               </div>
             </section>
@@ -297,10 +299,10 @@ export default function StudentPanel({
         ) : studentTab === 'account' ? (
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1 }}>
-              <h3>Dados Cadastrais</h3>
+              <h3>{t(language, 'registration_data')}</h3>
               <form onSubmit={handleSaveStudentData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Nome Completo</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'full_name')}</label>
                   <input
                     required
                     value={fullName}
@@ -308,7 +310,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">E-mail</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'email_optional')}</label>
                   <input
                     required
                     type="email"
@@ -317,7 +319,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CPF</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cpf_label')}</label>
                   <input
                     placeholder="000.000.000-00"
                     value={cpf}
@@ -325,7 +327,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">CEP</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cep_label')}</label>
                   <input
                     placeholder="06401-000"
                     value={cep}
@@ -333,7 +335,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Endereço (Rua, Nº, Apto)</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'address_label')}</label>
                   <input
                     placeholder="Av. Principal, 123"
                     value={logradouro}
@@ -342,7 +344,7 @@ export default function StudentPanel({
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <div style={{ flex: 1 }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Bairro</label>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'neighborhood_label')}</label>
                     <input
                       placeholder="Centro"
                       value={bairro}
@@ -350,7 +352,7 @@ export default function StudentPanel({
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Cidade</label>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'city_label')}</label>
                     <input
                       placeholder="Barueri"
                       value={cidade}
@@ -358,7 +360,7 @@ export default function StudentPanel({
                     />
                   </div>
                   <div style={{ width: '60px' }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">UF</label>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'state_label')}</label>
                     <input
                       placeholder="SP"
                       maxLength={2}
@@ -368,38 +370,40 @@ export default function StudentPanel({
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Dia de Vencimento Preferencial</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'preferred_billing_day')}</label>
                   <strong className="text-white text-base block mt-1" style={{ padding: '0 0.5rem' }}>
-                    {profile.data_pagamento_preferencial ? `Dia ${profile.data_pagamento_preferencial} de cada mês` : 'Não definido'}
+                    {profile.data_pagamento_preferencial
+                      ? t(language, 'day_of_each_month').replace('{day}', String(profile.data_pagamento_preferencial))
+                      : t(language, 'not_defined')}
                   </strong>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Status Financeiro</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_financial_status')}</label>
                   <span className={`${badgeClass(profile.status_pagamento || 'pendente')} inline-block mt-1`}>
-                    {profile.status_pagamento === 'em_dia' && 'Em dia'}
-                    {profile.status_pagamento === 'atrasado' && 'Atrasado'}
-                    {profile.status_pagamento === 'pendente' && 'Pendente'}
-                    {!profile.status_pagamento && 'Pendente'}
+                    {profile.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
+                    {profile.status_pagamento === 'atrasado' && t(language, 'financial_late')}
+                    {profile.status_pagamento === 'pendente' && t(language, 'financial_pending')}
+                    {!profile.status_pagamento && t(language, 'financial_pending')}
                   </span>
                 </div>
                 <button type="submit" className="primary-button mt-4" disabled={saving} style={{ marginTop: '1rem' }}>
-                  {saving ? 'Salvando...' : 'Salvar Alterações'}
+                  {saving ? t(language, 'saving_label') : t(language, 'save_changes_btn')}
                 </button>
               </form>
             </section>
 
             <section style={{ flex: 1 }}>
-              <h3>Histórico de Pagamentos</h3>
+              <h3>{t(language, 'payment_history_title')}</h3>
               <div className="list-stack">
                 {invoices
                   .filter(inv => inv.student_id === profile.id)
                   .map((inv) => (
                     <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                       <div>
-                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Fatura Nativo English</p>
+                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>{t(language, 'invoice_nativo')}</p>
                         <p className="muted text-xs">{new Date(inv.created_at).toLocaleDateString()}</p>
                         <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
-                          {inv.status === 'pago' ? 'Paga' : inv.status === 'atrasado' ? 'Atrasada' : 'Pendente'}
+                          {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
@@ -410,7 +414,7 @@ export default function StudentPanel({
                           className="secondary-button" 
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
                         >
-                          Boleto
+                          {t(language, 'boleto_btn')}
                         </a>
                         {(inv.nfs_e_pdf_link || inv.nfse_url || inv.nfse_numero) && (
                           <button
@@ -419,14 +423,14 @@ export default function StudentPanel({
                             disabled={downloadingPdfId === inv.id}
                             onClick={() => void downloadNfsePdf(inv.id, profile.full_name)}
                           >
-                            {downloadingPdfId === inv.id ? 'Gerando...' : 'NFS-e'}
+                            {downloadingPdfId === inv.id ? t(language, 'generating_pdf') : 'NFS-e'}
                           </button>
                         )}
                       </div>
                     </div>
                   ))}
                 {invoices.filter(inv => inv.student_id === profile.id).length === 0 && (
-                  <p className="empty-state">Nenhum histórico de pagamentos encontrado.</p>
+                  <p className="empty-state">{t(language, 'no_payment_history')}</p>
                 )}
               </div>
             </section>
@@ -440,13 +444,12 @@ export default function StudentPanel({
               ) : (
                 <div className="list-stack">
                   {myInvoices.map((inv) => {
-                    const pdfUrl = inv.nfs_e_pdf_link || inv.nfse_url
                     return (
                       <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                         <div>
                           <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo Languages Brazil LTDA - NFS-e</p>
                           <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>
-                            <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || 'Não especificado'}
+                            <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || t(language, 'not_specified')}
                           </p>
                           <p className="muted text-xs">
                             <strong>{t(language, 'emission_date')}:</strong> {new Date(inv.created_at).toLocaleDateString()}
@@ -463,7 +466,7 @@ export default function StudentPanel({
                               disabled={downloadingPdfId === inv.id}
                               onClick={() => void downloadNfsePdf(inv.id, profile.full_name)}
                             >
-                              {downloadingPdfId === inv.id ? 'Gerando...' : t(language, 'view_pdf')}
+                              {downloadingPdfId === inv.id ? t(language, 'generating_pdf') : t(language, 'view_pdf')}
                             </button>
                           ) : (
                             <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>

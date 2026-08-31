@@ -1,6 +1,8 @@
 import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { Lesson, Profile } from '../lib/types'
+import { Language, t } from '../lib/i18n'
+import { localeByLanguage } from '../lib/utils'
 
 type LessonDraft = {
   subject: string
@@ -107,9 +109,10 @@ const zonedDateTimeToUtcIso = (dateTimeLocal: string, timeZone: string) => {
   return new Date(timestamp).toISOString()
 }
 
-const formatWeekLabel = (weekStart: string) => {
+const formatWeekLabel = (weekStart: string, language: Language = 'pt') => {
   const weekEnd = addDaysToDateKey(weekStart, 6)
-  const formatter = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+  const locale = localeByLanguage[language] || 'en'
+  const formatter = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' })
   return `${formatter.format(utcDateFromKey(weekStart))} - ${formatter.format(utcDateFromKey(weekEnd))}`
 }
 
@@ -122,6 +125,7 @@ export default function AdminCalendar({
   students,
   teachers,
   timeZone,
+  language = 'pt',
   role,
   currentTeacherId,
   allowCreateUsers,
@@ -136,6 +140,7 @@ export default function AdminCalendar({
   students: Profile[]
   teachers: Profile[]
   timeZone: string
+  language?: Language
   role: 'admin' | 'teacher'
   currentTeacherId?: string
   allowCreateUsers: boolean
@@ -181,13 +186,15 @@ export default function AdminCalendar({
     [teachers],
   )
   const dayLabels = useMemo(
-    () =>
-      days.map((day) => ({
+    () => {
+      const locale = localeByLanguage[language] || 'en'
+      return days.map((day) => ({
         key: day,
-        short: new Intl.DateTimeFormat('en', { weekday: 'short', timeZone: 'UTC' }).format(utcDateFromKey(day)),
-        day: new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(utcDateFromKey(day)),
-      })),
-    [days],
+        short: new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(utcDateFromKey(day)),
+        day: new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(utcDateFromKey(day)),
+      }))
+    },
+    [days, language],
   )
   const slotMinutes = 30
   const startHour = 6
@@ -434,18 +441,18 @@ export default function AdminCalendar({
     <div className="calendar-shell">
       <div className="calendar-toolbar">
         <div>
-          <p className="section-label">Calendar</p>
-          <h3>{formatWeekLabel(weekStart)}</h3>
+          <p className="section-label">{t(language, 'calendar')}</p>
+          <h3>{formatWeekLabel(weekStart, language)}</h3>
         </div>
         <div className="button-row wrap">
           <button className="ghost-button" type="button" onClick={() => setWeekStart((current) => addDaysToDateKey(current, -7))}>
-            Previous week
+            {t(language, 'prev_week')}
           </button>
           <button className="ghost-button" type="button" onClick={() => setWeekStart(startOfWeekDateKey(todayDateKeyInTimeZone(timeZone)))}>
-            This week
+            {t(language, 'this_week')}
           </button>
           <button className="ghost-button" type="button" onClick={() => setWeekStart((current) => addDaysToDateKey(current, 7))}>
-            Next week
+            {t(language, 'next_week')}
           </button>
         </div>
       </div>
@@ -491,7 +498,7 @@ export default function AdminCalendar({
             <div key={label.key} className={`calendar-header-cell ${isToday ? 'calendar-header-cell-today' : ''}`}>
               <strong>{label.short}</strong>
               <span className="muted tiny-copy">{label.day}</span>
-              {isToday && <span className="calendar-today-badge">Hoje</span>}
+              {isToday && <span className="calendar-today-badge">{t(language, 'today_badge')}</span>}
             </div>
           )
         })}
@@ -528,8 +535,8 @@ export default function AdminCalendar({
                 const minutesFromMidnight = start.hour * 60 + start.minute
                 const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
                 const span = Math.max(1, Math.ceil(group.duration_minutes / slotMinutes))
-                const teacherName = profilesById[group.teacher_id]?.full_name ?? 'Teacher'
-                const studentsForGroup = group.student_ids.map((id) => profilesById[id]?.full_name ?? 'Student')
+                const teacherName = profilesById[group.teacher_id]?.full_name ?? t(language, 'teacher')
+                const studentsForGroup = group.student_ids.map((id) => profilesById[id]?.full_name ?? t(language, 'role_student'))
                 const confirmedCount = group.lessonIds.filter((lessonId) => {
                   const lesson = lessons.find((item) => item.id === lessonId)
                   return lesson?.student_attendance === 'attend'
@@ -541,24 +548,32 @@ export default function AdminCalendar({
                 const totalStudents = group.lessonIds.length
 
                 let groupStatus: 'confirmed' | 'cancelled' | 'partial' | 'pending' = 'pending'
-                let statusLabel = 'Pendente'
+                let statusLabel = t(language, 'pending')
                 let eventClass = 'calendar-event-neutral'
 
                 if (cancelledCount > 0 && cancelledCount < totalStudents) {
                   groupStatus = 'partial'
-                  statusLabel = `Cancelamento Parcial (${cancelledCount}/${totalStudents} cancelaram)`
+                  statusLabel = t(language, 'status_partial_text')
+                    .replace('{cancelled}', String(cancelledCount))
+                    .replace('{total}', String(totalStudents))
                   eventClass = 'calendar-event-warning'
                 } else if (cancelledCount === totalStudents && totalStudents > 0) {
                   groupStatus = 'cancelled'
-                  statusLabel = `Cancelada (${cancelledCount}/${totalStudents} cancelaram)`
+                  statusLabel = t(language, 'status_cancelled_text')
+                    .replace('{cancelled}', String(cancelledCount))
+                    .replace('{total}', String(totalStudents))
                   eventClass = 'calendar-event-danger'
                 } else if (confirmedCount === totalStudents && totalStudents > 0) {
                   groupStatus = 'confirmed'
-                  statusLabel = `Confirmada (${confirmedCount}/${totalStudents} confirmaram)`
+                  statusLabel = t(language, 'status_confirmed_text')
+                    .replace('{confirmed}', String(confirmedCount))
+                    .replace('{total}', String(totalStudents))
                   eventClass = 'calendar-event-success'
                 } else {
                   groupStatus = 'pending'
-                  statusLabel = `Pendente (${confirmedCount}/${totalStudents} confirmaram)`
+                  statusLabel = t(language, 'status_pending_text')
+                    .replace('{confirmed}', String(confirmedCount))
+                    .replace('{total}', String(totalStudents))
                   eventClass = 'calendar-event-neutral'
                 }
 
@@ -575,7 +590,7 @@ export default function AdminCalendar({
                       width: `calc(${100 / layout.totalColumns}% - 8px)`,
                       marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
                     }}
-                    title={`${group.subject} • ${studentsForGroup.join(', ')} com ${teacherName} (${statusLabel})`}
+                    title={`${group.subject} • ${studentsForGroup.join(', ')} ${t(language, 'with_word')} ${teacherName} (${statusLabel})`}
                     onClick={() => openEdit(group)}
                   >
                     <div className="calendar-event-header">
@@ -586,7 +601,7 @@ export default function AdminCalendar({
                       <div className="calendar-event-details">
                         <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
                         <span className="muted tiny-copy calendar-event-sub">
-                          {studentsForGroup.length} {studentsForGroup.length === 1 ? 'aluno' : 'alunos'}
+                          {studentsForGroup.length} {studentsForGroup.length === 1 ? t(language, 'student_singular') : t(language, 'student_plural')}
                         </span>
                       </div>
                     )}
@@ -599,23 +614,23 @@ export default function AdminCalendar({
       </div>
 
       <div className="calendar-legend">
-        <span className="calendar-legend-title">Legenda:</span>
+        <span className="calendar-legend-title">{t(language, 'legend_title')}</span>
         <div className="calendar-legend-items">
           <div className="calendar-legend-item">
             <span className="calendar-status-dot calendar-status-dot-confirmed" />
-            <span>Confirmada (Todos confirmaram)</span>
+            <span>{t(language, 'legend_confirmed')}</span>
           </div>
           <div className="calendar-legend-item">
             <span className="calendar-status-dot calendar-status-dot-partial" />
-            <span>Cancelamento Parcial (1+ no grupo cancelou)</span>
+            <span>{t(language, 'legend_partial')}</span>
           </div>
           <div className="calendar-legend-item">
             <span className="calendar-status-dot calendar-status-dot-cancelled" />
-            <span>Cancelada (Todos cancelaram)</span>
+            <span>{t(language, 'legend_cancelled')}</span>
           </div>
           <div className="calendar-legend-item">
             <span className="calendar-status-dot calendar-status-dot-pending" />
-            <span>Pendente (Aguardando confirmação)</span>
+            <span>{t(language, 'legend_pending')}</span>
           </div>
         </div>
       </div>
@@ -643,13 +658,13 @@ export default function AdminCalendar({
           <div ref={calendarCardRef} className="modal-card" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
             <div className="panel-header">
               <div>
-                <p className="section-label">{editingGroup ? 'Edit class' : 'New class'}</p>
-                <h2>{editingGroup ? 'Update class' : 'Create class'}</h2>
+                <p className="section-label">{editingGroup ? t(language, 'edit_class') : t(language, 'new_class')}</p>
+                <h2>{editingGroup ? t(language, 'update_class') : t(language, 'create_class')}</h2>
               </div>
             </div>
 
             <form className="form-card" onSubmit={submitCreate}>
-              <input required placeholder="Subject" value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
+              <input required placeholder={t(language, 'subject_placeholder')} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
 
               <div className="form-grid">
                 <input
@@ -672,13 +687,13 @@ export default function AdminCalendar({
                 <div className="calendar-form-section">
                   <label className="checkbox-row">
                     <input type="checkbox" checked={repeatWeekly} onChange={(event) => setRepeatWeekly(event.target.checked)} />
-                    Repeat every week
+                    {t(language, 'repeat_every_week')}
                   </label>
                   {repeatWeekly && (
                     <div className="form-grid">
                       <input type="number" min={2} max={52} value={repeatCount} onChange={(event) => setRepeatCount(Number(event.target.value))} />
                       <div className="field-note">
-                        <p className="muted">Number of weekly classes to create, including the first one.</p>
+                        <p className="muted">{t(language, 'repeat_count_hint')}</p>
                       </div>
                     </div>
                   )}
@@ -686,7 +701,7 @@ export default function AdminCalendar({
               )}
 
               <div className="calendar-form-section">
-                <h3>Students participating ({selectedStudentIds.length})</h3>
+                <h3>{t(language, 'students_participating').replace('{count}', String(selectedStudentIds.length))}</h3>
                 <select
                   value=""
                   onChange={(event) => {
@@ -694,10 +709,10 @@ export default function AdminCalendar({
                     event.target.value = ''
                   }}
                 >
-                  <option value="">+ Select student to add...</option>
+                  <option value="">{t(language, 'select_student_add')}</option>
                   {sortedStudents.map((student) => (
                     <option key={student.id} value={student.id} disabled={selectedStudentIds.includes(student.id)}>
-                      {student.full_name} {selectedStudentIds.includes(student.id) ? '(Added)' : ''}
+                      {student.full_name} {selectedStudentIds.includes(student.id) ? t(language, 'added_label') : ''}
                     </option>
                   ))}
                 </select>
@@ -706,7 +721,7 @@ export default function AdminCalendar({
                   <div className="selected-students-list">
                     {selectedStudentIds.map((studentId) => {
                       const student = profilesById[studentId]
-                      const studentName = student?.full_name ?? 'Student'
+                      const studentName = student?.full_name ?? t(language, 'role_student')
 
                       let attendanceStatus: 'attend' | 'cancel' | 'pending' = 'pending'
                       if (editingGroup) {
@@ -726,10 +741,10 @@ export default function AdminCalendar({
 
                       const statusTitle =
                         attendanceStatus === 'attend'
-                          ? 'Confirmed'
+                          ? t(language, 'confirmed_badge')
                           : attendanceStatus === 'cancel'
-                          ? 'Cancelled'
-                          : 'Pending'
+                          ? t(language, 'status_not_happened')
+                          : t(language, 'pending')
 
                       return (
                         <div key={studentId} className="selected-student-chip">
@@ -739,8 +754,8 @@ export default function AdminCalendar({
                             type="button"
                             className="chip-remove-button"
                             onClick={() => removeStudent(studentId)}
-                            title={`Remove ${studentName}`}
-                            aria-label={`Remove ${studentName}`}
+                            title={t(language, 'remove_student_title').replace('{name}', studentName)}
+                            aria-label={t(language, 'remove_student_title').replace('{name}', studentName)}
                           >
                             &times;
                           </button>
@@ -755,31 +770,31 @@ export default function AdminCalendar({
                 <div className="calendar-form-section">
                   <label className="checkbox-row">
                     <input type="checkbox" checked={createStudent} onChange={(event) => setCreateStudent(event.target.checked)} />
-                    Create student login
+                    {t(language, 'create_student_login')}
                   </label>
                   {createStudent && (
                     <div className="form-grid">
                       <input
                         required
-                        placeholder="Student full name"
+                        placeholder={t(language, 'student_full_name')}
                         value={studentDraft.full_name}
                         onChange={(event) => setStudentDraft({ ...studentDraft, full_name: event.target.value })}
                       />
                       <input
                         type="email"
-                        placeholder="Student email (optional)"
+                        placeholder={t(language, 'student_email_opt')}
                         value={studentDraft.email}
                         onChange={(event) => setStudentDraft({ ...studentDraft, email: event.target.value })}
                       />
                       <input
                         required
                         type="password"
-                        placeholder="Student password"
+                        placeholder={t(language, 'student_password')}
                         value={studentDraft.password}
                         onChange={(event) => setStudentDraft({ ...studentDraft, password: event.target.value })}
                       />
                       <input
-                        placeholder="Class label (optional)"
+                        placeholder={t(language, 'class_label_opt')}
                         value={studentDraft.class_name ?? ''}
                         onChange={(event) => setStudentDraft({ ...studentDraft, class_name: event.target.value })}
                       />
@@ -789,11 +804,11 @@ export default function AdminCalendar({
               )}
 
               <div className="calendar-form-section">
-                <h3>Teacher</h3>
+                <h3>{t(language, 'teacher')}</h3>
                 {allowCreateUsers && allowTeacherChange && (
                   <label className="checkbox-row">
                     <input type="checkbox" checked={createTeacher} onChange={(event) => setCreateTeacher(event.target.checked)} />
-                    Create teacher login
+                    {t(language, 'create_teacher_login')}
                   </label>
                 )}
 
@@ -807,7 +822,7 @@ export default function AdminCalendar({
                   </select>
                 ) : (
                   <div className="field-note">
-                    <p className="muted">{profilesById[currentTeacherId ?? draft.teacher_id]?.full_name ?? 'Current teacher'}</p>
+                    <p className="muted">{profilesById[currentTeacherId ?? draft.teacher_id]?.full_name ?? t(language, 'current_teacher')}</p>
                   </div>
                 )}
 
@@ -815,25 +830,25 @@ export default function AdminCalendar({
                   <div className="form-grid">
                     <input
                       required
-                      placeholder="Teacher full name"
+                      placeholder={t(language, 'teacher_full_name')}
                       value={teacherDraft.full_name}
                       onChange={(event) => setTeacherDraft({ ...teacherDraft, full_name: event.target.value })}
                     />
                     <input
                       type="email"
-                      placeholder="Teacher email (optional)"
+                      placeholder={t(language, 'teacher_email_opt')}
                       value={teacherDraft.email}
                       onChange={(event) => setTeacherDraft({ ...teacherDraft, email: event.target.value })}
                     />
                     <input
                       required
                       type="password"
-                      placeholder="Teacher password"
+                      placeholder={t(language, 'teacher_password')}
                       value={teacherDraft.password}
                       onChange={(event) => setTeacherDraft({ ...teacherDraft, password: event.target.value })}
                     />
                     <input
-                      placeholder="Speciality (optional)"
+                      placeholder={t(language, 'speciality_opt')}
                       value={teacherDraft.speciality ?? ''}
                       onChange={(event) => setTeacherDraft({ ...teacherDraft, speciality: event.target.value })}
                     />
@@ -861,16 +876,16 @@ export default function AdminCalendar({
                   }}
                 >
                   <span style={{ fontSize: '1.3rem' }}>⚠️</span>
-                  <span>Please save or cancel your changes first.</span>
+                  <span>{t(language, 'save_or_cancel_first')}</span>
                 </div>
               )}
 
               <div className="button-row wrap">
                 <button className="secondary-button" type="button" onClick={closeModal} disabled={saving}>
-                  Cancel
+                  {t(language, 'cancel')}
                 </button>
                 <button className="primary-button" type="submit" disabled={saving || selectedStudentIds.length === 0}>
-                  {saving ? (editingGroup ? 'Saving...' : 'Creating...') : editingGroup ? 'Save class' : 'Create class'}
+                  {saving ? (editingGroup ? t(language, 'saving_label') : t(language, 'creating_label')) : editingGroup ? t(language, 'save_class_btn') : t(language, 'create_class_btn')}
                 </button>
               </div>
             </form>
