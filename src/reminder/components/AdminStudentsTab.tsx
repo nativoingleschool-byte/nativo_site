@@ -87,14 +87,14 @@ export default function AdminStudentsTab({
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   const handleDeleteStudent = async (studentId: string, fullName: string) => {
-    if (!confirm(`Deseja realmente excluir o aluno ${fullName}? Isso removerá a conta e todos os dados relacionados (aulas e faturas).`)) {
+    if (!confirm(t(language, 'delete_student_confirm').replace('{name}', fullName))) {
       return
     }
 
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Não autenticado.')
+      if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -114,7 +114,7 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao deletar estudante.')
 
-      toast.success('Aluno excluído com sucesso!')
+      toast.success(t(language, 'student_deleted_success'))
       await refreshProfiles()
     } catch (err: any) {
       toast.error(err.message)
@@ -122,14 +122,14 @@ export default function AdminStudentsTab({
   }
 
   const handleArchiveStudent = async (studentId: string, fullName: string) => {
-    if (!confirm(`Deseja realmente arquivar o aluno ${fullName}? Todas as aulas futuras serão excluídas, mas o histórico e faturas serão mantidos.`)) {
+    if (!confirm(t(language, 'archive_student_confirm').replace('{name}', fullName))) {
       return
     }
 
     try {
       const sessionData = await supabase.auth.getSession()
       const token = sessionData.data.session?.access_token
-      if (!token) throw new Error('Não autenticado.')
+      if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -146,7 +146,7 @@ export default function AdminStudentsTab({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao arquivar estudante.')
 
-      toast.success('Aluno arquivado com sucesso!')
+      toast.success(t(language, 'student_archived_success'))
       await refreshProfiles()
     } catch (err: any) {
       toast.error(err.message)
