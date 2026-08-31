@@ -73,6 +73,84 @@ export default function AdminStaffTab({
   const changePasswordCardRef = useRef<HTMLDivElement>(null)
   const teacherDetailCardRef = useRef<HTMLDivElement>(null)
 
+  // Helper functions for month navigation
+  const getNextMonthKey = (monthKey: string): string => {
+    const [yearStr, monthStr] = monthKey.split('-')
+    let year = parseInt(yearStr, 10)
+    let month = parseInt(monthStr, 10)
+    if (month === 12) {
+      year += 1
+      month = 1
+    } else {
+      month += 1
+    }
+    return `${year}-${String(month).padStart(2, '0')}`
+  }
+
+  const getMonthLabel = (monthKey: string, lang: Language): string => {
+    const [yearStr, monthStr] = monthKey.split('-')
+    const dObj = new Date(parseInt(yearStr, 10), parseInt(monthStr, 10) - 1, 1)
+    const label = dObj.toLocaleDateString(lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : 'en', {
+      month: 'long',
+      year: 'numeric',
+    })
+    return label.charAt(0).toUpperCase() + label.slice(1)
+  }
+
+  // Persistent record of paid months for each teacher
+  const [paidMonthsByTeacher, setPaidMonthsByTeacher] = useState<Record<string, string[]>>(() => {
+    try {
+      const raw = localStorage.getItem('nativo_teacher_paid_months_map')
+      if (raw) return JSON.parse(raw)
+    } catch (e) {}
+    return {}
+  })
+
+  // Get active payout month for a teacher: starting from current month (2026-08), advancing when marked as paid
+  const getTeacherActivePayoutMonth = (teacherId: string): string => {
+    if (selectedMonthKey && selectedMonthKey !== 'auto') {
+      return selectedMonthKey
+    }
+    const baseMonth = '2026-08'
+    let current = baseMonth
+    const paidList = paidMonthsByTeacher[teacherId] || []
+    while (paidList.includes(current)) {
+      current = getNextMonthKey(current)
+    }
+    return current
+  }
+
+  const markTeacherMonthPaid = async (teacherId: string, monthKey: string, isPaid: boolean) => {
+    try {
+      const currentList = paidMonthsByTeacher[teacherId] || []
+      let newList: string[] = []
+      if (isPaid) {
+        newList = currentList.includes(monthKey) ? currentList : [...currentList, monthKey]
+      } else {
+        newList = currentList.filter((m) => m !== monthKey)
+      }
+      const updatedMap = { ...paidMonthsByTeacher, [teacherId]: newList }
+      setPaidMonthsByTeacher(updatedMap)
+      localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(updatedMap))
+
+      await handleUpdateTeacherPayout(teacherId, isPaid ? 'pago' : 'pendente')
+
+      const monthLabel = getMonthLabel(monthKey, language)
+      if (isPaid) {
+        const nextMonth = getNextMonthKey(monthKey)
+        const nextMonthLabel = getMonthLabel(nextMonth, language)
+        toast.success(`Mês ${monthLabel} marcado como PAGO! Agora exibindo ${nextMonthLabel}.`)
+        if (selectedTeacherForDetail?.id === teacherId) {
+          setSelectedMonthKey(nextMonth)
+        }
+      } else {
+        toast.success(`Mês ${monthLabel} desmarcado como pago.`)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar pagamento do mês.')
+    }
+  }
+
   // Generate available months list from all lessons
   const availablePayrollMonths = useMemo(() => {
     const monthsMap = new Map<string, string>()
@@ -80,36 +158,18 @@ export default function AdminStaffTab({
       if (l.starts_at) {
         const key = l.starts_at.slice(0, 7)
         if (!monthsMap.has(key)) {
-          const [yr, mo] = key.split('-')
-          const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
-          const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
-            month: 'long',
-            year: 'numeric',
-          })
-          monthsMap.set(key, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+          monthsMap.set(key, getMonthLabel(key, language))
         }
       }
     })
 
-    const currentMonthKey = new Date().toISOString().slice(0, 7)
-    if (!monthsMap.has(currentMonthKey)) {
-      const dObj = new Date()
-      const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
-        month: 'long',
-        year: 'numeric',
-      })
-      monthsMap.set(currentMonthKey, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+    const baseMonthKey = '2026-08'
+    if (!monthsMap.has(baseMonthKey)) {
+      monthsMap.set(baseMonthKey, getMonthLabel(baseMonthKey, language))
     }
 
-    return Array.from(monthsMap.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+    return Array.from(monthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   }, [lessons, language])
-
-  const activePayrollMonthKey = useMemo(() => {
-    if (selectedMonthKey && availablePayrollMonths.some(([k]) => k === selectedMonthKey)) {
-      return selectedMonthKey
-    }
-    return availablePayrollMonths[0]?.[0] || new Date().toISOString().slice(0, 7)
-  }, [selectedMonthKey, availablePayrollMonths])
 
   const handleUpdateLessonStatus = async (lessonId: string, status: 'happened' | 'student_no_show' | 'not_happened' | null) => {
     try {
@@ -652,15 +712,17 @@ export default function AdminStaffTab({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
-          <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>Acompanhe e confirme as horas e valores apurados das aulas de cada professor.</p>
+          <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
+            Clique no valor de qualquer professor para ver o registro de aulas, copiar a chave PIX e marcar o mês como pago.
+          </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{t(language, 'payout_month')}:</span>
+            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Filtro de Mês:</span>
             <select
-              value={activePayrollMonthKey}
-              onChange={(e) => setSelectedMonthKey(e.target.value)}
+              value={selectedMonthKey || 'auto'}
+              onChange={(e) => setSelectedMonthKey(e.target.value === 'auto' ? '' : e.target.value)}
               style={{
                 padding: '0.5rem 1rem',
                 background: '#090d16',
@@ -671,6 +733,7 @@ export default function AdminStaffTab({
                 fontWeight: 600,
               }}
             >
+              <option value="auto">Mês Vigente de Cada Professor (Início: Agosto 2026)</option>
               {availablePayrollMonths.map(([mKey, mLabel]) => (
                 <option key={mKey} value={mKey}>
                   {mLabel}
@@ -703,20 +766,23 @@ export default function AdminStaffTab({
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
-              <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
+              <th style={{ padding: '1rem' }}>Mês Referência</th>
               <th style={{ padding: '1rem' }}>Chave PIX</th>
               <th style={{ padding: '1rem' }}>Aulas (Mês)</th>
               <th style={{ padding: '1rem' }}>{t(language, 'hours_worked')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
-              <th style={{ padding: '1rem' }}>{t(language, 'amount_due')}</th>
+              <th style={{ padding: '1rem' }}>{t(language, 'amount_due')} (Clique p/ Detalhes)</th>
               <th style={{ padding: '1rem' }}>{t(language, 'status')}</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
           </thead>
           <tbody>
             {teachers.map((teacher) => {
+              const teacherActiveMonth = getTeacherActivePayoutMonth(teacher.id)
+              const isMonthPaid = (paidMonthsByTeacher[teacher.id] || []).includes(teacherActiveMonth)
+
               const teacherMonthLessons = lessons.filter(
-                (l) => l.teacher_id === teacher.id && l.starts_at && l.starts_at.slice(0, 7) === activePayrollMonthKey
+                (l) => l.teacher_id === teacher.id && l.starts_at && l.starts_at.slice(0, 7) === teacherActiveMonth
               )
               const completedLessons = teacherMonthLessons.filter((l) => l.teacher_lesson_status === 'happened')
               const activeLessons = teacherMonthLessons.filter(
@@ -735,6 +801,8 @@ export default function AdminStaffTab({
               const completedAmount = completedHours * Number(hourlyRate)
               const totalActiveAmount = totalActiveHours * Number(hourlyRate)
 
+              const monthLabel = getMonthLabel(teacherActiveMonth, language)
+
               return (
                 <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
@@ -743,18 +811,53 @@ export default function AdminStaffTab({
                       style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                       onClick={() => {
                         setSelectedTeacherForDetail(teacher)
-                        setSelectedMonthKey(activePayrollMonthKey)
+                        setSelectedMonthKey(teacherActiveMonth)
                       }}
-                      title="Ver histórico e aulas detalhadas do mês"
+                      title="Ver registro de aulas e chave PIX"
                     >
                       {teacher.full_name}
                     </button>
+                    {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
                   </td>
-                  <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.cnpj || teacher.cpf || '-'}</td>
-                  <td style={{ padding: '1rem', color: '#94a3b8' }}>{teacher.chave_pix || '-'}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <strong style={{ color: '#fff' }}>{monthLabel}</strong>
+                    {isMonthPaid && (
+                      <span className="badge badge-confirmed" style={{ marginLeft: '0.4rem', fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
+                        Pago ✓
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {teacher.chave_pix ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>{teacher.chave_pix}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(teacher.chave_pix!)
+                            toast.success('Chave PIX copiada!')
+                          }}
+                          style={{
+                            background: 'rgba(51, 65, 85, 0.4)',
+                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                            borderRadius: '0.3rem',
+                            padding: '0.2rem 0.4rem',
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            color: '#38bdf8',
+                          }}
+                          title="Copiar Chave PIX"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ color: '#64748b' }}>-</span>
+                    )}
+                  </td>
                   <td style={{ padding: '1rem' }}>
                     {activeLessons.length === 0 ? (
-                      <span style={{ color: '#64748b' }}>0</span>
+                      <span style={{ color: '#64748b' }}>0 aulas</span>
                     ) : completedLessons.length === activeLessons.length ? (
                       <strong style={{ color: '#10b981' }}>{completedLessons.length} realizadas</strong>
                     ) : completedLessons.length > 0 ? (
@@ -780,74 +883,85 @@ export default function AdminStaffTab({
                       <strong style={{ color: '#10b981' }}>{completedHours.toFixed(1)}h</strong>
                     ) : (
                       <span style={{ color: '#818cf8' }}>
-                        {totalActiveHours.toFixed(1)}h <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(na agenda)</span>
+                        {totalActiveHours.toFixed(1)}h <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(agenda)</span>
                       </span>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>{currency} {Number(hourlyRate).toFixed(2)}</td>
-                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                    {totalActiveAmount === 0 ? (
-                      <span style={{ color: '#64748b' }}>{currency} 0.00</span>
-                    ) : completedAmount > 0 && totalActiveAmount > completedAmount ? (
-                      <div>
-                        <strong style={{ color: '#10b981' }}>{currency} {completedAmount.toFixed(2)}</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>
-                          Previsto: {currency} {totalActiveAmount.toFixed(2)}
-                        </div>
-                      </div>
-                    ) : completedAmount > 0 ? (
-                      <strong style={{ color: '#10b981' }}>{currency} {completedAmount.toFixed(2)}</strong>
-                    ) : (
-                      <div>
-                        <strong style={{ color: '#38bdf8' }}>{currency} {totalActiveAmount.toFixed(2)}</strong>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 'normal' }}>
-                          (previsto na agenda)
-                        </div>
-                      </div>
-                    )}
-                  </td>
+                  
+                  {/* Clickable Amount Column */}
                   <td style={{ padding: '1rem' }}>
-                    <span className={badgeClass(teacher.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
-                      {teacher.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeacherForDetail(teacher)
+                        setSelectedMonthKey(teacherActiveMonth)
+                      }}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.08)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        borderRadius: '0.6rem',
+                        padding: '0.45rem 0.8rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.15rem',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title="Clique para abrir o pop-up com as aulas deste mês, chave PIX e botão de pagar"
+                    >
+                      <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? '#10b981' : '#38bdf8' }}>
+                        {currency} {totalActiveAmount.toFixed(2)}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span>🔍 Ver aulas</span>
+                        {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago ✓</span>}
+                      </span>
+                    </button>
+                  </td>
+
+                  <td style={{ padding: '1rem' }}>
+                    <span className={badgeClass(isMonthPaid ? 'confirmed' : 'pending')}>
+                      {isMonthPaid ? 'Pago ✓' : 'Pendente'}
                     </span>
                   </td>
+
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
-                      {scheduledOnlyLessons.length > 0 && (
+                      {!isMonthPaid ? (
                         <button
                           type="button"
                           className="primary-button"
-                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', background: '#059669' }}
-                          onClick={() => void handleBatchConfirmMonthLessons(teacher.id, activePayrollMonthKey)}
-                          title={`Confirmar todas as ${scheduledOnlyLessons.length} aulas agendadas deste mês como realizadas`}
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.78rem', background: '#10b981' }}
+                          onClick={() => void markTeacherMonthPaid(teacher.id, teacherActiveMonth, true)}
+                          title={`Marcar o mês de ${monthLabel} como pago e avançar para o próximo mês`}
                         >
-                          ✓ Confirmar ({scheduledOnlyLessons.length})
+                          ✓ Pagar Mês
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.78rem' }}
+                          onClick={() => void markTeacherMonthPaid(teacher.id, teacherActiveMonth, false)}
+                          title="Desmarcar pagamento deste mês"
+                        >
+                          Desmarcar
                         </button>
                       )}
+
                       <button
                         type="button"
                         className="secondary-button"
-                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
                         onClick={() => {
                           setSelectedTeacherForDetail(teacher)
-                          setSelectedMonthKey(activePayrollMonthKey)
+                          setSelectedMonthKey(teacherActiveMonth)
                         }}
+                        title="Ver registro detalhado de aulas e chave PIX"
                       >
-                        👁️ Detalhes
-                      </button>
-                      <button
-                        className="primary-button"
-                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                        onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pago')}
-                      >
-                        {t(language, 'paid')}
-                      </button>
-                      <button
-                        className="secondary-button"
-                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                        onClick={() => void handleUpdateTeacherPayout(teacher.id, 'pendente')}
-                      >
-                        {t(language, 'pending')}
+                        🔍 Detalhes
                       </button>
                     </div>
                   </td>
@@ -858,37 +972,30 @@ export default function AdminStaffTab({
         </table>
       </div>
 
-      {/* Teacher Detail & History Modal Overlay */}
+      {/* Teacher Detail & History Modal Pop-up Overlay */}
       {selectedTeacherForDetail && (() => {
         const teacherLessons = lessons.filter(l => l.teacher_id === selectedTeacherForDetail.id)
         
-        // Group months
+        // Group available months for this teacher
         const availableMonthsMap = new Map<string, string>()
         teacherLessons.forEach(l => {
           if (l.starts_at) {
             const key = l.starts_at.slice(0, 7)
             if (!availableMonthsMap.has(key)) {
-              const [yr, mo] = key.split('-')
-              const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
-              const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })
-              availableMonthsMap.set(key, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+              availableMonthsMap.set(key, getMonthLabel(key, language))
             }
           }
         })
 
-        const currentMonthKey = new Date().toISOString().slice(0, 7)
-        if (!availableMonthsMap.has(currentMonthKey)) {
-          const dObj = new Date()
-          const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { month: 'long', year: 'numeric' })
-          availableMonthsMap.set(currentMonthKey, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+        const baseMonthKey = '2026-08'
+        if (!availableMonthsMap.has(baseMonthKey)) {
+          availableMonthsMap.set(baseMonthKey, getMonthLabel(baseMonthKey, language))
         }
 
-        const availableMonths = Array.from(availableMonthsMap.entries()).sort((a, b) => b[0].localeCompare(a[0]))
-        const activeMonthKey = selectedMonthKey && availableMonthsMap.has(selectedMonthKey)
-          ? selectedMonthKey
-          : activePayrollMonthKey && availableMonthsMap.has(activePayrollMonthKey)
-          ? activePayrollMonthKey
-          : availableMonths[0][0]
+        const availableMonths = Array.from(availableMonthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+        
+        const activeMonthKey = selectedMonthKey || getTeacherActivePayoutMonth(selectedTeacherForDetail.id)
+        const isCurrentMonthPaid = (paidMonthsByTeacher[selectedTeacherForDetail.id] || []).includes(activeMonthKey)
 
         const monthLessons = teacherLessons
           .filter(l => l.starts_at && l.starts_at.slice(0, 7) === activeMonthKey)
@@ -910,247 +1017,251 @@ export default function AdminStaffTab({
         const currency = selectedTeacherForDetail.moeda_taxa ?? 'BRL'
         const completedAmount = completedHours * Number(hourlyRate)
         const totalActiveAmount = totalActiveHours * Number(hourlyRate)
+        const activeMonthLabel = getMonthLabel(activeMonthKey, language)
 
         return createPortal(
           <div
             className="reminder-app-scope modal-overlay"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
             onClick={(e) => {
               if (teacherDetailCardRef.current && !teacherDetailCardRef.current.contains(e.target as Node)) {
                 setSelectedTeacherForDetail(null)
               }
             }}
           >
-            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
               
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
                     <span className="badge badge-confirmed" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>{t(language, 'teacher')}</span>
                   </div>
                   <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>{selectedTeacherForDetail.email}</p>
                 </div>
-                <button
-                  className="secondary-button"
-                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                  onClick={() => setSelectedTeacherForDetail(null)}
-                >
-                  ✕ {t(language, 'close')}
-                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {/* Select Month inside modal */}
+                  <select
+                    value={activeMonthKey}
+                    onChange={(e) => setSelectedMonthKey(e.target.value)}
+                    style={{ padding: '0.45rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
+                  >
+                    {availableMonths.map(([mKey, mLabel]) => (
+                      <option key={mKey} value={mKey}>{mLabel}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    className="secondary-button"
+                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}
+                    onClick={() => setSelectedTeacherForDetail(null)}
+                  >
+                    ✕ {t(language, 'close')}
+                  </button>
+                </div>
               </div>
 
-              {/* Grid: Teacher Info & NF Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                
-                {/* Info Card */}
-                <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>{t(language, 'payment_info_title')}</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-                    <div><span style={{ color: '#94a3b8' }}>CPF/CNPJ:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.cnpj || selectedTeacherForDetail.cpf || '-'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>{t(language, 'pix_label')}:</span> <strong style={{ color: '#f8fafc' }}>{selectedTeacherForDetail.chave_pix || '-'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>{t(language, 'rate_hour')}:</span> <strong style={{ color: '#10b981' }}>{currency} {Number(hourlyRate).toFixed(2)}</strong></div>
-                    <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>{t(language, 'status')}:</span>
-                      <span className={badgeClass(selectedTeacherForDetail.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')}>
-                        {selectedTeacherForDetail.status_pagamento_professor === 'pago' ? t(language, 'paid') : t(language, 'pending')}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        className="primary-button"
-                        style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', background: '#10b981' }}
-                        onClick={async () => {
-                          await handleUpdateTeacherPayout(selectedTeacherForDetail.id, 'pago')
-                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pago' })
-                        }}
-                      >
-                        {t(language, 'mark_paid_btn')}
-                      </button>
-                      <button
-                        className="secondary-button"
-                        style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem' }}
-                        onClick={async () => {
-                          await handleUpdateTeacherPayout(selectedTeacherForDetail.id, 'pendente')
-                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_pagamento_professor: 'pendente' })
-                        }}
-                      >
-                        {t(language, 'mark_pending_btn')}
-                      </button>
-                    </div>
+              {/* Highlight Card: PIX Key & Payment Action */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                  border: isCurrentMonthPaid ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '1.25rem',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '1.25rem',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Left: Summary & Amounts */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folha de Pagamento</span>
+                    <span className={badgeClass(isCurrentMonthPaid ? 'confirmed' : 'pending')}>
+                      {isCurrentMonthPaid ? 'Mês Pago ✓' : 'Pendente'}
+                    </span>
                   </div>
+
+                  <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: isCurrentMonthPaid ? '#10b981' : '#38bdf8', margin: '0 0 0.3rem 0' }}>
+                    {currency} {totalActiveAmount.toFixed(2)}
+                  </h2>
+
+                  <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
+                    Mês de Referência: <strong style={{ color: '#fff' }}>{activeMonthLabel}</strong> · {totalActiveHours.toFixed(1)}h ({activeLessons.length} aulas na agenda)
+                  </p>
+                  <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                    Taxa Horária: {currency} {Number(hourlyRate).toFixed(2)}/h
+                  </p>
                 </div>
 
-                {/* NF Card */}
-                <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '0.75rem' }}>{t(language, 'sent_invoices_title')}</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Status NF:</span>
-                      <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
-                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? t(language, 'nf_status_na') : t(language, 'nf_status_pending')}
+                {/* Right: PIX Key & Pay Button */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {/* PIX Box */}
+                  <div
+                    style={{
+                      background: '#090d16',
+                      border: '1px solid #334155',
+                      borderRadius: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', display: 'block', fontWeight: 'bold' }}>
+                        Chave PIX do Professor
                       </span>
+                      <strong style={{ color: '#38bdf8', fontSize: '0.95rem', wordBreak: 'break-all' }}>
+                        {selectedTeacherForDetail.chave_pix || 'Chave PIX não informada'}
+                      </strong>
                     </div>
 
-                    {selectedTeacherForDetail.nota_fiscal_url ? (
-                      <div style={{ marginTop: '0.5rem' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem' }}>{t(language, 'file_sent_by_teacher')}</p>
-                        <button
-                          type="button"
-                          className="primary-button"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#0284c7' }}
-                          onClick={() => {
-                            try {
-                              const url = selectedTeacherForDetail.nota_fiscal_url!
-                              if (url.startsWith('data:')) {
-                                const parts = url.split(',')
-                                const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf'
-                                const bstr = atob(parts[1])
-                                let n = bstr.length
-                                const u8arr = new Uint8Array(n)
-                                while (n--) {
-                                  u8arr[n] = bstr.charCodeAt(n)
-                                }
-                                const blob = new Blob([u8arr], { type: mime })
-                                const blobUrl = URL.createObjectURL(blob)
-                                const win = window.open(blobUrl, '_blank')
-                                if (!win) {
-                                  const a = document.createElement('a')
-                                  a.href = blobUrl
-                                  a.download = `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
-                                  a.click()
-                                }
-                              } else {
-                                window.open(url, '_blank')
-                              }
-                            } catch (e) {
-                              window.open(selectedTeacherForDetail.nota_fiscal_url!, '_blank')
-                            }
-                          }}
-                        >
-                          {t(language, 'view_download_nf')}
-                        </button>
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
-                        {selectedTeacherForDetail.status_nota_fiscal === 'enviada'
-                          ? t(language, 'nf_marked_sent')
-                          : t(language, 'no_nf_attached_month')}
-                      </p>
-                    )}
-
-                    {/* Admin Actions for NF */}
-                    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <label className="secondary-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', padding: '0.35rem 0.7rem', cursor: 'pointer' }}>
-                        <span>{selectedTeacherForDetail.nota_fiscal_url ? t(language, 'replace_nf_btn') : t(language, 'attach_nf_btn')}</span>
-                        <input
-                          type="file"
-                          accept="application/pdf,image/*"
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            if (!e.target.files?.[0]) return
-                            const file = e.target.files[0]
-                            const reader = new FileReader()
-                            reader.onload = async () => {
-                              const fileUrl = reader.result as string
-                              await supabase.from('profiles').update({
-                                status_nota_fiscal: 'enviada',
-                                nota_fiscal_url: fileUrl
-                              }).eq('id', selectedTeacherForDetail.id)
-                              setSelectedTeacherForDetail({
-                                ...selectedTeacherForDetail,
-                                status_nota_fiscal: 'enviada',
-                                nota_fiscal_url: fileUrl
-                              })
-                              await refreshProfiles()
-                              toast.success(t(language, 'nf_upload_success'))
-                            }
-                            reader.readAsDataURL(file)
-                          }}
-                        />
-                      </label>
-                      <button
-                        className="secondary-button"
-                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem' }}
-                        onClick={async () => {
-                          const nextStatus = selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'pendente' : 'enviada'
-                          await supabase.from('profiles').update({ status_nota_fiscal: nextStatus }).eq('id', selectedTeacherForDetail.id)
-                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_nota_fiscal: nextStatus })
-                          await refreshProfiles()
-                          toast.success(t(language, 'data_updated_success'))
-                        }}
-                      >
-                        {t(language, 'toggle_status_btn')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Monthly Lesson History */}
-              <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'monthly_class_history')}</h4>
-                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0 }}>Gerencie o status de cada aula trazida da agenda ou adicione confirmações.</p>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    {/* Month Selector */}
-                    <select
-                      value={activeMonthKey}
-                      onChange={(e) => setSelectedMonthKey(e.target.value)}
-                      style={{ padding: '0.45rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
-                    >
-                      {availableMonths.map(([mKey, mLabel]) => (
-                        <option key={mKey} value={mKey}>{mLabel}</option>
-                      ))}
-                    </select>
-
-                    {scheduledOnlyLessons.length > 0 && (
+                    {selectedTeacherForDetail.chave_pix && (
                       <button
                         type="button"
                         className="primary-button"
-                        style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', background: '#059669' }}
-                        onClick={() => void handleBatchConfirmMonthLessons(selectedTeacherForDetail.id, activeMonthKey)}
-                        title={`Confirmar todas as ${scheduledOnlyLessons.length} aulas agendadas deste mês como realizadas`}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.78rem', background: '#0284c7', whiteSpace: 'nowrap' }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedTeacherForDetail.chave_pix!)
+                          toast.success('Chave PIX copiada!')
+                        }}
                       >
-                        ✓ Confirmar Todas ({scheduledOnlyLessons.length})
+                        📋 Copiar PIX
                       </button>
                     )}
                   </div>
+
+                  {/* Mark as Paid Action Button */}
+                  {!isCurrentMonthPaid ? (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{
+                        padding: '0.8rem 1.25rem',
+                        fontSize: '0.95rem',
+                        background: '#10b981',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        borderRadius: '0.75rem',
+                      }}
+                      onClick={() => void markTeacherMonthPaid(selectedTeacherForDetail.id, activeMonthKey, true)}
+                    >
+                      <span>✓ Marcar {activeMonthLabel} como PAGO</span>
+                      <span>({currency} {totalActiveAmount.toFixed(2)})</span>
+                    </button>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        padding: '0.6rem 1rem',
+                        borderRadius: '0.75rem',
+                      }}
+                    >
+                      <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                        ✓ Mês de {activeMonthLabel} PAGO
+                      </span>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                        onClick={() => void markTeacherMonthPaid(selectedTeacherForDetail.id, activeMonthKey, false)}
+                      >
+                        Desmarcar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* NF Card (Secondary info) */}
+              <div style={{ background: 'rgba(30, 41, 59, 0.3)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Nota Fiscal (MEI):</span>
+                  <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
+                    {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'Não se Aplica' : 'Pendente'}
+                  </span>
                 </div>
 
-                {/* Monthly Summary Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'classes_conducted')}</span>
-                    <strong style={{ fontSize: '1.15rem', color: '#fff' }}>
-                      {completedLessons.length} <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'normal' }}>/ {activeLessons.length}</span>
-                    </strong>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {selectedTeacherForDetail.nota_fiscal_url && (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem', background: '#0284c7' }}
+                      onClick={() => {
+                        window.open(selectedTeacherForDetail.nota_fiscal_url!, '_blank')
+                      }}
+                    >
+                      📄 Ver Arquivo NF
+                    </button>
+                  )}
+                  <label className="secondary-button" style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem', cursor: 'pointer' }}>
+                    <span>{selectedTeacherForDetail.nota_fiscal_url ? 'Substituir NF' : 'Anexar NF'}</span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        if (!e.target.files?.[0]) return
+                        const file = e.target.files[0]
+                        const reader = new FileReader()
+                        reader.onload = async () => {
+                          const fileUrl = reader.result as string
+                          await supabase.from('profiles').update({
+                            status_nota_fiscal: 'enviada',
+                            nota_fiscal_url: fileUrl
+                          }).eq('id', selectedTeacherForDetail.id)
+                          setSelectedTeacherForDetail({
+                            ...selectedTeacherForDetail,
+                            status_nota_fiscal: 'enviada',
+                            nota_fiscal_url: fileUrl
+                          })
+                          await refreshProfiles()
+                          toast.success(t(language, 'nf_upload_success'))
+                        }
+                        reader.readAsDataURL(file)
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Monthly Lesson History / Registry that amounts are based on */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                      Registro de Aulas de {activeMonthLabel} ({activeLessons.length} aulas)
+                    </h4>
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0 }}>
+                      Abaixo estão todas as aulas trazidas da agenda que compõem o valor deste mês.
+                    </p>
                   </div>
-                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'total_hours_worked')}</span>
-                    <strong style={{ fontSize: '1.15rem', color: '#38bdf8' }}>
-                      {completedHours.toFixed(1)}h
-                      {scheduledOnlyLessons.length > 0 && (
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'normal' }}> ({totalActiveHours.toFixed(1)}h agenda)</span>
-                      )}
-                    </strong>
-                  </div>
-                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{t(language, 'calculated_amount')}</span>
-                    <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
-                      {currency} {completedAmount > 0 ? completedAmount.toFixed(2) : totalActiveAmount.toFixed(2)}
-                    </strong>
-                    {completedAmount > 0 && totalActiveAmount > completedAmount && (
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                        Previsto: {currency} {totalActiveAmount.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
+                  
+                  {scheduledOnlyLessons.length > 0 && (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', background: '#059669' }}
+                      onClick={() => void handleBatchConfirmMonthLessons(selectedTeacherForDetail.id, activeMonthKey)}
+                      title={`Confirmar todas as ${scheduledOnlyLessons.length} aulas agendadas deste mês como realizadas`}
+                    >
+                      ✓ Confirmar Todas como Realizadas ({scheduledOnlyLessons.length})
+                    </button>
+                  )}
                 </div>
 
                 {/* Monthly Lessons Table */}
@@ -1162,9 +1273,9 @@ export default function AdminStaffTab({
                         <th style={{ padding: '0.6rem' }}>{t(language, 'student_col')}</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'class_subject_col')}</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'duration_col')}</th>
-                        <th style={{ padding: '0.6rem' }}>{t(language, 'status')}</th>
+                        <th style={{ padding: '0.6rem' }}>Status</th>
                         <th style={{ padding: '0.6rem' }}>Ajustar Status</th>
-                        <th style={{ padding: '0.6rem', textAlign: 'right' }}>{t(language, 'value_col')}</th>
+                        <th style={{ padding: '0.6rem', textAlign: 'right' }}>Valor da Aula</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1176,7 +1287,7 @@ export default function AdminStaffTab({
                         const isScheduled = !l.teacher_lesson_status
 
                         const lessonHours = (l.duration_minutes || 60) / 60
-                        const lessonVal = isHappened ? lessonHours * Number(hourlyRate) : 0
+                        const lessonVal = lessonHours * Number(hourlyRate)
 
                         return (
                           <tr key={l.id} style={{ borderBottom: '1px solid #1e293b' }}>
@@ -1211,7 +1322,7 @@ export default function AdminStaffTab({
                                     color: isHappened ? '#0f172a' : '#10b981',
                                     border: '1px solid rgba(16, 185, 129, 0.3)',
                                   }}
-                                  title="Marcar como Realizada / Computar na folha"
+                                  title="Marcar como Realizada"
                                 >
                                   ✓ Realizada
                                 </button>
@@ -1265,8 +1376,8 @@ export default function AdminStaffTab({
                                 </button>
                               </div>
                             </td>
-                            <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isHappened ? '#10b981' : '#64748b' }}>
-                              {currency} {lessonVal.toFixed(2)}
+                            <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isNotHappened ? '#64748b' : '#10b981' }}>
+                              {currency} {isNotHappened ? '0.00' : lessonVal.toFixed(2)}
                             </td>
                           </tr>
                         )
