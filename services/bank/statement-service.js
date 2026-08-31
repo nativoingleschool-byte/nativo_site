@@ -410,14 +410,18 @@ export async function processStatementAndUpsert(supabaseAdmin, fileContent, file
         nfse_id,
         status,
         raw_data,
-        created_at,
-        student:profiles!bank_transactions_student_id_fkey(id, full_name, email, cpf, tuition_fee)
+        created_at
       `);
 
     if (upsertError) {
       throw new Error(`Falha ao salvar transações: ${upsertError.message}`);
     }
-    insertedOrUpdated = upserted || [];
+
+    const studentMap = new Map((students || []).map(s => [s.id, s]));
+    insertedOrUpdated = (upserted || []).map(tx => ({
+      ...tx,
+      student: tx.student_id ? (studentMap.get(tx.student_id) || null) : null
+    }));
   }
 
   // Include any existing records that were already 'issued' for complete preview
@@ -439,13 +443,17 @@ export async function processStatementAndUpsert(supabaseAdmin, fileContent, file
           nfse_id,
           status,
           raw_data,
-          created_at,
-          student:profiles!bank_transactions_student_id_fkey(id, full_name, email, cpf, tuition_fee)
+          created_at
         `)
         .in('fitid', alreadyIssuedFitids);
 
       if (alreadyIssuedRecords) {
-        insertedOrUpdated = [...insertedOrUpdated, ...alreadyIssuedRecords];
+        const studentMap = new Map((students || []).map(s => [s.id, s]));
+        const mappedIssued = alreadyIssuedRecords.map(tx => ({
+          ...tx,
+          student: tx.student_id ? (studentMap.get(tx.student_id) || null) : null
+        }));
+        insertedOrUpdated = [...insertedOrUpdated, ...mappedIssued];
       }
     }
   }

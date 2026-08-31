@@ -1,24 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { processStatementAndUpsert } from '../../services/bank/statement-service.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const json = (res, status, body) => {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(body));
-};
-
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
-
 const getQueryParam = (req, key) => {
   if (req.query && req.query[key]) return req.query[key];
   if (req.url) {
@@ -32,9 +14,34 @@ const getQueryParam = (req, key) => {
   return null;
 };
 
+const sendResponse = (res, status, body) => {
+  if (typeof res.status === 'function') {
+    return res.status(status).json(body);
+  }
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(body));
+};
+
+const getSupabaseAdmin = () => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error('Supabase URL is missing from environment variables (SUPABASE_URL or VITE_SUPABASE_URL).');
+  }
+  if (!supabaseServiceRoleKey) {
+    throw new Error('Supabase Service Role Key is missing from environment variables (SUPABASE_SERVICE_ROLE_KEY).');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return json(res, 405, { error: 'Method not allowed.' });
+    return sendResponse(res, 405, { error: 'Method not allowed.' });
   }
 
   try {
@@ -42,54 +49,77 @@ export default async function handler(req, res) {
     const token = getQueryParam(req, 'token');
     const secret = process.env.INBOUND_WEBHOOK_SECRET;
 
-    if (!secret || !token || token !== secret) {
-      return json(res, 401, { error: 'Unauthorized: Invalid or missing token.' });
+    if (secret) {
+      if (!token || token.trim() !== secret.trim()) {
+        return sendResponse(res, 401, { error: 'Unauthorized: Invalid or missing token.' });
+      }
+    } else {
+      console.warn('[Inbound Webhook Warning]: INBOUND_WEBHOOK_SECRET is not configured on server.');
     }
 
-    // 2. Attachment Extraction (Postmark Schema)
+    // 2. Parse request body if needed
     let body = req.body;
     if (typeof body === 'string') {
       try {
         body = JSON.parse(body);
       } catch (e) {
-        return json(res, 400, { error: 'Invalid JSON body.' });
+        console.error('[Inbound Webhook Error]: Malformed JSON body in request', e);
+        return sendResponse(res, 400, { error: 'Malformed JSON payload.' });
+      }
+    } else if (!body) {
+      try {
+        const buffers = [];
+        for await (const chunk of req) {
+          buffers.push(chunk);
+        }
+        const raw = Buffer.concat(buffers).toString('utf-8');
+        if (raw) {
+          body = JSON.parse(raw);
+        }
+      } catch (e) {
+        console.error('[Inbound Webhook Error]: Failed to read stream body', e);
       }
     }
 
-    const attachments = Array.isArray(body?.Attachments) ? body.Attachments : [];
-    const statementAttachments = attachments.filter(att => {
-      const name = String(att?.Name || '').toLowerCase();
-      const ct = String(att?.ContentType || '').toLowerCase();
+    // 3. Payload & Attachment Field Normalization (Postmark Schema)
+    const attachments = body?.Attachments || body?.attachments || req.body?.Attachments || req.body?.attachments || [];
+
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return sendResponse(res, 200, { message: "No statement attachment found in email" });
+    }
+
+    // Check filename (.ofx or .csv)
+    const statement = attachments.find(att => {
+      const name = (att?.Name || att?.name || '').toLowerCase();
+      const ct = (att?.ContentType || att?.contentType || '').toLowerCase();
       return name.endsWith('.ofx') || name.endsWith('.csv') || ct.includes('ofx') || ct.includes('csv');
     });
 
-    if (statementAttachments.length === 0) {
-      return json(res, 200, { message: 'No statement attachment found' });
+    if (!statement) {
+      return sendResponse(res, 200, { message: "No statement attachment found in email" });
     }
 
-    // 3. Process each statement attachment through shared pipeline
+    const base64Content = statement.Content || statement.content;
+    if (!base64Content) {
+      return sendResponse(res, 200, { message: "No statement attachment found in email" });
+    }
+
+    // 4. Base64 Decoding & Processing
+    const filename = statement.Name || statement.name || 'extrato.ofx';
+    const fileContent = Buffer.from(base64Content, 'base64').toString('utf-8');
+
+    // 5. Database Client & Permissions: Ensure Supabase Admin/Service Role client is used
     const supabaseAdmin = getSupabaseAdmin();
-    let totalProcessed = 0;
+    const result = await processStatementAndUpsert(supabaseAdmin, fileContent, filename);
 
-    for (const attachment of statementAttachments) {
-      if (!attachment?.Content) continue;
-
-      // Decode base64 content
-      const fileContent = Buffer.from(attachment.Content, 'base64').toString('utf-8');
-      const filename = attachment.Name || 'inbound-statement.ofx';
-
-      const result = await processStatementAndUpsert(supabaseAdmin, fileContent, filename);
-      totalProcessed += (result.count || 0);
-    }
-
-    // 4. Return Response
-    return json(res, 200, {
+    return sendResponse(res, 200, {
       success: true,
-      processed: totalProcessed
+      processed: result.count || 0,
+      message: `Successfully processed ${result.count || 0} transactions from ${filename}`
     });
 
-  } catch (error) {
-    console.error('Error processing Postmark inbound webhook:', error);
-    return json(res, 500, { error: error.message || 'Internal server error' });
+  } catch (err) {
+    console.error('[Inbound Webhook Error]:', err);
+    return sendResponse(res, 500, { error: err.message, stack: err.stack });
   }
 }
