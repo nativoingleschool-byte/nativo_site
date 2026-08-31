@@ -774,7 +774,7 @@ function ReminderAppInner() {
   const requestPushPermission = (): Promise<void> => {
     if (!profile || !('Notification' in window)) {
       setNotificationPermission('unsupported')
-      toast.info("As notificações push não são suportadas por este navegador. Em iOS, adicione o app à Tela de Início primeiro.")
+      toast.info(t(language, 'push_unsupported_error'))
       return Promise.resolve()
     }
 
@@ -806,13 +806,13 @@ function ReminderAppInner() {
             }
           })
           .then(() => {
-            toast.success("Alertas push ativados com sucesso!")
+            toast.success(t(language, 'push_activated_success'))
           })
           .catch((err) => {
             toast.error("Erro ao salvar preferência de push: " + err.message)
           })
       } else if (permission === 'denied') {
-        toast.error("Permissão negada. Redefina as permissões de notificação nas configurações do navegador.")
+        toast.error(t(language, 'push_permission_denied'))
       }
     }
 
@@ -1018,7 +1018,7 @@ function ReminderAppInner() {
     starts_at: string
     duration_minutes: number
   }) => {
-    window.confirm('Deseja alterar apenas esta aula ou todas as futuras da recorrência?')
+    window.confirm(t(language, 'update_recurring_confirm'))
     await updateLessonGroup(draft)
   }
 
@@ -1049,7 +1049,7 @@ function ReminderAppInner() {
 
   const handleDeleteUser = async (userId: string) => {
     setAppError('')
-    const confirmed = window.confirm('Delete this user? This cannot be undone.')
+    const confirmed = window.confirm(t(language, 'delete_user_confirm'))
     if (!confirmed) {
       return
     }
@@ -1059,7 +1059,7 @@ function ReminderAppInner() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not delete the user.'
       if (message.includes('linked to lessons')) {
-        const force = window.confirm('This user has lessons. Delete the user AND all linked lessons?')
+        const force = window.confirm(t(language, 'delete_user_force_confirm'))
         if (!force) {
           setAppError(message)
           return
@@ -1238,16 +1238,16 @@ function ReminderAppInner() {
 
   const summaryCards = isAdmin
     ? [
-        { label: 'Users', value: profiles.length },
-        { label: 'Students', value: students.length },
-        { label: 'Teachers', value: teachers.length },
-        { label: 'Lessons (This Week)', value: lessonsThisWeek.length },
+        { label: t(language, 'summary_users'), value: profiles.length },
+        { label: t(language, 'summary_students'), value: students.length },
+        { label: t(language, 'summary_teachers'), value: teachers.length },
+        { label: t(language, 'summary_lessons_week'), value: lessonsThisWeek.length },
       ]
     : [
-        { label: 'Upcoming lessons', value: isTeacher ? teacherUpcomingTenDays.length : studentUpcomingLessons.length },
-        { label: 'Past lessons', value: isTeacher ? teacherPastWeek.length : studentPastLessons.length },
-        { label: 'Pending reminders', value: reminderCount },
-        { label: 'Push status', value: profile.push_enabled ? 'Enabled' : 'Disabled' },
+        { label: t(language, 'summary_upcoming_lessons'), value: isTeacher ? teacherUpcomingTenDays.length : studentUpcomingLessons.length },
+        { label: t(language, 'summary_past_lessons'), value: isTeacher ? teacherPastWeek.length : studentPastLessons.length },
+        { label: t(language, 'summary_pending_reminders'), value: reminderCount },
+        { label: t(language, 'summary_push_status'), value: profile.push_enabled ? t(language, 'push_enabled') : t(language, 'push_disabled') },
       ]
 
   const lessonCardClass = (lessonId: string) =>
@@ -1397,26 +1397,26 @@ function ReminderAppInner() {
                 />
 
                 <div className="list-stack">
-                  <h3>Tracked outcomes</h3>
+                  <h3>{t(language, 'tracked_outcomes')}</h3>
                   {trackedLessons.map((lesson) => (
                     <div key={lesson.id} className={lessonCardClass(lesson.id)}>
                       <div>
                         <h3>{lesson.subject}</h3>
                         <p className="muted">
-                          {profilesById[lesson.student_id]?.full_name} with {profilesById[lesson.teacher_id]?.full_name}
+                          {profilesById[lesson.student_id]?.full_name} {t(language, 'with_teacher_label')} {profilesById[lesson.teacher_id]?.full_name}
                         </p>
                         <p className="muted">{formatShortDateLabel(lesson.starts_at)}</p>
                       </div>
                       <div className="status-stack">
                         <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
                         <span className={badgeClass(lesson.student_attendance ? `student ${lesson.student_attendance}` : 'pending')}>
-                          Student 4h: {lesson.student_attendance ?? 'pending'}
+                          {t(language, 'student_4h_status')} {lesson.student_attendance ?? t(language, 'pending')}
                         </span>
                         <span className={badgeClass(lesson.student_lesson_status ? `student ${lesson.student_lesson_status}` : 'pending')}>
-                          Student at start: {lesson.student_lesson_status ?? 'pending'}
+                          {t(language, 'student_start_status')} {lesson.student_lesson_status ?? t(language, 'pending')}
                         </span>
                         <span className={badgeClass(lesson.teacher_lesson_status ?? 'pending')}>
-                          Teacher at start: {lesson.teacher_lesson_status ?? 'pending'}
+                          {t(language, 'teacher_start_status')} {lesson.teacher_lesson_status ?? t(language, 'pending')}
                         </span>
                       </div>
                     </div>

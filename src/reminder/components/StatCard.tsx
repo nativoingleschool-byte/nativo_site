@@ -2,14 +2,14 @@ import { Users, GraduationCap, Briefcase, CalendarDays, Clock, History, Bell, Wi
 
 function getIcon(label: string) {
   const l = label.toLowerCase()
-  if (l === 'users') return Users
-  if (l === 'students') return GraduationCap
-  if (l === 'teachers') return Briefcase
-  if (l.includes('lesson')) return CalendarDays
-  if (l.includes('upcoming')) return Clock
-  if (l.includes('past')) return History
-  if (l.includes('pending') || l.includes('reminders')) return Bell
-  if (l.includes('push')) return Wifi
+  if (l.includes('user') || l.includes('usuár') || l.includes('usuario')) return Users
+  if (l.includes('student') || l.includes('alun') || l.includes('estudiant')) return GraduationCap
+  if (l.includes('teacher') || l.includes('professor') || l.includes('profesor')) return Briefcase
+  if (l.includes('upcoming') || l.includes('próxim')) return Clock
+  if (l.includes('past') || l.includes('passad')) return History
+  if (l.includes('pending') || l.includes('pendent') || l.includes('lembrete') || l.includes('recordator') || l.includes('reminder')) return Bell
+  if (l.includes('push') || l.includes('alerta')) return Wifi
+  if (l.includes('lesson') || l.includes('aula') || l.includes('clase')) return CalendarDays
   return CalendarDays
 }
 

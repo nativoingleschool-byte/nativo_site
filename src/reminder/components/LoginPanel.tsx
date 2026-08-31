@@ -70,30 +70,33 @@ export default function LoginPanel({
       <div className="login-shell">
       <section className="login-hero">
         <div>
-          <p className="eyebrow">Welcome</p>
-          <h1>Keep every class organized</h1>
+          <p className="eyebrow">{language === 'es' ? 'Bienvenido' : language === 'en' ? 'Welcome' : 'Bem-vindo'}</p>
+          <h1>{language === 'es' ? 'Mantenga cada clase organizada' : language === 'en' ? 'Keep every class organized' : 'Mantenha cada aula organizada'}</h1>
           <p className="muted large-copy">
-            This app helps schools, teachers, and students see upcoming classes, stay on time, and keep a clear record of what
-            happened in each lesson.
+            {language === 'es' 
+              ? 'Esta aplicación ayuda a escuelas, profesores y alumnos a consultar próximas clases, ser puntuales y llevar un registro claro de cada lección.'
+              : language === 'en'
+              ? 'This app helps schools, teachers, and students see upcoming classes, stay on time, and keep a clear record of what happened in each lesson.'
+              : 'Este aplicativo ajuda escolas, professores e alunos a verem próximas aulas, manterem a pontualidade e terem um registro claro de cada aula.'}
           </p>
         </div>
 
         <div className="feature-grid">
           <article className="feature-card">
-            <h3>See what’s next</h3>
-            <p className="muted">Check upcoming classes and recent lessons in one place.</p>
+            <h3>{language === 'es' ? 'Vea lo que sigue' : language === 'en' ? 'See what’s next' : 'Veja o que vem a seguir'}</h3>
+            <p className="muted">{language === 'es' ? 'Consulte próximas clases y lecciones recientes en un solo lugar.' : language === 'en' ? 'Check upcoming classes and recent lessons in one place.' : 'Verifique próximas aulas e lições recentes em um só lugar.'}</p>
           </article>
           <article className="feature-card">
-            <h3>Stay on time</h3>
-            <p className="muted">Get reminders before class so nobody misses an important lesson.</p>
+            <h3>{language === 'es' ? 'Puntualidad garantizada' : language === 'en' ? 'Stay on time' : 'Fique no horário'}</h3>
+            <p className="muted">{language === 'es' ? 'Reciba recordatorios antes de clase para no perder ninguna lección importante.' : language === 'en' ? 'Get reminders before class so nobody misses an important lesson.' : 'Receba lembretes antes da aula para que ninguém perca uma lição importante.'}</p>
           </article>
           <article className="feature-card">
-            <h3>Keep everyone aligned</h3>
-            <p className="muted">Students, teachers, and admins can each see the information that matters to them.</p>
+            <h3>{language === 'es' ? 'Todos alineados' : language === 'en' ? 'Keep everyone aligned' : 'Mantenha todos alinhados'}</h3>
+            <p className="muted">{language === 'es' ? 'Alumnos, profesores y administradores ven la información que les interesa.' : language === 'en' ? 'Students, teachers, and admins can each see the information that matters to them.' : 'Alunos, professores e administradores visualizam as informações relevantes para cada um.'}</p>
           </article>
           <article className="feature-card">
-            <h3>Track each class</h3>
-            <p className="muted">Mark whether a class happened and keep a simple history of lessons.</p>
+            <h3>{language === 'es' ? 'Seguimiento de clases' : language === 'en' ? 'Track each class' : 'Acompanhe cada aula'}</h3>
+            <p className="muted">{language === 'es' ? 'Marque si una clase se realizó y guarde un historial sencillo.' : language === 'en' ? 'Mark whether a class happened and keep a simple history of lessons.' : 'Marque se uma aula aconteceu e mantenha um histórico simples das aulas.'}</p>
           </article>
         </div>
       </section>

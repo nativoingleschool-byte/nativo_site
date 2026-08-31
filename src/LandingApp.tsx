@@ -67,6 +67,7 @@ export default function App() {
       <LoginModal
         isOpen={showLogin}
         onClose={() => setShowLogin(false)}
+        lang={lang}
       />
     </div>
   );

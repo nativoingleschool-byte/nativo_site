@@ -46,6 +46,11 @@ export default function Topbar({
   handleLogout,
 }: TopbarProps) {
   const isPushEnabled = notificationPermission === 'granted' && profile.push_enabled
+  const roleLabel = profile.role === 'admin' 
+    ? t(language, 'role_admin') 
+    : profile.role === 'teacher' 
+    ? t(language, 'role_teacher') 
+    : t(language, 'role_student')
 
   const timeStr = formatDateTime(now.toISOString(), language, appTimeZone)
 
@@ -56,7 +61,7 @@ export default function Topbar({
         <div className="topbar-chip" title={profile.email}>
           <User size={15} />
           <span className="topbar-label">
-            {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}: {profile.full_name.split(' ')[0]}
+            {roleLabel}: {profile.full_name.split(' ')[0]}
           </span>
         </div>
       </div>
@@ -71,7 +76,7 @@ export default function Topbar({
             className="topbar-select"
             value={appTimeZone}
             onChange={(e) => setAppTimeZone(e.target.value)}
-            title="Timezone"
+            title={language === 'es' ? 'Zona horaria' : language === 'pt' ? 'Fuso horário' : 'Timezone'}
           >
             {appTimeZones.map((z) => (
               <option key={z.value} value={z.value}>{z.label}</option>
@@ -98,7 +103,9 @@ export default function Topbar({
         <button
           className={`topbar-icon-btn${isPushEnabled ? ' topbar-icon-btn--active' : ''}`}
           onClick={isPushEnabled ? disablePush : requestPushPermission}
-          title={isPushEnabled ? 'Disable push alerts' : 'Enable push alerts'}
+          title={isPushEnabled 
+            ? (language === 'es' ? 'Desactivar alertas push' : language === 'pt' ? 'Desativar alertas push' : 'Disable push alerts')
+            : (language === 'es' ? 'Activar alertas push' : language === 'pt' ? 'Ativar alertas push' : 'Enable push alerts')}
         >
           {isPushEnabled ? <Bell size={16} /> : <BellOff size={16} />}
         </button>
@@ -108,7 +115,7 @@ export default function Topbar({
           <button
             className="topbar-icon-btn"
             onClick={promptInstall}
-            title="Install App"
+            title={language === 'es' ? 'Instalar App' : language === 'pt' ? 'Instalar App' : 'Install App'}
           >
             <Download size={16} />
           </button>
@@ -118,7 +125,7 @@ export default function Topbar({
         <button
           className="topbar-icon-btn topbar-icon-btn--danger"
           onClick={handleLogout}
-          title="Log out"
+          title={language === 'es' ? 'Cerrar sesión' : language === 'pt' ? 'Sair' : 'Log out'}
         >
           <LogOut size={16} />
         </button>
