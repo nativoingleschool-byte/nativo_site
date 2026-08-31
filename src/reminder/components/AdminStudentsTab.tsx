@@ -978,7 +978,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#38bdf8', borderRadius: '0.25rem' }}
                             onSelect={() => void handleResetAndRetryNfse(student.id, student.full_name)}
                           >
-                            🔄 Re-emitir NFS-e (Resetar)
+                            {t(language, 'reissue_reset')}
                           </DropdownMenu.Item>
                           <DropdownMenu.Item 
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
@@ -1014,13 +1014,13 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#f59e0b', borderRadius: '0.25rem' }}
                             onSelect={() => void handleArchiveStudent(student.id, student.full_name)}
                           >
-                            Arquivar
+                            {t(language, 'archive_btn')}
                           </DropdownMenu.Item>
                           <DropdownMenu.Item 
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#ef4444', borderRadius: '0.25rem' }}
                             onSelect={() => void handleDeleteStudent(student.id, student.full_name)}
                           >
-                            Excluir
+                            {t(language, 'delete')}
                           </DropdownMenu.Item>
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
@@ -1083,14 +1083,14 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
               <input
-                placeholder="CPF"
+                placeholder={t(language, 'cpf_label')}
                 value={userForm.cpf || ''}
                 onChange={(e) => setUserForm({ ...userForm, cpf: e.target.value })}
               />
               <input
                 type="number"
                 step="0.01"
-                placeholder="Valor da Mensalidade"
+                placeholder={t(language, 'tuition_fee_placeholder')}
                 value={userForm.tuition_fee ?? ''}
                 onChange={(e) => setUserForm({ ...userForm, tuition_fee: e.target.value === '' ? undefined : Number(e.target.value) })}
               />
@@ -1113,30 +1113,30 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 <option value="pendente">{t(language, 'financial_pending')}</option>
               </select>
               <input
-                placeholder="CEP"
+                placeholder={t(language, 'cep_label')}
                 value={userForm.cep || ''}
                 onChange={(e) => setUserForm({ ...userForm, cep: e.target.value })}
               />
               <input
-                placeholder="Logradouro / Endereço"
+                placeholder={t(language, 'address_label')}
                 value={userForm.logradouro || ''}
                 onChange={(e) => setUserForm({ ...userForm, logradouro: e.target.value })}
               />
               <input
-                placeholder="Bairro"
+                placeholder={t(language, 'neighborhood_label')}
                 value={userForm.bairro || ''}
                 onChange={(e) => setUserForm({ ...userForm, bairro: e.target.value })}
               />
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   style={{ flex: 2 }}
-                  placeholder="Cidade"
+                  placeholder={t(language, 'city_label')}
                   value={userForm.cidade || ''}
                   onChange={(e) => setUserForm({ ...userForm, cidade: e.target.value })}
                 />
                 <input
                   style={{ flex: 1 }}
-                  placeholder="UF"
+                  placeholder={t(language, 'state_label')}
                   value={userForm.uf || ''}
                   onChange={(e) => setUserForm({ ...userForm, uf: e.target.value.toUpperCase() })}
                 />
@@ -1190,7 +1190,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                       })
                       .eq('id', userForm.id)
                     if (error) throw error
-                    toast.success(language === 'es' ? 'Datos actualizados con éxito.' : language === 'en' ? 'Details updated successfully.' : 'Dados atualizados com sucesso.')
+                    toast.success(t(language, 'data_updated_success'))
                     setSavingUserId(null)
                     setInitialUserForm(null)
                     setShowUnsavedWarning(false)
@@ -1252,7 +1252,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                             disabled={downloadingPdfId === inv.id}
                             onClick={() => void downloadNfsePdf(inv.id, historyStudent.full_name)}
                           >
-                            {downloadingPdfId === inv.id ? 'Gerando...' : 'NFS-e'}
+                            {downloadingPdfId === inv.id ? t(language, 'generating_pdf') : 'NFS-e'}
                           </button>
                         ) : (
                           <span className="muted text-xs">{t(language, 'awaiting_emission')}</span>
