@@ -2,7 +2,7 @@ import { FormEvent, useState, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { badgeClass } from '../lib/utils'
+import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
 
@@ -185,6 +185,24 @@ export default function AdminStaffTab({
       await refreshLessons()
     } catch (err: any) {
       toast.error(err.message || 'Erro ao atualizar status da aula.')
+    }
+  }
+
+  const handleUpdateSessionStatus = async (lessonIds: string[], status: 'happened' | 'student_no_show' | 'not_happened' | null) => {
+    try {
+      if (lessonIds.length === 0) return
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          teacher_lesson_status: status,
+          status: status === 'happened' ? 'concluida' : status === 'not_happened' ? 'cancelada' : 'agendada',
+        })
+        .in('id', lessonIds)
+      if (error) throw error
+      toast.success(t(language, 'data_updated_success'))
+      await refreshLessons()
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar status da turma.')
     }
   }
 
@@ -784,17 +802,18 @@ export default function AdminStaffTab({
               const teacherMonthLessons = lessons.filter(
                 (l) => l.teacher_id === teacher.id && l.starts_at && l.starts_at.slice(0, 7) === teacherActiveMonth
               )
-              const completedLessons = teacherMonthLessons.filter((l) => l.teacher_lesson_status === 'happened')
-              const activeLessons = teacherMonthLessons.filter(
-                (l) => l.status !== 'cancelada' && l.teacher_lesson_status !== 'not_happened' && l.status !== 'proposta_pendente'
-              )
-              const scheduledOnlyLessons = activeLessons.filter((l) => !l.teacher_lesson_status)
+              const sessions = groupLessonsIntoTeacherSessions(teacherMonthLessons)
+              const completedSessions = sessions.filter((s) => s.is_happened)
+              const activeSessions = sessions.filter((s) => !s.is_cancelled)
+              const scheduledOnlySessions = activeSessions.filter((s) => s.is_scheduled)
 
-              const completedMinutes = completedLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0)
+              const completedMinutes = completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
               const completedHours = completedMinutes / 60
 
-              const totalActiveMinutes = activeLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0)
+              const totalActiveMinutes = activeSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
               const totalActiveHours = totalActiveMinutes / 60
+
+              const totalEnrolledStudents = activeSessions.reduce((acc, s) => acc + s.student_ids.length, 0)
 
               const hourlyRate = teacher.taxa_hora_aula ?? 56.00
               const currency = teacher.moeda_taxa ?? 'BRL'
@@ -856,25 +875,40 @@ export default function AdminStaffTab({
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    {activeLessons.length === 0 ? (
+                    {activeSessions.length === 0 ? (
                       <span style={{ color: '#64748b' }}>0 aulas</span>
-                    ) : completedLessons.length === activeLessons.length ? (
-                      <strong style={{ color: '#10b981' }}>{completedLessons.length} realizadas</strong>
-                    ) : completedLessons.length > 0 ? (
-                      <span>
-                        <strong style={{ color: '#10b981' }}>{completedLessons.length}</strong> / {activeLessons.length}{' '}
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({scheduledOnlyLessons.length} agendadas)</span>
-                      </span>
+                    ) : completedSessions.length === activeSessions.length ? (
+                      <div>
+                        <strong style={{ color: '#10b981' }}>{completedSessions.length} realizadas</strong>
+                        {totalEnrolledStudents > completedSessions.length && (
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos nas turmas)</div>
+                        )}
+                      </div>
+                    ) : completedSessions.length > 0 ? (
+                      <div>
+                        <span>
+                          <strong style={{ color: '#10b981' }}>{completedSessions.length}</strong> / {activeSessions.length}{' '}
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({scheduledOnlySessions.length} agendadas)</span>
+                        </span>
+                        {totalEnrolledStudents > activeSessions.length && (
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos)</div>
+                        )}
+                      </div>
                     ) : (
-                      <span style={{ color: '#818cf8' }}>
-                        {activeLessons.length} agendadas
-                      </span>
+                      <div>
+                        <span style={{ color: '#818cf8' }}>
+                          {activeSessions.length} agendadas
+                        </span>
+                        {totalEnrolledStudents > activeSessions.length && (
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos)</div>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {totalActiveHours === 0 ? (
                       <span style={{ color: '#64748b' }}>0.0h</span>
-                    ) : completedHours > 0 && scheduledOnlyLessons.length > 0 ? (
+                    ) : completedHours > 0 && scheduledOnlySessions.length > 0 ? (
                       <div>
                         <strong style={{ color: '#10b981' }}>{completedHours.toFixed(1)}h</strong>{' '}
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({totalActiveHours.toFixed(1)}h total)</span>
@@ -999,19 +1033,20 @@ export default function AdminStaffTab({
 
         const monthLessons = teacherLessons
           .filter(l => l.starts_at && l.starts_at.slice(0, 7) === activeMonthKey)
-          .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
 
-        const completedLessons = monthLessons.filter(l => l.teacher_lesson_status === 'happened')
-        const activeLessons = monthLessons.filter(
-          l => l.status !== 'cancelada' && l.teacher_lesson_status !== 'not_happened' && l.status !== 'proposta_pendente'
-        )
-        const scheduledOnlyLessons = activeLessons.filter(l => !l.teacher_lesson_status)
+        const monthSessions = groupLessonsIntoTeacherSessions(monthLessons)
 
-        const completedMinutes = completedLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0)
+        const completedSessions = monthSessions.filter(s => s.is_happened)
+        const activeSessions = monthSessions.filter(s => !s.is_cancelled)
+        const scheduledOnlySessions = activeSessions.filter(s => s.is_scheduled)
+
+        const completedMinutes = completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
         const completedHours = completedMinutes / 60
 
-        const totalActiveMinutes = activeLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0)
+        const totalActiveMinutes = activeSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
         const totalActiveHours = totalActiveMinutes / 60
+
+        const totalEnrolledStudents = activeSessions.reduce((acc, s) => acc + s.student_ids.length, 0)
 
         const hourlyRate = selectedTeacherForDetail.taxa_hora_aula ?? 56.00
         const currency = selectedTeacherForDetail.moeda_taxa ?? 'BRL'
@@ -1091,7 +1126,7 @@ export default function AdminStaffTab({
                   </h2>
 
                   <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
-                    Mês de Referência: <strong style={{ color: '#fff' }}>{activeMonthLabel}</strong> · {totalActiveHours.toFixed(1)}h ({activeLessons.length} aulas na agenda)
+                    Mês de Referência: <strong style={{ color: '#fff' }}>{activeMonthLabel}</strong> · {totalActiveHours.toFixed(1)}h ({activeSessions.length} aulas | {totalEnrolledStudents} alunos)
                   </p>
                   <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.2rem' }}>
                     Taxa Horária: {currency} {Number(hourlyRate).toFixed(2)}/h
@@ -1244,22 +1279,22 @@ export default function AdminStaffTab({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
-                      Registro de Aulas de {activeMonthLabel} ({activeLessons.length} aulas)
+                      Registro de Aulas de {activeMonthLabel} ({activeSessions.length} aulas | {totalActiveHours.toFixed(1)}h)
                     </h4>
                     <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0 }}>
-                      Abaixo estão todas as aulas trazidas da agenda que compõem o valor deste mês.
+                      Aulas no mesmo horário são computadas como turmas/grupos (1 hora de aula = 1 hora de pagamento).
                     </p>
                   </div>
                   
-                  {scheduledOnlyLessons.length > 0 && (
+                  {scheduledOnlySessions.length > 0 && (
                     <button
                       type="button"
                       className="primary-button"
                       style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', background: '#059669' }}
                       onClick={() => void handleBatchConfirmMonthLessons(selectedTeacherForDetail.id, activeMonthKey)}
-                      title={`Confirmar todas as ${scheduledOnlyLessons.length} aulas agendadas deste mês como realizadas`}
+                      title={`Confirmar todas as ${scheduledOnlySessions.length} aulas agendadas deste mês como realizadas`}
                     >
-                      ✓ Confirmar Todas como Realizadas ({scheduledOnlyLessons.length})
+                      ✓ Confirmar Todas como Realizadas ({scheduledOnlySessions.length})
                     </button>
                   )}
                 </div>
@@ -1270,49 +1305,67 @@ export default function AdminStaffTab({
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'date_time_col')}</th>
-                        <th style={{ padding: '0.6rem' }}>{t(language, 'student_col')}</th>
+                        <th style={{ padding: '0.6rem' }}>Alunos / Turma</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'class_subject_col')}</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'duration_col')}</th>
                         <th style={{ padding: '0.6rem' }}>Status</th>
-                        <th style={{ padding: '0.6rem' }}>Ajustar Status</th>
+                        <th style={{ padding: '0.6rem' }}>Ajustar Status da Turma</th>
                         <th style={{ padding: '0.6rem', textAlign: 'right' }}>Valor da Aula</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {monthLessons.map((l) => {
-                        const studentName = profiles.find(p => p.id === l.student_id)?.full_name || t(language, 'role_student')
-                        const isHappened = l.teacher_lesson_status === 'happened'
-                        const isNoShow = l.teacher_lesson_status === 'student_no_show'
-                        const isNotHappened = l.teacher_lesson_status === 'not_happened'
-                        const isScheduled = !l.teacher_lesson_status
+                      {monthSessions.map((session) => {
+                        const studentNames = session.student_ids
+                          .map((id) => profiles.find((p) => p.id === id)?.full_name || t(language, 'role_student'))
+                          .join(', ')
 
-                        const lessonHours = (l.duration_minutes || 60) / 60
-                        const lessonVal = lessonHours * Number(hourlyRate)
+                        const isHappened = session.is_happened
+                        const isNoShow = session.is_no_show
+                        const isCancelled = session.is_cancelled
+                        const isScheduled = session.is_scheduled
+
+                        const sessionHours = session.duration_minutes / 60
+                        const sessionVal = sessionHours * Number(hourlyRate)
+                        const allLessonIds = session.lessons.map((l) => l.id)
 
                         return (
-                          <tr key={l.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                            <td style={{ padding: '0.6rem', color: '#f8fafc' }}>
-                              {new Date(l.starts_at).toLocaleString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          <tr key={session.key} style={{ borderBottom: '1px solid #1e293b' }}>
+                            <td style={{ padding: '0.6rem', color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                              {new Date(session.starts_at).toLocaleString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </td>
-                            <td style={{ padding: '0.6rem', fontWeight: 'bold', color: '#38bdf8' }}>{studentName}</td>
-                            <td style={{ padding: '0.6rem', color: '#94a3b8' }}>{l.subject || l.class_name || '-'}</td>
-                            <td style={{ padding: '0.6rem', color: '#cbd5e1' }}>{l.duration_minutes || 60} min</td>
+                            <td style={{ padding: '0.6rem' }}>
+                              {session.student_ids.length > 1 ? (
+                                <div>
+                                  <span className="badge badge-confirmed" style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', marginRight: '0.4rem' }}>
+                                    👥 Turma ({session.student_ids.length} alunos)
+                                  </span>
+                                  <strong style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{studentNames}</strong>
+                                </div>
+                              ) : (
+                                <div>
+                                  <span style={{ color: '#64748b', marginRight: '0.25rem' }}>👤</span>
+                                  <strong style={{ color: '#38bdf8' }}>{studentNames || 'Aluno'}</strong>
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '0.6rem', color: '#94a3b8' }}>{session.subject || session.class_name || '-'}</td>
+                            <td style={{ padding: '0.6rem', color: '#cbd5e1' }}>{session.duration_minutes} min ({sessionHours.toFixed(1)}h)</td>
                             <td style={{ padding: '0.6rem' }}>
                               <span className={badgeClass(
                                 isHappened ? 'confirmed' :
                                 isNoShow ? 'pending' :
-                                isNotHappened ? 'danger' : 'secondary'
+                                isCancelled ? 'danger' : 'secondary'
                               )}>
                                 {isHappened ? t(language, 'status_happened') :
                                  isNoShow ? t(language, 'status_student_noshow') :
-                                 isNotHappened ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
+                                 isCancelled ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
                               </span>
                             </td>
                             <td style={{ padding: '0.6rem' }}>
                               <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                                 <button
                                   type="button"
-                                  onClick={() => void handleUpdateLessonStatus(l.id, 'happened')}
+                                  onClick={() => void handleUpdateSessionStatus(allLessonIds, 'happened')}
                                   style={{
                                     padding: '0.2rem 0.45rem',
                                     borderRadius: '0.35rem',
@@ -1322,13 +1375,13 @@ export default function AdminStaffTab({
                                     color: isHappened ? '#0f172a' : '#10b981',
                                     border: '1px solid rgba(16, 185, 129, 0.3)',
                                   }}
-                                  title="Marcar como Realizada"
+                                  title="Marcar aula/turma como Realizada"
                                 >
                                   ✓ Realizada
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => void handleUpdateLessonStatus(l.id, 'student_no_show')}
+                                  onClick={() => void handleUpdateSessionStatus(allLessonIds, 'student_no_show')}
                                   style={{
                                     padding: '0.2rem 0.45rem',
                                     borderRadius: '0.35rem',
@@ -1338,29 +1391,29 @@ export default function AdminStaffTab({
                                     color: isNoShow ? '#0f172a' : '#fbbf24',
                                     border: '1px solid rgba(245, 158, 11, 0.3)',
                                   }}
-                                  title="Marcar como Falta do Aluno"
+                                  title="Marcar como Falta do(s) Aluno(s)"
                                 >
                                   Falta
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => void handleUpdateLessonStatus(l.id, 'not_happened')}
+                                  onClick={() => void handleUpdateSessionStatus(allLessonIds, 'not_happened')}
                                   style={{
                                     padding: '0.2rem 0.45rem',
                                     borderRadius: '0.35rem',
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
-                                    background: isNotHappened ? '#ef4444' : 'rgba(239, 68, 68, 0.12)',
-                                    color: isNotHappened ? '#fff' : '#f87171',
+                                    background: isCancelled ? '#ef4444' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isCancelled ? '#fff' : '#f87171',
                                     border: '1px solid rgba(239, 68, 68, 0.3)',
                                   }}
-                                  title="Marcar como Não Aconteceu / Cancelada"
+                                  title="Marcar como Cancelada"
                                 >
                                   Cancelada
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => void handleUpdateLessonStatus(l.id, null)}
+                                  onClick={() => void handleUpdateSessionStatus(allLessonIds, null)}
                                   style={{
                                     padding: '0.2rem 0.45rem',
                                     borderRadius: '0.35rem',
@@ -1376,13 +1429,13 @@ export default function AdminStaffTab({
                                 </button>
                               </div>
                             </td>
-                            <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isNotHappened ? '#64748b' : '#10b981' }}>
-                              {currency} {isNotHappened ? '0.00' : lessonVal.toFixed(2)}
+                            <td style={{ padding: '0.6rem', textAlign: 'right', fontWeight: 'bold', color: isCancelled ? '#64748b' : '#10b981' }}>
+                              {currency} {isCancelled ? '0.00' : sessionVal.toFixed(2)}
                             </td>
                           </tr>
                         )
                       })}
-                      {monthLessons.length === 0 && (
+                      {monthSessions.length === 0 && (
                         <tr>
                           <td colSpan={7} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
                             {t(language, 'no_classes_month')}

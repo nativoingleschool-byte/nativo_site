@@ -2,7 +2,7 @@ import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, AccountFormState, TeacherLessonStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso } from '../lib/utils'
+import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
 import { useToast } from '../lib/toast'
@@ -200,39 +200,44 @@ export default function TeacherPanel({
       .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
   }, [teacherLessons, activeMonthKey])
 
-  // Completed lessons and metrics
-  const completedLessons = useMemo(
-    () => monthLessons.filter((l) => l.teacher_lesson_status === 'happened'),
-    [monthLessons]
-  )
-  const scheduledLessons = useMemo(
-    () => monthLessons.filter((l) => !l.teacher_lesson_status || l.teacher_lesson_status === null),
-    [monthLessons]
-  )
-  const issueLessons = useMemo(
-    () => monthLessons.filter((l) => l.teacher_lesson_status === 'student_no_show' || l.teacher_lesson_status === 'not_happened'),
+  // Group month lessons into unique sessions for accurate hourly calculations (groups count as 1 session)
+  const monthSessions = useMemo(
+    () => groupLessonsIntoTeacherSessions(monthLessons),
     [monthLessons]
   )
 
+  const completedSessions = useMemo(
+    () => monthSessions.filter((s) => s.is_happened),
+    [monthSessions]
+  )
+  const scheduledSessions = useMemo(
+    () => monthSessions.filter((s) => s.is_scheduled),
+    [monthSessions]
+  )
+  const issueSessions = useMemo(
+    () => monthSessions.filter((s) => s.is_no_show || s.is_cancelled),
+    [monthSessions]
+  )
+
   const totalMinutes = useMemo(
-    () => completedLessons.reduce((acc, l) => acc + (l.duration_minutes || 60), 0),
-    [completedLessons]
+    () => completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0),
+    [completedSessions]
   )
   const totalHours = totalMinutes / 60
   const hourlyRate = profile.taxa_hora_aula ?? 56.0
   const currency = profile.moeda_taxa ?? 'BRL'
   const totalAmount = totalHours * Number(hourlyRate)
 
-  // Filtered lessons for display
-  const displayedLessons = useMemo(() => {
-    if (statusFilter === 'happened') return completedLessons
-    if (statusFilter === 'scheduled') return scheduledLessons
-    if (statusFilter === 'issues') return issueLessons
-    return monthLessons
-  }, [monthLessons, completedLessons, scheduledLessons, issueLessons, statusFilter])
+  // Filtered sessions for display
+  const displayedSessions = useMemo(() => {
+    if (statusFilter === 'happened') return completedSessions
+    if (statusFilter === 'scheduled') return scheduledSessions
+    if (statusFilter === 'issues') return issueSessions
+    return monthSessions
+  }, [monthSessions, completedSessions, scheduledSessions, issueSessions, statusFilter])
 
-  const lessonCardClass = (lessonId: string) =>
-    focusedLessonId === lessonId ? 'lesson-card lesson-card-focus' : 'lesson-card'
+  const lessonCardClass = (sessionId: string) =>
+    focusedLessonId === sessionId ? 'lesson-card lesson-card-focus' : 'lesson-card'
 
   // Open Add Lesson Modal
   const handleOpenAddLesson = () => {
@@ -406,12 +411,15 @@ export default function TeacherPanel({
     }
   }
 
-  // Quick Status Change directly from list
-  const handleQuickStatusChange = async (lesson: Lesson, newStatus: TeacherLessonStatus) => {
+  // Quick Status Change directly from list (supports single lesson or session group)
+  const handleQuickStatusChange = async (target: Lesson | Lesson[], newStatus: TeacherLessonStatus) => {
     try {
-      if (updateTeacherSingleLesson) {
+      const targetLessons = Array.isArray(target) ? target : [target]
+      const lessonIds = targetLessons.map((l) => l.id)
+
+      if (updateTeacherSingleLesson && lessonIds.length === 1) {
         await updateTeacherSingleLesson({
-          lesson_id: lesson.id,
+          lesson_id: lessonIds[0],
           teacher_lesson_status: newStatus,
           status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
         })
@@ -422,7 +430,7 @@ export default function TeacherPanel({
             teacher_lesson_status: newStatus,
             status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
           })
-          .eq('id', lesson.id)
+          .in('id', lessonIds)
 
         if (error) throw error
         await refreshLessons()
@@ -433,45 +441,45 @@ export default function TeacherPanel({
     }
   }
 
-  // Delete Lesson
-  const handleDeleteLesson = async (lessonId: string) => {
+  // Delete Lesson / Session Group
+  const handleDeleteSession = async (lessonIds: string[]) => {
     const confirmed = window.confirm(t(language, 'delete_lesson_confirm'))
     if (!confirmed) return
 
     setIsSubmitting(true)
     try {
-      if (deleteTeacherSingleLesson) {
-        await deleteTeacherSingleLesson(lessonId)
-      } else {
-        const sessionData = await supabase.auth.getSession()
-        const token = sessionData.data.session?.access_token
-        if (!token) throw new Error(t(language, 'unauthenticated_error'))
+      for (const id of lessonIds) {
+        if (deleteTeacherSingleLesson) {
+          await deleteTeacherSingleLesson(id)
+        } else {
+          const sessionData = await supabase.auth.getSession()
+          const token = sessionData.data.session?.access_token
+          if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
-        const res = await fetch('/api/lessons/manage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            action: 'delete_lesson',
-            payload: { lesson_id: lessonId },
-          }),
-        })
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: t(language, 'error_removing_lesson') }))
-          throw new Error(err.error || t(language, 'error_removing_lesson'))
+          const res = await fetch('/api/lessons/manage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              action: 'delete_lesson',
+              payload: { lesson_id: id },
+            }),
+          })
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: t(language, 'error_deleting_lesson') }))
+            throw new Error(err.error || t(language, 'error_deleting_lesson'))
+          }
         }
-        await refreshLessons()
       }
-
-      toast.success(t(language, 'lesson_removed_success'))
-      if (editingLesson?.id === lessonId) {
+      await refreshLessons()
+      toast.success(t(language, 'lesson_deleted_success'))
+      if (editingLesson) {
         setEditingLesson(null)
       }
     } catch (err: any) {
-      toast.error(err.message || t(language, 'error_removing_lesson'))
+      toast.error(err.message || t(language, 'error_deleting_lesson'))
     } finally {
       setIsSubmitting(false)
     }
@@ -736,7 +744,7 @@ export default function TeacherPanel({
                     {t(language, 'classes_conducted')}
                   </span>
                   <strong style={{ fontSize: '1.3rem', color: '#fff' }}>
-                    {completedLessons.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthLessons.length}</span>
+                    {completedSessions.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthSessions.length}</span>
                   </strong>
                 </div>
 
@@ -789,7 +797,7 @@ export default function TeacherPanel({
                     color: statusFilter === 'all' ? '#0f172a' : '#94a3b8',
                   }}
                 >
-                  {t(language, 'all_filter')} ({monthLessons.length})
+                  {t(language, 'all_filter')} ({monthSessions.length})
                 </button>
                 <button
                   type="button"
@@ -803,7 +811,7 @@ export default function TeacherPanel({
                     color: statusFilter === 'happened' ? '#0f172a' : '#94a3b8',
                   }}
                 >
-                  {t(language, 'status_happened')} ({completedLessons.length})
+                  {t(language, 'status_happened')} ({completedSessions.length})
                 </button>
                 <button
                   type="button"
@@ -817,7 +825,7 @@ export default function TeacherPanel({
                     color: statusFilter === 'scheduled' ? '#0f172a' : '#94a3b8',
                   }}
                 >
-                  {t(language, 'scheduled_badge')} ({scheduledLessons.length})
+                  {t(language, 'scheduled_badge')} ({scheduledSessions.length})
                 </button>
                 <button
                   type="button"
@@ -831,26 +839,30 @@ export default function TeacherPanel({
                     color: statusFilter === 'issues' ? '#0f172a' : '#94a3b8',
                   }}
                 >
-                  {t(language, 'issues_filter')} ({issueLessons.length})
+                  {t(language, 'issues_filter')} ({issueSessions.length})
                 </button>
               </div>
 
               {/* Lessons List with Quick Actions & Modify Button */}
               <div className="list-stack">
-                {displayedLessons.map((lesson) => {
-                  const studentName = profilesById[lesson.student_id]?.full_name || t(language, 'role_student')
-                  const isHappened = lesson.teacher_lesson_status === 'happened'
-                  const isNoShow = lesson.teacher_lesson_status === 'student_no_show'
-                  const isNotHappened = lesson.teacher_lesson_status === 'not_happened'
-                  const isScheduled = !lesson.teacher_lesson_status
+                {displayedSessions.map((session) => {
+                  const studentNames = session.student_ids
+                    .map((id) => profilesById[id]?.full_name || t(language, 'role_student'))
+                    .join(', ')
 
-                  const lessonHours = (lesson.duration_minutes || 60) / 60
-                  const lessonValue = isHappened ? lessonHours * Number(hourlyRate) : 0
+                  const isHappened = session.is_happened
+                  const isNoShow = session.is_no_show
+                  const isNotHappened = session.is_cancelled
+                  const isScheduled = session.is_scheduled
+
+                  const sessionHours = (session.duration_minutes || 60) / 60
+                  const sessionValue = isHappened ? sessionHours * Number(hourlyRate) : 0
+                  const allLessonIds = session.lessons.map((l) => l.id)
 
                   return (
                     <div
-                      key={lesson.id}
-                      className={lessonCardClass(lesson.id)}
+                      key={session.key}
+                      className={lessonCardClass(session.key)}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -864,15 +876,24 @@ export default function TeacherPanel({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <strong style={{ fontSize: '1rem', color: '#fff' }}>{lesson.subject || t(language, 'individual_class')}</strong>
-                            {lesson.class_name && (
+                            <strong style={{ fontSize: '1rem', color: '#fff' }}>{session.subject || t(language, 'individual_class')}</strong>
+                            {session.class_name && (
                               <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(51, 65, 85, 0.5)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
-                                {lesson.class_name}
+                                {session.class_name}
+                              </span>
+                            )}
+                            {session.student_ids.length > 1 && (
+                              <span className="badge badge-confirmed" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>
+                                👥 Turma ({session.student_ids.length} alunos)
                               </span>
                             )}
                           </div>
                           <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
-                            👤 {t(language, 'student_colon')} <strong style={{ color: '#38bdf8' }}>{studentName}</strong> · 📅 {formatShortDateLabel(lesson.starts_at)} ({lesson.duration_minutes || 60} min)
+                            {session.student_ids.length > 1 ? (
+                              <span>👥 <strong>{studentNames}</strong> · 📅 {formatShortDateLabel(session.starts_at)} ({session.duration_minutes || 60} min)</span>
+                            ) : (
+                              <span>👤 {t(language, 'student_colon')} <strong style={{ color: '#38bdf8' }}>{studentNames}</strong> · 📅 {formatShortDateLabel(session.starts_at)} ({session.duration_minutes || 60} min)</span>
+                            )}
                           </p>
                         </div>
 
@@ -886,7 +907,7 @@ export default function TeacherPanel({
                           </span>
 
                           <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isHappened ? '#10b981' : '#64748b' }}>
-                            {currency === 'BRL' ? 'R$' : currency} {lessonValue.toFixed(2)}
+                            {currency === 'BRL' ? 'R$' : currency} {sessionValue.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -908,7 +929,7 @@ export default function TeacherPanel({
                           <span style={{ fontSize: '0.72rem', color: '#64748b', marginRight: '0.2rem' }}>{t(language, 'status')}:</span>
                           <button
                             type="button"
-                            onClick={() => handleQuickStatusChange(lesson, 'happened')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'happened')}
                             style={{
                               padding: '0.25rem 0.55rem',
                               borderRadius: '0.4rem',
@@ -925,7 +946,7 @@ export default function TeacherPanel({
 
                           <button
                             type="button"
-                            onClick={() => handleQuickStatusChange(lesson, 'student_no_show')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'student_no_show')}
                             style={{
                               padding: '0.25rem 0.55rem',
                               borderRadius: '0.4rem',
@@ -942,7 +963,7 @@ export default function TeacherPanel({
 
                           <button
                             type="button"
-                            onClick={() => handleQuickStatusChange(lesson, 'not_happened')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'not_happened')}
                             style={{
                               padding: '0.25rem 0.55rem',
                               borderRadius: '0.4rem',
@@ -959,7 +980,7 @@ export default function TeacherPanel({
 
                           <button
                             type="button"
-                            onClick={() => handleQuickStatusChange(lesson, null)}
+                            onClick={() => handleQuickStatusChange(session.lessons, null)}
                             style={{
                               padding: '0.25rem 0.55rem',
                               borderRadius: '0.4rem',
@@ -979,7 +1000,7 @@ export default function TeacherPanel({
                         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                           <button
                             type="button"
-                            onClick={() => handleOpenEditLesson(lesson)}
+                            onClick={() => handleOpenEditLesson(session.lessons[0])}
                             className="secondary-button"
                             style={{ padding: '0.3rem 0.65rem', fontSize: '0.78rem' }}
                           >
@@ -987,7 +1008,7 @@ export default function TeacherPanel({
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteLesson(lesson.id)}
+                            onClick={() => handleDeleteSession(allLessonIds)}
                             style={{
                               padding: '0.3rem 0.55rem',
                               fontSize: '0.78rem',
@@ -1006,7 +1027,7 @@ export default function TeacherPanel({
                   )
                 })}
 
-                {displayedLessons.length === 0 && (
+                {displayedSessions.length === 0 && (
                   <div
                     style={{
                       padding: '2.5rem 1rem',
@@ -1499,7 +1520,7 @@ export default function TeacherPanel({
                 >
                   <button
                     type="button"
-                    onClick={() => handleDeleteLesson(editingLesson.id)}
+                    onClick={() => handleDeleteSession([editingLesson.id])}
                     style={{
                       padding: '0.5rem 1rem',
                       background: 'rgba(239, 68, 68, 0.15)',

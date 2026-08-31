@@ -160,3 +160,71 @@ export const dateTimeLocalToIso = (dateTimeLocal: string, timeZone = 'UTC'): str
   }
 }
 
+export type TeacherLessonSession = {
+  key: string
+  starts_at: string
+  ends_at: string
+  duration_minutes: number
+  subject: string
+  class_name: string
+  student_ids: string[]
+  lessons: Lesson[]
+  teacher_id: string
+  is_happened: boolean
+  is_cancelled: boolean
+  is_scheduled: boolean
+  is_no_show: boolean
+}
+
+export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLessonSession[] => {
+  const map = new Map<string, Lesson[]>()
+
+  lessons.forEach((l) => {
+    if (!l.starts_at) return
+    const key = `${l.teacher_id || 'no-teacher'}|${l.starts_at}`
+    const existing = map.get(key) || []
+    existing.push(l)
+    map.set(key, existing)
+  })
+
+  const sessions: TeacherLessonSession[] = []
+
+  map.forEach((groupedLessons, key) => {
+    const first = groupedLessons[0]
+    const maxDuration = Math.max(...groupedLessons.map((l) => l.duration_minutes || 60))
+    const studentIds = Array.from(new Set(groupedLessons.map((l) => l.student_id).filter(Boolean)))
+
+    const is_happened = groupedLessons.some(
+      (l) => l.teacher_lesson_status === 'happened' || l.status === 'concluida'
+    )
+
+    const is_cancelled = groupedLessons.every(
+      (l) => l.status === 'cancelada' || l.teacher_lesson_status === 'not_happened' || l.status === 'proposta_pendente'
+    )
+
+    const is_no_show =
+      !is_happened &&
+      !is_cancelled &&
+      groupedLessons.every((l) => l.teacher_lesson_status === 'student_no_show')
+
+    const is_scheduled = !is_happened && !is_cancelled && !is_no_show
+
+    sessions.push({
+      key,
+      starts_at: first.starts_at,
+      ends_at: first.ends_at,
+      duration_minutes: maxDuration,
+      subject: first.subject || '',
+      class_name: first.class_name || '',
+      student_ids: studentIds,
+      lessons: groupedLessons,
+      teacher_id: first.teacher_id,
+      is_happened,
+      is_cancelled,
+      is_scheduled,
+      is_no_show,
+    })
+  })
+
+  return sessions.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+}
