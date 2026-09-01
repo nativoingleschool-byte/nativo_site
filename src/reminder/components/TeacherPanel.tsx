@@ -2,7 +2,7 @@ import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession } from '../lib/utils'
+import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
 import { useToast } from '../lib/toast'
@@ -1219,41 +1219,35 @@ export default function TeacherPanel({
                   </div>
 
                   {profile.nota_fiscal_url && (
-                    <button
-                      type="button"
-                      className="primary-button"
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7' }}
-                      onClick={() => {
-                        try {
-                          const url = profile.nota_fiscal_url!
-                          if (url.startsWith('data:')) {
-                            const parts = url.split(',')
-                            const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf'
-                            const bstr = atob(parts[1])
-                            let n = bstr.length
-                            const u8arr = new Uint8Array(n)
-                            while (n--) {
-                              u8arr[n] = bstr.charCodeAt(n)
-                            }
-                            const blob = new Blob([u8arr], { type: mime })
-                            const blobUrl = URL.createObjectURL(blob)
-                            const win = window.open(blobUrl, '_blank')
-                            if (!win) {
-                              const a = document.createElement('a')
-                              a.href = blobUrl
-                              a.download = `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
-                              a.click()
-                            }
-                          } else {
-                            window.open(url, '_blank')
-                          }
-                        } catch (e) {
-                          window.open(profile.nota_fiscal_url!, '_blank')
-                        }
-                      }}
-                    >
-                      {t(language, 'view_sent_file')}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7' }}
+                        onClick={() => {
+                          openFileFromDataOrUrl(
+                            profile.nota_fiscal_url!,
+                            `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
+                          )
+                        }}
+                      >
+                        {t(language, 'view_sent_file')}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          downloadFileFromDataOrUrl(
+                            profile.nota_fiscal_url!,
+                            `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
+                          )
+                        }}
+                        title="Baixar arquivo da Nota Fiscal"
+                      >
+                        ⬇️ Baixar
+                      </button>
+                    </div>
                   )}
                 </div>
 

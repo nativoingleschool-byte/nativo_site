@@ -2,7 +2,7 @@ import { FormEvent, useState, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState, TeacherNote } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate } from '../lib/utils'
+import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
 
@@ -1021,6 +1021,36 @@ export default function AdminStaffTab({
                       {teacher.full_name}
                     </button>
                     {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
+                    {teacher.nota_fiscal_url && (
+                      <div style={{ marginTop: '0.3rem' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openFileFromDataOrUrl(
+                              teacher.nota_fiscal_url!,
+                              `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
+                            )
+                          }}
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            color: '#10b981',
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '0.35rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                          }}
+                          title="Ver Nota Fiscal enviada"
+                        >
+                          📄 NF Enviada
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <strong style={{ color: '#fff' }}>{monthLabel}</strong>
@@ -1414,18 +1444,37 @@ export default function AdminStaffTab({
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   {selectedTeacherForDetail.nota_fiscal_url && (
-                    <button
-                      type="button"
-                      className="primary-button"
-                      style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem', background: '#0284c7' }}
-                      onClick={() => {
-                        window.open(selectedTeacherForDetail.nota_fiscal_url!, '_blank')
-                      }}
-                    >
-                      📄 Ver Arquivo NF
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem', background: '#0284c7' }}
+                        onClick={() => {
+                          openFileFromDataOrUrl(
+                            selectedTeacherForDetail.nota_fiscal_url!,
+                            `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                          )
+                        }}
+                      >
+                        📄 Ver Arquivo NF
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          downloadFileFromDataOrUrl(
+                            selectedTeacherForDetail.nota_fiscal_url!,
+                            `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                          )
+                        }}
+                        title="Baixar arquivo da Nota Fiscal"
+                      >
+                        ⬇️ Baixar NF
+                      </button>
+                    </>
                   )}
                   <label className="secondary-button" style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem', cursor: 'pointer' }}>
                     <span>{selectedTeacherForDetail.nota_fiscal_url ? 'Substituir NF' : 'Anexar NF'}</span>

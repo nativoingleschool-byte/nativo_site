@@ -230,3 +230,122 @@ export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLesso
 
   return sessions.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
 }
+
+/**
+ * Safely converts a base64 data URL, blob URL, or regular HTTP URL into a Blob URL
+ * that can be opened in a new tab or downloaded without browser security blocks.
+ */
+export const getBlobUrlFromDataOrHttp = (dataOrHttpUrl: string): { blobUrl: string; isBlob: boolean; mimeType: string } => {
+  if (!dataOrHttpUrl) {
+    return { blobUrl: '', isBlob: false, mimeType: 'application/pdf' }
+  }
+
+  if (dataOrHttpUrl.startsWith('data:')) {
+    try {
+      const parts = dataOrHttpUrl.split(',')
+      const mimeMatch = parts[0].match(/data:(.*?);/)
+      const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf'
+      const base64Data = (parts[1] || '').trim().replace(/\s/g, '')
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Uint8Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const blob = new Blob([byteNumbers], { type: mimeType })
+      const blobUrl = URL.createObjectURL(blob)
+      return { blobUrl, isBlob: true, mimeType }
+    } catch (err) {
+      console.error('Failed to parse data URL into Blob:', err)
+      return { blobUrl: dataOrHttpUrl, isBlob: false, mimeType: 'application/pdf' }
+    }
+  }
+
+  return { blobUrl: dataOrHttpUrl, isBlob: false, mimeType: 'application/pdf' }
+}
+
+/**
+ * Safely opens a file in a new browser tab/window.
+ * Handles data: URLs by converting to origin-scoped blob URLs to prevent "about:blank" / "Untitled" issues.
+ */
+export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 'Nota_Fiscal.pdf'): void => {
+  if (!dataOrHttpUrl) return
+
+  const { blobUrl, isBlob, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
+
+  const extension = mimeType.includes('png')
+    ? '.png'
+    : mimeType.includes('jpeg') || mimeType.includes('jpg')
+    ? '.jpg'
+    : mimeType.includes('image')
+    ? '.img'
+    : '.pdf'
+
+  const fileName = fallbackFileName.endsWith(extension)
+    ? fallbackFileName
+    : `${fallbackFileName.replace(/\.[^/.]+$/, '')}${extension}`
+
+  try {
+    const win = window.open(blobUrl, '_blank')
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      // Popup was blocked or window could not be opened: fallback to downloading
+      downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
+      return
+    }
+
+    if (isBlob) {
+      // Revoke blob URL after 2 minutes to free memory while allowing preview to load
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(blobUrl)
+        } catch {}
+      }, 120000)
+    }
+  } catch (err) {
+    console.error('Error opening window for file:', err)
+    downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
+  }
+}
+
+/**
+ * Downloads a file directly to the user's computer.
+ */
+export const downloadFileFromDataOrUrl = (dataOrHttpUrl: string, fileName = 'Nota_Fiscal.pdf'): void => {
+  if (!dataOrHttpUrl) return
+
+  const { blobUrl, isBlob, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
+
+  const extension = mimeType.includes('png')
+    ? '.png'
+    : mimeType.includes('jpeg') || mimeType.includes('jpg')
+    ? '.jpg'
+    : mimeType.includes('image')
+    ? '.img'
+    : '.pdf'
+
+  const safeFileName = fileName.endsWith(extension)
+    ? fileName
+    : `${fileName.replace(/\.[^/.]+$/, '')}${extension}`
+
+  try {
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = safeFileName
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+
+    if (isBlob) {
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(blobUrl)
+        } catch {}
+      }, 60000)
+    }
+  } catch (err) {
+    console.error('Error triggering download:', err)
+    window.open(dataOrHttpUrl, '_blank')
+  }
+}
+

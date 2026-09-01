@@ -54,7 +54,8 @@ export default async function handler(req, res) {
         return sendResponse(res, 401, { error: 'Unauthorized: Invalid or missing token.' });
       }
     } else {
-      console.warn('[Inbound Webhook Warning]: INBOUND_WEBHOOK_SECRET is not configured on server.');
+      console.warn('[Inbound Webhook Warning]: INBOUND_WEBHOOK_SECRET is not configured on server. Rejecting request.');
+      return sendResponse(res, 500, { error: 'Webhook authentication is not configured.' });
     }
 
     // 2. Parse request body if needed
@@ -120,6 +121,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[Inbound Webhook Error]:', err);
-    return sendResponse(res, 500, { error: err.message, stack: err.stack });
+    return sendResponse(res, 500, { error: err.message });
   }
 }
