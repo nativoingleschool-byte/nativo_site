@@ -153,8 +153,8 @@ export default function AdminCalendar({
   onCreateStudentLogin: (draft: NewUserDraft) => Promise<Profile>
   onCreateTeacherLogin: (draft: NewUserDraft) => Promise<Profile>
   availabilities?: TeacherAvailability[]
-  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => Promise<void>
-  onDeleteAvailability?: (availabilityId: string) => Promise<void>
+  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
+  onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
 }) {
   const [calendarMode, setCalendarMode] = useState<'classes' | 'availability'>('classes')
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>(currentTeacherId ?? teachers[0]?.id ?? '')
@@ -164,8 +164,10 @@ export default function AdminCalendar({
   const [selectedAvailability, setSelectedAvailability] = useState<TeacherAvailability | null>(null)
   const [availabilityStartsAt, setAvailabilityStartsAt] = useState('')
   const [availabilityDuration, setAvailabilityDuration] = useState(60)
-  const [availabilityRepeatWeeks, setAvailabilityRepeatWeeks] = useState(1)
+  const [availabilityRecurrenceType, setAvailabilityRecurrenceType] = useState<'single' | 'weekly'>('single')
+  const [availabilityRepeatWeeks, setAvailabilityRepeatWeeks] = useState(4)
   const [availabilityTeacherId, setAvailabilityTeacherId] = useState(currentTeacherId ?? teachers[0]?.id ?? '')
+  const [availabilityDeleteScope, setAvailabilityDeleteScope] = useState<'this' | 'future'>('this')
   const [isSubmittingAvailability, setIsSubmittingAvailability] = useState(false)
 
   const [weekStart, setWeekStart] = useState(() => startOfWeekDateKey(todayDateKeyInTimeZone(timeZone)))
@@ -312,7 +314,96 @@ export default function AdminCalendar({
     return grouped
   }, [days, availabilitiesThisWeek, timeZone])
 
-  // Check if an availability slot has an active overlapping class for this teacher
+  // Partial Overlap Sub-division: Split availability slot into booked (🟣) and remaining free (🟢) segments
+  type AvailabilitySegment = {
+    key: string
+    parent_id: string
+    starts_at: string
+    duration_minutes: number
+    is_booked: boolean
+    lesson?: Lesson
+    parent_availability: TeacherAvailability
+  }
+
+  const computeAvailabilitySegments = (
+    availability: TeacherAvailability,
+    allLessons: Lesson[]
+  ): AvailabilitySegment[] => {
+    const aStart = new Date(availability.starts_at).getTime()
+    const aEnd = aStart + (availability.duration_minutes || 60) * 60000
+
+    const overlappingLessons = allLessons.filter((l) => {
+      if (l.teacher_id !== availability.teacher_id) return false
+      if (l.teacher_lesson_status === 'not_happened') return false
+      const lStart = new Date(l.starts_at).getTime()
+      const lEnd = lStart + (l.duration_minutes || 60) * 60000
+      return aStart < lEnd && lStart < aEnd
+    })
+
+    if (overlappingLessons.length === 0) {
+      return [
+        {
+          key: `${availability.id}-full`,
+          parent_id: availability.id,
+          starts_at: availability.starts_at,
+          duration_minutes: availability.duration_minutes || 60,
+          is_booked: false,
+          parent_availability: availability,
+        },
+      ]
+    }
+
+    const timestampsSet = new Set<number>([aStart, aEnd])
+    for (const l of overlappingLessons) {
+      const lStart = new Date(l.starts_at).getTime()
+      const lEnd = lStart + (l.duration_minutes || 60) * 60000
+      if (lStart > aStart && lStart < aEnd) timestampsSet.add(lStart)
+      if (lEnd > aStart && lEnd < aEnd) timestampsSet.add(lEnd)
+    }
+
+    const sortedTimestamps = Array.from(timestampsSet).sort((a, b) => a - b)
+    const segments: AvailabilitySegment[] = []
+
+    for (let i = 0; i < sortedTimestamps.length - 1; i++) {
+      const segStart = sortedTimestamps[i]
+      const segEnd = sortedTimestamps[i + 1]
+      const segDurationMin = Math.round((segEnd - segStart) / 60000)
+      if (segDurationMin <= 0) continue
+
+      const coveringLesson = overlappingLessons.find((l) => {
+        const lStart = new Date(l.starts_at).getTime()
+        const lEnd = lStart + (l.duration_minutes || 60) * 60000
+        return lStart <= segStart && segEnd <= lEnd
+      })
+
+      segments.push({
+        key: `${availability.id}-${segStart}-${segEnd}`,
+        parent_id: availability.id,
+        starts_at: new Date(segStart).toISOString(),
+        duration_minutes: segDurationMin,
+        is_booked: !!coveringLesson,
+        lesson: coveringLesson,
+        parent_availability: availability,
+      })
+    }
+
+    return segments
+  }
+
+  const availabilitySegmentsByDay = useMemo(() => {
+    const grouped: Record<string, AvailabilitySegment[]> = Object.fromEntries(days.map((day) => [day, []]))
+    for (const day of days) {
+      const dayAvails = availabilitiesByDay[day] ?? []
+      const segs: AvailabilitySegment[] = []
+      for (const avail of dayAvails) {
+        segs.push(...computeAvailabilitySegments(avail, visibleLessons))
+      }
+      grouped[day] = segs
+    }
+    return grouped
+  }, [days, availabilitiesByDay, visibleLessons])
+
+  // Helper to check if an entire availability slot has an active overlapping class
   const getSlotConflict = (availability: TeacherAvailability) => {
     const aStart = new Date(availability.starts_at).getTime()
     const aEnd = aStart + (availability.duration_minutes || 60) * 60000
@@ -334,7 +425,8 @@ export default function AdminCalendar({
     setSelectedAvailability(null)
     setAvailabilityStartsAt(`${dayKey}T${pad2(hours)}:${pad2(minutes)}`)
     setAvailabilityDuration(60)
-    setAvailabilityRepeatWeeks(1)
+    setAvailabilityRecurrenceType('single')
+    setAvailabilityRepeatWeeks(4)
     setAvailabilityTeacherId(activeTeacherId)
     setShowAvailabilityModal(true)
   }
@@ -344,7 +436,7 @@ export default function AdminCalendar({
     const zoned = getZonedParts(new Date(availability.starts_at), timeZone)
     setAvailabilityStartsAt(`${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}T${pad2(zoned.hour)}:${pad2(zoned.minute)}`)
     setAvailabilityDuration(availability.duration_minutes || 60)
-    setAvailabilityRepeatWeeks(1)
+    setAvailabilityDeleteScope('this')
     setAvailabilityTeacherId(availability.teacher_id)
     setShowAvailabilityModal(true)
   }
@@ -361,11 +453,12 @@ export default function AdminCalendar({
     setIsSubmittingAvailability(true)
     try {
       const utcIso = zonedDateTimeToUtcIso(availabilityStartsAt, timeZone)
+      const repeatCount = availabilityRecurrenceType === 'weekly' ? availabilityRepeatWeeks : 1
       await onCreateAvailability({
         starts_at: utcIso,
         duration_minutes: availabilityDuration,
         teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : availabilityTeacherId,
-        repeat_weeks: availabilityRepeatWeeks,
+        repeat_weeks: repeatCount,
       })
       closeAvailabilityModal()
     } catch (err) {
@@ -375,11 +468,16 @@ export default function AdminCalendar({
     }
   }
 
-  const handleDeleteAvailabilitySlot = async (id: string) => {
+  const handleDeleteAvailabilitySlot = async (availability: TeacherAvailability, scope: 'this' | 'future') => {
     if (!onDeleteAvailability) return
     setIsSubmittingAvailability(true)
     try {
-      await onDeleteAvailability(id)
+      await onDeleteAvailability({
+        id: availability.id,
+        series_id: availability.series_id,
+        starts_at: availability.starts_at,
+        series_scope: scope,
+      })
       closeAvailabilityModal()
     } catch (err) {
       console.error('Error deleting availability:', err)
@@ -831,20 +929,20 @@ export default function AdminCalendar({
 
               {/* AVAILABILITY VIEW */}
               {calendarMode === 'availability' &&
-                dayAvailabilities.map((avail) => {
-                  const start = getZonedParts(new Date(avail.starts_at), timeZone)
+                (availabilitySegmentsByDay[day] ?? []).map((segment) => {
+                  const start = getZonedParts(new Date(segment.starts_at), timeZone)
                   const minutesFromMidnight = start.hour * 60 + start.minute
                   const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
-                  const span = Math.max(1, Math.ceil(avail.duration_minutes / slotMinutes))
+                  const span = Math.max(1, Math.ceil(segment.duration_minutes / slotMinutes))
                   if (startIndex < 0 || startIndex >= slotCount) return null
 
-                  const conflictLesson = getSlotConflict(avail)
-                  const isBooked = !!conflictLesson
-                  const teacherProfile = profilesById[avail.teacher_id]
+                  const isBooked = segment.is_booked
+                  const teacherProfile = profilesById[segment.parent_availability.teacher_id]
+                  const conflictLesson = segment.lesson
 
                   return (
                     <button
-                      key={avail.id}
+                      key={segment.key}
                       type="button"
                       className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}`}
                       style={{
@@ -852,34 +950,34 @@ export default function AdminCalendar({
                         width: 'calc(100% - 8px)',
                         marginLeft: '4px',
                       }}
-                      onClick={() => openViewAvailability(avail)}
+                      onClick={() => openViewAvailability(segment.parent_availability)}
                       title={
-                        isBooked
+                        isBooked && conflictLesson
                           ? `${t(language, 'occupied_slot')}: ${conflictLesson.subject} (${profilesById[conflictLesson.student_id]?.full_name || ''})`
                           : `${t(language, 'available_slot')} (${teacherProfile?.full_name || ''})`
                       }
                     >
                       <div className="calendar-event-header">
                         <strong className="calendar-event-title" style={{ color: isBooked ? '#c7d2fe' : '#34d399' }}>
-                          {isBooked ? `🟣 ${conflictLesson.subject || t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
+                          {isBooked && conflictLesson ? `🟣 ${conflictLesson.subject || t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
                         </strong>
                         <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
                       </div>
                       {span > 1 && (
                         <div className="calendar-event-details">
-                          {isBooked ? (
+                          {isBooked && conflictLesson ? (
                             <>
                               <span className="muted tiny-copy calendar-event-sub" style={{ color: '#e0e7ff' }}>
                                 👤 {profilesById[conflictLesson.student_id]?.full_name ?? t(language, 'role_student')}
                               </span>
                               <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a5b4fc' }}>
-                                {avail.duration_minutes} min • {teacherProfile?.full_name ?? t(language, 'teacher')}
+                                {segment.duration_minutes} min • {teacherProfile?.full_name ?? t(language, 'teacher')}
                               </span>
                             </>
                           ) : (
                             <>
                               <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a7f3d0' }}>
-                                {avail.duration_minutes} min
+                                {segment.duration_minutes} min {segment.duration_minutes < (segment.parent_availability.duration_minutes || 60) ? `(${t(language, 'available_remaining')})` : ''}
                               </span>
                               <span className="muted tiny-copy calendar-event-sub" style={{ color: '#6ee7b7' }}>
                                 {teacherProfile?.full_name || t(language, 'teacher')}
@@ -1262,8 +1360,42 @@ export default function AdminCalendar({
                           <p style={{ margin: '0.2rem 0' }}>
                             <strong>Início:</strong> {availabilityStartsAt.replace('T', ' ')} ({selectedAvailability.duration_minutes} min)
                           </p>
+                          {selectedAvailability.series_id && (
+                            <p style={{ margin: '0.2rem 0', color: '#38bdf8' }}>
+                              🔁 <strong>{t(language, 'every_week')}</strong> (Horário recorrente)
+                            </p>
+                          )}
                         </div>
                       </div>
+
+                      {/* Deletion Scope Selector if part of a recurring series */}
+                      {selectedAvailability.series_id && (
+                        <div style={{ padding: '0.85rem', background: '#0f172a', borderRadius: '0.65rem', border: '1px solid #334155' }}>
+                          <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}>
+                            {t(language, 'delete_scope_prompt')}
+                          </p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                              <input
+                                type="radio"
+                                name="delete_scope"
+                                checked={availabilityDeleteScope === 'this'}
+                                onChange={() => setAvailabilityDeleteScope('this')}
+                              />
+                              <span>{t(language, 'delete_only_this')}</span>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                              <input
+                                type="radio"
+                                name="delete_scope"
+                                checked={availabilityDeleteScope === 'future'}
+                                onChange={() => setAvailabilityDeleteScope('future')}
+                              />
+                              <span>{t(language, 'delete_this_and_future')}</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="button-row wrap" style={{ justifyContent: 'space-between', marginTop: '0.5rem' }}>
                         <button
@@ -1273,7 +1405,7 @@ export default function AdminCalendar({
                           disabled={isSubmittingAvailability}
                           onClick={() => {
                             if (window.confirm(t(language, 'delete_availability_confirm'))) {
-                              void handleDeleteAvailabilitySlot(selectedAvailability.id)
+                              void handleDeleteAvailabilitySlot(selectedAvailability, availabilityDeleteScope)
                             }
                           }}
                         >
@@ -1321,19 +1453,33 @@ export default function AdminCalendar({
 
                   <div>
                     <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
-                      {t(language, 'repeat_availability_weeks')}
+                      {t(language, 'recurrence_type')}
+                    </label>
+                    <select
+                      value={availabilityRecurrenceType}
+                      onChange={(e) => setAvailabilityRecurrenceType(e.target.value as 'single' | 'weekly')}
+                    >
+                      <option value="single">{t(language, 'only_this_day')}</option>
+                      <option value="weekly">{t(language, 'every_week')}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {availabilityRecurrenceType === 'weekly' && (
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                      {t(language, 'repeat_duration')}
                     </label>
                     <select
                       value={availabilityRepeatWeeks}
                       onChange={(e) => setAvailabilityRepeatWeeks(Number(e.target.value))}
                     >
-                      <option value={1}>1 semana (Apenas esta)</option>
                       <option value={4}>4 semanas (1 mês)</option>
                       <option value={8}>8 semanas (2 meses)</option>
                       <option value={12}>12 semanas (3 meses)</option>
                     </select>
                   </div>
-                </div>
+                )}
 
                 {role === 'admin' && (
                   <div>

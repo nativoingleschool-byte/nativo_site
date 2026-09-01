@@ -85,8 +85,8 @@ interface TeacherPanelProps {
   onDeleteTeacherNote?: (noteId: string) => Promise<void>
   refreshTeacherNotes?: () => Promise<void>
   availabilities?: TeacherAvailability[]
-  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => Promise<void>
-  onDeleteAvailability?: (availabilityId: string) => Promise<void>
+  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
+  onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
   refreshAvailabilities?: () => Promise<void>
 }
 

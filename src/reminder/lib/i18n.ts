@@ -287,6 +287,15 @@ export const translations: Record<Language, Dictionary> = {
     manage_availability_modal: 'Manage Availability Slot',
     set_available_btn: 'Mark as Available',
     delete_availability_confirm: 'Do you want to remove this availability slot?',
+    recurrence_type: 'Recurrence',
+    only_this_day: 'Just this day',
+    every_week: 'Every week',
+    repeat_duration: 'Repeat duration',
+    weeks_count: '{count} weeks',
+    delete_scope_prompt: 'How would you like to remove this availability slot?',
+    delete_only_this: 'Only this occurrence',
+    delete_this_and_future: 'This and all future occurrences',
+    available_remaining: 'Available remaining',
 
     // Student Panel Specific
     active_lesson_reminders: 'Active Lesson Reminders',
@@ -669,6 +678,15 @@ export const translations: Record<Language, Dictionary> = {
     manage_availability_modal: 'Gerenciar Horário de Disponibilidade',
     set_available_btn: 'Marcar como Disponível',
     delete_availability_confirm: 'Deseja remover este horário de disponibilidade?',
+    recurrence_type: 'Recorrência',
+    only_this_day: 'Somente neste dia',
+    every_week: 'Toda semana',
+    repeat_duration: 'Duração da repetição',
+    weeks_count: '{count} semanas',
+    delete_scope_prompt: 'Como deseja remover este horário de disponibilidade?',
+    delete_only_this: 'Somente esta ocorrência',
+    delete_this_and_future: 'Esta e todas as próximas ocorrências',
+    available_remaining: 'Disponível restante',
 
     // Student Panel Specific
     active_lesson_reminders: 'Lembretes de Aulas Ativas',
@@ -1051,6 +1069,15 @@ export const translations: Record<Language, Dictionary> = {
     manage_availability_modal: 'Gestionar Horario de Disponibilidad',
     set_available_btn: 'Marcar como Disponible',
     delete_availability_confirm: '¿Desea eliminar este horario de disponibilidad?',
+    recurrence_type: 'Recurrencia',
+    only_this_day: 'Solo este día',
+    every_week: 'Cada semana',
+    repeat_duration: 'Duración de repetición',
+    weeks_count: '{count} semanas',
+    delete_scope_prompt: '¿Cómo desea eliminar este horario de disponibilidad?',
+    delete_only_this: 'Solo esta ocurrencia',
+    delete_this_and_future: 'Esta y todas las próximas ocurrencias',
+    available_remaining: 'Disponible restante',
 
     // Student Panel Specific
     active_lesson_reminders: 'Recordatorios de Clases Activas',

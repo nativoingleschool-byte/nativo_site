@@ -134,6 +134,7 @@ export type TeacherAvailability = {
   teacher_id: string
   starts_at: string
   duration_minutes: number
+  series_id?: string | null
   created_at?: string
 }
 

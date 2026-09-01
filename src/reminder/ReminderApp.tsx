@@ -589,7 +589,7 @@ function ReminderAppInner() {
     setAvailabilities(list)
   }
 
-  const createAvailability = async (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => {
+  const createAvailability = async (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => {
     const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     const targetTeacherId = draft.teacher_id || profile?.id
     if (!targetTeacherId) return
@@ -620,6 +620,7 @@ function ReminderAppInner() {
     }
 
     const repeatWeeks = Math.min(Math.max(Number(draft.repeat_weeks) || 1, 1), 24)
+    const seriesId = repeatWeeks > 1 ? (draft.series_id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null)) : null
     const baseStart = new Date(draft.starts_at)
     const rows = []
     for (let i = 0; i < repeatWeeks; i++) {
@@ -628,6 +629,7 @@ function ReminderAppInner() {
         teacher_id: targetTeacherId,
         starts_at: slotDate.toISOString(),
         duration_minutes: draft.duration_minutes || 60,
+        series_id: seriesId,
       })
     }
 
@@ -636,7 +638,7 @@ function ReminderAppInner() {
     await refreshAvailabilities()
   }
 
-  const deleteAvailability = async (availabilityId: string) => {
+  const deleteAvailability = async (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => {
     const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     if (token) {
       try {
@@ -646,7 +648,7 @@ function ReminderAppInner() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ action: 'delete_availability', payload: { id: availabilityId } }),
+          body: JSON.stringify({ action: 'delete_availability', payload: options }),
         })
         if (response.ok) {
           await refreshAvailabilities()
@@ -657,8 +659,17 @@ function ReminderAppInner() {
       }
     }
 
-    const { error } = await supabase.from('teacher_availability').delete().eq('id', availabilityId)
-    if (error) throw error
+    if (options.series_scope === 'future' && options.series_id) {
+      let query = supabase.from('teacher_availability').delete().eq('series_id', options.series_id)
+      if (options.starts_at) {
+        query = query.gte('starts_at', options.starts_at)
+      }
+      const { error } = await query
+      if (error) throw error
+    } else {
+      const { error } = await supabase.from('teacher_availability').delete().eq('id', options.id)
+      if (error) throw error
+    }
     await refreshAvailabilities()
   }
 

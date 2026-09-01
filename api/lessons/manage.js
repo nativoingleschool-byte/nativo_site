@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseServiceRoleKey =
@@ -450,6 +451,7 @@ const createAvailability = async (supabaseAdmin, profile, payload) => {
 
   const duration = Number(payload.duration_minutes) || 60
   const repeatWeeks = Math.min(Math.max(Number(payload.repeat_weeks) || 1, 1), 24)
+  const seriesId = repeatWeeks > 1 ? (payload.series_id || randomUUID()) : null
 
   const rows = []
   const baseStart = new Date(payload.starts_at)
@@ -460,6 +462,7 @@ const createAvailability = async (supabaseAdmin, profile, payload) => {
       teacher_id: teacherId,
       starts_at: slotDate.toISOString(),
       duration_minutes: duration,
+      series_id: seriesId,
     })
   }
 
@@ -471,11 +474,21 @@ const createAvailability = async (supabaseAdmin, profile, payload) => {
 }
 
 const deleteAvailability = async (supabaseAdmin, profile, payload) => {
-  if (!payload.id) {
-    throw new Error('Availability ID is required.')
+  if (!payload.id && !payload.series_id) {
+    throw new Error('Availability ID or Series ID is required.')
   }
 
-  let query = supabaseAdmin.from('teacher_availability').delete().eq('id', payload.id)
+  let query = supabaseAdmin.from('teacher_availability').delete()
+
+  if (payload.series_scope === 'future' && payload.series_id) {
+    query = query.eq('series_id', payload.series_id)
+    if (payload.starts_at) {
+      query = query.gte('starts_at', payload.starts_at)
+    }
+  } else {
+    query = query.eq('id', payload.id)
+  }
+
   if (profile.role !== 'admin') {
     query = query.eq('teacher_id', profile.id)
   }
@@ -484,7 +497,7 @@ const deleteAvailability = async (supabaseAdmin, profile, payload) => {
   if (error) {
     throw new Error(error.message)
   }
-  return { success: true, id: payload.id }
+  return { success: true, id: payload.id, series_id: payload.series_id, scope: payload.series_scope }
 }
 
 export default async function handler(req, res) {

@@ -303,11 +303,13 @@ CREATE TABLE IF NOT EXISTS public.teacher_availability (
   teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   starts_at TIMESTAMPTZ NOT NULL,
   duration_minutes INTEGER NOT NULL DEFAULT 60 CHECK (duration_minutes > 0),
+  series_id UUID NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
 CREATE INDEX IF NOT EXISTS idx_teacher_availability_teacher_id ON public.teacher_availability(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_teacher_availability_starts_at ON public.teacher_availability(starts_at);
+CREATE INDEX IF NOT EXISTS idx_teacher_availability_series_id ON public.teacher_availability(series_id);
 
 ALTER TABLE public.teacher_availability ENABLE ROW LEVEL SECURITY;
 
