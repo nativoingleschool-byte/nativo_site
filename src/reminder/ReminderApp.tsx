@@ -407,6 +407,28 @@ function ReminderAppInner() {
   }
 
   const refreshProfiles = async () => {
+    if (session?.access_token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ action: 'get_profiles' }),
+        })
+        if (response.ok) {
+          const result = (await response.json()) as { data?: Profile[] }
+          if (Array.isArray(result.data)) {
+            setProfiles(result.data)
+            return
+          }
+        }
+      } catch (err) {
+        console.warn('API get_profiles error, falling back to direct query:', err)
+      }
+    }
+
     const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
     if (error) throw error
     setProfiles((data ?? []) as Profile[])
@@ -439,9 +461,11 @@ function ReminderAppInner() {
       try {
         const currentProfile = await refreshProfile(session.user.id)
         if (cancelled) return
-        if (currentProfile.role === 'admin') {
+        if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
           await refreshProfiles()
-          await refreshInvoices()
+          if (currentProfile.role === 'admin') {
+            await refreshInvoices()
+          }
         } else {
           setProfiles([currentProfile])
           if (currentProfile.role === 'student') {
@@ -480,7 +504,7 @@ function ReminderAppInner() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
         const changedId = payload?.new?.id || payload?.old?.id
-        if (profile?.role === 'admin') {
+        if (profile?.role === 'admin' || profile?.role === 'teacher') {
           void refreshProfiles()
         }
         if (changedId && changedId === session.user.id) {
@@ -1516,6 +1540,7 @@ function ReminderAppInner() {
             uploadingNf={uploadingNf}
             setUploadingNf={setUploadingNf}
             refreshProfile={refreshProfile}
+            refreshProfiles={refreshProfiles}
             refreshLessons={refreshLessons}
             accountForm={accountForm}
             setAccountForm={setAccountForm}

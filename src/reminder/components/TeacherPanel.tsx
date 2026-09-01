@@ -75,6 +75,7 @@ interface TeacherPanelProps {
   uploadingNf: boolean
   setUploadingNf: (uploading: boolean) => void
   refreshProfile: (userId: string) => Promise<Profile>
+  refreshProfiles?: () => Promise<void>
   refreshLessons: () => Promise<void>
   accountForm: AccountFormState
   setAccountForm: React.Dispatch<React.SetStateAction<AccountFormState>>
@@ -107,6 +108,7 @@ export default function TeacherPanel({
   uploadingNf,
   setUploadingNf,
   refreshProfile,
+  refreshProfiles,
   refreshLessons,
   accountForm,
   setAccountForm,
@@ -143,10 +145,17 @@ export default function TeacherPanel({
   const addModalRef = useRef<HTMLDivElement>(null)
   const editModalRef = useRef<HTMLDivElement>(null)
 
-  const sortedStudents = useMemo(
-    () => [...students].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })),
-    [students]
-  )
+  const sortedStudents = useMemo(() => {
+    const list = [...students]
+    Object.values(profilesById).forEach((p) => {
+      if (p.role === 'student' && !list.some((s) => s.id === p.id)) {
+        list.push(p)
+      }
+    })
+    return list.sort((a, b) =>
+      (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+    )
+  }, [students, profilesById])
 
   // Filter lessons for this teacher
   const teacherLessons = useMemo(
@@ -241,6 +250,9 @@ export default function TeacherPanel({
 
   // Open Add Lesson Modal
   const handleOpenAddLesson = () => {
+    if ((!students || students.length === 0) && refreshProfiles) {
+      void refreshProfiles()
+    }
     const defaultStudent = sortedStudents[0]?.id || ''
     setNewLessonStudentId(defaultStudent)
     setNewLessonSubject(t(language, 'individual_class'))
@@ -1258,6 +1270,11 @@ export default function TeacherPanel({
                         {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
                       </option>
                     ))}
+                    {sortedStudents.length === 0 && (
+                      <option value="" disabled>
+                        Nenhum aluno encontrado
+                      </option>
+                    )}
                   </select>
                 </div>
 
@@ -1428,11 +1445,17 @@ export default function TeacherPanel({
                     onChange={(e) => setEditLessonStudentId(e.target.value)}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   >
+                    <option value="">{t(language, 'select_student')}...</option>
                     {sortedStudents.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
                       </option>
                     ))}
+                    {editLessonStudentId && !sortedStudents.some((s) => s.id === editLessonStudentId) && (
+                      <option value={editLessonStudentId}>
+                        {profilesById[editLessonStudentId]?.full_name || 'Aluno Atual'}
+                      </option>
+                    )}
                   </select>
                 </div>
 

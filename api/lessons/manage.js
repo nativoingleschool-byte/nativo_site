@@ -311,6 +311,24 @@ const deleteLesson = async (supabaseAdmin, profile, payload) => {
   return { success: true, id: payload.lesson_id }
 }
 
+const getProfiles = async (supabaseAdmin, profile) => {
+  if (profile.role !== 'admin' && profile.role !== 'teacher') {
+    throw new Error('Only admin and teachers can access profile lists.')
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, email, role, class_name, speciality, timezone, archived, push_enabled, created_at, taxa_hora_aula, moeda_taxa, chave_pix, cnpj, status_nota_fiscal, nota_fiscal_url, status_pagamento_professor')
+    .eq('archived', false)
+    .order('full_name', { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data ?? []
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -319,6 +337,11 @@ export default async function handler(req, res) {
   try {
     const { supabaseAdmin, profile } = await assertAuthenticated(req)
     const { action, payload } = req.body || {}
+
+    if (action === 'get_profiles') {
+      const profiles = await getProfiles(supabaseAdmin, profile)
+      return json(res, 200, { data: profiles })
+    }
 
     if (action === 'create_group') {
       const created = await createGroup(supabaseAdmin, profile, payload)
