@@ -122,3 +122,12 @@ export type BankTransaction = {
   errorMessage?: string | null
 }
 
+export type TeacherNote = {
+  id: string
+  teacher_id: string
+  note: string
+  month_key?: string | null
+  created_at: string
+}
+
+

@@ -269,3 +269,33 @@ FOR ALL
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
+-- 9. Teacher Notes Table (Notes & justifications sent to Admin)
+CREATE TABLE IF NOT EXISTS public.teacher_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  note TEXT NOT NULL,
+  month_key TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_notes_teacher_id ON public.teacher_notes(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_notes_created_at ON public.teacher_notes(created_at);
+
+ALTER TABLE public.teacher_notes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "teacher_notes_select" ON public.teacher_notes;
+CREATE POLICY "teacher_notes_select" ON public.teacher_notes
+FOR SELECT
+USING (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_notes_insert" ON public.teacher_notes;
+CREATE POLICY "teacher_notes_insert" ON public.teacher_notes
+FOR INSERT
+WITH CHECK (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_notes_delete" ON public.teacher_notes;
+CREATE POLICY "teacher_notes_delete" ON public.teacher_notes
+FOR DELETE
+USING (public.is_admin() OR teacher_id = auth.uid());
+
+

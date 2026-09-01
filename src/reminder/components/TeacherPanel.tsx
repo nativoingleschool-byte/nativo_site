@@ -1,6 +1,6 @@
 import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, AccountFormState, TeacherLessonStatus } from '../lib/types'
+import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -82,6 +82,10 @@ interface TeacherPanelProps {
   accountSaving: boolean
   setAccountSaving: (saving: boolean) => void
   focusedLessonId: string | null
+  teacherNotesList?: TeacherNote[]
+  onCreateTeacherNote?: (note: string, monthKey?: string) => Promise<void>
+  onDeleteTeacherNote?: (noteId: string) => Promise<void>
+  refreshTeacherNotes?: () => Promise<void>
 }
 
 export default function TeacherPanel({
@@ -115,9 +119,15 @@ export default function TeacherPanel({
   accountSaving,
   setAccountSaving,
   focusedLessonId,
+  teacherNotesList = [],
+  onCreateTeacherNote,
+  onDeleteTeacherNote,
+  refreshTeacherNotes,
 }: TeacherPanelProps) {
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
+
+  const [isSendingNotes, setIsSendingNotes] = useState(false)
 
   // Worklog Month & Filter states
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
@@ -182,6 +192,12 @@ export default function TeacherPanel({
   const teacherLessons = useMemo(
     () => lessons.filter((l) => l.teacher_id === profile.id),
     [lessons, profile.id]
+  )
+
+  // Filter notes for this teacher
+  const myNotes = useMemo(
+    () => teacherNotesList.filter((n) => n.teacher_id === profile.id),
+    [teacherNotesList, profile.id]
   )
 
   // Generate available months list from teacher lessons
@@ -1105,14 +1121,81 @@ export default function TeacherPanel({
                 <button
                   className="secondary-button mt-2"
                   style={{ marginTop: '0.5rem' }}
-                  onClick={() => {
+                  disabled={isSendingNotes || !teacherNotes.trim()}
+                  onClick={async () => {
                     if (!teacherNotes.trim()) return
-                    toast.success(t(language, 'notes_sent_success'))
-                    setTeacherNotes('')
+                    setIsSendingNotes(true)
+                    try {
+                      if (onCreateTeacherNote) {
+                        await onCreateTeacherNote(teacherNotes.trim(), activeMonthKey)
+                      }
+                      toast.success(t(language, 'notes_sent_success'))
+                      setTeacherNotes('')
+                    } catch (err: any) {
+                      toast.error(err.message || 'Erro ao enviar notas.')
+                    } finally {
+                      setIsSendingNotes(false)
+                    }
                   }}
                 >
-                  {t(language, 'send_notes_btn')}
+                  {isSendingNotes ? t(language, 'saving_label') : t(language, 'send_notes_btn')}
                 </button>
+
+                {/* Sent Notes History */}
+                {myNotes.length > 0 && (
+                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid #1e293b', paddingTop: '1rem' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '0.6rem' }}>
+                      {t(language, 'notes_history')} ({myNotes.length})
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {myNotes.map((n) => (
+                        <div
+                          key={n.id}
+                          style={{
+                            background: '#090d16',
+                            border: '1px solid #1e293b',
+                            borderRadius: '0.5rem',
+                            padding: '0.6rem 0.8rem',
+                            fontSize: '0.82rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>{n.note}</p>
+                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                              {formatShortDate(n.created_at, language, appTimeZone)} {n.month_key ? `• ${n.month_key}` : ''}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            title="Excluir observação"
+                            onClick={async () => {
+                              if (!window.confirm(t(language, 'delete_note_confirm'))) return
+                              if (onDeleteTeacherNote) {
+                                await onDeleteTeacherNote(n.id)
+                                toast.success(t(language, 'note_deleted_success'))
+                              }
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '0.1rem 0.3rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 

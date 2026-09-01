@@ -385,6 +385,61 @@ const getProfiles = async (supabaseAdmin, profile) => {
   return (data ?? []).filter((p) => p.archived !== true)
 }
 
+const getTeacherNotes = async (supabaseAdmin, profile) => {
+  let query = supabaseAdmin
+    .from('teacher_notes')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (profile.role !== 'admin') {
+    query = query.eq('teacher_id', profile.id)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.warn('getTeacherNotes query error:', error.message)
+    return []
+  }
+  return data ?? []
+}
+
+const createTeacherNote = async (supabaseAdmin, profile, payload) => {
+  const teacherId = profile.role === 'admin' ? (payload.teacher_id || profile.id) : profile.id
+  const note = String(payload.note || '').trim()
+  if (!note) {
+    throw new Error('Note content is required.')
+  }
+
+  const row = {
+    teacher_id: teacherId,
+    note: note,
+    month_key: payload.month_key || null,
+  }
+
+  const { data, error } = await supabaseAdmin.from('teacher_notes').insert([row]).select('*').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  return data
+}
+
+const deleteTeacherNote = async (supabaseAdmin, profile, payload) => {
+  if (!payload.id) {
+    throw new Error('Note ID is required.')
+  }
+
+  let query = supabaseAdmin.from('teacher_notes').delete().eq('id', payload.id)
+  if (profile.role !== 'admin') {
+    query = query.eq('teacher_id', profile.id)
+  }
+
+  const { error } = await query
+  if (error) {
+    throw new Error(error.message)
+  }
+  return { success: true, id: payload.id }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -406,6 +461,21 @@ export default async function handler(req, res) {
     if (action === 'get_profiles') {
       const profiles = await getProfiles(supabaseAdmin, profile)
       return json(res, 200, { data: profiles })
+    }
+
+    if (action === 'get_teacher_notes') {
+      const notes = await getTeacherNotes(supabaseAdmin, profile)
+      return json(res, 200, { data: notes })
+    }
+
+    if (action === 'create_teacher_note') {
+      const note = await createTeacherNote(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: note })
+    }
+
+    if (action === 'delete_teacher_note') {
+      const result = await deleteTeacherNote(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: result })
     }
 
     if (action === 'create_group') {

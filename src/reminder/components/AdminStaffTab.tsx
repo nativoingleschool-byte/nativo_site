@@ -1,8 +1,8 @@
 import { FormEvent, useState, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, UserFormState } from '../lib/types'
+import { Lesson, Profile, UserFormState, TeacherNote } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession } from '../lib/utils'
+import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
 
@@ -38,6 +38,11 @@ interface AdminStaffTabProps {
   handleBatchUpdatePayout: (status: 'pago' | 'pendente') => Promise<void>
   handleUpdateTeacherPayout: (teacherId: string, status: 'pago' | 'pendente') => Promise<void>
   setAppError: (error: string) => void
+  teacherNotesList?: TeacherNote[]
+  onDeleteTeacherNote?: (noteId: string) => Promise<void>
+  refreshTeacherNotes?: () => Promise<void>
+  profilesById?: Record<string, Profile>
+  appTimeZone?: string
 }
 
 export default function AdminStaffTab({
@@ -56,6 +61,11 @@ export default function AdminStaffTab({
   handleBatchUpdatePayout,
   handleUpdateTeacherPayout,
   setAppError,
+  teacherNotesList = [],
+  onDeleteTeacherNote,
+  refreshTeacherNotes,
+  profilesById = {},
+  appTimeZone = 'UTC',
 }: AdminStaffTabProps) {
   const { toast } = useToast()
 
@@ -262,6 +272,180 @@ export default function AdminStaffTab({
 
   return (
     <>
+      {/* Teacher Notes & Justifications Box */}
+      <div
+        className="form-card mb-6 animate-slide-up"
+        style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%)',
+          borderRadius: '1.25rem',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+          boxShadow: '0 4px 20px -5px rgba(0, 0, 0, 0.3)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>📝</span>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
+              {t(language, 'teacher_notes_admin_title')}
+            </h3>
+          </div>
+          {teacherNotesList && teacherNotesList.length > 0 && (
+            <span
+              style={{
+                background: 'rgba(56, 189, 248, 0.15)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '1rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+              }}
+            >
+              {teacherNotesList.length} {teacherNotesList.length === 1 ? 'observação' : 'observações'}
+            </span>
+          )}
+        </div>
+
+        <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '1.25rem' }}>
+          {t(language, 'teacher_notes_admin_desc')}
+        </p>
+
+        {(!teacherNotesList || teacherNotesList.length === 0) ? (
+          <div
+            style={{
+              padding: '1.5rem',
+              borderRadius: '0.75rem',
+              background: 'rgba(2, 6, 23, 0.4)',
+              border: '1px dashed #334155',
+              textAlign: 'center',
+              color: '#64748b',
+              fontSize: '0.88rem',
+            }}
+          >
+            ✓ {t(language, 'no_teacher_notes')}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {teacherNotesList.map((noteItem) => {
+              const teacherProfile = profilesById?.[noteItem.teacher_id] || profiles.find((p) => p.id === noteItem.teacher_id)
+              const teacherName = teacherProfile?.full_name || 'Professor'
+              const formattedDate = formatShortDate(noteItem.created_at, language, appTimeZone || 'UTC')
+              const [dateOnly, timeOnly] = (() => {
+                try {
+                  const d = new Date(noteItem.created_at)
+                  return [
+                    d.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: 'short', year: 'numeric' }),
+                    d.toLocaleTimeString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { hour: '2-digit', minute: '2-digit' }),
+                  ]
+                } catch {
+                  return [formattedDate, '']
+                }
+              })()
+
+              return (
+                <div
+                  key={noteItem.id}
+                  style={{
+                    background: '#090d16',
+                    border: '1px solid #1e293b',
+                    borderRadius: '0.85rem',
+                    padding: '1rem 1.25rem',
+                    position: 'relative',
+                    transition: 'border-color 0.2s',
+                  }}
+                >
+                  {/* Top line with teacher details, date, and delete 'x' button */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 'bold', color: '#38bdf8', fontSize: '0.92rem' }}>
+                        {teacherName}
+                      </span>
+                      {teacherProfile?.speciality && (
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: 'rgba(51,65,85,0.4)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
+                          {teacherProfile.speciality}
+                        </span>
+                      )}
+                      {noteItem.month_key && (
+                        <span style={{ fontSize: '0.72rem', color: '#a78bfa', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
+                          📅 {noteItem.month_key}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        • {dateOnly} {timeOnly ? `às ${timeOnly}` : ''}
+                      </span>
+                    </div>
+
+                    {/* Delete 'X' Button */}
+                    <button
+                      type="button"
+                      title="Excluir observação"
+                      onClick={async () => {
+                        const confirmed = window.confirm(t(language, 'delete_note_confirm'))
+                        if (!confirmed) return
+                        try {
+                          if (onDeleteTeacherNote) {
+                            await onDeleteTeacherNote(noteItem.id)
+                          }
+                          toast.success(t(language, 'note_deleted_success'))
+                        } catch (err: any) {
+                          toast.error(err.message || 'Erro ao excluir observação.')
+                        }
+                      }}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        color: '#ef4444',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        lineHeight: 1,
+                        padding: 0,
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#ef4444'
+                        e.currentTarget.style.color = '#fff'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                        e.currentTarget.style.color = '#ef4444'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Note Content Text */}
+                  <div
+                    style={{
+                      color: '#e2e8f0',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      background: 'rgba(15, 23, 42, 0.4)',
+                      padding: '0.75rem',
+                      borderRadius: '0.5rem',
+                      borderLeft: '3px solid #38bdf8',
+                    }}
+                  >
+                    {noteItem.note}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Add New Staff Section */}
       <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'add_staff_title')}</h3>

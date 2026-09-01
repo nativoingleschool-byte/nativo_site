@@ -15,6 +15,7 @@ import {
   ReminderNotification,
   UserRole,
   UserFormState,
+  TeacherNote,
 } from './lib/types'
 import {
   formatShortDate,
@@ -447,6 +448,105 @@ function ReminderAppInner() {
     }
   }
 
+  const [teacherNotesList, setTeacherNotesList] = useState<TeacherNote[]>([])
+
+  const refreshTeacherNotes = async () => {
+    let list: TeacherNote[] = []
+
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: 'get_teacher_notes' }),
+        })
+        if (response.ok) {
+          const result = (await response.json()) as { data?: TeacherNote[] }
+          if (Array.isArray(result.data)) {
+            list = result.data
+          }
+        }
+      } catch (err) {
+        console.warn('API get_teacher_notes error, falling back to direct query:', err)
+      }
+    }
+
+    if (!list || list.length === 0) {
+      try {
+        const { data, error } = await supabase.from('teacher_notes').select('*').order('created_at', { ascending: false })
+        if (!error && data) {
+          list = data as TeacherNote[]
+        }
+      } catch (e) {
+        console.warn('Direct query teacher_notes error:', e)
+      }
+    }
+
+    setTeacherNotesList(list)
+  }
+
+  const createTeacherNote = async (note: string, monthKey?: string) => {
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: 'create_teacher_note', payload: { note, month_key: monthKey } }),
+        })
+        if (response.ok) {
+          await refreshTeacherNotes()
+          return
+        }
+      } catch (err) {
+        console.warn('API create_teacher_note error, trying direct insert:', err)
+      }
+    }
+
+    if (profile?.id) {
+      const { error } = await supabase.from('teacher_notes').insert({
+        teacher_id: profile.id,
+        note,
+        month_key: monthKey || null,
+      })
+      if (error) throw error
+      await refreshTeacherNotes()
+    }
+  }
+
+  const deleteTeacherNote = async (noteId: string) => {
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: 'delete_teacher_note', payload: { id: noteId } }),
+        })
+        if (response.ok) {
+          await refreshTeacherNotes()
+          return
+        }
+      } catch (err) {
+        console.warn('API delete_teacher_note error, trying direct delete:', err)
+      }
+    }
+
+    const { error } = await supabase.from('teacher_notes').delete().eq('id', noteId)
+    if (error) throw error
+    await refreshTeacherNotes()
+  }
+
   const refreshLessons = async () => {
     const { data, error } = await supabase.from('lessons').select('*').order('starts_at', { ascending: true })
     if (error) throw error
@@ -465,6 +565,7 @@ function ReminderAppInner() {
       setProfiles([])
       setLessons([])
       setInvoices([])
+      setTeacherNotesList([])
       return
     }
 
@@ -476,6 +577,7 @@ function ReminderAppInner() {
         if (cancelled) return
         if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
           await refreshProfiles()
+          await refreshTeacherNotes()
           if (currentProfile.role === 'admin') {
             await refreshInvoices()
           }
@@ -526,6 +628,9 @@ function ReminderAppInner() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
         void refreshInvoices()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_notes' }, () => {
+        void refreshTeacherNotes()
       })
       .subscribe()
 
@@ -1493,6 +1598,11 @@ function ReminderAppInner() {
                 handleBatchUpdatePayout={handleBatchUpdatePayout}
                 handleUpdateTeacherPayout={handleUpdateTeacherPayout}
                 setAppError={setAppError}
+                teacherNotesList={teacherNotesList}
+                onDeleteTeacherNote={deleteTeacherNote}
+                refreshTeacherNotes={refreshTeacherNotes}
+                profilesById={profilesById}
+                appTimeZone={appTimeZone}
               />
             )}
 
@@ -1560,6 +1670,10 @@ function ReminderAppInner() {
             accountSaving={accountSaving}
             setAccountSaving={setAccountSaving}
             focusedLessonId={focusedLessonId}
+            teacherNotesList={teacherNotesList}
+            onCreateTeacherNote={createTeacherNote}
+            onDeleteTeacherNote={deleteTeacherNote}
+            refreshTeacherNotes={refreshTeacherNotes}
           />
         )}
       </main>
