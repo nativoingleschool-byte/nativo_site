@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseServiceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -23,8 +27,8 @@ const getSupabaseAdmin = () => {
 }
 
 const assertAuthenticated = async (req) => {
-  const authHeader = req.headers.authorization || ''
-  const token = authHeader.replace(/^Bearer\s+/i, '')
+  const authHeader = req.headers?.authorization || req.headers?.Authorization || ''
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
     throw new Error('Missing bearer token.')
   }
@@ -45,6 +49,65 @@ const assertAuthenticated = async (req) => {
   }
 
   return { supabaseAdmin, user, profile }
+}
+
+const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim())
+
+const slugify = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+const resolveStudentId = async (supabaseAdmin, payload) => {
+  const rawId = String(payload.student_id || '').trim()
+  if (isUuid(rawId)) {
+    return rawId
+  }
+
+  const name = String(payload.student_name || rawId).trim()
+  if (!name) {
+    throw new Error('Student name or ID is required.')
+  }
+
+  // 1. Try finding existing profile with matching full_name
+  const { data: existingProfiles } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, role')
+    .ilike('full_name', name)
+    .limit(1)
+
+  if (existingProfiles && existingProfiles.length > 0) {
+    return existingProfiles[0].id
+  }
+
+  // 2. Create student user in auth & profiles
+  const emailSlug = slugify(name) || 'student'
+  const email = `${emailSlug}-${Date.now()}@setup.local`
+  const password = `Setup!${Math.random().toString(36).slice(-8)}`
+
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: name },
+  })
+
+  if (authError || !authData?.user) {
+    throw new Error(authError?.message || 'Could not create student profile.')
+  }
+
+  const studentId = authData.user.id
+  await supabaseAdmin.from('profiles').upsert({
+    id: studentId,
+    email,
+    full_name: name,
+    role: 'student',
+    class_name: payload.class_name || '',
+    push_enabled: false,
+  })
+
+  return studentId
 }
 
 const ensureTeacherPermission = (profile, teacherId) => {
@@ -184,9 +247,8 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const teacherId = payload.teacher_id || profile.id
   ensureTeacherPermission(profile, teacherId)
 
-  if (!payload.student_id) {
-    throw new Error('Student is required.')
-  }
+  const studentId = await resolveStudentId(supabaseAdmin, payload)
+
   if (!payload.subject?.trim()) {
     throw new Error('Subject is required.')
   }
@@ -203,7 +265,7 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const row = {
     subject: payload.subject.trim(),
     class_name: payload.class_name ?? '',
-    student_id: payload.student_id,
+    student_id: studentId,
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     ends_at: endsAt,
@@ -334,9 +396,18 @@ export default async function handler(req, res) {
     return json(res, 405, { error: 'Method not allowed.' })
   }
 
+  let body = req.body
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body)
+    } catch (e) {
+      body = {}
+    }
+  }
+
   try {
     const { supabaseAdmin, profile } = await assertAuthenticated(req)
-    const { action, payload } = req.body || {}
+    const { action, payload } = body || {}
 
     if (action === 'get_profiles') {
       const profiles = await getProfiles(supabaseAdmin, profile)

@@ -407,21 +407,23 @@ function ReminderAppInner() {
   }
 
   const refreshProfiles = async () => {
-    if (session?.access_token) {
+    let list: Profile[] = []
+
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
       try {
         const response = await fetch('/api/lessons/manage', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ action: 'get_profiles' }),
         })
         if (response.ok) {
           const result = (await response.json()) as { data?: Profile[] }
-          if (Array.isArray(result.data)) {
-            setProfiles(result.data)
-            return
+          if (Array.isArray(result.data) && result.data.length > 0) {
+            list = result.data
           }
         }
       } catch (err) {
@@ -429,9 +431,20 @@ function ReminderAppInner() {
       }
     }
 
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
-    if (error) throw error
-    setProfiles((data ?? []) as Profile[])
+    if (!list || list.length === 0) {
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
+        if (!error && data && data.length > 0) {
+          list = data as Profile[]
+        }
+      } catch (e) {
+        console.warn('Direct query profiles error:', e)
+      }
+    }
+
+    if (list.length > 0) {
+      setProfiles(list)
+    }
   }
 
   const refreshLessons = async () => {

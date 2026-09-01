@@ -130,6 +130,8 @@ export default function TeacherPanel({
 
   // Add Lesson Form State
   const [newLessonStudentId, setNewLessonStudentId] = useState('')
+  const [newLessonStudentName, setNewLessonStudentName] = useState('')
+  const [addStudentMode, setAddStudentMode] = useState<'select' | 'custom'>('select')
   const [newLessonSubject, setNewLessonSubject] = useState('')
   const [newLessonStartsAt, setNewLessonStartsAt] = useState('')
   const [newLessonDuration, setNewLessonDuration] = useState(60)
@@ -137,6 +139,7 @@ export default function TeacherPanel({
 
   // Edit Lesson Form State
   const [editLessonStudentId, setEditLessonStudentId] = useState('')
+  const [editLessonStudentName, setEditLessonStudentName] = useState('')
   const [editLessonSubject, setEditLessonSubject] = useState('')
   const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
   const [editLessonDuration, setEditLessonDuration] = useState(60)
@@ -146,16 +149,34 @@ export default function TeacherPanel({
   const editModalRef = useRef<HTMLDivElement>(null)
 
   const sortedStudents = useMemo(() => {
-    const list = [...students]
+    const map = new Map<string, Profile>()
+
+    // 1. Students passed via prop
+    students.forEach((s) => {
+      if (s && s.id) map.set(s.id, s)
+    })
+
+    // 2. Profiles in profilesById with role student
     Object.values(profilesById).forEach((p) => {
-      if (p.role === 'student' && !list.some((s) => s.id === p.id)) {
-        list.push(p)
+      if (p && p.id && p.role === 'student') {
+        map.set(p.id, p)
       }
     })
-    return list.sort((a, b) =>
+
+    // 3. Any student found in lessons
+    lessons.forEach((l) => {
+      if (l.student_id && !map.has(l.student_id)) {
+        const studentProfile = profilesById[l.student_id]
+        if (studentProfile) {
+          map.set(l.student_id, studentProfile)
+        }
+      }
+    })
+
+    return Array.from(map.values()).sort((a, b) =>
       (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
     )
-  }, [students, profilesById])
+  }, [students, profilesById, lessons])
 
   // Filter lessons for this teacher
   const teacherLessons = useMemo(
@@ -255,6 +276,8 @@ export default function TeacherPanel({
     }
     const defaultStudent = sortedStudents[0]?.id || ''
     setNewLessonStudentId(defaultStudent)
+    setNewLessonStudentName('')
+    setAddStudentMode(sortedStudents.length > 0 ? 'select' : 'custom')
     setNewLessonSubject(t(language, 'individual_class'))
     setNewLessonDuration(60)
     setNewLessonStatus('happened')
@@ -277,7 +300,8 @@ export default function TeacherPanel({
   // Submit Add Lesson
   const handleAddLessonSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!newLessonStudentId || !newLessonSubject.trim() || !newLessonStartsAt) {
+    const studentIdentifier = addStudentMode === 'custom' || !newLessonStudentId ? newLessonStudentName.trim() : newLessonStudentId
+    if (!studentIdentifier || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
@@ -290,7 +314,7 @@ export default function TeacherPanel({
 
       if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
-          student_id: newLessonStudentId,
+          student_id: studentIdentifier,
           teacher_id: profile.id,
           subject: newLessonSubject.trim(),
           class_name: className,
@@ -314,7 +338,8 @@ export default function TeacherPanel({
           body: JSON.stringify({
             action: 'create_lesson',
             payload: {
-              student_id: newLessonStudentId,
+              student_id: studentIdentifier,
+              student_name: addStudentMode === 'custom' ? newLessonStudentName.trim() : undefined,
               teacher_id: profile.id,
               subject: newLessonSubject.trim(),
               class_name: className,
@@ -333,10 +358,14 @@ export default function TeacherPanel({
         await refreshLessons()
       }
 
+      if (refreshProfiles) {
+        void refreshProfiles()
+      }
       toast.success(t(language, 'lesson_added_success'))
       setShowAddLessonModal(false)
+      setNewLessonStudentName('')
     } catch (err: any) {
-      toast.error(err.message || t(language, 'error_registering_lesson'))
+      toast.error(err.message || t(language, 'error_adding_lesson'))
     } finally {
       setIsSubmitting(false)
     }
@@ -657,9 +686,9 @@ export default function TeacherPanel({
               <form onSubmit={handleProposeClass} className="form-grid" style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}>
                 <select name="studentId" required style={{ flex: 1, minWidth: '150px' }}>
                   <option value="">{t(language, 'select_student')}</option>
-                  {students.map((s) => (
+                  {sortedStudents.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.full_name}
+                      {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
                     </option>
                   ))}
                 </select>
@@ -674,7 +703,7 @@ export default function TeacherPanel({
             <AdminCalendar
               lessons={lessons}
               profilesById={profilesById}
-              students={students}
+              students={sortedStudents}
               teachers={teachers}
               timeZone={appTimeZone}
               language={language}
@@ -1257,25 +1286,55 @@ export default function TeacherPanel({
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_colon')} *</label>
-                  <select
-                    required
-                    value={newLessonStudentId}
-                    onChange={(e) => setNewLessonStudentId(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                  >
-                    <option value="">{t(language, 'select_student')}...</option>
-                    {sortedStudents.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
-                      </option>
-                    ))}
-                    {sortedStudents.length === 0 && (
-                      <option value="" disabled>
-                        Nenhum aluno encontrado
-                      </option>
-                    )}
-                  </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">{t(language, 'student_colon')} *</label>
+                    <button
+                      type="button"
+                      onClick={() => setAddStudentMode(addStudentMode === 'select' ? 'custom' : 'select')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#38bdf8',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0,
+                      }}
+                    >
+                      {addStudentMode === 'select' ? '+ Digitar nome do aluno' : '← Selecionar da lista'}
+                    </button>
+                  </div>
+
+                  {addStudentMode === 'select' && sortedStudents.length > 0 ? (
+                    <select
+                      required
+                      value={newLessonStudentId}
+                      onChange={(e) => setNewLessonStudentId(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    >
+                      <option value="">{t(language, 'select_student')}...</option>
+                      {sortedStudents.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>
+                      <input
+                        required
+                        placeholder="Digite o nome do aluno (ex: Lucas Silva)"
+                        value={newLessonStudentName}
+                        onChange={(e) => setNewLessonStudentName(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                      />
+                      {sortedStudents.length > 0 && (
+                        <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', marginBottom: 0 }}>
+                          Ou clique em "← Selecionar da lista" para escolher um aluno existente.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
