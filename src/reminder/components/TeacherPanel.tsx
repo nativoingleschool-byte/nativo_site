@@ -1,6 +1,6 @@
 import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote } from '../lib/types'
+import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -84,6 +84,10 @@ interface TeacherPanelProps {
   onCreateTeacherNote?: (note: string, monthKey?: string) => Promise<void>
   onDeleteTeacherNote?: (noteId: string) => Promise<void>
   refreshTeacherNotes?: () => Promise<void>
+  availabilities?: TeacherAvailability[]
+  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => Promise<void>
+  onDeleteAvailability?: (availabilityId: string) => Promise<void>
+  refreshAvailabilities?: () => Promise<void>
 }
 
 export default function TeacherPanel({
@@ -121,6 +125,10 @@ export default function TeacherPanel({
   onCreateTeacherNote,
   onDeleteTeacherNote,
   refreshTeacherNotes,
+  availabilities = [],
+  onCreateAvailability,
+  onDeleteAvailability,
+  refreshAvailabilities,
 }: TeacherPanelProps) {
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
@@ -720,6 +728,9 @@ export default function TeacherPanel({
               onUpdateLessonGroup={updateTeacherLessonGroup}
               onCreateStudentLogin={createStudentLoginFromCalendar}
               onCreateTeacherLogin={createTeacherLoginFromCalendar}
+              availabilities={availabilities}
+              onCreateAvailability={onCreateAvailability}
+              onDeleteAvailability={onDeleteAvailability}
             />
           </div>
         )}

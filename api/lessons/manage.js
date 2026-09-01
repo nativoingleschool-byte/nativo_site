@@ -418,6 +418,75 @@ const deleteTeacherNote = async (supabaseAdmin, profile, payload) => {
   return { success: true, id: payload.id }
 }
 
+const getAvailabilities = async (supabaseAdmin, profile, payload) => {
+  let query = supabaseAdmin
+    .from('teacher_availability')
+    .select('*')
+    .order('starts_at', { ascending: true })
+
+  if (payload?.teacher_id) {
+    query = query.eq('teacher_id', payload.teacher_id)
+  }
+
+  if (payload?.start_date && payload?.end_date) {
+    query = query.gte('starts_at', payload.start_date).lte('starts_at', payload.end_date)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.warn('getAvailabilities query error:', error.message)
+    return []
+  }
+  return data ?? []
+}
+
+const createAvailability = async (supabaseAdmin, profile, payload) => {
+  const teacherId = profile.role === 'admin' ? (payload.teacher_id || profile.id) : profile.id
+  ensureTeacherPermission(profile, teacherId)
+
+  if (!payload.starts_at) {
+    throw new Error('Start time is required.')
+  }
+
+  const duration = Number(payload.duration_minutes) || 60
+  const repeatWeeks = Math.min(Math.max(Number(payload.repeat_weeks) || 1, 1), 24)
+
+  const rows = []
+  const baseStart = new Date(payload.starts_at)
+
+  for (let i = 0; i < repeatWeeks; i++) {
+    const slotDate = new Date(baseStart.getTime() + i * 7 * 24 * 60 * 60 * 1000)
+    rows.push({
+      teacher_id: teacherId,
+      starts_at: slotDate.toISOString(),
+      duration_minutes: duration,
+    })
+  }
+
+  const { data, error } = await supabaseAdmin.from('teacher_availability').insert(rows).select('*')
+  if (error) {
+    throw new Error(error.message)
+  }
+  return data ?? []
+}
+
+const deleteAvailability = async (supabaseAdmin, profile, payload) => {
+  if (!payload.id) {
+    throw new Error('Availability ID is required.')
+  }
+
+  let query = supabaseAdmin.from('teacher_availability').delete().eq('id', payload.id)
+  if (profile.role !== 'admin') {
+    query = query.eq('teacher_id', profile.id)
+  }
+
+  const { error } = await query
+  if (error) {
+    throw new Error(error.message)
+  }
+  return { success: true, id: payload.id }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -453,6 +522,21 @@ export default async function handler(req, res) {
 
     if (action === 'delete_teacher_note') {
       const result = await deleteTeacherNote(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: result })
+    }
+
+    if (action === 'get_availabilities') {
+      const availabilities = await getAvailabilities(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: availabilities })
+    }
+
+    if (action === 'create_availability') {
+      const created = await createAvailability(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: created })
+    }
+
+    if (action === 'delete_availability') {
+      const result = await deleteAvailability(supabaseAdmin, profile, payload)
       return json(res, 200, { data: result })
     }
 

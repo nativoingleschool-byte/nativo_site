@@ -129,4 +129,13 @@ export type TeacherNote = {
   created_at: string
 }
 
+export type TeacherAvailability = {
+  id: string
+  teacher_id: string
+  starts_at: string
+  duration_minutes: number
+  created_at?: string
+}
+
+
 

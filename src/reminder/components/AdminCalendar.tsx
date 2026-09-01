@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { Lesson, Profile } from '../lib/types'
+import type { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
 
@@ -134,6 +134,9 @@ export default function AdminCalendar({
   onUpdateLessonGroup,
   onCreateStudentLogin,
   onCreateTeacherLogin,
+  availabilities = [],
+  onCreateAvailability,
+  onDeleteAvailability,
 }: {
   lessons: Lesson[]
   profilesById: Record<string, Profile>
@@ -149,7 +152,22 @@ export default function AdminCalendar({
   onUpdateLessonGroup: (draft: LessonUpdateDraft) => Promise<void>
   onCreateStudentLogin: (draft: NewUserDraft) => Promise<Profile>
   onCreateTeacherLogin: (draft: NewUserDraft) => Promise<Profile>
+  availabilities?: TeacherAvailability[]
+  onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => Promise<void>
+  onDeleteAvailability?: (availabilityId: string) => Promise<void>
 }) {
+  const [calendarMode, setCalendarMode] = useState<'classes' | 'availability'>('classes')
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(currentTeacherId ?? teachers[0]?.id ?? '')
+
+  // Availability Modal states
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
+  const [selectedAvailability, setSelectedAvailability] = useState<TeacherAvailability | null>(null)
+  const [availabilityStartsAt, setAvailabilityStartsAt] = useState('')
+  const [availabilityDuration, setAvailabilityDuration] = useState(60)
+  const [availabilityRepeatWeeks, setAvailabilityRepeatWeeks] = useState(1)
+  const [availabilityTeacherId, setAvailabilityTeacherId] = useState(currentTeacherId ?? teachers[0]?.id ?? '')
+  const [isSubmittingAvailability, setIsSubmittingAvailability] = useState(false)
+
   const [weekStart, setWeekStart] = useState(() => startOfWeekDateKey(todayDateKeyInTimeZone(timeZone)))
   const [showModal, setShowModal] = useState(false)
   const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null)
@@ -271,6 +289,104 @@ export default function AdminCalendar({
     }
     return layouts
   }, [days, groupsByDay, timeZone])
+
+  const activeTeacherId = role === 'teacher' && currentTeacherId ? currentTeacherId : (selectedTeacherId || sortedTeachers[0]?.id || '')
+
+  const availabilitiesThisWeek = useMemo(() => {
+    if (!activeTeacherId) return []
+    return availabilities.filter((a) => {
+      if (a.teacher_id !== activeTeacherId) return false
+      const zoned = getZonedParts(new Date(a.starts_at), timeZone)
+      const dateKey = `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}`
+      return dateKey >= weekStart && dateKey < weekEnd
+    })
+  }, [availabilities, activeTeacherId, timeZone, weekStart, weekEnd])
+
+  const availabilitiesByDay = useMemo(() => {
+    const grouped: Record<string, TeacherAvailability[]> = Object.fromEntries(days.map((day) => [day, []]))
+    for (const item of availabilitiesThisWeek) {
+      const zoned = getZonedParts(new Date(item.starts_at), timeZone)
+      const key = `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}`
+      grouped[key] = grouped[key] ? [...grouped[key], item] : [item]
+    }
+    return grouped
+  }, [days, availabilitiesThisWeek, timeZone])
+
+  // Check if an availability slot has an active overlapping class for this teacher
+  const getSlotConflict = (availability: TeacherAvailability) => {
+    const aStart = new Date(availability.starts_at).getTime()
+    const aEnd = aStart + (availability.duration_minutes || 60) * 60000
+
+    const overlappingLesson = visibleLessons.find((l) => {
+      if (l.teacher_id !== availability.teacher_id) return false
+      if (l.teacher_lesson_status === 'not_happened') return false
+      const lStart = new Date(l.starts_at).getTime()
+      const lEnd = lStart + (l.duration_minutes || 60) * 60000
+      return aStart < lEnd && lStart < aEnd
+    })
+
+    return overlappingLesson
+  }
+
+  const openCreateAvailability = (dayKey: string, minutesFromMidnight: number) => {
+    const hours = Math.floor(minutesFromMidnight / 60)
+    const minutes = minutesFromMidnight % 60
+    setSelectedAvailability(null)
+    setAvailabilityStartsAt(`${dayKey}T${pad2(hours)}:${pad2(minutes)}`)
+    setAvailabilityDuration(60)
+    setAvailabilityRepeatWeeks(1)
+    setAvailabilityTeacherId(activeTeacherId)
+    setShowAvailabilityModal(true)
+  }
+
+  const openViewAvailability = (availability: TeacherAvailability) => {
+    setSelectedAvailability(availability)
+    const zoned = getZonedParts(new Date(availability.starts_at), timeZone)
+    setAvailabilityStartsAt(`${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}T${pad2(zoned.hour)}:${pad2(zoned.minute)}`)
+    setAvailabilityDuration(availability.duration_minutes || 60)
+    setAvailabilityRepeatWeeks(1)
+    setAvailabilityTeacherId(availability.teacher_id)
+    setShowAvailabilityModal(true)
+  }
+
+  const closeAvailabilityModal = () => {
+    setShowAvailabilityModal(false)
+    setSelectedAvailability(null)
+    setIsSubmittingAvailability(false)
+  }
+
+  const handleSaveAvailability = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!onCreateAvailability) return
+    setIsSubmittingAvailability(true)
+    try {
+      const utcIso = zonedDateTimeToUtcIso(availabilityStartsAt, timeZone)
+      await onCreateAvailability({
+        starts_at: utcIso,
+        duration_minutes: availabilityDuration,
+        teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : availabilityTeacherId,
+        repeat_weeks: availabilityRepeatWeeks,
+      })
+      closeAvailabilityModal()
+    } catch (err) {
+      console.error('Error creating availability:', err)
+    } finally {
+      setIsSubmittingAvailability(false)
+    }
+  }
+
+  const handleDeleteAvailabilitySlot = async (id: string) => {
+    if (!onDeleteAvailability) return
+    setIsSubmittingAvailability(true)
+    try {
+      await onDeleteAvailability(id)
+      closeAvailabilityModal()
+    } catch (err) {
+      console.error('Error deleting availability:', err)
+    } finally {
+      setIsSubmittingAvailability(false)
+    }
+  }
 
   const resetDrafts = () => {
     setCreateStudent(false)
@@ -441,10 +557,104 @@ export default function AdminCalendar({
     <div className="calendar-shell">
       <div className="calendar-toolbar">
         <div>
-          <p className="section-label">{t(language, 'calendar')}</p>
-          <h3>{formatWeekLabel(weekStart, language)}</h3>
+          <p className="section-label">{calendarMode === 'availability' ? t(language, 'availability_title') : t(language, 'calendar')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0 }}>{formatWeekLabel(weekStart, language)}</h3>
+            
+            {/* View Mode Switcher */}
+            <div
+              className="calendar-view-toggle"
+              style={{
+                display: 'inline-flex',
+                background: 'rgba(15, 23, 42, 0.8)',
+                padding: '0.2rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #334155',
+              }}
+            >
+              <button
+                type="button"
+                className={`calendar-toggle-btn ${calendarMode === 'classes' ? 'active' : ''}`}
+                onClick={() => setCalendarMode('classes')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '0.55rem',
+                  border: 'none',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: calendarMode === 'classes' ? '#2563eb' : 'transparent',
+                  color: calendarMode === 'classes' ? '#fff' : '#94a3b8',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <span>📅</span>
+                <span>{t(language, 'classes_view')}</span>
+              </button>
+              <button
+                type="button"
+                className={`calendar-toggle-btn ${calendarMode === 'availability' ? 'active' : ''}`}
+                onClick={() => setCalendarMode('availability')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '0.55rem',
+                  border: 'none',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: calendarMode === 'availability' ? '#059669' : 'transparent',
+                  color: calendarMode === 'availability' ? '#fff' : '#94a3b8',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <span>⏱️</span>
+                <span>{t(language, 'availability_view')}</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="button-row wrap">
+
+        <div className="button-row wrap" style={{ alignItems: 'center' }}>
+          {calendarMode === 'availability' && role === 'admin' && (
+            <select
+              value={selectedTeacherId}
+              onChange={(e) => setSelectedTeacherId(e.target.value)}
+              style={{
+                padding: '0.45rem 0.85rem',
+                background: '#090d16',
+                border: '1px solid #334155',
+                borderRadius: '0.6rem',
+                color: '#fff',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+              }}
+            >
+              {sortedTeachers.map((tItem) => (
+                <option key={tItem.id} value={tItem.id}>
+                  👨‍🏫 {tItem.full_name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {calendarMode === 'availability' && (
+            <button
+              type="button"
+              className="primary-button"
+              style={{ padding: '0.45rem 0.9rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#059669', borderColor: '#10b981' }}
+              onClick={() => openCreateAvailability(days[0], 9 * 60)}
+            >
+              <span>+</span>
+              <span>{t(language, 'add_availability')}</span>
+            </button>
+          )}
+
           <button className="ghost-button" type="button" onClick={() => setWeekStart((current) => addDaysToDateKey(current, -7))}>
             {t(language, 'prev_week')}
           </button>
@@ -518,6 +728,8 @@ export default function AdminCalendar({
 
         {days.map((day) => {
           const dayGroups = groupsByDay[day] ?? []
+          const dayAvailabilities = availabilitiesByDay[day] ?? []
+
           return (
             <div key={day} className="calendar-day-column">
               {slots.map((minute) => (
@@ -525,116 +737,205 @@ export default function AdminCalendar({
                   key={minute}
                   type="button"
                   className="calendar-slot"
-                  onClick={() => openCreate(day, minute)}
-                  aria-label={`Create class on ${day} at ${pad2(Math.floor(minute / 60))}:${pad2(minute % 60)}`}
+                  onClick={() => {
+                    if (calendarMode === 'availability') {
+                      openCreateAvailability(day, minute)
+                    } else {
+                      openCreate(day, minute)
+                    }
+                  }}
+                  aria-label={`${calendarMode === 'availability' ? t(language, 'add_availability') : 'Create class'} on ${day} at ${pad2(Math.floor(minute / 60))}:${pad2(minute % 60)}`}
                 />
               ))}
 
-              {dayGroups.map((group) => {
-                const start = getZonedParts(new Date(group.starts_at), timeZone)
-                const minutesFromMidnight = start.hour * 60 + start.minute
-                const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
-                const span = Math.max(1, Math.ceil(group.duration_minutes / slotMinutes))
-                const teacherName = profilesById[group.teacher_id]?.full_name ?? t(language, 'teacher')
-                const studentsForGroup = group.student_ids.map((id) => profilesById[id]?.full_name ?? t(language, 'role_student'))
-                const confirmedCount = group.lessonIds.filter((lessonId) => {
-                  const lesson = lessons.find((item) => item.id === lessonId)
-                  return lesson?.student_attendance === 'attend'
-                }).length
-                const cancelledCount = group.lessonIds.filter((lessonId) => {
-                  const lesson = lessons.find((item) => item.id === lessonId)
-                  return lesson?.student_attendance === 'cancel'
-                }).length
-                const totalStudents = group.lessonIds.length
+              {/* CLASSES VIEW */}
+              {calendarMode === 'classes' &&
+                dayGroups.map((group) => {
+                  const start = getZonedParts(new Date(group.starts_at), timeZone)
+                  const minutesFromMidnight = start.hour * 60 + start.minute
+                  const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
+                  const span = Math.max(1, Math.ceil(group.duration_minutes / slotMinutes))
+                  const teacherName = profilesById[group.teacher_id]?.full_name ?? t(language, 'teacher')
+                  const studentsForGroup = group.student_ids.map((id) => profilesById[id]?.full_name ?? t(language, 'role_student'))
+                  const confirmedCount = group.lessonIds.filter((lessonId) => {
+                    const lesson = lessons.find((item) => item.id === lessonId)
+                    return lesson?.student_attendance === 'attend'
+                  }).length
+                  const cancelledCount = group.lessonIds.filter((lessonId) => {
+                    const lesson = lessons.find((item) => item.id === lessonId)
+                    return lesson?.student_attendance === 'cancel'
+                  }).length
+                  const totalStudents = group.lessonIds.length
 
-                let groupStatus: 'confirmed' | 'cancelled' | 'partial' | 'pending' = 'pending'
-                let statusLabel = t(language, 'pending')
-                let eventClass = 'calendar-event-neutral'
+                  let groupStatus: 'confirmed' | 'cancelled' | 'partial' | 'pending' = 'pending'
+                  let statusLabel = t(language, 'pending')
+                  let eventClass = 'calendar-event-neutral'
 
-                if (cancelledCount > 0 && cancelledCount < totalStudents) {
-                  groupStatus = 'partial'
-                  statusLabel = t(language, 'status_partial_text')
-                    .replace('{cancelled}', String(cancelledCount))
-                    .replace('{total}', String(totalStudents))
-                  eventClass = 'calendar-event-warning'
-                } else if (cancelledCount === totalStudents && totalStudents > 0) {
-                  groupStatus = 'cancelled'
-                  statusLabel = t(language, 'status_cancelled_text')
-                    .replace('{cancelled}', String(cancelledCount))
-                    .replace('{total}', String(totalStudents))
-                  eventClass = 'calendar-event-danger'
-                } else if (confirmedCount === totalStudents && totalStudents > 0) {
-                  groupStatus = 'confirmed'
-                  statusLabel = t(language, 'status_confirmed_text')
-                    .replace('{confirmed}', String(confirmedCount))
-                    .replace('{total}', String(totalStudents))
-                  eventClass = 'calendar-event-success'
-                } else {
-                  groupStatus = 'pending'
-                  statusLabel = t(language, 'status_pending_text')
-                    .replace('{confirmed}', String(confirmedCount))
-                    .replace('{total}', String(totalStudents))
-                  eventClass = 'calendar-event-neutral'
-                }
+                  if (cancelledCount > 0 && cancelledCount < totalStudents) {
+                    groupStatus = 'partial'
+                    statusLabel = t(language, 'status_partial_text')
+                      .replace('{cancelled}', String(cancelledCount))
+                      .replace('{total}', String(totalStudents))
+                    eventClass = 'calendar-event-warning'
+                  } else if (cancelledCount === totalStudents && totalStudents > 0) {
+                    groupStatus = 'cancelled'
+                    statusLabel = t(language, 'status_cancelled_text')
+                      .replace('{cancelled}', String(cancelledCount))
+                      .replace('{total}', String(totalStudents))
+                    eventClass = 'calendar-event-danger'
+                  } else if (confirmedCount === totalStudents && totalStudents > 0) {
+                    groupStatus = 'confirmed'
+                    statusLabel = t(language, 'status_confirmed_text')
+                      .replace('{confirmed}', String(confirmedCount))
+                      .replace('{total}', String(totalStudents))
+                    eventClass = 'calendar-event-success'
+                  } else {
+                    groupStatus = 'pending'
+                    statusLabel = t(language, 'status_pending_text')
+                      .replace('{confirmed}', String(confirmedCount))
+                      .replace('{total}', String(totalStudents))
+                    eventClass = 'calendar-event-neutral'
+                  }
 
-                const layout = groupLayouts[group.key] ?? { column: 0, totalColumns: 1 }
-                if (startIndex < 0 || startIndex >= slotCount) return null
+                  const layout = groupLayouts[group.key] ?? { column: 0, totalColumns: 1 }
+                  if (startIndex < 0 || startIndex >= slotCount) return null
 
-                return (
-                  <button
-                    key={group.key}
-                    type="button"
-                    className={`calendar-event ${eventClass}`}
-                    style={{
-                      gridRow: `${startIndex + 1} / span ${span}`,
-                      width: `calc(${100 / layout.totalColumns}% - 8px)`,
-                      marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
-                    }}
-                    title={`${group.subject} • ${studentsForGroup.join(', ')} ${t(language, 'with_word')} ${teacherName} (${statusLabel})`}
-                    onClick={() => openEdit(group)}
-                  >
-                    <div className="calendar-event-header">
-                      <strong className="calendar-event-title">{group.subject}</strong>
-                      <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
-                    </div>
-                    {span > 1 && (
-                      <div className="calendar-event-details">
-                        <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
-                        <span className="muted tiny-copy calendar-event-sub">
-                          {studentsForGroup.length} {studentsForGroup.length === 1 ? t(language, 'student_singular') : t(language, 'student_plural')}
-                        </span>
+                  return (
+                    <button
+                      key={group.key}
+                      type="button"
+                      className={`calendar-event ${eventClass}`}
+                      style={{
+                        gridRow: `${startIndex + 1} / span ${span}`,
+                        width: `calc(${100 / layout.totalColumns}% - 8px)`,
+                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
+                      }}
+                      title={`${group.subject} • ${studentsForGroup.join(', ')} ${t(language, 'with_word')} ${teacherName} (${statusLabel})`}
+                      onClick={() => openEdit(group)}
+                    >
+                      <div className="calendar-event-header">
+                        <strong className="calendar-event-title">{group.subject}</strong>
+                        <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
                       </div>
-                    )}
-                  </button>
-                )
-              })}
+                      {span > 1 && (
+                        <div className="calendar-event-details">
+                          <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
+                          <span className="muted tiny-copy calendar-event-sub">
+                            {studentsForGroup.length} {studentsForGroup.length === 1 ? t(language, 'student_singular') : t(language, 'student_plural')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+
+              {/* AVAILABILITY VIEW */}
+              {calendarMode === 'availability' &&
+                dayAvailabilities.map((avail) => {
+                  const start = getZonedParts(new Date(avail.starts_at), timeZone)
+                  const minutesFromMidnight = start.hour * 60 + start.minute
+                  const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
+                  const span = Math.max(1, Math.ceil(avail.duration_minutes / slotMinutes))
+                  if (startIndex < 0 || startIndex >= slotCount) return null
+
+                  const conflictLesson = getSlotConflict(avail)
+                  const isBooked = !!conflictLesson
+                  const teacherProfile = profilesById[avail.teacher_id]
+
+                  return (
+                    <button
+                      key={avail.id}
+                      type="button"
+                      className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}`}
+                      style={{
+                        gridRow: `${startIndex + 1} / span ${span}`,
+                        width: 'calc(100% - 8px)',
+                        marginLeft: '4px',
+                      }}
+                      onClick={() => openViewAvailability(avail)}
+                      title={
+                        isBooked
+                          ? `${t(language, 'occupied_slot')}: ${conflictLesson.subject} (${profilesById[conflictLesson.student_id]?.full_name || ''})`
+                          : `${t(language, 'available_slot')} (${teacherProfile?.full_name || ''})`
+                      }
+                    >
+                      <div className="calendar-event-header">
+                        <strong className="calendar-event-title" style={{ color: isBooked ? '#c7d2fe' : '#34d399' }}>
+                          {isBooked ? `🟣 ${conflictLesson.subject || t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
+                        </strong>
+                        <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
+                      </div>
+                      {span > 1 && (
+                        <div className="calendar-event-details">
+                          {isBooked ? (
+                            <>
+                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#e0e7ff' }}>
+                                👤 {profilesById[conflictLesson.student_id]?.full_name ?? t(language, 'role_student')}
+                              </span>
+                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a5b4fc' }}>
+                                {avail.duration_minutes} min • {teacherProfile?.full_name ?? t(language, 'teacher')}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a7f3d0' }}>
+                                {avail.duration_minutes} min
+                              </span>
+                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#6ee7b7' }}>
+                                {teacherProfile?.full_name || t(language, 'teacher')}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
             </div>
           )
         })}
       </div>
 
-      <div className="calendar-legend">
-        <span className="calendar-legend-title">{t(language, 'legend_title')}</span>
-        <div className="calendar-legend-items">
-          <div className="calendar-legend-item">
-            <span className="calendar-status-dot calendar-status-dot-confirmed" />
-            <span>{t(language, 'legend_confirmed')}</span>
-          </div>
-          <div className="calendar-legend-item">
-            <span className="calendar-status-dot calendar-status-dot-partial" />
-            <span>{t(language, 'legend_partial')}</span>
-          </div>
-          <div className="calendar-legend-item">
-            <span className="calendar-status-dot calendar-status-dot-cancelled" />
-            <span>{t(language, 'legend_cancelled')}</span>
-          </div>
-          <div className="calendar-legend-item">
-            <span className="calendar-status-dot calendar-status-dot-pending" />
-            <span>{t(language, 'legend_pending')}</span>
+      {/* LEGEND */}
+      {calendarMode === 'classes' ? (
+        <div className="calendar-legend">
+          <span className="calendar-legend-title">{t(language, 'legend_title')}</span>
+          <div className="calendar-legend-items">
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-confirmed" />
+              <span>{t(language, 'legend_confirmed')}</span>
+            </div>
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-partial" />
+              <span>{t(language, 'legend_partial')}</span>
+            </div>
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-cancelled" />
+              <span>{t(language, 'legend_cancelled')}</span>
+            </div>
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-pending" />
+              <span>{t(language, 'legend_pending')}</span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="calendar-legend">
+          <span className="calendar-legend-title">{t(language, 'availability_title')}</span>
+          <div className="calendar-legend-items">
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-available" />
+              <span>{t(language, 'availability_legend_free')}</span>
+            </div>
+            <div className="calendar-legend-item">
+              <span className="calendar-status-dot calendar-status-dot-booked" />
+              <span>{t(language, 'availability_legend_booked')}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* CLASSES CREATE / EDIT MODAL */}
       {showModal && createPortal(
         <div
           className="reminder-app-scope modal-overlay"
@@ -872,7 +1173,7 @@ export default function AdminCalendar({
                     color: '#fbbf24',
                     fontSize: '0.88rem',
                     fontWeight: 600,
-                    boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)'
+                    boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)',
                   }}
                 >
                   <span style={{ fontSize: '1.3rem' }}>⚠️</span>
@@ -889,6 +1190,184 @@ export default function AdminCalendar({
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* AVAILABILITY MODAL */}
+      {showAvailabilityModal && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeAvailabilityModal()
+            }
+          }}
+        >
+          <div className="modal-card" style={{ maxWidth: '480px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div className="panel-header">
+              <div>
+                <p className="section-label">{t(language, 'availability_title')}</p>
+                <h2>{selectedAvailability ? t(language, 'manage_availability_modal') : t(language, 'add_availability')}</h2>
+              </div>
+            </div>
+
+            {selectedAvailability ? (
+              // VIEW / DELETE EXISTING AVAILABILITY SLOT
+              <div className="form-card" style={{ gap: '1.25rem' }}>
+                {(() => {
+                  const conflict = getSlotConflict(selectedAvailability)
+                  const isBooked = !!conflict
+                  const teacherProf = profilesById[selectedAvailability.teacher_id]
+
+                  return (
+                    <>
+                      <div
+                        style={{
+                          padding: '1rem',
+                          borderRadius: '0.75rem',
+                          background: isBooked ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                          border: `1px solid ${isBooked ? '#818cf8' : '#10b981'}`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <strong style={{ fontSize: '1rem', color: isBooked ? '#c7d2fe' : '#34d399' }}>
+                            {isBooked ? `🟣 ${t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
+                          </strong>
+                          <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
+                        </div>
+
+                        {isBooked && (
+                          <div style={{ fontSize: '0.9rem', color: '#e2e8f0', marginTop: '0.25rem' }}>
+                            <p style={{ margin: '0.2rem 0' }}>
+                              <strong>Matéria:</strong> {conflict.subject || 'Aula'}
+                            </p>
+                            <p style={{ margin: '0.2rem 0' }}>
+                              <strong>Aluno:</strong> {profilesById[conflict.student_id]?.full_name || 'Aluno'}
+                            </p>
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                          <p style={{ margin: '0.2rem 0' }}>
+                            <strong>Professor:</strong> {teacherProf?.full_name || t(language, 'teacher')}
+                          </p>
+                          <p style={{ margin: '0.2rem 0' }}>
+                            <strong>Início:</strong> {availabilityStartsAt.replace('T', ' ')} ({selectedAvailability.duration_minutes} min)
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="button-row wrap" style={{ justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                          disabled={isSubmittingAvailability}
+                          onClick={() => {
+                            if (window.confirm(t(language, 'delete_availability_confirm'))) {
+                              void handleDeleteAvailabilitySlot(selectedAvailability.id)
+                            }
+                          }}
+                        >
+                          🗑️ {t(language, 'remove_availability')}
+                        </button>
+                        <button type="button" className="secondary-button" onClick={closeAvailabilityModal}>
+                          {t(language, 'close')}
+                        </button>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            ) : (
+              // CREATE NEW AVAILABILITY SLOT
+              <form className="form-card" onSubmit={handleSaveAvailability}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                    {t(language, 'start_time_label') || 'Data e Horário de Início'}
+                  </label>
+                  <input
+                    required
+                    type="datetime-local"
+                    value={availabilityStartsAt}
+                    onChange={(e) => setAvailabilityStartsAt(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-grid">
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                      {t(language, 'duration_minutes') || 'Duração (minutos)'}
+                    </label>
+                    <select
+                      value={availabilityDuration}
+                      onChange={(e) => setAvailabilityDuration(Number(e.target.value))}
+                    >
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>60 min (1h)</option>
+                      <option value={90}>90 min (1h30)</option>
+                      <option value={120}>120 min (2h)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                      {t(language, 'repeat_availability_weeks')}
+                    </label>
+                    <select
+                      value={availabilityRepeatWeeks}
+                      onChange={(e) => setAvailabilityRepeatWeeks(Number(e.target.value))}
+                    >
+                      <option value={1}>1 semana (Apenas esta)</option>
+                      <option value={4}>4 semanas (1 mês)</option>
+                      <option value={8}>8 semanas (2 meses)</option>
+                      <option value={12}>12 semanas (3 meses)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {role === 'admin' && (
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                      {t(language, 'teacher')}
+                    </label>
+                    <select
+                      value={availabilityTeacherId}
+                      onChange={(e) => setAvailabilityTeacherId(e.target.value)}
+                    >
+                      {sortedTeachers.map((tch) => (
+                        <option key={tch.id} value={tch.id}>
+                          {tch.full_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="button-row wrap" style={{ marginTop: '0.5rem' }}>
+                  <button className="secondary-button" type="button" onClick={closeAvailabilityModal} disabled={isSubmittingAvailability}>
+                    {t(language, 'cancel')}
+                  </button>
+                  <button
+                    className="primary-button"
+                    type="submit"
+                    disabled={isSubmittingAvailability}
+                    style={{ background: '#059669', borderColor: '#10b981' }}
+                  >
+                    {isSubmittingAvailability ? t(language, 'saving_label') : t(language, 'set_available_btn')}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>,
         document.body

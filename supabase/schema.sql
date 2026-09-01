@@ -297,4 +297,40 @@ CREATE POLICY "teacher_notes_delete" ON public.teacher_notes
 FOR DELETE
 USING (public.is_admin() OR teacher_id = auth.uid());
 
+-- 10. Teacher Availability Table (Slots when teachers can teach classes)
+CREATE TABLE IF NOT EXISTS public.teacher_availability (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  starts_at TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER NOT NULL DEFAULT 60 CHECK (duration_minutes > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_availability_teacher_id ON public.teacher_availability(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_availability_starts_at ON public.teacher_availability(starts_at);
+
+ALTER TABLE public.teacher_availability ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "teacher_availability_select" ON public.teacher_availability;
+CREATE POLICY "teacher_availability_select" ON public.teacher_availability
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "teacher_availability_insert" ON public.teacher_availability;
+CREATE POLICY "teacher_availability_insert" ON public.teacher_availability
+FOR INSERT
+WITH CHECK (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_availability_update" ON public.teacher_availability;
+CREATE POLICY "teacher_availability_update" ON public.teacher_availability
+FOR UPDATE
+USING (public.is_admin() OR teacher_id = auth.uid())
+WITH CHECK (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_availability_delete" ON public.teacher_availability;
+CREATE POLICY "teacher_availability_delete" ON public.teacher_availability
+FOR DELETE
+USING (public.is_admin() OR teacher_id = auth.uid());
+
+
 

@@ -16,6 +16,7 @@ import {
   UserRole,
   UserFormState,
   TeacherNote,
+  TeacherAvailability,
 } from './lib/types'
 import {
   formatShortDate,
@@ -547,6 +548,120 @@ function ReminderAppInner() {
     await refreshTeacherNotes()
   }
 
+  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>([])
+
+  const refreshAvailabilities = async () => {
+    let list: TeacherAvailability[] = []
+
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: 'get_availabilities' }),
+        })
+        if (response.ok) {
+          const result = (await response.json()) as { data?: TeacherAvailability[] }
+          if (Array.isArray(result.data)) {
+            list = result.data
+          }
+        }
+      } catch (err) {
+        console.warn('API get_availabilities error, falling back to direct query:', err)
+      }
+    }
+
+    if (!list || list.length === 0) {
+      try {
+        const { data, error } = await supabase.from('teacher_availability').select('*').order('starts_at', { ascending: true })
+        if (!error && data) {
+          list = data as TeacherAvailability[]
+        }
+      } catch (e) {
+        console.warn('Direct query teacher_availability error:', e)
+      }
+    }
+
+    setAvailabilities(list)
+  }
+
+  const createAvailability = async (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number }) => {
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    const targetTeacherId = draft.teacher_id || profile?.id
+    if (!targetTeacherId) return
+
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'create_availability',
+            payload: {
+              ...draft,
+              teacher_id: targetTeacherId,
+            },
+          }),
+        })
+        if (response.ok) {
+          await refreshAvailabilities()
+          return
+        }
+      } catch (err) {
+        console.warn('API create_availability error, trying direct insert:', err)
+      }
+    }
+
+    const repeatWeeks = Math.min(Math.max(Number(draft.repeat_weeks) || 1, 1), 24)
+    const baseStart = new Date(draft.starts_at)
+    const rows = []
+    for (let i = 0; i < repeatWeeks; i++) {
+      const slotDate = new Date(baseStart.getTime() + i * 7 * 24 * 60 * 60 * 1000)
+      rows.push({
+        teacher_id: targetTeacherId,
+        starts_at: slotDate.toISOString(),
+        duration_minutes: draft.duration_minutes || 60,
+      })
+    }
+
+    const { error } = await supabase.from('teacher_availability').insert(rows)
+    if (error) throw error
+    await refreshAvailabilities()
+  }
+
+  const deleteAvailability = async (availabilityId: string) => {
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: 'delete_availability', payload: { id: availabilityId } }),
+        })
+        if (response.ok) {
+          await refreshAvailabilities()
+          return
+        }
+      } catch (err) {
+        console.warn('API delete_availability error, trying direct delete:', err)
+      }
+    }
+
+    const { error } = await supabase.from('teacher_availability').delete().eq('id', availabilityId)
+    if (error) throw error
+    await refreshAvailabilities()
+  }
+
   const refreshLessons = async () => {
     const { data, error } = await supabase.from('lessons').select('*').order('starts_at', { ascending: true })
     if (error) throw error
@@ -566,6 +681,7 @@ function ReminderAppInner() {
       setLessons([])
       setInvoices([])
       setTeacherNotesList([])
+      setAvailabilities([])
       return
     }
 
@@ -578,6 +694,7 @@ function ReminderAppInner() {
         if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
           await refreshProfiles()
           await refreshTeacherNotes()
+          await refreshAvailabilities()
           if (currentProfile.role === 'admin') {
             await refreshInvoices()
           }
@@ -631,6 +748,9 @@ function ReminderAppInner() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_notes' }, () => {
         void refreshTeacherNotes()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_availability' }, () => {
+        void refreshAvailabilities()
       })
       .subscribe()
 
@@ -1541,6 +1661,7 @@ function ReminderAppInner() {
                   students={students}
                   teachers={teachers}
                   timeZone={appTimeZone}
+                  language={language}
                   role="admin"
                   allowCreateUsers
                   allowTeacherChange
@@ -1548,6 +1669,9 @@ function ReminderAppInner() {
                   onUpdateLessonGroup={updateLessonGroup}
                   onCreateStudentLogin={createStudentLoginFromCalendar}
                   onCreateTeacherLogin={createTeacherLoginFromCalendar}
+                  availabilities={availabilities}
+                  onCreateAvailability={createAvailability}
+                  onDeleteAvailability={deleteAvailability}
                 />
 
                 <div className="list-stack">
@@ -1672,6 +1796,10 @@ function ReminderAppInner() {
             onCreateTeacherNote={createTeacherNote}
             onDeleteTeacherNote={deleteTeacherNote}
             refreshTeacherNotes={refreshTeacherNotes}
+            availabilities={availabilities}
+            onCreateAvailability={createAvailability}
+            onDeleteAvailability={deleteAvailability}
+            refreshAvailabilities={refreshAvailabilities}
           />
         )}
       </main>
