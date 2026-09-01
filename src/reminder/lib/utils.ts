@@ -208,11 +208,13 @@ export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLesso
       groupedLessons.every((l) => l.teacher_lesson_status === 'student_no_show')
 
     const is_scheduled = !is_happened && !is_cancelled && !is_no_show
+    const startsAtDate = first.starts_at ? new Date(first.starts_at) : new Date()
+    const computedEndsAt = first.ends_at || new Date(startsAtDate.getTime() + maxDuration * 60000).toISOString()
 
     sessions.push({
       key,
       starts_at: first.starts_at,
-      ends_at: first.ends_at,
+      ends_at: computedEndsAt,
       duration_minutes: maxDuration,
       subject: first.subject || '',
       class_name: first.class_name || '',

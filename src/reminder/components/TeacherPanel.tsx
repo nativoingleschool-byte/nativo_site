@@ -274,10 +274,9 @@ export default function TeacherPanel({
     if ((!students || students.length === 0) && refreshProfiles) {
       void refreshProfiles()
     }
-    const defaultStudent = sortedStudents[0]?.id || ''
+    const defaultStudent = sortedStudents[0]?.id || '__NEW__'
     setNewLessonStudentId(defaultStudent)
     setNewLessonStudentName('')
-    setAddStudentMode(sortedStudents.length > 0 ? 'select' : 'custom')
     setNewLessonSubject(t(language, 'individual_class'))
     setNewLessonDuration(60)
     setNewLessonStatus('happened')
@@ -300,7 +299,8 @@ export default function TeacherPanel({
   // Submit Add Lesson
   const handleAddLessonSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const studentIdentifier = addStudentMode === 'custom' || !newLessonStudentId ? newLessonStudentName.trim() : newLessonStudentId
+    const isCustom = newLessonStudentId === '__NEW__' || !newLessonStudentId
+    const studentIdentifier = isCustom ? newLessonStudentName.trim() : newLessonStudentId
     if (!studentIdentifier || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
@@ -339,7 +339,7 @@ export default function TeacherPanel({
             action: 'create_lesson',
             payload: {
               student_id: studentIdentifier,
-              student_name: addStudentMode === 'custom' ? newLessonStudentName.trim() : undefined,
+              student_name: isCustom ? newLessonStudentName.trim() : undefined,
               teacher_id: profile.id,
               subject: newLessonSubject.trim(),
               class_name: className,
@@ -536,7 +536,6 @@ export default function TeacherPanel({
 
     try {
       const startsAt = new Date(start)
-      const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000) // 1h duration
 
       const { error } = await supabase.from('lessons').insert({
         subject,
@@ -544,7 +543,6 @@ export default function TeacherPanel({
         student_id: studentId,
         teacher_id: profile.id,
         starts_at: startsAt.toISOString(),
-        ends_at: endsAt.toISOString(),
         duration_minutes: 60,
         status: 'proposta_pendente',
       })
@@ -1290,7 +1288,14 @@ export default function TeacherPanel({
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">{t(language, 'student_colon')} *</label>
                     <button
                       type="button"
-                      onClick={() => setAddStudentMode(addStudentMode === 'select' ? 'custom' : 'select')}
+                      onClick={() => {
+                        if (newLessonStudentId === '__NEW__') {
+                          setNewLessonStudentId(sortedStudents[0]?.id || '')
+                          setNewLessonStudentName('')
+                        } else {
+                          setNewLessonStudentId('__NEW__')
+                        }
+                      }}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -1301,38 +1306,44 @@ export default function TeacherPanel({
                         padding: 0,
                       }}
                     >
-                      {addStudentMode === 'select' ? '+ Digitar nome do aluno' : '← Selecionar da lista'}
+                      {newLessonStudentId === '__NEW__' ? '← Selecionar da lista' : '+ Digitar nome do aluno'}
                     </button>
                   </div>
 
-                  {addStudentMode === 'select' && sortedStudents.length > 0 ? (
-                    <select
-                      required
-                      value={newLessonStudentId}
-                      onChange={(e) => setNewLessonStudentId(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                    >
-                      <option value="">{t(language, 'select_student')}...</option>
-                      {sortedStudents.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div>
+                  <select
+                    required
+                    value={newLessonStudentId}
+                    onChange={(e) => {
+                      setNewLessonStudentId(e.target.value)
+                      if (e.target.value !== '__NEW__') {
+                        setNewLessonStudentName('')
+                      }
+                    }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  >
+                    <option value="">{t(language, 'select_student')}...</option>
+                    {sortedStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                      </option>
+                    ))}
+                    <option value="__NEW__">✍️ + Digitar outro aluno...</option>
+                  </select>
+
+                  {(newLessonStudentId === '__NEW__' || sortedStudents.length === 0) && (
+                    <div style={{ marginTop: '0.65rem' }}>
                       <input
                         required
                         placeholder="Digite o nome do aluno (ex: Lucas Silva)"
                         value={newLessonStudentName}
                         onChange={(e) => setNewLessonStudentName(e.target.value)}
-                        style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #38bdf8', borderRadius: '0.6rem', color: '#fff' }}
                       />
-                      {sortedStudents.length > 0 && (
-                        <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', marginBottom: 0 }}>
-                          Ou clique em "← Selecionar da lista" para escolher um aluno existente.
-                        </p>
-                      )}
+                      <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', marginBottom: 0 }}>
+                        {sortedStudents.length > 0
+                          ? 'Digite o nome do novo aluno acima.'
+                          : 'Carregando lista de alunos. Você também pode digitar o nome do aluno diretamente.'}
+                      </p>
                     </div>
                   )}
                 </div>

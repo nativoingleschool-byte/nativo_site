@@ -147,7 +147,6 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     student_id: studentId,
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
-    ends_at: endsAt,
     duration_minutes: duration,
     teacher_lesson_status: teacherLessonStatus,
     status: status,
@@ -183,14 +182,12 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   const duration = Number(payload.duration_minutes) || existingLessons[0].duration_minutes || 60
   const startsAtStr = payload.starts_at ?? existingLessons[0].starts_at
   const startsAt = new Date(startsAtStr)
-  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
 
   const sharedUpdate = {
     subject: String(payload.subject ?? existingLessons[0].subject).trim(),
     class_name: String(payload.class_name ?? existingLessons[0].class_name),
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
-    ends_at: endsAt,
     duration_minutes: duration,
   }
 
@@ -268,7 +265,6 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
     student_id: studentId,
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
-    ends_at: endsAt,
     duration_minutes: duration,
     teacher_lesson_status: teacherLessonStatus,
     status: status,
@@ -305,7 +301,6 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
   const duration = Number(payload.duration_minutes) || existingLesson.duration_minutes || 60
   const startsAtStr = payload.starts_at ?? existingLesson.starts_at
   const startsAt = new Date(startsAtStr)
-  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
 
   const updateData = {
     subject: String(payload.subject ?? existingLesson.subject).trim(),
@@ -313,7 +308,6 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
     student_id: payload.student_id ?? existingLesson.student_id,
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
-    ends_at: endsAt,
     duration_minutes: duration,
   }
 
@@ -378,17 +372,17 @@ const getProfiles = async (supabaseAdmin, profile) => {
     throw new Error('Only admin and teachers can access profile lists.')
   }
 
+  // Query all profiles; filter out archived if marked
   const { data, error } = await supabaseAdmin
     .from('profiles')
-    .select('id, full_name, email, role, class_name, speciality, timezone, archived, push_enabled, created_at, taxa_hora_aula, moeda_taxa, chave_pix, cnpj, status_nota_fiscal, nota_fiscal_url, status_pagamento_professor')
-    .eq('archived', false)
+    .select('*')
     .order('full_name', { ascending: true })
 
   if (error) {
     throw new Error(error.message)
   }
 
-  return data ?? []
+  return (data ?? []).filter((p) => p.archived !== true)
 }
 
 export default async function handler(req, res) {
