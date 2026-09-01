@@ -53,7 +53,6 @@ interface TeacherPanelProps {
     starts_at: string
     duration_minutes: number
     teacher_lesson_status?: TeacherLessonStatus
-    status?: 'agendada' | 'concluida' | 'cancelada'
   }) => Promise<Lesson | undefined>
   updateTeacherSingleLesson?: (draft: {
     lesson_id: string
@@ -64,7 +63,6 @@ interface TeacherPanelProps {
     starts_at?: string
     duration_minutes?: number
     teacher_lesson_status?: TeacherLessonStatus
-    status?: 'agendada' | 'concluida' | 'cancelada'
   }) => Promise<Lesson | undefined>
   deleteTeacherSingleLesson?: (lessonId: string) => Promise<void>
   profilesById: Record<string, Profile>
@@ -337,7 +335,6 @@ export default function TeacherPanel({
           starts_at: utcIso,
           duration_minutes: newLessonDuration,
           teacher_lesson_status: newLessonStatus,
-          status: newLessonStatus === 'happened' ? 'concluida' : 'agendada',
         })
       } else {
         // Direct API fallback
@@ -362,7 +359,6 @@ export default function TeacherPanel({
               starts_at: utcIso,
               duration_minutes: newLessonDuration,
               teacher_lesson_status: newLessonStatus,
-              status: newLessonStatus === 'happened' ? 'concluida' : 'agendada',
             },
           }),
         })
@@ -422,7 +418,6 @@ export default function TeacherPanel({
           starts_at: utcIso,
           duration_minutes: editLessonDuration,
           teacher_lesson_status: editLessonStatus,
-          status: editLessonStatus === 'happened' ? 'concluida' : editLessonStatus === 'not_happened' ? 'cancelada' : 'agendada',
         })
       } else {
         // Direct API fallback
@@ -447,7 +442,6 @@ export default function TeacherPanel({
               starts_at: utcIso,
               duration_minutes: editLessonDuration,
               teacher_lesson_status: editLessonStatus,
-              status: editLessonStatus === 'happened' ? 'concluida' : editLessonStatus === 'not_happened' ? 'cancelada' : 'agendada',
             },
           }),
         })
@@ -478,14 +472,12 @@ export default function TeacherPanel({
         await updateTeacherSingleLesson({
           lesson_id: lessonIds[0],
           teacher_lesson_status: newStatus,
-          status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
         })
       } else {
         const { error } = await supabase
           .from('lessons')
           .update({
             teacher_lesson_status: newStatus,
-            status: newStatus === 'happened' ? 'concluida' : newStatus === 'not_happened' ? 'cancelada' : 'agendada',
           })
           .in('id', lessonIds)
 
@@ -560,7 +552,6 @@ export default function TeacherPanel({
         teacher_id: profile.id,
         starts_at: startsAt.toISOString(),
         duration_minutes: 60,
-        status: 'proposta_pendente',
       })
       if (error) throw error
       toast.success(t(language, 'proposal_sent_success'))

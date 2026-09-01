@@ -195,11 +195,11 @@ export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLesso
     const studentIds = Array.from(new Set(groupedLessons.map((l) => l.student_id).filter(Boolean)))
 
     const is_happened = groupedLessons.some(
-      (l) => l.teacher_lesson_status === 'happened' || l.status === 'concluida'
+      (l) => l.teacher_lesson_status === 'happened'
     )
 
     const is_cancelled = groupedLessons.every(
-      (l) => l.status === 'cancelada' || l.teacher_lesson_status === 'not_happened' || l.status === 'proposta_pendente'
+      (l) => l.teacher_lesson_status === 'not_happened'
     )
 
     const is_no_show =

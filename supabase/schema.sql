@@ -42,7 +42,6 @@ create table if not exists public.lessons (
   teacher_id uuid not null references public.profiles(id) on delete cascade,
   starts_at timestamptz not null,
   duration_minutes integer not null default 60 check (duration_minutes > 0),
-  status text not null default 'agendada' check (status in ('agendada', 'concluida', 'cancelada', 'proposta_pendente')),
   recurrence text not null default 'none',
   student_attendance text null check (student_attendance in ('attend', 'cancel')),
   student_lesson_status text null check (student_lesson_status in ('done', 'not_done')),

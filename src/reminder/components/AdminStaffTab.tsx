@@ -187,7 +187,6 @@ export default function AdminStaffTab({
         .from('lessons')
         .update({
           teacher_lesson_status: status,
-          status: status === 'happened' ? 'concluida' : status === 'not_happened' ? 'cancelada' : 'agendada',
         })
         .eq('id', lessonId)
       if (error) throw error
@@ -205,7 +204,6 @@ export default function AdminStaffTab({
         .from('lessons')
         .update({
           teacher_lesson_status: status,
-          status: status === 'happened' ? 'concluida' : status === 'not_happened' ? 'cancelada' : 'agendada',
         })
         .in('id', lessonIds)
       if (error) throw error
@@ -223,7 +221,6 @@ export default function AdminStaffTab({
           l.teacher_id === teacherId &&
           l.starts_at &&
           l.starts_at.slice(0, 7) === monthKey &&
-          l.status !== 'cancelada' &&
           l.teacher_lesson_status !== 'not_happened'
       )
       if (activeTeacherMonthLessons.length === 0) {
@@ -235,7 +232,6 @@ export default function AdminStaffTab({
         .from('lessons')
         .update({
           teacher_lesson_status: 'happened',
-          status: 'concluida',
         })
         .in('id', ids)
       if (error) throw error

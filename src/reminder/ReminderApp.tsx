@@ -1073,7 +1073,6 @@ function ReminderAppInner() {
     starts_at: string
     duration_minutes: number
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
-    status?: 'agendada' | 'concluida' | 'cancelada'
   }) => {
     setAppError('')
     const payload = {
@@ -1100,7 +1099,6 @@ function ReminderAppInner() {
     starts_at?: string
     duration_minutes?: number
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
-    status?: 'agendada' | 'concluida' | 'cancelada'
   }) => {
     setAppError('')
     const payload = {

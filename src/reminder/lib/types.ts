@@ -86,7 +86,6 @@ export type Lesson = {
   teacher_lesson_status: TeacherLessonStatus
   created_at?: string
   ends_at?: string
-  status?: 'agendada' | 'concluida' | 'cancelada' | 'proposta_pendente'
   recurrence?: string
 }
 

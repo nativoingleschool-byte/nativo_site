@@ -139,7 +139,6 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
   const duration = Number(payload.duration_minutes) || 60
   const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
   const teacherLessonStatus = payload.teacher_lesson_status ?? null
-  const status = payload.status ?? (teacherLessonStatus === 'happened' ? 'concluida' : 'agendada')
 
   const rows = studentIds.map((studentId) => ({
     subject: payload.subject.trim(),
@@ -149,7 +148,6 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
     teacher_lesson_status: teacherLessonStatus,
-    status: status,
   }))
 
   const { data, error } = await supabaseAdmin.from('lessons').insert(rows).select('*')
@@ -193,15 +191,6 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
 
   if (payload.teacher_lesson_status !== undefined) {
     sharedUpdate.teacher_lesson_status = payload.teacher_lesson_status
-    if (payload.teacher_lesson_status === 'happened') {
-      sharedUpdate.status = 'concluida'
-    } else if (payload.teacher_lesson_status === 'not_happened') {
-      sharedUpdate.status = 'cancelada'
-    }
-  }
-
-  if (payload.status !== undefined) {
-    sharedUpdate.status = payload.status
   }
 
   const { error: updateError } = await supabaseAdmin.from('lessons').update(sharedUpdate).in('id', lessonIds)
@@ -257,7 +246,6 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const duration = Number(payload.duration_minutes) || 60
   const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
   const teacherLessonStatus = payload.teacher_lesson_status ?? 'happened'
-  const status = payload.status ?? (teacherLessonStatus === 'happened' ? 'concluida' : 'agendada')
 
   const row = {
     subject: payload.subject.trim(),
@@ -267,7 +255,6 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
     teacher_lesson_status: teacherLessonStatus,
-    status: status,
   }
 
   const { data, error } = await supabaseAdmin.from('lessons').insert([row]).select('*').single()
@@ -313,15 +300,6 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
 
   if (payload.teacher_lesson_status !== undefined) {
     updateData.teacher_lesson_status = payload.teacher_lesson_status
-    if (payload.teacher_lesson_status === 'happened') {
-      updateData.status = 'concluida'
-    } else if (payload.teacher_lesson_status === 'not_happened') {
-      updateData.status = 'cancelada'
-    }
-  }
-
-  if (payload.status !== undefined) {
-    updateData.status = payload.status
   }
 
   const { data: updated, error: updateError } = await supabaseAdmin
