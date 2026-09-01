@@ -1,6 +1,6 @@
 import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, TeacherAvailability } from '../lib/types'
+import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -88,6 +88,8 @@ interface TeacherPanelProps {
   onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
   onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
   refreshAvailabilities?: () => Promise<void>
+  teacherInvoices?: TeacherInvoice[]
+  refreshTeacherInvoices?: () => Promise<void>
 }
 
 export default function TeacherPanel({
@@ -129,6 +131,8 @@ export default function TeacherPanel({
   onCreateAvailability,
   onDeleteAvailability,
   refreshAvailabilities,
+  teacherInvoices = [],
+  refreshTeacherInvoices,
 }: TeacherPanelProps) {
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
@@ -593,6 +597,8 @@ export default function TeacherPanel({
             body: JSON.stringify({
               status_nota_fiscal: 'enviada',
               nota_fiscal_url: fileDataUrl,
+              month_key: selectedMonth || new Date().toISOString().slice(0, 7),
+              file_name: file.name || 'Nota_Fiscal.pdf',
             }),
           })
 
@@ -603,6 +609,7 @@ export default function TeacherPanel({
 
           toast.success(t(language, 'nf_upload_success'))
           await refreshProfile(profile.id)
+          await refreshTeacherInvoices?.()
         } catch (err: any) {
           toast.error(err.message)
         } finally {
@@ -1260,6 +1267,69 @@ export default function TeacherPanel({
                   <input type="file" accept=".pdf,image/*" disabled={uploadingNf} onChange={handleUploadNf} />
                 </div>
                 <p className="muted tiny-copy">{t(language, 'nf_exact_value_notice')}</p>
+
+                {/* Past Invoices for Teacher */}
+                {(() => {
+                  const myInvoices = (teacherInvoices || []).filter((inv) => inv.teacher_id === profile.id)
+                  if (myInvoices.length === 0) return null
+
+                  return (
+                    <div style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                      <p style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                        📁 {t(language, 'past_nfs_title')} ({myInvoices.length})
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '180px', overflowY: 'auto' }}>
+                        {myInvoices.map((inv) => (
+                          <div
+                            key={inv.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: '#090d16',
+                              border: '1px solid #334155',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '0.5rem',
+                              fontSize: '0.78rem',
+                            }}
+                          >
+                            <span style={{ color: '#a78bfa', fontWeight: 'bold' }}>
+                              📅 {inv.month_key}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.3rem' }}>
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem' }}
+                                onClick={() => {
+                                  openFileFromDataOrUrl(
+                                    inv.file_url,
+                                    inv.file_name || `Nota_Fiscal_${inv.month_key}.pdf`
+                                  )
+                                }}
+                              >
+                                📄 Ver
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem' }}
+                                onClick={() => {
+                                  downloadFileFromDataOrUrl(
+                                    inv.file_url,
+                                    inv.file_name || `Nota_Fiscal_${inv.month_key}.pdf`
+                                  )
+                                }}
+                              >
+                                ⬇️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </section>
           </div>

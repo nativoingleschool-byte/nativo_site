@@ -334,5 +334,44 @@ CREATE POLICY "teacher_availability_delete" ON public.teacher_availability
 FOR DELETE
 USING (public.is_admin() OR teacher_id = auth.uid());
 
+-- 11. Teacher Invoices / Nota Fiscal History Table
+CREATE TABLE IF NOT EXISTS public.teacher_invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  month_key TEXT NOT NULL,
+  amount NUMERIC NULL,
+  file_url TEXT NOT NULL,
+  file_name TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'enviada',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_invoices_teacher_id ON public.teacher_invoices(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_invoices_month_key ON public.teacher_invoices(month_key);
+
+ALTER TABLE public.teacher_invoices ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "teacher_invoices_select" ON public.teacher_invoices;
+CREATE POLICY "teacher_invoices_select" ON public.teacher_invoices
+FOR SELECT
+USING (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_invoices_insert" ON public.teacher_invoices;
+CREATE POLICY "teacher_invoices_insert" ON public.teacher_invoices
+FOR INSERT
+WITH CHECK (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_invoices_update" ON public.teacher_invoices;
+CREATE POLICY "teacher_invoices_update" ON public.teacher_invoices
+FOR UPDATE
+USING (public.is_admin() OR teacher_id = auth.uid())
+WITH CHECK (public.is_admin() OR teacher_id = auth.uid());
+
+DROP POLICY IF EXISTS "teacher_invoices_delete" ON public.teacher_invoices;
+CREATE POLICY "teacher_invoices_delete" ON public.teacher_invoices
+FOR DELETE
+USING (public.is_admin() OR teacher_id = auth.uid());
+
+
 
 

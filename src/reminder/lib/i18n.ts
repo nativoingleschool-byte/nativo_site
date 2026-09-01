@@ -296,6 +296,12 @@ export const translations: Record<Language, Dictionary> = {
     delete_only_this: 'Only this occurrence',
     delete_this_and_future: 'This and all future occurrences',
     available_remaining: 'Available remaining',
+    past_nfs_title: 'Invoice History (Past Months)',
+    no_past_nfs: 'No past invoices archived yet.',
+    past_nfs_desc: 'Invoices from previously paid months.',
+    view_past_nfs: 'View Past Invoices',
+    archived_badge: 'Archived',
+    invoice_paid_status: 'Paid ✓',
 
     // Student Panel Specific
     active_lesson_reminders: 'Active Lesson Reminders',
@@ -687,6 +693,12 @@ export const translations: Record<Language, Dictionary> = {
     delete_only_this: 'Somente esta ocorrência',
     delete_this_and_future: 'Esta e todas as próximas ocorrências',
     available_remaining: 'Disponível restante',
+    past_nfs_title: 'Histórico de Notas Fiscais (NFs Anteriores)',
+    no_past_nfs: 'Nenhuma Nota Fiscal anterior arquivada ainda.',
+    past_nfs_desc: 'Notas fiscais de meses anteriores já pagos.',
+    view_past_nfs: 'Ver Histórico de NFs',
+    archived_badge: 'Arquivada',
+    invoice_paid_status: 'Paga ✓',
 
     // Student Panel Specific
     active_lesson_reminders: 'Lembretes de Aulas Ativas',
@@ -1078,6 +1090,12 @@ export const translations: Record<Language, Dictionary> = {
     delete_only_this: 'Solo esta ocurrencia',
     delete_this_and_future: 'Esta y todas las próximas ocurrencias',
     available_remaining: 'Disponible restante',
+    past_nfs_title: 'Historial de Facturas (Meses Anteriores)',
+    no_past_nfs: 'Ninguna factura anterior archivada aún.',
+    past_nfs_desc: 'Facturas de meses anteriores ya pagados.',
+    view_past_nfs: 'Ver Historial de Facturas',
+    archived_badge: 'Archivada',
+    invoice_paid_status: 'Pagada ✓',
 
     // Student Panel Specific
     active_lesson_reminders: 'Recordatorios de Clases Activas',

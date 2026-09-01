@@ -138,5 +138,16 @@ export type TeacherAvailability = {
   created_at?: string
 }
 
+export type TeacherInvoice = {
+  id: string
+  teacher_id: string
+  month_key: string
+  amount?: number | null
+  file_url: string
+  file_name?: string | null
+  status?: string
+  created_at: string
+}
+
 
 

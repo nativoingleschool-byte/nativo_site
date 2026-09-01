@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       return json(res, 401, { error: 'Invalid session.' });
     }
 
-    const { status_nota_fiscal, nota_fiscal_url } = body || {};
+    const { status_nota_fiscal, nota_fiscal_url, month_key, amount, file_name } = body || {};
 
     const updatePayload = {
       status_nota_fiscal: status_nota_fiscal || 'enviada',
@@ -59,6 +59,22 @@ export default async function handler(req, res) {
 
     if (profileError) {
       return json(res, 400, { error: profileError.message });
+    }
+
+    if (nota_fiscal_url) {
+      const activeMonth = month_key || new Date().toISOString().slice(0, 7);
+      try {
+        await supabaseAdmin.from('teacher_invoices').insert({
+          teacher_id: user.id,
+          month_key: activeMonth,
+          file_url: nota_fiscal_url,
+          file_name: file_name || 'Nota_Fiscal.pdf',
+          amount: amount ? Number(amount) : null,
+          status: 'enviada',
+        });
+      } catch (invErr) {
+        console.warn('teacher_invoices insert warning:', invErr);
+      }
     }
 
     return json(res, 200, { success: true });

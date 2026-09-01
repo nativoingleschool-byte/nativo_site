@@ -1,6 +1,6 @@
 import { FormEvent, useState, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, UserFormState, TeacherNote } from '../lib/types'
+import { Lesson, Profile, UserFormState, TeacherNote, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -43,6 +43,8 @@ interface AdminStaffTabProps {
   refreshTeacherNotes?: () => Promise<void>
   profilesById?: Record<string, Profile>
   appTimeZone?: string
+  teacherInvoices?: TeacherInvoice[]
+  refreshTeacherInvoices?: () => Promise<void>
 }
 
 export default function AdminStaffTab({
@@ -66,6 +68,8 @@ export default function AdminStaffTab({
   refreshTeacherNotes,
   profilesById = {},
   appTimeZone = 'UTC',
+  teacherInvoices = [],
+  refreshTeacherInvoices,
 }: AdminStaffTabProps) {
   const { toast } = useToast()
 
@@ -143,13 +147,49 @@ export default function AdminStaffTab({
       setPaidMonthsByTeacher(updatedMap)
       localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(updatedMap))
 
+      // If marking as paid, archive the active NF to teacher_invoices and reset the teacher's profile NF status
+      const teacherObj = profiles.find((p) => p.id === teacherId) || profilesById[teacherId]
+      if (isPaid && teacherObj?.nota_fiscal_url) {
+        try {
+          await supabase.from('teacher_invoices').insert({
+            teacher_id: teacherId,
+            month_key: monthKey,
+            file_url: teacherObj.nota_fiscal_url,
+            file_name: `Nota_Fiscal_${monthKey}_${(teacherObj.full_name || 'Prof').replace(/\s+/g, '_')}.pdf`,
+            status: 'paga',
+          })
+        } catch (invErr) {
+          console.warn('Could not insert to teacher_invoices table:', invErr)
+        }
+
+        try {
+          await supabase.from('profiles').update({
+            status_nota_fiscal: 'pendente',
+            nota_fiscal_url: null,
+          }).eq('id', teacherId)
+        } catch (profErr) {
+          console.warn('Could not reset teacher profile NF:', profErr)
+        }
+
+        if (selectedTeacherForDetail && selectedTeacherForDetail.id === teacherId) {
+          setSelectedTeacherForDetail({
+            ...selectedTeacherForDetail,
+            status_nota_fiscal: 'pendente',
+            nota_fiscal_url: null,
+          })
+        }
+
+        await refreshTeacherInvoices?.()
+      }
+
       await handleUpdateTeacherPayout(teacherId, isPaid ? 'pago' : 'pendente')
+      await refreshProfiles()
 
       const monthLabel = getMonthLabel(monthKey, language)
       if (isPaid) {
         const nextMonth = getNextMonthKey(monthKey)
         const nextMonthLabel = getMonthLabel(nextMonth, language)
-        toast.success(`Mês ${monthLabel} marcado como PAGO! Agora exibindo ${nextMonthLabel}.`)
+        toast.success(`Mês ${monthLabel} marcado como PAGO! A tag de NF foi resetada e agora exibindo ${nextMonthLabel}.`)
         if (selectedTeacherForDetail?.id === teacherId) {
           setSelectedMonthKey(nextMonth)
         }
@@ -1431,10 +1471,10 @@ export default function AdminStaffTab({
                 </div>
               </div>
 
-              {/* NF Card (Secondary info) */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.3)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              {/* NF Card (Current Month) */}
+              <div style={{ background: 'rgba(30, 41, 59, 0.3)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Nota Fiscal (MEI):</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Nota Fiscal Mês Vigente ({activeMonthLabel}):</span>
                   <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
                     {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'Não se Aplica' : 'Pendente'}
                   </span>
@@ -1450,7 +1490,7 @@ export default function AdminStaffTab({
                         onClick={() => {
                           openFileFromDataOrUrl(
                             selectedTeacherForDetail.nota_fiscal_url!,
-                            `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                            `Nota_Fiscal_${activeMonthKey}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
                           )
                         }}
                       >
@@ -1463,7 +1503,7 @@ export default function AdminStaffTab({
                         onClick={() => {
                           downloadFileFromDataOrUrl(
                             selectedTeacherForDetail.nota_fiscal_url!,
-                            `Nota_Fiscal_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                            `Nota_Fiscal_${activeMonthKey}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
                           )
                         }}
                         title="Baixar arquivo da Nota Fiscal"
@@ -1488,12 +1528,25 @@ export default function AdminStaffTab({
                             status_nota_fiscal: 'enviada',
                             nota_fiscal_url: fileUrl
                           }).eq('id', selectedTeacherForDetail.id)
+                          try {
+                            await supabase.from('teacher_invoices').insert({
+                              teacher_id: selectedTeacherForDetail.id,
+                              month_key: activeMonthKey,
+                              file_url: fileUrl,
+                              file_name: file.name || `Nota_Fiscal_${activeMonthKey}.pdf`,
+                              amount: totalActiveAmount,
+                              status: 'enviada',
+                            })
+                          } catch (invErr) {
+                            console.warn('Could not insert to teacher_invoices:', invErr)
+                          }
                           setSelectedTeacherForDetail({
                             ...selectedTeacherForDetail,
                             status_nota_fiscal: 'enviada',
                             nota_fiscal_url: fileUrl
                           })
                           await refreshProfiles()
+                          await refreshTeacherInvoices?.()
                           toast.success(t(language, 'nf_upload_success'))
                         }
                         reader.readAsDataURL(file)
@@ -1502,6 +1555,100 @@ export default function AdminStaffTab({
                   </label>
                 </div>
               </div>
+
+              {/* Past NFs History Section */}
+              {(() => {
+                const pastInvoices = (teacherInvoices || []).filter((inv) => inv.teacher_id === selectedTeacherForDetail.id)
+                return (
+                  <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>📁</span>
+                        <strong style={{ fontSize: '0.92rem', color: '#fff' }}>
+                          {t(language, 'past_nfs_title')}
+                        </strong>
+                      </div>
+                      {pastInvoices.length > 0 && (
+                        <span style={{ fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>
+                          {pastInvoices.length} {pastInvoices.length === 1 ? 'nota arquivada' : 'notas arquivadas'}
+                        </span>
+                      )}
+                    </div>
+
+                    {pastInvoices.length === 0 ? (
+                      <p style={{ color: '#64748b', fontSize: '0.82rem', margin: '0.5rem 0 0.2rem' }}>
+                        {t(language, 'no_past_nfs')}
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        {pastInvoices.map((inv) => {
+                          const mLabel = getMonthLabel(inv.month_key, language)
+                          return (
+                            <div
+                              key={inv.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: '#090d16',
+                                border: '1px solid #334155',
+                                padding: '0.5rem 0.85rem',
+                                borderRadius: '0.65rem',
+                                flexWrap: 'wrap',
+                                gap: '0.5rem',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span style={{ color: '#a78bfa', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                  📅 {mLabel}
+                                </span>
+                                <span className="badge badge-confirmed" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
+                                  {inv.status === 'paga' ? t(language, 'invoice_paid_status') : t(language, 'archived_badge')}
+                                </span>
+                                {inv.created_at && (
+                                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                    • {new Date(inv.created_at).toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en')}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button
+                                  type="button"
+                                  className="secondary-button"
+                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                  onClick={() => {
+                                    openFileFromDataOrUrl(
+                                      inv.file_url,
+                                      inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                                    )
+                                  }}
+                                >
+                                  📄 Ver NF
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                                  onClick={() => {
+                                    downloadFileFromDataOrUrl(
+                                      inv.file_url,
+                                      inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                                    )
+                                  }}
+                                  title="Baixar arquivo da Nota Fiscal"
+                                >
+                                  ⬇️ Baixar
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* Monthly Lesson History / Registry that amounts are based on */}
               <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>

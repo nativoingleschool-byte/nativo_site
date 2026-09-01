@@ -17,6 +17,7 @@ import {
   UserFormState,
   TeacherNote,
   TeacherAvailability,
+  TeacherInvoice,
 } from './lib/types'
 import {
   formatShortDate,
@@ -548,6 +549,31 @@ function ReminderAppInner() {
     await refreshTeacherNotes()
   }
 
+  const [teacherInvoices, setTeacherInvoices] = useState<TeacherInvoice[]>([])
+
+  const refreshTeacherInvoices = async () => {
+    try {
+      const { data, error } = await supabase.from('teacher_invoices').select('*').order('created_at', { ascending: false })
+      if (!error && data) {
+        setTeacherInvoices(data as TeacherInvoice[])
+        try {
+          localStorage.setItem('nativo_teacher_invoices_cache', JSON.stringify(data))
+        } catch (e) {}
+      } else {
+        const cached = localStorage.getItem('nativo_teacher_invoices_cache')
+        if (cached) setTeacherInvoices(JSON.parse(cached))
+      }
+    } catch (err) {
+      console.warn('Error loading teacher_invoices:', err)
+      const cached = localStorage.getItem('nativo_teacher_invoices_cache')
+      if (cached) {
+        try {
+          setTeacherInvoices(JSON.parse(cached))
+        } catch (e) {}
+      }
+    }
+  }
+
   const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>([])
 
   const refreshAvailabilities = async () => {
@@ -706,6 +732,7 @@ function ReminderAppInner() {
           await refreshProfiles()
           await refreshTeacherNotes()
           await refreshAvailabilities()
+          await refreshTeacherInvoices()
           if (currentProfile.role === 'admin') {
             await refreshInvoices()
           }
@@ -1736,6 +1763,8 @@ function ReminderAppInner() {
                 refreshTeacherNotes={refreshTeacherNotes}
                 profilesById={profilesById}
                 appTimeZone={appTimeZone}
+                teacherInvoices={teacherInvoices}
+                refreshTeacherInvoices={refreshTeacherInvoices}
               />
             )}
 
@@ -1811,6 +1840,8 @@ function ReminderAppInner() {
             onCreateAvailability={createAvailability}
             onDeleteAvailability={deleteAvailability}
             refreshAvailabilities={refreshAvailabilities}
+            teacherInvoices={teacherInvoices}
+            refreshTeacherInvoices={refreshTeacherInvoices}
           />
         )}
       </main>
