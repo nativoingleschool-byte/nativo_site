@@ -264,55 +264,12 @@ export const getBlobUrlFromDataOrHttp = (dataOrHttpUrl: string): { blobUrl: stri
 }
 
 /**
- * Safely opens a file in a new browser tab/window.
- * Handles data: URLs by converting to origin-scoped blob URLs to prevent "about:blank" / "Untitled" issues.
- */
-export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 'Nota_Fiscal.pdf'): void => {
-  if (!dataOrHttpUrl) return
-
-  const { blobUrl, isBlob, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
-
-  const extension = mimeType.includes('png')
-    ? '.png'
-    : mimeType.includes('jpeg') || mimeType.includes('jpg')
-    ? '.jpg'
-    : mimeType.includes('image')
-    ? '.img'
-    : '.pdf'
-
-  const fileName = fallbackFileName.endsWith(extension)
-    ? fallbackFileName
-    : `${fallbackFileName.replace(/\.[^/.]+$/, '')}${extension}`
-
-  try {
-    const win = window.open(blobUrl, '_blank')
-    if (!win || win.closed || typeof win.closed === 'undefined') {
-      // Popup was blocked or window could not be opened: fallback to downloading
-      downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
-      return
-    }
-
-    if (isBlob) {
-      // Revoke blob URL after 2 minutes to free memory while allowing preview to load
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(blobUrl)
-        } catch {}
-      }, 120000)
-    }
-  } catch (err) {
-    console.error('Error opening window for file:', err)
-    downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
-  }
-}
-
-/**
- * Downloads a file directly to the user's computer.
+ * Downloads a file directly to the user's computer without opening blank tabs.
  */
 export const downloadFileFromDataOrUrl = (dataOrHttpUrl: string, fileName = 'Nota_Fiscal.pdf'): void => {
   if (!dataOrHttpUrl) return
 
-  const { blobUrl, isBlob, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
+  const { blobUrl, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
 
   const extension = mimeType.includes('png')
     ? '.png'
@@ -330,22 +287,208 @@ export const downloadFileFromDataOrUrl = (dataOrHttpUrl: string, fileName = 'Not
     const a = document.createElement('a')
     a.href = blobUrl
     a.download = safeFileName
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
+    a.style.display = 'none'
     document.body.appendChild(a)
     a.click()
-    document.body.removeChild(a)
-
-    if (isBlob) {
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(blobUrl)
-        } catch {}
-      }, 60000)
-    }
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a)
+      } catch {}
+    }, 1000)
   } catch (err) {
     console.error('Error triggering download:', err)
     window.open(dataOrHttpUrl, '_blank')
+  }
+}
+
+/**
+ * Safely opens a file in a dedicated preview tab with an integrated top bar and download button.
+ * Preserves the Blob URL so that both the top bar download button and the browser's native save button work 100%.
+ */
+export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 'Nota_Fiscal.pdf'): void => {
+  if (!dataOrHttpUrl) return
+
+  const { blobUrl, mimeType } = getBlobUrlFromDataOrHttp(dataOrHttpUrl)
+
+  const extension = mimeType.includes('png')
+    ? '.png'
+    : mimeType.includes('jpeg') || mimeType.includes('jpg')
+    ? '.jpg'
+    : mimeType.includes('image')
+    ? '.img'
+    : '.pdf'
+
+  const fileName = fallbackFileName.endsWith(extension)
+    ? fallbackFileName
+    : `${fallbackFileName.replace(/\.[^/.]+$/, '')}${extension}`
+
+  try {
+    const newWin = window.open('', '_blank')
+    if (!newWin) {
+      // If popup blocker blocked the new tab, fallback directly to downloading
+      downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
+      return
+    }
+
+    const isPdf = mimeType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf')
+    const isImage = mimeType.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(fileName)
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${fileName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; background: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+    .header-bar {
+      height: 52px;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      z-index: 10;
+      position: relative;
+    }
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .btn-download {
+      background: #0284c7;
+      color: #ffffff;
+      border: 1px solid #0369a1;
+      padding: 0.45rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-download:hover {
+      background: #0369a1;
+    }
+    .btn-print {
+      background: rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 0.45rem 0.85rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-print:hover {
+      background: #334155;
+    }
+    .main-view {
+      height: calc(100% - 52px);
+      width: 100%;
+      position: relative;
+      background: #1e293b;
+    }
+    iframe, object, embed {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .image-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .image-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="file-info">
+      <span>📄</span>
+      <span>${fileName}</span>
+    </div>
+    <div class="actions">
+      <button class="btn-print" onclick="window.printDoc()">🖨️ Imprimir</button>
+      <button id="dlBtn" class="btn-download" onclick="window.downloadDoc()">⬇️ Baixar Arquivo</button>
+    </div>
+  </div>
+  <div class="main-view">
+    ${
+      isPdf
+        ? '<iframe id="fileFrame" src="' + blobUrl + '#toolbar=1&navpanes=1" type="application/pdf"></iframe>'
+        : isImage
+        ? '<div class="image-wrapper"><img src="' + blobUrl + '" alt="' + fileName + '" /></div>'
+        : '<iframe id="fileFrame" src="' + blobUrl + '"></iframe>'
+    }
+  </div>
+  <script>
+    window.downloadDoc = function() {
+      var a = document.createElement('a');
+      a.href = "${blobUrl}";
+      a.download = "${fileName}";
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() {
+        try { document.body.removeChild(a); } catch(e) {}
+      }, 1000);
+    };
+
+    window.printDoc = function() {
+      var frame = document.getElementById('fileFrame');
+      if (frame && frame.contentWindow) {
+        try {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+        } catch(e) {
+          window.print();
+        }
+      } else {
+        window.print();
+      }
+    };
+  </script>
+</body>
+</html>`
+
+    newWin.document.open()
+    newWin.document.write(htmlContent)
+    newWin.document.close()
+  } catch (err) {
+    console.error('Error opening viewer window for file:', err)
+    downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
   }
 }
 
