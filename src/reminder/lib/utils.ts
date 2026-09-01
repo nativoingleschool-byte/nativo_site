@@ -231,6 +231,8 @@ export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLesso
   return sessions.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
 }
 
+const blobCache = new Map<string, string>()
+
 /**
  * Safely converts a base64 data URL, blob URL, or regular HTTP URL into a Blob URL
  * that can be opened in a new tab or downloaded without browser security blocks.
@@ -241,18 +243,24 @@ export const getBlobUrlFromDataOrHttp = (dataOrHttpUrl: string): { blobUrl: stri
   }
 
   if (dataOrHttpUrl.startsWith('data:')) {
+    const mimeMatch = dataOrHttpUrl.split(',')[0].match(/data:(.*?);/)
+    const mimeType = (mimeMatch ? mimeMatch[1] : 'application/pdf').toLowerCase()
+
+    if (blobCache.has(dataOrHttpUrl)) {
+      return { blobUrl: blobCache.get(dataOrHttpUrl)!, isBlob: true, mimeType }
+    }
+
     try {
       const parts = dataOrHttpUrl.split(',')
-      const mimeMatch = parts[0].match(/data:(.*?);/)
-      const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf'
       const base64Data = (parts[1] || '').trim().replace(/\s/g, '')
       const byteCharacters = atob(base64Data)
       const byteNumbers = new Uint8Array(byteCharacters.length)
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i)
       }
-      const blob = new Blob([byteNumbers], { type: mimeType })
+      const blob = new Blob([byteNumbers.buffer], { type: mimeType || 'application/pdf' })
       const blobUrl = URL.createObjectURL(blob)
+      blobCache.set(dataOrHttpUrl, blobUrl)
       return { blobUrl, isBlob: true, mimeType }
     } catch (err) {
       console.error('Failed to parse data URL into Blob:', err)
@@ -294,7 +302,7 @@ export const downloadFileFromDataOrUrl = (dataOrHttpUrl: string, fileName = 'Not
       try {
         document.body.removeChild(a)
       } catch {}
-    }, 1000)
+    }, 2000)
   } catch (err) {
     console.error('Error triggering download:', err)
     window.open(dataOrHttpUrl, '_blank')
@@ -302,8 +310,8 @@ export const downloadFileFromDataOrUrl = (dataOrHttpUrl: string, fileName = 'Not
 }
 
 /**
- * Safely opens a file in a dedicated preview tab with an integrated top bar and download button.
- * Preserves the Blob URL so that both the top bar download button and the browser's native save button work 100%.
+ * Safely opens a file directly in the browser's native PDF/image viewer tab.
+ * Keeps the Blob in memory so the browser's native Save/Download button works 100%.
  */
 export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 'Nota_Fiscal.pdf'): void => {
   if (!dataOrHttpUrl) return
@@ -323,172 +331,15 @@ export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 
     : `${fallbackFileName.replace(/\.[^/.]+$/, '')}${extension}`
 
   try {
-    const newWin = window.open('', '_blank')
-    if (!newWin) {
+    const win = window.open(blobUrl, '_blank')
+    if (!win || win.closed || typeof win.closed === 'undefined') {
       // If popup blocker blocked the new tab, fallback directly to downloading
       downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
-      return
     }
-
-    const isPdf = mimeType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf')
-    const isImage = mimeType.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(fileName)
-
-    const htmlContent = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${fileName}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; width: 100%; overflow: hidden; background: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
-    .header-bar {
-      height: 52px;
-      background: #0f172a;
-      border-bottom: 1px solid #1e293b;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.25rem;
-      z-index: 10;
-      position: relative;
-    }
-    .file-info {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.92rem;
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .actions {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .btn-download {
-      background: #0284c7;
-      color: #ffffff;
-      border: 1px solid #0369a1;
-      padding: 0.45rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-download:hover {
-      background: #0369a1;
-    }
-    .btn-print {
-      background: rgba(51, 65, 85, 0.6);
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      padding: 0.45rem 0.85rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-print:hover {
-      background: #334155;
-    }
-    .main-view {
-      height: calc(100% - 52px);
-      width: 100%;
-      position: relative;
-      background: #1e293b;
-    }
-    iframe, object, embed {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-    }
-    .image-wrapper {
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-    }
-    .image-wrapper img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 0.5rem;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  <div class="header-bar">
-    <div class="file-info">
-      <span>📄</span>
-      <span>${fileName}</span>
-    </div>
-    <div class="actions">
-      <button class="btn-print" onclick="window.printDoc()">🖨️ Imprimir</button>
-      <button id="dlBtn" class="btn-download" onclick="window.downloadDoc()">⬇️ Baixar Arquivo</button>
-    </div>
-  </div>
-  <div class="main-view">
-    ${
-      isPdf
-        ? '<iframe id="fileFrame" src="' + blobUrl + '#toolbar=1&navpanes=1" type="application/pdf"></iframe>'
-        : isImage
-        ? '<div class="image-wrapper"><img src="' + blobUrl + '" alt="' + fileName + '" /></div>'
-        : '<iframe id="fileFrame" src="' + blobUrl + '"></iframe>'
-    }
-  </div>
-  <script>
-    window.downloadDoc = function() {
-      var a = document.createElement('a');
-      a.href = "${blobUrl}";
-      a.download = "${fileName}";
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function() {
-        try { document.body.removeChild(a); } catch(e) {}
-      }, 1000);
-    };
-
-    window.printDoc = function() {
-      var frame = document.getElementById('fileFrame');
-      if (frame && frame.contentWindow) {
-        try {
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
-        } catch(e) {
-          window.print();
-        }
-      } else {
-        window.print();
-      }
-    };
-  </script>
-</body>
-</html>`
-
-    newWin.document.open()
-    newWin.document.write(htmlContent)
-    newWin.document.close()
   } catch (err) {
-    console.error('Error opening viewer window for file:', err)
+    console.error('Error opening window for file:', err)
     downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
   }
 }
+
 
