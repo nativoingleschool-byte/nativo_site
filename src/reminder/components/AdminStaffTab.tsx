@@ -687,17 +687,17 @@ export default function AdminStaffTab({
           <div
             className="form-card animate-fade-in"
             style={{
-              maxWidth: '1020px',
-              width: '100%',
+              maxWidth: '1240px',
+              width: '95vw',
               maxHeight: '90vh',
               overflowY: 'auto',
               background: '#0f172a',
               border: '1px solid #1e293b',
               borderRadius: '1.5rem',
-              padding: '2rem',
+              padding: '1.5rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>👥</span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
@@ -715,16 +715,16 @@ export default function AdminStaffTab({
             </div>
 
             <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '0.5rem' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-                    <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
-                    <th style={{ padding: '1rem' }}>Email</th>
-                    <th style={{ padding: '1rem' }}>{t(language, 'role_label').split(' ')[0]}</th>
-                    <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
-                    <th style={{ padding: '1rem' }}>Chave PIX</th>
-                    <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
-                    <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
+                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.8rem' }}>
+                    <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'full_name')}</th>
+                    <th style={{ padding: '0.65rem 0.75rem' }}>Email</th>
+                    <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'role_label').split(' ')[0]}</th>
+                    <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>CPF/CNPJ</th>
+                    <th style={{ padding: '0.65rem 0.75rem' }}>Chave PIX</th>
+                    <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'rate_hour')}</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'right', whiteSpace: 'nowrap' }}>{t(language, 'actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -735,8 +735,8 @@ export default function AdminStaffTab({
                       const currency = staff.moeda_taxa ?? 'BRL'
 
                       return (
-                        <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                          <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                        <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.85rem' }}>
+                          <td style={{ padding: '0.65rem 0.75rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                             {staff.role === 'teacher' ? (
                               <button
                                 type="button"
@@ -752,22 +752,22 @@ export default function AdminStaffTab({
                               staff.full_name
                             )}
                           </td>
-                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
-                          <td style={{ padding: '1rem' }}>
-                            <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
+                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', wordBreak: 'break-all' }}>{staff.email}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>
+                            <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')} style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem' }}>
                               {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
                             </span>
                           </td>
-                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || '-'}</td>
-                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || '-'}</td>
-                          <td style={{ padding: '1rem' }}>
+                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{staff.cnpj || '-'}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', wordBreak: 'break-all' }}>{staff.chave_pix || '-'}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap', color: '#cbd5e1' }}>
                             {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
                           </td>
-                          <td style={{ padding: '1rem', textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          <td style={{ padding: '0.65rem 0.75rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'nowrap', alignItems: 'center' }}>
                               <button
                                 className="secondary-button"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', borderColor: '#38bdf8', color: '#38bdf8', whiteSpace: 'nowrap' }}
                                 onClick={() => {
                                   setChangePasswordStaff(staff)
                                   setNewPasswordValue('')
@@ -778,7 +778,7 @@ export default function AdminStaffTab({
                               </button>
                               <button
                                 className="secondary-button"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
                                 onClick={() => {
                                   setSavingUserId(staff.id)
                                   const initial = {
@@ -805,7 +805,7 @@ export default function AdminStaffTab({
                               </button>
                               <button
                                 className="secondary-button"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
+                                style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', whiteSpace: 'nowrap' }}
                                 onClick={() => void handleDeleteUser(staff.id)}
                               >
                                 {t(language, 'delete')}
