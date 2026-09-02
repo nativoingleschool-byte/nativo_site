@@ -1023,7 +1023,7 @@ export default function AdminStaffTab({
                 (l) => l.teacher_id === teacher.id && l.starts_at && l.starts_at.slice(0, 7) === teacherActiveMonth
               )
               const sessions = groupLessonsIntoTeacherSessions(teacherMonthLessons)
-              const completedSessions = sessions.filter((s) => s.is_happened)
+              const completedSessions = sessions.filter((s) => s.is_happened || s.is_no_show)
               const activeSessions = sessions.filter((s) => !s.is_cancelled)
               const scheduledOnlySessions = activeSessions.filter((s) => s.is_scheduled)
 
@@ -1286,9 +1286,9 @@ export default function AdminStaffTab({
 
         const monthSessions = groupLessonsIntoTeacherSessions(monthLessons)
 
-        const completedSessions = monthSessions.filter(s => s.is_happened)
-        const activeSessions = monthSessions.filter(s => !s.is_cancelled)
-        const scheduledOnlySessions = activeSessions.filter(s => s.is_scheduled)
+        const completedSessions = monthSessions.filter((s) => s.is_happened || s.is_no_show)
+        const activeSessions = monthSessions.filter((s) => !s.is_cancelled)
+        const scheduledOnlySessions = activeSessions.filter((s) => s.is_scheduled)
 
         const completedMinutes = completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
         const completedHours = completedMinutes / 60

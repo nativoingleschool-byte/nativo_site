@@ -270,6 +270,10 @@ export default function TeacherPanel({
     [monthLessons]
   )
 
+  const payableSessions = useMemo(
+    () => monthSessions.filter((s) => s.is_happened || s.is_no_show),
+    [monthSessions]
+  )
   const completedSessions = useMemo(
     () => monthSessions.filter((s) => s.is_happened),
     [monthSessions]
@@ -284,8 +288,8 @@ export default function TeacherPanel({
   )
 
   const totalMinutes = useMemo(
-    () => completedSessions.reduce((acc, s) => acc + s.duration_minutes, 0),
-    [completedSessions]
+    () => payableSessions.reduce((acc, s) => acc + s.duration_minutes, 0),
+    [payableSessions]
   )
   const totalHours = totalMinutes / 60
   const hourlyRate = profile.taxa_hora_aula ?? 56.0
@@ -838,7 +842,7 @@ export default function TeacherPanel({
                     {t(language, 'classes_conducted')}
                   </span>
                   <strong style={{ fontSize: '1.3rem', color: '#fff' }}>
-                    {completedSessions.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthSessions.length}</span>
+                    {payableSessions.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthSessions.length}</span>
                   </strong>
                 </div>
 
@@ -949,8 +953,9 @@ export default function TeacherPanel({
                   const isNotHappened = session.is_cancelled
                   const isScheduled = session.is_scheduled
 
+                  const isPayable = isHappened || isNoShow
                   const sessionHours = (session.duration_minutes || 60) / 60
-                  const sessionValue = isHappened ? sessionHours * Number(hourlyRate) : 0
+                  const sessionValue = isPayable ? sessionHours * Number(hourlyRate) : 0
                   const allLessonIds = session.lessons.map((l) => l.id)
 
                   return (
@@ -962,8 +967,8 @@ export default function TeacherPanel({
                         flexDirection: 'column',
                         gap: '0.75rem',
                         padding: '1rem',
-                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : 'rgba(15, 23, 42, 0.6)',
-                        border: isHappened ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(148, 163, 184, 0.12)',
+                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : isNoShow ? 'rgba(245, 158, 11, 0.05)' : 'rgba(15, 23, 42, 0.6)',
+                        border: isHappened ? '1px solid rgba(16, 185, 129, 0.2)' : isNoShow ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(148, 163, 184, 0.12)',
                         borderRadius: '0.85rem',
                       }}
                     >
@@ -1000,7 +1005,7 @@ export default function TeacherPanel({
                             {isHappened ? `${t(language, 'status_happened')}` : isNoShow ? t(language, 'status_student_noshow') : isNotHappened ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
                           </span>
 
-                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isHappened ? '#10b981' : '#64748b' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isPayable ? '#10b981' : '#64748b' }}>
                             {currency === 'BRL' ? 'R$' : currency} {sessionValue.toFixed(2)}
                           </span>
                         </div>
