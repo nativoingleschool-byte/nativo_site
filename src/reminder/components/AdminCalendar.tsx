@@ -970,26 +970,29 @@ export default function AdminCalendar({
                   }
 
                   const layout = groupLayouts[group.key] ?? { column: 0, totalColumns: 1 }
+                  const isNarrow = layout.totalColumns > 1
                   if (startIndex < 0 || startIndex >= slotCount) return null
 
                   return (
                     <button
                       key={group.key}
                       type="button"
-                      className={`calendar-event ${eventClass}`}
+                      className={`calendar-event ${eventClass}${isNarrow ? ' calendar-event--narrow' : ''}`}
                       style={{
                         gridRow: `${startIndex + 1} / span ${span}`,
-                        width: `calc(${100 / layout.totalColumns}% - 8px)`,
-                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
+                        width: `calc(${100 / layout.totalColumns}% - 6px)`,
+                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 3px)`,
                       }}
                       title={`${group.subject} • ${studentsForGroup.join(', ')} ${t(language, 'with_word')} ${teacherName} (${statusLabel})`}
                       onClick={() => openEdit(group)}
                     >
                       <div className="calendar-event-header">
                         <strong className="calendar-event-title">{group.subject}</strong>
-                        <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
+                        {!isNarrow && (
+                          <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
+                        )}
                       </div>
-                      {span > 1 && (
+                      {span > 1 && !isNarrow && (
                         <div className="calendar-event-details">
                           <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
                           <span className="muted tiny-copy calendar-event-sub">
@@ -1014,16 +1017,17 @@ export default function AdminCalendar({
                   const teacherProfile = profilesById[segment.parent_availability.teacher_id]
                   const conflictLesson = segment.lesson
                   const layout = availabilityLayouts[segment.key] ?? { column: 0, totalColumns: 1 }
+                  const isNarrow = layout.totalColumns > 1
 
                   return (
                     <button
                       key={segment.key}
                       type="button"
-                      className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}`}
+                      className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}${isNarrow ? ' calendar-event--narrow' : ''}`}
                       style={{
                         gridRow: `${startIndex + 1} / span ${span}`,
-                        width: `calc(${100 / layout.totalColumns}% - 8px)`,
-                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
+                        width: `calc(${100 / layout.totalColumns}% - 6px)`,
+                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 3px)`,
                       }}
                       onClick={() => openViewAvailability(segment.parent_availability)}
                       title={
@@ -1036,9 +1040,11 @@ export default function AdminCalendar({
                         <strong className="calendar-event-title" style={{ color: isBooked ? '#c7d2fe' : '#34d399' }}>
                           {isBooked && conflictLesson ? `🟣 ${conflictLesson.subject || t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
                         </strong>
-                        <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
+                        {!isNarrow && (
+                          <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
+                        )}
                       </div>
-                      {span > 1 && (
+                      {span > 1 && !isNarrow && (
                         <div className="calendar-event-details">
                           {isBooked && conflictLesson ? (
                             <>

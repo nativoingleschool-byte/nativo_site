@@ -907,6 +907,34 @@ body:has(.reminder-app-scope) {
   box-sizing: border-box;
 }
 
+/* Narrow variant: used when multiple events share the same time slot */
+.calendar-event--narrow {
+  padding: 2px 4px;
+  border-radius: 7px;
+  gap: 0;
+}
+
+.calendar-event--narrow .calendar-event-title {
+  font-size: 0.68rem;
+}
+
+.calendar-event--narrow .calendar-event-details {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .calendar-event {
+    padding: 2px 5px;
+    border-radius: 8px;
+  }
+  .calendar-event-title {
+    font-size: 0.72rem;
+  }
+  .calendar-event--narrow .calendar-event-title {
+    font-size: 0.62rem;
+  }
+}
+
 .calendar-event-header {
   display: flex;
   align-items: center;
