@@ -82,6 +82,8 @@ export default function AdminStaffTab({
 
   const [initialUserForm, setInitialUserForm] = useState<UserFormState | null>(null)
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false)
+  const [showStaffListModal, setShowStaffListModal] = useState(false)
   const activeCardRef = useRef<HTMLDivElement | null>(null)
   const editStaffCardRef = useRef<HTMLDivElement>(null)
   const changePasswordCardRef = useRef<HTMLDivElement>(null)
@@ -301,6 +303,7 @@ export default function AdminStaffTab({
       toast.success(t(language, 'staff_member_added').replace('{name}', created.full_name))
       setUserForm(defaultUserForm())
       await refreshProfiles()
+      setShowAddStaffModal(false)
     } catch (err: any) {
       setAppError(err.message || 'Erro ao adicionar membro da equipe.')
     }
@@ -308,6 +311,29 @@ export default function AdminStaffTab({
 
   return (
     <>
+      {/* Top Action Buttons: Add Staff Member & Staff Member List */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="button"
+          className="primary-button"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, background: '#0284c7' }}
+          onClick={() => setShowAddStaffModal(true)}
+        >
+          <span>➕</span>
+          <span>{t(language, 'add_staff_title')}</span>
+        </button>
+
+        <button
+          type="button"
+          className="secondary-button"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, borderColor: '#38bdf8', color: '#38bdf8' }}
+          onClick={() => setShowStaffListModal(true)}
+        >
+          <span>👥</span>
+          <span>{t(language, 'staff_list_title')}</span>
+        </button>
+      </div>
+
       {/* Teacher Notes & Justifications Box */}
       <div
         className="form-card mb-6 animate-slide-up"
@@ -482,212 +508,320 @@ export default function AdminStaffTab({
         )}
       </div>
 
-      {/* Add New Staff Section */}
-      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'add_staff_title')}</h3>
-        <form 
-          onSubmit={handleAddStaffSubmit} 
-          className="form-grid" 
-          style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+      {/* Add Staff Member Modal */}
+      {showAddStaffModal && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            background: 'rgba(2, 6, 23, 0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            overflowY: 'auto',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddStaffModal(false)
+          }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'full_name')}</label>
-            <input
-              required
-              type="text"
-              placeholder={t(language, 'full_name')}
-              value={userForm.full_name}
-              onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email</label>
-            <input
-              required
-              type="email"
-              placeholder="Email"
-              value={userForm.email}
-              onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'password')}</label>
-            <input
-              required
-              type="password"
-              placeholder={t(language, 'password')}
-              value={userForm.password}
-              onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'role_label')}</label>
-            <select
-              value={userForm.role === 'student' ? 'teacher' : userForm.role}
-              onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+          <div
+            className="form-card animate-fade-in"
+            style={{
+              maxWidth: '680px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
+              borderRadius: '1.5rem',
+              padding: '2rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.3rem' }}>➕</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                  {t(language, 'add_staff_title')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                onClick={() => setShowAddStaffModal(false)}
+              >
+                ✕ {t(language, 'close')}
+              </button>
+            </div>
+
+            <form 
+              onSubmit={handleAddStaffSubmit} 
+              className="form-grid" 
+              style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
             >
-              <option value="teacher">Professor (Teacher)</option>
-              <option value="admin">Administrador (Admin)</option>
-            </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'full_name')}</label>
+                <input
+                  required
+                  type="text"
+                  placeholder={t(language, 'full_name')}
+                  value={userForm.full_name}
+                  onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email</label>
+                <input
+                  required
+                  type="email"
+                  placeholder="Email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'password')}</label>
+                <input
+                  required
+                  type="password"
+                  placeholder={t(language, 'password')}
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'role_label')}</label>
+                <select
+                  value={userForm.role === 'student' ? 'teacher' : userForm.role}
+                  onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                >
+                  <option value="teacher">Professor (Teacher)</option>
+                  <option value="admin">Administrador (Admin)</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'speciality_label')}</label>
+                <input
+                  type="text"
+                  placeholder="E.g. Business, TOEFL"
+                  value={userForm.speciality}
+                  onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'pix_label')}</label>
+                <input
+                  type="text"
+                  placeholder="Celular, E-mail, CPF..."
+                  value={userForm.chave_pix || ''}
+                  onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'cnpj_label')}</label>
+                <input
+                  type="text"
+                  placeholder="CNPJ ou CPF"
+                  value={userForm.cnpj || ''}
+                  onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'value_hour_label')}</label>
+                <input
+                  type="number"
+                  placeholder="Valor hora aula"
+                  value={userForm.taxa_hora_aula || ''}
+                  onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                <button type="submit" className="primary-button" style={{ width: '100%', padding: '0.75rem 1rem' }}>
+                  {t(language, 'add_staff_btn')}
+                </button>
+              </div>
+            </form>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'speciality_label')}</label>
-            <input
-              type="text"
-              placeholder="E.g. Business, TOEFL"
-              value={userForm.speciality}
-              onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'pix_label')}</label>
-            <input
-              type="text"
-              placeholder="Celular, E-mail, CPF..."
-              value={userForm.chave_pix || ''}
-              onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'cnpj_label')}</label>
-            <input
-              type="text"
-              placeholder="CNPJ ou CPF"
-              value={userForm.cnpj || ''}
-              onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'value_hour_label')}</label>
-            <input
-              type="number"
-              placeholder="Valor hora aula"
-              value={userForm.taxa_hora_aula || ''}
-              onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
-              style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: 'span 1' }}>
-            <button type="submit" className="primary-button" style={{ width: '100%', padding: '0.6rem 1rem' }}>
-              {t(language, 'add_staff_btn')}
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>,
+        document.body
+      )}
 
-      {/* Staff list table */}
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>{t(language, 'staff_list_title')}</h3>
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem', marginBottom: '2.5rem' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
-              <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
-              <th style={{ padding: '1rem' }}>Email</th>
-              <th style={{ padding: '1rem' }}>{t(language, 'role_label').split(' ')[0]}</th>
-              <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
-              <th style={{ padding: '1rem' }}>Chave PIX</th>
-              <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
-              <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {profiles
-              .filter((p) => p.role === 'admin' || p.role === 'teacher')
-              .map((staff) => {
-                const hourlyRate = staff.taxa_hora_aula ?? (staff.role === 'teacher' ? 56.00 : 0)
-                const currency = staff.moeda_taxa ?? 'BRL'
+      {/* Staff Member List Modal */}
+      {showStaffListModal && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            background: 'rgba(2, 6, 23, 0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            overflowY: 'auto',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowStaffListModal(false)
+          }}
+        >
+          <div
+            className="form-card animate-fade-in"
+            style={{
+              maxWidth: '1020px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
+              borderRadius: '1.5rem',
+              padding: '2rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.3rem' }}>👥</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                  {t(language, 'staff_list_title')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                onClick={() => setShowStaffListModal(false)}
+              >
+                ✕ {t(language, 'close')}
+              </button>
+            </div>
 
-                return (
-                  <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                      {staff.role === 'teacher' ? (
-                        <button
-                          type="button"
-                          style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
-                          onClick={() => {
-                            setSelectedTeacherForDetail(staff)
-                            setSelectedMonthKey('')
-                          }}
-                        >
-                          {staff.full_name}
-                        </button>
-                      ) : (
-                        staff.full_name
-                      )}
-                    </td>
-                    <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
-                    <td style={{ padding: '1rem' }}>
-                      <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
-                        {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || '-'}</td>
-                    <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || '-'}</td>
-                    <td style={{ padding: '1rem' }}>
-                      {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
-                    </td>
-                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                        <button
-                          className="secondary-button"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#38bdf8', color: '#38bdf8' }}
-                          onClick={() => {
-                            setChangePasswordStaff(staff)
-                            setNewPasswordValue('')
-                            setConfirmPasswordValue('')
-                          }}
-                        >
-                          {t(language, 'change_password')}
-                        </button>
-                        <button
-                          className="secondary-button"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                          onClick={() => {
-                            setSavingUserId(staff.id)
-                            const initial = {
-                              id: staff.id,
-                              email: staff.email,
-                              full_name: staff.full_name,
-                              role: staff.role,
-                              class_name: '',
-                              speciality: staff.speciality || '',
-                              password: '',
-                              chave_pix: staff.chave_pix || '',
-                              cnpj: staff.cnpj || '',
-                              taxa_hora_aula: Number(staff.taxa_hora_aula || 56.00),
-                              cpf: '',
-                              data_pagamento_preferencial: 5,
-                              first_class_at: '',
-                              first_class_teacher_id: ''
-                            }
-                            setUserForm(initial)
-                            setInitialUserForm(initial)
-                          }}
-                        >
-                          {t(language, 'edit')}
-                        </button>
-                        <button
-                          className="secondary-button"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
-                          onClick={() => void handleDeleteUser(staff.id)}
-                        >
-                          {t(language, 'delete')}
-                        </button>
-                      </div>
-                    </td>
+            <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '0.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+                    <th style={{ padding: '1rem' }}>{t(language, 'full_name')}</th>
+                    <th style={{ padding: '1rem' }}>Email</th>
+                    <th style={{ padding: '1rem' }}>{t(language, 'role_label').split(' ')[0]}</th>
+                    <th style={{ padding: '1rem' }}>CPF/CNPJ</th>
+                    <th style={{ padding: '1rem' }}>Chave PIX</th>
+                    <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
+                    <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
                   </tr>
-                )
-              })}
-          </tbody>
-        </table>
-      </div>
+                </thead>
+                <tbody>
+                  {profiles
+                    .filter((p) => p.role === 'admin' || p.role === 'teacher')
+                    .map((staff) => {
+                      const hourlyRate = staff.taxa_hora_aula ?? (staff.role === 'teacher' ? 56.00 : 0)
+                      const currency = staff.moeda_taxa ?? 'BRL'
+
+                      return (
+                        <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                          <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                            {staff.role === 'teacher' ? (
+                              <button
+                                type="button"
+                                style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                                onClick={() => {
+                                  setSelectedTeacherForDetail(staff)
+                                  setSelectedMonthKey('')
+                                }}
+                              >
+                                {staff.full_name}
+                              </button>
+                            ) : (
+                              staff.full_name
+                            )}
+                          </td>
+                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.email}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')}>
+                              {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.cnpj || '-'}</td>
+                          <td style={{ padding: '1rem', color: '#94a3b8' }}>{staff.chave_pix || '-'}</td>
+                          <td style={{ padding: '1rem' }}>
+                            {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
+                          </td>
+                          <td style={{ padding: '1rem', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                              <button
+                                className="secondary-button"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                onClick={() => {
+                                  setChangePasswordStaff(staff)
+                                  setNewPasswordValue('')
+                                  setConfirmPasswordValue('')
+                                }}
+                              >
+                                {t(language, 'change_password')}
+                              </button>
+                              <button
+                                className="secondary-button"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                onClick={() => {
+                                  setSavingUserId(staff.id)
+                                  const initial = {
+                                    id: staff.id,
+                                    email: staff.email,
+                                    full_name: staff.full_name,
+                                    role: staff.role,
+                                    class_name: '',
+                                    speciality: staff.speciality || '',
+                                    password: '',
+                                    chave_pix: staff.chave_pix || '',
+                                    cnpj: staff.cnpj || '',
+                                    taxa_hora_aula: Number(staff.taxa_hora_aula || 56.00),
+                                    cpf: '',
+                                    data_pagamento_preferencial: 5,
+                                    first_class_at: '',
+                                    first_class_teacher_id: ''
+                                  }
+                                  setUserForm(initial)
+                                  setInitialUserForm(initial)
+                                }}
+                              >
+                                {t(language, 'edit')}
+                              </button>
+                              <button
+                                className="secondary-button"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: '#ef4444', color: '#ef4444' }}
+                                onClick={() => void handleDeleteUser(staff.id)}
+                              >
+                                {t(language, 'delete')}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Edit Modal Overlay */}
       {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && createPortal(
