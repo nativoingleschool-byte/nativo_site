@@ -6,6 +6,7 @@ import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, gr
 import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
 import { useToast } from '../lib/toast'
+import DateTimePicker from './DateTimePicker'
 
 interface TeacherPanelProps {
   language: Language
@@ -33,6 +34,7 @@ interface TeacherPanelProps {
     starts_at: string
     duration_minutes: number
   }) => Promise<void>
+  onDeleteLessonGroup?: (lessonIds: string[]) => Promise<void>
   createStudentLoginFromCalendar: (draft: {
     full_name: string
     email: string
@@ -103,6 +105,7 @@ export default function TeacherPanel({
   appTimeZone,
   createLessonFromDraft,
   updateTeacherLessonGroup,
+  onDeleteLessonGroup,
   createStudentLoginFromCalendar,
   createTeacherLoginFromCalendar,
   createTeacherSingleLesson,
@@ -164,6 +167,11 @@ export default function TeacherPanel({
   const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
   const [editLessonDuration, setEditLessonDuration] = useState(60)
   const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
+
+  // Propose Class Form State
+  const [proposeStudentId, setProposeStudentId] = useState('')
+  const [proposeSubject, setProposeSubject] = useState('')
+  const [proposeStartsAt, setProposeStartsAt] = useState('')
 
   const addModalRef = useRef<HTMLDivElement>(null)
   const editModalRef = useRef<HTMLDivElement>(null)
@@ -548,29 +556,27 @@ export default function TeacherPanel({
 
   const handleProposeClass = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formEl = e.currentTarget
-    const studentId = (formEl.elements.namedItem('studentId') as HTMLSelectElement).value
-    const subject = (formEl.elements.namedItem('subject') as HTMLInputElement).value
-    const start = (formEl.elements.namedItem('start') as HTMLInputElement).value
-    if (!studentId || !subject || !start) return
+    if (!proposeStudentId || !proposeSubject || !proposeStartsAt) return
 
     try {
-      const startsAt = new Date(start)
+      const startsAt = new Date(proposeStartsAt)
 
       const { error } = await supabase.from('lessons').insert({
-        subject,
+        subject: proposeSubject,
         class_name: 'Custom proposed class',
-        student_id: studentId,
+        student_id: proposeStudentId,
         teacher_id: profile.id,
         starts_at: startsAt.toISOString(),
         duration_minutes: 60,
       })
       if (error) throw error
       toast.success(t(language, 'proposal_sent_success'))
-      formEl.reset()
+      setProposeSubject('')
+      setProposeStartsAt('')
       await refreshLessons()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Erro ao propor aula.'
+      toast.error(errMsg)
     }
   }
 
@@ -703,20 +709,43 @@ export default function TeacherPanel({
               <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
                 {t(language, 'propose_new_class_title')}
               </h3>
-              <form onSubmit={handleProposeClass} className="form-grid" style={{ gap: '0.75rem', display: 'flex', flexWrap: 'wrap' }}>
-                <select name="studentId" required style={{ flex: 1, minWidth: '150px' }}>
-                  <option value="">{t(language, 'select_student')}</option>
-                  {sortedStudents.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <input name="subject" required placeholder={t(language, 'subject_topic')} style={{ flex: 1, minWidth: '150px' }} />
-                <input name="start" required type="datetime-local" style={{ flex: 1, minWidth: '180px' }} />
-                <button className="primary-button" style={{ padding: '0.75rem 1.5rem' }}>
-                  {t(language, 'propose_time_btn')}
-                </button>
+              <form onSubmit={handleProposeClass} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <select
+                    value={proposeStudentId}
+                    onChange={(e) => setProposeStudentId(e.target.value)}
+                    required
+                    style={{ flex: 1, minWidth: '160px' }}
+                  >
+                    <option value="">{t(language, 'select_student')}</option>
+                    {sortedStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    required
+                    placeholder={t(language, 'subject_topic')}
+                    value={proposeSubject}
+                    onChange={(e) => setProposeSubject(e.target.value)}
+                    style={{ flex: 1, minWidth: '160px' }}
+                  />
+                </div>
+
+                <DateTimePicker
+                  value={proposeStartsAt}
+                  onChange={(val) => setProposeStartsAt(val)}
+                  language={language}
+                  label={t(language, 'date_and_time')}
+                  required
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button className="primary-button" type="submit" style={{ padding: '0.65rem 1.5rem' }}>
+                    {t(language, 'propose_time_btn')}
+                  </button>
+                </div>
               </form>
             </div>
 
@@ -733,6 +762,7 @@ export default function TeacherPanel({
               allowTeacherChange={false}
               onCreateLesson={createLessonFromDraft}
               onUpdateLessonGroup={updateTeacherLessonGroup}
+              onDeleteLessonGroup={onDeleteLessonGroup}
               onCreateStudentLogin={createStudentLoginFromCalendar}
               onCreateTeacherLogin={createTeacherLoginFromCalendar}
               availabilities={availabilities}
@@ -1527,20 +1557,18 @@ export default function TeacherPanel({
                   </div>
                 </div>
 
-                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'date_and_time')} *</label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={newLessonStartsAt}
-                      onChange={(e) => setNewLessonStartsAt(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                    />
-                  </div>
+                <div>
+                  <DateTimePicker
+                    value={newLessonStartsAt}
+                    onChange={(val) => setNewLessonStartsAt(val)}
+                    language={language}
+                    label={`${t(language, 'date_and_time')} *`}
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -1571,7 +1599,6 @@ export default function TeacherPanel({
                       ))}
                     </div>
                   </div>
-                </div>
 
                 <div>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
@@ -1688,20 +1715,18 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'date_and_time')} *</label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={editLessonStartsAt}
-                      onChange={(e) => setEditLessonStartsAt(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                    />
-                  </div>
+                <div>
+                  <DateTimePicker
+                    value={editLessonStartsAt}
+                    onChange={(val) => setEditLessonStartsAt(val)}
+                    language={language}
+                    label={`${t(language, 'date_and_time')} *`}
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -1732,7 +1757,6 @@ export default function TeacherPanel({
                       ))}
                     </div>
                   </div>
-                </div>
 
                 <div>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>

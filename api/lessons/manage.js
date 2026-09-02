@@ -425,7 +425,9 @@ const getAvailabilities = async (supabaseAdmin, profile, payload) => {
     .select('*')
     .order('starts_at', { ascending: true })
 
-  if (payload?.teacher_id) {
+  if (profile.role === 'teacher') {
+    query = query.eq('teacher_id', profile.id)
+  } else if (payload?.teacher_id && payload.teacher_id !== 'all') {
     query = query.eq('teacher_id', payload.teacher_id)
   }
 

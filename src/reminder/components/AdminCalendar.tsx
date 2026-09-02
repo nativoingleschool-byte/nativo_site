@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import type { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
+import { useToast } from '../lib/toast'
+import DateTimePicker from './DateTimePicker'
 
 type LessonDraft = {
   subject: string
@@ -132,6 +134,7 @@ export default function AdminCalendar({
   allowTeacherChange,
   onCreateLesson,
   onUpdateLessonGroup,
+  onDeleteLessonGroup,
   onCreateStudentLogin,
   onCreateTeacherLogin,
   availabilities = [],
@@ -150,14 +153,16 @@ export default function AdminCalendar({
   allowTeacherChange: boolean
   onCreateLesson: (draft: LessonDraft) => Promise<void>
   onUpdateLessonGroup: (draft: LessonUpdateDraft) => Promise<void>
+  onDeleteLessonGroup?: (lessonIds: string[]) => Promise<void>
   onCreateStudentLogin: (draft: NewUserDraft) => Promise<Profile>
   onCreateTeacherLogin: (draft: NewUserDraft) => Promise<Profile>
   availabilities?: TeacherAvailability[]
   onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
   onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
 }) {
+  const { toast } = useToast()
   const [calendarMode, setCalendarMode] = useState<'classes' | 'availability'>('classes')
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(currentTeacherId ?? teachers[0]?.id ?? '')
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(role === 'teacher' && currentTeacherId ? currentTeacherId : 'all')
 
   // Availability Modal states
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
@@ -292,17 +297,18 @@ export default function AdminCalendar({
     return layouts
   }, [days, groupsByDay, timeZone])
 
-  const activeTeacherId = role === 'teacher' && currentTeacherId ? currentTeacherId : (selectedTeacherId || sortedTeachers[0]?.id || '')
-
   const availabilitiesThisWeek = useMemo(() => {
-    if (!activeTeacherId) return []
     return availabilities.filter((a) => {
-      if (a.teacher_id !== activeTeacherId) return false
+      if (role === 'teacher' && currentTeacherId) {
+        if (a.teacher_id !== currentTeacherId) return false
+      } else if (role === 'admin' && selectedTeacherId && selectedTeacherId !== 'all') {
+        if (a.teacher_id !== selectedTeacherId) return false
+      }
       const zoned = getZonedParts(new Date(a.starts_at), timeZone)
       const dateKey = `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}`
       return dateKey >= weekStart && dateKey < weekEnd
     })
-  }, [availabilities, activeTeacherId, timeZone, weekStart, weekEnd])
+  }, [availabilities, role, currentTeacherId, selectedTeacherId, timeZone, weekStart, weekEnd])
 
   const availabilitiesByDay = useMemo(() => {
     const grouped: Record<string, TeacherAvailability[]> = Object.fromEntries(days.map((day) => [day, []]))
@@ -403,6 +409,29 @@ export default function AdminCalendar({
     return grouped
   }, [days, availabilitiesByDay, visibleLessons])
 
+  const availabilityLayouts = useMemo(() => {
+    const layouts: Record<string, { column: number; totalColumns: number }> = {}
+    for (const day of days) {
+      const daySegs = availabilitySegmentsByDay[day] ?? []
+      for (const seg of daySegs) {
+        const start = getZonedParts(new Date(seg.starts_at), timeZone)
+        const startMinutes = start.hour * 60 + start.minute
+        const endMinutes = startMinutes + seg.duration_minutes
+        const overlaps = daySegs
+          .filter((other) => {
+            const otherStart = getZonedParts(new Date(other.starts_at), timeZone)
+            const otherStartMinutes = otherStart.hour * 60 + otherStart.minute
+            const otherEndMinutes = otherStartMinutes + other.duration_minutes
+            return startMinutes < otherEndMinutes && otherStartMinutes < endMinutes
+          })
+          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime() || a.key.localeCompare(b.key))
+        const column = overlaps.findIndex((item) => item.key === seg.key)
+        layouts[seg.key] = { column: Math.max(column, 0), totalColumns: Math.max(overlaps.length, 1) }
+      }
+    }
+    return layouts
+  }, [days, availabilitySegmentsByDay, timeZone])
+
   // Helper to check if an entire availability slot has an active overlapping class
   const getSlotConflict = (availability: TeacherAvailability) => {
     const aStart = new Date(availability.starts_at).getTime()
@@ -427,7 +456,13 @@ export default function AdminCalendar({
     setAvailabilityDuration(60)
     setAvailabilityRecurrenceType('single')
     setAvailabilityRepeatWeeks(4)
-    setAvailabilityTeacherId(activeTeacherId)
+    setAvailabilityTeacherId(
+      role === 'teacher' && currentTeacherId
+        ? currentTeacherId
+        : selectedTeacherId !== 'all'
+        ? selectedTeacherId
+        : sortedTeachers[0]?.id || ''
+    )
     setShowAvailabilityModal(true)
   }
 
@@ -454,15 +489,29 @@ export default function AdminCalendar({
     try {
       const utcIso = zonedDateTimeToUtcIso(availabilityStartsAt, timeZone)
       const repeatCount = availabilityRecurrenceType === 'weekly' ? availabilityRepeatWeeks : 1
+      const targetTeacherId = role === 'teacher' && currentTeacherId ? currentTeacherId : availabilityTeacherId
       await onCreateAvailability({
         starts_at: utcIso,
         duration_minutes: availabilityDuration,
-        teacher_id: role === 'teacher' && currentTeacherId ? currentTeacherId : availabilityTeacherId,
+        teacher_id: targetTeacherId,
         repeat_weeks: repeatCount,
       })
+      toast.success(t(language, 'availability_added_success') || 'Horário de disponibilidade adicionado com sucesso!')
+
+      // Auto-switch to availability view
+      setCalendarMode('availability')
+
+      // Ensure week includes this slot if outside active week
+      const slotDateKey = availabilityStartsAt.split('T')[0]
+      if (slotDateKey && (slotDateKey < weekStart || slotDateKey >= weekEnd)) {
+        setWeekStart(startOfWeekDateKey(slotDateKey))
+      }
+
       closeAvailabilityModal()
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error creating availability:', err)
+      const errMsg = err instanceof Error ? err.message : 'Erro ao adicionar disponibilidade.'
+      toast.error(errMsg)
     } finally {
       setIsSubmittingAvailability(false)
     }
@@ -478,11 +527,33 @@ export default function AdminCalendar({
         starts_at: availability.starts_at,
         series_scope: scope,
       })
+      toast.success(t(language, 'availability_deleted_success') || 'Horário de disponibilidade removido com sucesso!')
       closeAvailabilityModal()
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error deleting availability:', err)
+      const errMsg = err instanceof Error ? err.message : 'Erro ao remover disponibilidade.'
+      toast.error(errMsg)
     } finally {
       setIsSubmittingAvailability(false)
+    }
+  }
+
+  const handleDeleteAppointment = async () => {
+    if (!editingGroup || !onDeleteLessonGroup) return
+    if (!window.confirm(t(language, 'delete_appointment_confirm') || t(language, 'delete_lesson_confirm'))) {
+      return
+    }
+    setSaving(true)
+    try {
+      await onDeleteLessonGroup(editingGroup.lessonIds)
+      toast.success(t(language, 'lesson_deleted_success') || 'Agendamento de aula excluído com sucesso!')
+      closeModal()
+    } catch (err: unknown) {
+      console.error('Error deleting appointment:', err)
+      const errMsg = err instanceof Error ? err.message : 'Erro ao excluir aula.'
+      toast.error(errMsg)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -733,6 +804,9 @@ export default function AdminCalendar({
                 fontWeight: 600,
               }}
             >
+              <option value="all">
+                {t(language, 'all_teachers_filter') || '👥 Todos os Professores'}
+              </option>
               {sortedTeachers.map((tItem) => (
                 <option key={tItem.id} value={tItem.id}>
                   👨‍🏫 {tItem.full_name}
@@ -939,6 +1013,7 @@ export default function AdminCalendar({
                   const isBooked = segment.is_booked
                   const teacherProfile = profilesById[segment.parent_availability.teacher_id]
                   const conflictLesson = segment.lesson
+                  const layout = availabilityLayouts[segment.key] ?? { column: 0, totalColumns: 1 }
 
                   return (
                     <button
@@ -947,8 +1022,8 @@ export default function AdminCalendar({
                       className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}`}
                       style={{
                         gridRow: `${startIndex + 1} / span ${span}`,
-                        width: 'calc(100% - 8px)',
-                        marginLeft: '4px',
+                        width: `calc(${100 / layout.totalColumns}% - 8px)`,
+                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 4px)`,
                       }}
                       onClick={() => openViewAvailability(segment.parent_availability)}
                       title={
@@ -979,8 +1054,8 @@ export default function AdminCalendar({
                               <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a7f3d0' }}>
                                 {segment.duration_minutes} min {segment.duration_minutes < (segment.parent_availability.duration_minutes || 60) ? `(${t(language, 'available_remaining')})` : ''}
                               </span>
-                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#6ee7b7' }}>
-                                {teacherProfile?.full_name || t(language, 'teacher')}
+                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#6ee7b7', fontWeight: 600 }}>
+                                👨‍🏫 {teacherProfile?.full_name || t(language, 'teacher')}
                               </span>
                             </>
                           )}
@@ -1065,21 +1140,30 @@ export default function AdminCalendar({
             <form className="form-card" onSubmit={submitCreate}>
               <input required placeholder={t(language, 'subject_placeholder')} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
 
+              <DateTimePicker
+                value={draft.starts_at}
+                onChange={(val) => setDraft({ ...draft, starts_at: val })}
+                language={language}
+                label={t(language, 'start_time_label') || 'Data e Horário de Início'}
+                required
+              />
+
               <div className="form-grid">
-                <input
-                  required
-                  type="datetime-local"
-                  value={draft.starts_at}
-                  onChange={(event) => setDraft({ ...draft, starts_at: event.target.value })}
-                />
-                <input
-                  required
-                  type="number"
-                  min={15}
-                  step={5}
-                  value={draft.duration_minutes}
-                  onChange={(event) => setDraft({ ...draft, duration_minutes: Number(event.target.value) })}
-                />
+                <div>
+                  <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
+                    {t(language, 'duration_minutes') || 'Duração (minutos)'}
+                  </label>
+                  <select
+                    value={draft.duration_minutes}
+                    onChange={(event) => setDraft({ ...draft, duration_minutes: Number(event.target.value) })}
+                  >
+                    <option value={30}>30 min</option>
+                    <option value={45}>45 min</option>
+                    <option value={60}>60 min (1h)</option>
+                    <option value={90}>90 min (1h30)</option>
+                    <option value={120}>120 min (2h)</option>
+                  </select>
+                </div>
               </div>
 
               {!editingGroup && (
@@ -1279,13 +1363,26 @@ export default function AdminCalendar({
                 </div>
               )}
 
-              <div className="button-row wrap">
-                <button className="secondary-button" type="button" onClick={closeModal} disabled={saving}>
-                  {t(language, 'cancel')}
-                </button>
-                <button className="primary-button" type="submit" disabled={saving || selectedStudentIds.length === 0}>
-                  {saving ? (editingGroup ? t(language, 'saving_label') : t(language, 'creating_label')) : editingGroup ? t(language, 'save_class_btn') : t(language, 'create_class_btn')}
-                </button>
+              <div className="button-row wrap" style={{ justifyContent: 'space-between', marginTop: '1rem' }}>
+                {editingGroup && onDeleteLessonGroup && (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    style={{ color: '#ef4444', borderColor: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    disabled={saving}
+                    onClick={handleDeleteAppointment}
+                  >
+                    🗑️ {t(language, 'delete_class_btn') || 'Excluir Aula'}
+                  </button>
+                )}
+                <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                  <button className="secondary-button" type="button" onClick={closeModal} disabled={saving}>
+                    {t(language, 'cancel')}
+                  </button>
+                  <button className="primary-button" type="submit" disabled={saving || selectedStudentIds.length === 0}>
+                    {saving ? (editingGroup ? t(language, 'saving_label') : t(language, 'creating_label')) : editingGroup ? t(language, 'save_class_btn') : t(language, 'create_class_btn')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1422,17 +1519,13 @@ export default function AdminCalendar({
             ) : (
               // CREATE NEW AVAILABILITY SLOT
               <form className="form-card" onSubmit={handleSaveAvailability}>
-                <div>
-                  <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
-                    {t(language, 'start_time_label') || 'Data e Horário de Início'}
-                  </label>
-                  <input
-                    required
-                    type="datetime-local"
-                    value={availabilityStartsAt}
-                    onChange={(e) => setAvailabilityStartsAt(e.target.value)}
-                  />
-                </div>
+                <DateTimePicker
+                  value={availabilityStartsAt}
+                  onChange={(val) => setAvailabilityStartsAt(val)}
+                  language={language}
+                  label={t(language, 'start_time_label') || 'Data e Horário de Início'}
+                  required
+                />
 
                 <div className="form-grid">
                   <div>

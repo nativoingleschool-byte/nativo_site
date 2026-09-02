@@ -1347,6 +1347,25 @@ function ReminderAppInner() {
     }
   }
 
+  const deleteLessonGroup = async (lessonIds: string[]) => {
+    setAppError('')
+    try {
+      for (const id of lessonIds) {
+        await callLessonsApi('delete_lesson', { lesson_id: id })
+      }
+      await refreshLessons()
+    } catch (error) {
+      try {
+        const { error: directErr } = await supabase.from('lessons').delete().in('id', lessonIds)
+        if (directErr) throw directErr
+        await refreshLessons()
+      } catch (fallbackErr) {
+        setAppError(error instanceof Error ? error.message : 'Could not delete the class.')
+        throw error
+      }
+    }
+  }
+
   const handleDeleteUser = async (userId: string) => {
     setAppError('')
     const confirmed = window.confirm(t(language, 'delete_user_confirm'))
@@ -1705,6 +1724,7 @@ function ReminderAppInner() {
                   allowTeacherChange
                   onCreateLesson={createLessonFromDraft}
                   onUpdateLessonGroup={updateLessonGroup}
+                  onDeleteLessonGroup={deleteLessonGroup}
                   onCreateStudentLogin={createStudentLoginFromCalendar}
                   onCreateTeacherLogin={createTeacherLoginFromCalendar}
                   availabilities={availabilities}
@@ -1812,6 +1832,7 @@ function ReminderAppInner() {
             appTimeZone={appTimeZone}
             createLessonFromDraft={createLessonFromDraft}
             updateTeacherLessonGroup={updateTeacherLessonGroup}
+            onDeleteLessonGroup={deleteLessonGroup}
             createStudentLoginFromCalendar={createStudentLoginFromCalendar}
             createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
             createTeacherSingleLesson={createTeacherSingleLesson}
