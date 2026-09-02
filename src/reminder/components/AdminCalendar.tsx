@@ -103,10 +103,10 @@ const zonedDateTimeToUtcIso = (dateTimeLocal: string, timeZone: string) => {
   const [hour, minute] = timePart.split(':').map(Number)
   const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0)
   let offset = getTimeZoneOffsetMinutes(new Date(utcGuess), timeZone)
-  let timestamp = utcGuess - offset * 60000
+  let timestamp = utcGuess + offset * 60000
   const nextOffset = getTimeZoneOffsetMinutes(new Date(timestamp), timeZone)
   if (nextOffset !== offset) {
-    timestamp = utcGuess - nextOffset * 60000
+    timestamp = utcGuess + nextOffset * 60000
   }
   return new Date(timestamp).toISOString()
 }
