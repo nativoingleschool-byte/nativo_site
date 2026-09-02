@@ -748,7 +748,7 @@ export default function BankReconciliationTab({
       {/* 5. Preview & Management Table */}
       <div className="panel p-0 overflow-hidden">
         <div className="table-responsive">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full text-left text-sm border-collapse" style={{ minWidth: '700px' }}>
             <thead>
               <tr className="bg-slate-900/60 border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                 <th className="p-3.5 w-10 text-center">

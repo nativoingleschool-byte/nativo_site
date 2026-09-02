@@ -262,8 +262,8 @@ body:has(.reminder-app-scope) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -276,6 +276,25 @@ body:has(.reminder-app-scope) {
   color: #f1f5f9;
   transform: translateY(-1px);
 }
+
+/* On small screens hide text labels, keep icons */
+@media (max-width: 767px) {
+  .topbar-label,
+  .topbar-time {
+    display: none;
+  }
+  .topbar {
+    padding: 8px 12px;
+  }
+  .topbar-timezone-select {
+    display: none;
+  }
+  .topbar-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .topbar-icon-btn--active {
   color: #38bdf8;
   background: rgba(56, 189, 248, 0.15);
@@ -287,16 +306,6 @@ body:has(.reminder-app-scope) {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* On small screens hide text labels, keep icons */
-@media (max-width: 767px) {
-  .topbar-label,
-  .topbar-time {
-    display: none;
-  }
-  .topbar {
-    padding: 8px 12px;
-  }
-}
 
 .main-content {
   flex: 1;
@@ -429,8 +438,8 @@ body:has(.reminder-app-scope) {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .summary-card {
@@ -766,7 +775,7 @@ body:has(.reminder-app-scope) {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: 46px repeat(7, calc((100% - 46px) / 3));
+  grid-template-columns: 46px repeat(7, calc((100% - 46px) / 2));
   border-radius: 16px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -1150,6 +1159,37 @@ body:has(.reminder-app-scope) {
   }
   .reminder-app-scope h2 {
     font-size: 1.3rem;
+  }
+
+  /* Stat card value: smaller on 2-col layout */
+  .summary-card strong {
+    font-size: 1.25rem;
+  }
+
+  /* Modal: anchor to top so virtual keyboard doesn't push it off-screen */
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .modal-card {
+    max-height: calc(100dvh - 24px);
+    padding: 16px;
+  }
+
+  /* Calendar toolbar: stack vertically on mobile */
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .calendar-toolbar-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .timezone-picker {
+    min-width: unset;
+    width: 100%;
   }
 }
 

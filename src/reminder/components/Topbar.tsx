@@ -136,7 +136,7 @@ export default function Topbar({
           <Clock size={14} />
           <span className="topbar-time">{timeStr}</span>
           <select
-            className="topbar-select"
+            className="topbar-select topbar-timezone-select"
             value={appTimeZone}
             onChange={(e) => setAppTimeZone(e.target.value)}
             title={language === 'es' ? 'Zona horaria' : language === 'pt' ? 'Fuso horário' : 'Timezone'}
