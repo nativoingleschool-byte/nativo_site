@@ -1635,35 +1635,59 @@ export default function AdminStaffTab({
                                 )}
                               </div>
 
-                              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderColor: '#38bdf8', color: '#38bdf8' }}
-                                  onClick={() => {
-                                    openFileFromDataOrUrl(
-                                      inv.file_url,
-                                      inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
-                                    )
-                                  }}
-                                >
-                                  📄 Ver NF
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ghost-button"
-                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
-                                  onClick={() => {
-                                    downloadFileFromDataOrUrl(
-                                      inv.file_url,
-                                      inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
-                                    )
-                                  }}
-                                  title="Baixar arquivo da Nota Fiscal"
-                                >
-                                  ⬇️ Baixar
-                                </button>
-                              </div>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className="secondary-button"
+                                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                    onClick={() => {
+                                      openFileFromDataOrUrl(
+                                        inv.file_url,
+                                        inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                                      )
+                                    }}
+                                  >
+                                    📄 Ver NF
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ghost-button"
+                                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                                    onClick={() => {
+                                      downloadFileFromDataOrUrl(
+                                        inv.file_url,
+                                        inv.file_name || `Nota_Fiscal_${inv.month_key}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`
+                                      )
+                                    }}
+                                    title="Baixar arquivo da Nota Fiscal"
+                                  >
+                                    ⬇️ Baixar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ghost-button"
+                                    style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', color: '#f87171' }}
+                                    onClick={async () => {
+                                      if (!window.confirm('Deseja excluir esta nota fiscal do histórico?')) return
+                                      try {
+                                        if (!inv.id.startsWith('profile-nf-')) {
+                                          await supabase.from('teacher_invoices').delete().eq('id', inv.id)
+                                        } else {
+                                          await supabase.from('profiles').update({ status_nota_fiscal: 'pendente', nota_fiscal_url: null }).eq('id', selectedTeacherForDetail.id)
+                                          setSelectedTeacherForDetail({ ...selectedTeacherForDetail, status_nota_fiscal: 'pendente', nota_fiscal_url: null })
+                                          await refreshProfiles()
+                                        }
+                                        await refreshTeacherInvoices?.()
+                                        toast.success('Nota fiscal removida.')
+                                      } catch (e: any) {
+                                        toast.error(e.message || 'Erro ao remover nota fiscal.')
+                                      }
+                                    }}
+                                    title="Excluir Nota Fiscal"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
                             </div>
                           )
                         })}
