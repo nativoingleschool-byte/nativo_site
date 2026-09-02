@@ -1057,36 +1057,42 @@ export default function AdminStaffTab({
                       {teacher.full_name}
                     </button>
                     {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
-                    {teacher.nota_fiscal_url && (
-                      <div style={{ marginTop: '0.3rem' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openFileFromDataOrUrl(
-                              teacher.nota_fiscal_url!,
-                              `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
-                            )
-                          }}
-                          style={{
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            color: '#10b981',
-                            padding: '0.15rem 0.45rem',
-                            borderRadius: '0.35rem',
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                          }}
-                          title="Ver Nota Fiscal enviada"
-                        >
-                          📄 NF Enviada
-                        </button>
-                      </div>
-                    )}
+                    {(() => {
+                      const activeNf = teacher.nota_fiscal_url
+                        ? { file_url: teacher.nota_fiscal_url }
+                        : (teacherInvoices || []).find((inv) => inv.teacher_id === teacher.id && inv.file_url)
+                      if (!activeNf) return null
+                      return (
+                        <div style={{ marginTop: '0.3rem' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openFileFromDataOrUrl(
+                                activeNf.file_url,
+                                `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
+                              )
+                            }}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              color: '#10b981',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '0.35rem',
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                            }}
+                            title="Ver Nota Fiscal enviada"
+                          >
+                            📄 NF Enviada
+                          </button>
+                        </div>
+                      )
+                    })()}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <strong style={{ color: '#fff' }}>{monthLabel}</strong>
@@ -1558,7 +1564,24 @@ export default function AdminStaffTab({
 
               {/* Past NFs History Section */}
               {(() => {
-                const pastInvoices = (teacherInvoices || []).filter((inv) => inv.teacher_id === selectedTeacherForDetail.id)
+                const pastInvoices = (() => {
+                  const list = [...(teacherInvoices || []).filter((inv) => inv.teacher_id === selectedTeacherForDetail.id)]
+                  if (
+                    selectedTeacherForDetail.nota_fiscal_url &&
+                    !list.some((i) => i.file_url === selectedTeacherForDetail.nota_fiscal_url)
+                  ) {
+                    list.unshift({
+                      id: `profile-nf-${selectedTeacherForDetail.id}`,
+                      teacher_id: selectedTeacherForDetail.id,
+                      month_key: activeMonthKey,
+                      file_url: selectedTeacherForDetail.nota_fiscal_url,
+                      file_name: `Nota_Fiscal_${activeMonthKey}_${selectedTeacherForDetail.full_name.replace(/\s+/g, '_')}.pdf`,
+                      status: selectedTeacherForDetail.status_nota_fiscal || 'enviada',
+                      created_at: new Date().toISOString(),
+                    })
+                  }
+                  return list
+                })()
                 return (
                   <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>

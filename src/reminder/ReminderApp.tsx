@@ -552,6 +552,35 @@ function ReminderAppInner() {
   const [teacherInvoices, setTeacherInvoices] = useState<TeacherInvoice[]>([])
 
   const refreshTeacherInvoices = async () => {
+    let list: TeacherInvoice[] = []
+    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
+    if (token) {
+      try {
+        const response = await fetch('/api/lessons/manage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'get_teacher_invoices',
+            payload: {},
+          }),
+        })
+        if (response.ok) {
+          const resData = await response.json()
+          list = resData.data || []
+          setTeacherInvoices(list)
+          try {
+            localStorage.setItem('nativo_teacher_invoices_cache', JSON.stringify(list))
+          } catch (e) {}
+          return
+        }
+      } catch (err) {
+        console.warn('API get_teacher_invoices error, fallback to direct query:', err)
+      }
+    }
+
     try {
       const { data, error } = await supabase.from('teacher_invoices').select('*').order('created_at', { ascending: false })
       if (!error && data) {

@@ -1305,7 +1305,24 @@ export default function TeacherPanel({
 
                 {/* Past Invoices for Teacher */}
                 {(() => {
-                  const myInvoices = (teacherInvoices || []).filter((inv) => inv.teacher_id === profile.id)
+                  const myInvoices = (() => {
+                    const list = [...(teacherInvoices || []).filter((inv) => inv.teacher_id === profile.id)]
+                    if (
+                      profile.nota_fiscal_url &&
+                      !list.some((i) => i.file_url === profile.nota_fiscal_url)
+                    ) {
+                      list.unshift({
+                        id: `profile-nf-${profile.id}`,
+                        teacher_id: profile.id,
+                        month_key: selectedMonth || new Date().toISOString().slice(0, 7),
+                        file_url: profile.nota_fiscal_url,
+                        file_name: `Nota_Fiscal_${selectedMonth || 'Recente'}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
+                        status: profile.status_nota_fiscal || 'enviada',
+                        created_at: new Date().toISOString(),
+                      })
+                    }
+                    return list
+                  })()
                   if (myInvoices.length === 0) return null
 
                   return (

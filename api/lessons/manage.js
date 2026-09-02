@@ -502,6 +502,95 @@ const deleteAvailability = async (supabaseAdmin, profile, payload) => {
   return { success: true, id: payload.id, series_id: payload.series_id, scope: payload.series_scope }
 }
 
+const getTeacherInvoices = async (supabaseAdmin, profile, payload) => {
+  let query = supabaseAdmin
+    .from('teacher_invoices')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (profile.role !== 'admin') {
+    query = query.eq('teacher_id', profile.id)
+  } else if (payload?.teacher_id && payload.teacher_id !== 'all') {
+    query = query.eq('teacher_id', payload.teacher_id)
+  }
+
+  let { data: invoices, error } = await query
+  if (error) {
+    console.warn('getTeacherInvoices query error:', error.message)
+    invoices = []
+  }
+
+  // Auto-sync existing profile nota_fiscal_url if any teacher uploaded previously
+  try {
+    let profQuery = supabaseAdmin.from('profiles').select('id, full_name, nota_fiscal_url, status_nota_fiscal')
+    if (profile.role !== 'admin') {
+      profQuery = profQuery.eq('id', profile.id)
+    }
+    const { data: profs } = await profQuery
+    if (profs && profs.length > 0) {
+      const existingUrls = new Set((invoices || []).map((inv) => inv.file_url))
+      const toInsert = []
+      for (const p of profs) {
+        if (p.nota_fiscal_url && !existingUrls.has(p.nota_fiscal_url)) {
+          toInsert.push({
+            teacher_id: p.id,
+            month_key: new Date().toISOString().slice(0, 7),
+            file_url: p.nota_fiscal_url,
+            file_name: `Nota_Fiscal_${(p.full_name || 'Prof').replace(/\s+/g, '_')}.pdf`,
+            status: p.status_nota_fiscal || 'enviada',
+          })
+          existingUrls.add(p.nota_fiscal_url)
+        }
+      }
+      if (toInsert.length > 0) {
+        const { data: inserted } = await supabaseAdmin.from('teacher_invoices').insert(toInsert).select('*')
+        if (inserted && inserted.length > 0) {
+          invoices = [...(inserted || []), ...(invoices || [])]
+        }
+      }
+    }
+  } catch (syncErr) {
+    console.warn('Auto-sync teacher_invoices error:', syncErr)
+  }
+
+  return invoices ?? []
+}
+
+const createTeacherInvoice = async (supabaseAdmin, profile, payload) => {
+  const teacherId = profile.role === 'admin' ? (payload.teacher_id || profile.id) : profile.id
+  if (!payload.file_url) {
+    throw new Error('File URL is required.')
+  }
+  const row = {
+    teacher_id: teacherId,
+    month_key: payload.month_key || new Date().toISOString().slice(0, 7),
+    file_url: payload.file_url,
+    file_name: payload.file_name || 'Nota_Fiscal.pdf',
+    amount: payload.amount ? Number(payload.amount) : null,
+    status: payload.status || 'enviada',
+  }
+  const { data, error } = await supabaseAdmin.from('teacher_invoices').insert([row]).select('*').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  return data
+}
+
+const deleteTeacherInvoice = async (supabaseAdmin, profile, payload) => {
+  if (!payload.id) {
+    throw new Error('Invoice ID is required.')
+  }
+  let query = supabaseAdmin.from('teacher_invoices').delete().eq('id', payload.id)
+  if (profile.role !== 'admin') {
+    query = query.eq('teacher_id', profile.id)
+  }
+  const { error } = await query
+  if (error) {
+    throw new Error(error.message)
+  }
+  return { success: true, id: payload.id }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' })
@@ -577,6 +666,21 @@ export default async function handler(req, res) {
 
     if (action === 'delete_lesson') {
       const result = await deleteLesson(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: result })
+    }
+
+    if (action === 'get_teacher_invoices') {
+      const invoices = await getTeacherInvoices(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: invoices })
+    }
+
+    if (action === 'create_teacher_invoice') {
+      const invoice = await createTeacherInvoice(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: invoice })
+    }
+
+    if (action === 'delete_teacher_invoice') {
+      const result = await deleteTeacherInvoice(supabaseAdmin, profile, payload)
       return json(res, 200, { data: result })
     }
 
