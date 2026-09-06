@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <style>
+    :root {
+      --icon-color: #11111D;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --icon-color: #FFFFFF;
+      }
+    }
+  </style>
+  <circle cx="256" cy="256" r="215" stroke="var(--icon-color)" stroke-width="17.5" />
+  <polygon points="256,3 277.2,204.82 409.44,102.56 307.18,234.8 509,256 307.18,277.2 409.44,409.44 277.2,307.18 256,509 234.8,307.18 102.56,409.44 204.82,277.2 3,256 204.82,234.8 102.56,102.56 234.8,204.82" fill="var(--icon-color)" />
+</svg>

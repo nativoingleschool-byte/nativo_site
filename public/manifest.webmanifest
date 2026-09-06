@@ -1,13 +1,37 @@
 {
-  "name": "Lesson Reminder Manager",
-  "short_name": "LessonRemind",
-  "description": "Installable lesson reminder manager for admins, teachers, and students.",
+  "name": "Nativo English",
+  "short_name": "Nativo",
+  "description": "Nativo English School",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#0f172a",
+  "background_color": "#1F3A5F",
+  "theme_color": "#1F3A5F",
   "orientation": "portrait",
   "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/app-icon.svg",
       "sizes": "any",
@@ -22,3 +46,4 @@
     }
   ]
 }
+
