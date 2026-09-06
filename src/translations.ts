@@ -8,6 +8,8 @@ export const translations = {
       team: "Equipe",
       cta: "Começar",
       login: "Login",
+      dashboard: "Painel",
+      keepLoggedIn: "Manter conectado neste dispositivo",
     },
     hero: {
       badge: "O futuro da sua comunicação",
@@ -113,6 +115,8 @@ export const translations = {
       team: "Team",
       cta: "Get Started",
       login: "Log In",
+      dashboard: "Dashboard",
+      keepLoggedIn: "Keep me logged in on this device",
     },
     hero: {
       badge: "The future of your communication",
@@ -218,6 +222,8 @@ export const translations = {
       team: "Equipo",
       cta: "Comenzar",
       login: "Acceder",
+      dashboard: "Panel",
+      keepLoggedIn: "Mantenerme conectado en este dispositivo",
     },
     hero: {
       badge: "El futuro de tu comunicación",

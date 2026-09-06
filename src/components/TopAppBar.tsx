@@ -1,6 +1,7 @@
 import { Menu, X, Globe } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Language } from '../translations';
+import { supabase } from '../reminder/lib/supabase';
 
 interface TopAppBarProps {
   lang: Language;
@@ -11,12 +12,36 @@ interface TopAppBarProps {
     team: string;
     cta: string;
     login: string;
+    dashboard?: string;
   };
   onOpenLogin: () => void;
 }
 
 export default function TopAppBar({ lang, setLang, t, onOpenLogin }: TopAppBarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(Boolean(data?.session?.user));
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(Boolean(session?.user));
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handlePortalAction = () => {
+    if (isLoggedIn) {
+      window.history.pushState({}, '', '/reminder');
+    } else {
+      onOpenLogin();
+    }
+  };
 
   const LanguageSelector = () => (
     <div className="flex items-center gap-2 bg-outline/30 p-1 rounded-full">
@@ -48,10 +73,10 @@ export default function TopAppBar({ lang, setLang, t, onOpenLogin }: TopAppBarPr
           <a className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#team">{t.team}</a>
           <a className="bg-primary text-white border-2 border-primary px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:bg-primary/90 hover:shadow-lg" href="#pricing">{t.cta}</a>
           <button 
-            onClick={onOpenLogin}
+            onClick={handlePortalAction}
             className="text-on-surface-variant hover:text-primary transition-colors text-sm font-bold cursor-pointer"
           >
-            {t.login}
+            {isLoggedIn ? (t.dashboard || (lang === 'es' ? 'Panel' : lang === 'en' ? 'Dashboard' : 'Painel')) : t.login}
           </button>
           <LanguageSelector />
         </div>
@@ -98,11 +123,11 @@ export default function TopAppBar({ lang, setLang, t, onOpenLogin }: TopAppBarPr
           <button 
             onClick={() => {
               setIsOpen(false);
-              onOpenLogin();
+              handlePortalAction();
             }}
             className="border-2 border-outline hover:border-primary text-primary px-8 py-3.5 rounded-full text-base font-bold text-center transition-all shadow-sm cursor-pointer"
           >
-            {t.login}
+            {isLoggedIn ? (t.dashboard || (lang === 'es' ? 'Panel' : lang === 'en' ? 'Dashboard' : 'Painel')) : t.login}
           </button>
           <div className="pt-4 border-t border-outline/50 flex justify-center">
             <LanguageSelector />

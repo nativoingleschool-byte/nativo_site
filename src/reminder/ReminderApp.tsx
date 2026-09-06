@@ -133,7 +133,16 @@ function ReminderAppInner() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [appError, setAppError] = useState('')
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' })
+  const [keepLoggedIn, setKeepLoggedIn] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nativo_keep_logged_in') !== 'false'
+    }
+    return true
+  })
+  const [loginForm, setLoginForm] = useState(() => ({
+    email: (typeof window !== 'undefined' && localStorage.getItem('nativo_saved_email')) || '',
+    password: '',
+  }))
   const [loginError, setLoginError] = useState('')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -1046,7 +1055,7 @@ function ReminderAppInner() {
             icon: '/app-icon.svg',
             badge: '/app-icon.svg',
             data: {
-              baseUrl: `${window.location.origin}/?lessonId=${encodeURIComponent(notification.lessonId)}`,
+              baseUrl: `${window.location.origin}/reminder?lessonId=${encodeURIComponent(notification.lessonId)}`,
               intentMap: notification.intentMap,
             },
             actions: notification.actions,
@@ -1090,6 +1099,15 @@ function ReminderAppInner() {
 
       if (error) {
         setLoginError(error.message)
+        return
+      }
+
+      if (keepLoggedIn) {
+        localStorage.setItem('nativo_keep_logged_in', 'true')
+        localStorage.setItem('nativo_saved_email', loginForm.email.trim())
+      } else {
+        localStorage.setItem('nativo_keep_logged_in', 'false')
+        localStorage.removeItem('nativo_saved_email')
       }
     } catch (err: any) {
       setLoginError(err.message || 'Erro de conexão com o servidor.')
@@ -1097,9 +1115,16 @@ function ReminderAppInner() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    try {
+      localStorage.setItem('nativo_keep_logged_in', 'false')
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.warn('Logout error:', e)
+    }
     setProfile(null)
+    setSession(null)
     setFocusedLessonId(null)
+    window.history.pushState({}, '', '/')
   }
 
   const requestPushPermission = (): Promise<void> => {
@@ -1564,19 +1589,59 @@ function ReminderAppInner() {
     )
   }
 
-  if (!session || !profile) {
+  if (session && !profile && !appError) {
+    return (
+      <div className="reminder-app-scope">
+        <div className="login-shell">
+          <section className="login-panel" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+              {language === 'es' ? 'Cargando perfil...' : language === 'en' ? 'Loading profile...' : 'Carregando perfil...'}
+            </h2>
+            <p className="muted" style={{ fontSize: '0.85rem' }}>
+              {language === 'es' ? 'Por favor espere un momento.' : language === 'en' ? 'Please wait a moment.' : 'Por favor, aguarde um momento.'}
+            </p>
+          </section>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
     return (
       <>
         <LoginPanel
           language={language}
           loginForm={loginForm}
           setLoginForm={setLoginForm}
+          keepLoggedIn={keepLoggedIn}
+          setKeepLoggedIn={setKeepLoggedIn}
           loginError={loginError}
           appError={appError}
           handleLogin={handleLogin}
         />
         {renderResetPasswordModal()}
       </>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="reminder-app-scope">
+        <div className="login-shell">
+          <section className="login-panel" style={{ textAlign: 'center', padding: '2rem' }}>
+            <h2>{language === 'es' ? 'Error al cargar perfil' : language === 'en' ? 'Profile Load Error' : 'Erro ao carregar perfil'}</h2>
+            <p className="error-text" style={{ margin: '1rem 0' }}>{appError || 'Não foi possível carregar os dados do usuário.'}</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="primary-button" onClick={() => session && refreshProfile(session.user.id)}>
+                {t(language, 'try_again')}
+              </button>
+              <button className="secondary-button" onClick={handleLogout}>
+                {language === 'es' ? 'Cerrar sesión' : language === 'en' ? 'Log out' : 'Sair'}
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
     )
   }
 

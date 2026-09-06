@@ -6,6 +6,8 @@ interface LoginPanelProps {
   language: Language
   loginForm: { email: string; password: string }
   setLoginForm: (form: { email: string; password: string }) => void
+  keepLoggedIn: boolean
+  setKeepLoggedIn: (val: boolean) => void
   loginError: string
   appError: string
   handleLogin: (event: FormEvent) => Promise<void>
@@ -15,6 +17,8 @@ export default function LoginPanel({
   language,
   loginForm,
   setLoginForm,
+  keepLoggedIn,
+  setKeepLoggedIn,
   loginError,
   appError,
   handleLogin,
@@ -126,7 +130,16 @@ export default function LoginPanel({
                 value={loginForm.password}
                 onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.82rem', color: '#cbd5e1', userSelect: 'none' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={keepLoggedIn}
+                    onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                    style={{ width: '1rem', height: '1rem', accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                  <span>{t(language, 'keep_logged_in')}</span>
+                </label>
                 <button 
                   type="button" 
                   style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.8rem', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}

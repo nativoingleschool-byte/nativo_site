@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { X, Lock, Mail, Loader2 } from 'lucide-react';
 import { supabase } from '../reminder/lib/supabase';
 
@@ -9,12 +9,34 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalProps) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nativo_saved_email') || '';
+    }
+    return '';
+  });
   const [password, setPassword] = useState('');
+  const [keepLoggedIn, setKeepLoggedIn] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nativo_keep_logged_in') !== 'false';
+    }
+    return true;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isForgotView, setIsForgotView] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // If user already has an active session, take them straight to the portal
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session?.user) {
+        window.history.pushState({}, '', '/reminder');
+        onClose();
+      }
+    });
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -52,6 +74,14 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
       }
 
       if (resData.user) {
+        if (keepLoggedIn) {
+          localStorage.setItem('nativo_keep_logged_in', 'true');
+          localStorage.setItem('nativo_saved_email', email.trim());
+        } else {
+          localStorage.setItem('nativo_keep_logged_in', 'false');
+          localStorage.removeItem('nativo_saved_email');
+        }
+
         // Fetch the user's profile to check their role
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -245,10 +275,25 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <div className="flex justify-end mt-1">
+                <div className="flex items-center justify-between mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface-variant hover:text-primary transition-colors select-none py-1">
+                    <input 
+                      type="checkbox"
+                      checked={keepLoggedIn}
+                      onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                      className="w-4 h-4 rounded border-outline text-primary accent-[#1F3A5F] cursor-pointer"
+                    />
+                    <span>
+                      {lang === 'es' 
+                        ? 'Mantenerme conectado en este dispositivo' 
+                        : lang === 'en' 
+                        ? 'Keep me logged in on this device' 
+                        : 'Manter conectado neste dispositivo'}
+                    </span>
+                  </label>
                   <button 
                     type="button" 
-                    className="text-xs text-on-surface-variant hover:text-primary transition-colors font-medium underline cursor-pointer"
+                    className="text-xs text-on-surface-variant hover:text-primary transition-colors font-medium underline cursor-pointer shrink-0 ml-2"
                     onClick={() => {
                       setIsForgotView(true);
                       setError('');
