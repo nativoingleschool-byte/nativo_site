@@ -3,6 +3,7 @@ import { Profile, BankTransaction, BankTransactionStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
+import { trackEvent } from '../../lib/telemetry'
 import {
   Upload,
   FileSpreadsheet,
@@ -166,6 +167,14 @@ export default function BankReconciliationTab({
           })
 
           toast.success(`Extrato processado com sucesso! ${parsedList.length} transações importadas.`)
+          void trackEvent(
+            'ofx_statement_uploaded',
+            {
+              filename: file.name,
+              transactions_count: parsedList.length,
+            },
+            { userRole: 'admin' }
+          )
         } catch (err: any) {
           toast.error(err.message || 'Falha ao analisar arquivo.')
         } finally {
@@ -303,6 +312,7 @@ export default function BankReconciliationTab({
 
     setIsBatchRunning(true)
     abortBatchRef.current = false
+    void trackEvent('batch_nfse_started', { total_items: targetItems.length }, { userRole: 'admin' })
 
     let successCount = 0
     let failureCount = 0
@@ -376,6 +386,16 @@ export default function BankReconciliationTab({
       }
 
       await refreshInvoices()
+
+      void trackEvent(
+        'batch_nfse_completed',
+        {
+          success_count: successCount,
+          failure_count: failureCount,
+          total_attempted: targetItems.length,
+        },
+        { userRole: 'admin' }
+      )
 
       if (successCount > 0 && failureCount === 0) {
         toast.success(`Lote concluído! ${successCount} notas fiscais emitidas com sucesso.`)

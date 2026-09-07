@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Analytics, track } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import LandingApp from './LandingApp';
 import ReminderApp from './reminder/ReminderApp';
 import RegisterApp from './components/RegisterApp';
@@ -21,7 +24,13 @@ if (typeof window !== 'undefined') {
 }
 
 export default function App() {
+  const location = useLocation();
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+
+  // Track page views on route changes for SPA navigation
+  useEffect(() => {
+    track('page_view', { path: location.pathname });
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleLocationChange = () => {
@@ -66,13 +75,20 @@ export default function App() {
     }
   }, []);
 
+  let content;
   if (currentPath.startsWith('/reminder')) {
-    return <ReminderApp />;
+    content = <ReminderApp />;
+  } else if (currentPath.startsWith('/register')) {
+    content = <RegisterApp />;
+  } else {
+    content = <LandingApp />;
   }
 
-  if (currentPath.startsWith('/register')) {
-    return <RegisterApp />;
-  }
-
-  return <LandingApp />;
+  return (
+    <>
+      {content}
+      <Analytics />
+      <SpeedInsights />
+    </>
+  );
 }

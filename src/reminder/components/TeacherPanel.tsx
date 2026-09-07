@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import AdminCalendar from './AdminCalendar'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
+import { trackEvent } from '../../lib/telemetry'
 
 interface TeacherPanelProps {
   language: Language
@@ -598,6 +599,8 @@ export default function TeacherPanel({
         try {
           const fileDataUrl = reader.result as string
 
+          const activeMonthKey = `${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}`
+
           const res = await fetch('/api/me/upload-nf', {
             method: 'POST',
             headers: {
@@ -607,7 +610,7 @@ export default function TeacherPanel({
             body: JSON.stringify({
               status_nota_fiscal: 'enviada',
               nota_fiscal_url: fileDataUrl,
-              month_key: selectedMonth || new Date().toISOString().slice(0, 7),
+              month_key: activeMonthKey,
               file_name: file.name || 'Nota_Fiscal.pdf',
             }),
           })
@@ -616,6 +619,16 @@ export default function TeacherPanel({
             const err = await res.json().catch(() => ({ error: t(language, 'error_uploading_nf') }))
             throw new Error(err.error || t(language, 'error_uploading_nf'))
           }
+
+          void trackEvent(
+            'teacher_nf_uploaded',
+            {
+              month_key: activeMonthKey,
+              file_name: file.name || 'Nota_Fiscal.pdf',
+              file_size_kb: Math.round(file.size / 1024),
+            },
+            { userRole: 'teacher', userId: profile.id }
+          )
 
           toast.success(t(language, 'nf_upload_success'))
           await refreshProfile(profile.id)
@@ -1314,9 +1327,9 @@ export default function TeacherPanel({
                       list.unshift({
                         id: `profile-nf-${profile.id}`,
                         teacher_id: profile.id,
-                        month_key: selectedMonth || new Date().toISOString().slice(0, 7),
+                        month_key: `${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}`,
                         file_url: profile.nota_fiscal_url,
-                        file_name: `Nota_Fiscal_${selectedMonth || 'Recente'}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
+                        file_name: `Nota_Fiscal_${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
                         status: profile.status_nota_fiscal || 'enviada',
                         created_at: new Date().toISOString(),
                       })

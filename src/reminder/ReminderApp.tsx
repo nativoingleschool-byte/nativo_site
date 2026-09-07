@@ -43,6 +43,7 @@ import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import { registerAppServiceWorker } from './pwa'
 import { Receipt } from 'lucide-react'
+import { trackEvent } from '../lib/telemetry'
 
 type AccountFormState = {
   full_name: string
@@ -513,6 +514,7 @@ function ReminderAppInner() {
           body: JSON.stringify({ action: 'create_teacher_note', payload: { note, month_key: monthKey } }),
         })
         if (response.ok) {
+          void trackEvent('teacher_note_created', { month_key: monthKey }, { userRole: 'teacher', userId: profile?.id })
           await refreshTeacherNotes()
           return
         }
@@ -528,6 +530,7 @@ function ReminderAppInner() {
         month_key: monthKey || null,
       })
       if (error) throw error
+      void trackEvent('teacher_note_created', { month_key: monthKey }, { userRole: 'teacher', userId: profile?.id })
       await refreshTeacherNotes()
     }
   }
@@ -1088,7 +1091,9 @@ function ReminderAppInner() {
       const data = await response.json()
 
       if (!response.ok) {
-        setLoginError(data.error || 'Falha na autenticação.')
+        const errorMsg = data.error || 'Falha na autenticação.'
+        setLoginError(errorMsg)
+        void trackEvent('login_failed', { reason: errorMsg }, { skipDatabase: true })
         return
       }
 
@@ -1099,8 +1104,13 @@ function ReminderAppInner() {
 
       if (error) {
         setLoginError(error.message)
+        void trackEvent('login_failed', { reason: error.message }, { skipDatabase: true })
         return
       }
+
+      void trackEvent('login_success', {
+        email_domain: loginForm.email.split('@')[1] || 'unknown'
+      })
 
       if (keepLoggedIn) {
         localStorage.setItem('nativo_keep_logged_in', 'true')
@@ -1110,11 +1120,14 @@ function ReminderAppInner() {
         localStorage.removeItem('nativo_saved_email')
       }
     } catch (err: any) {
-      setLoginError(err.message || 'Erro de conexão com o servidor.')
+      const errMsg = err.message || 'Erro de conexão com o servidor.'
+      setLoginError(errMsg)
+      void trackEvent('login_failed', { reason: errMsg }, { skipDatabase: true })
     }
   }
 
   const handleLogout = async () => {
+    void trackEvent('logout', { role: profile?.role }, { userRole: profile?.role, userId: profile?.id })
     try {
       localStorage.setItem('nativo_keep_logged_in', 'false')
       await supabase.auth.signOut()
@@ -1219,6 +1232,20 @@ function ReminderAppInner() {
       setAppError(error.message)
       return
     }
+
+    const statusKey = changes.teacher_lesson_status || changes.student_attendance || changes.student_lesson_status
+    if (statusKey) {
+      void trackEvent(
+        'lesson_status_update',
+        {
+          lesson_id: lessonId,
+          status: statusKey,
+          role: profile?.role,
+        },
+        { userRole: profile?.role, userId: profile?.id }
+      )
+    }
+
     await refreshLessons()
   }
 

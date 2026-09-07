@@ -372,6 +372,43 @@ CREATE POLICY "teacher_invoices_delete" ON public.teacher_invoices
 FOR DELETE
 USING (public.is_admin() OR teacher_id = auth.uid());
 
+-- -----------------------------------------------------------------------------
+-- 8. Activity Logs (Telemetry & Auditing)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.activity_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_role TEXT,
+    event_name TEXT NOT NULL,
+    event_data JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated users can insert own activity logs" ON public.activity_logs;
+CREATE POLICY "Authenticated users can insert own activity logs"
+ON public.activity_logs
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view activity logs" ON public.activity_logs;
+CREATE POLICY "Admins can view activity logs"
+ON public.activity_logs
+FOR SELECT
+TO authenticated
+USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON public.activity_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs (user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_event_name ON public.activity_logs (event_name);
+
+CREATE OR REPLACE FUNCTION clean_old_activity_logs()
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  DELETE FROM public.activity_logs
+  WHERE created_at < NOW() - INTERVAL '90 days';
+$$;
