@@ -14,6 +14,18 @@
   ],
   "rewrites": [
     {
+      "source": "/api/admin/issue-nfse",
+      "destination": "/api/admin/nfse?action=issue"
+    },
+    {
+      "source": "/api/admin/check-nfse-status",
+      "destination": "/api/admin/nfse?action=check-status"
+    },
+    {
+      "source": "/api/admin/nfse-pdf",
+      "destination": "/api/admin/nfse?action=pdf"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

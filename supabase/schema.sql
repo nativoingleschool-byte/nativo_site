@@ -412,3 +412,38 @@ AS $$
   DELETE FROM public.activity_logs
   WHERE created_at < NOW() - INTERVAL '90 days';
 $$;
+
+-- -----------------------------------------------------------------------------
+-- 9. Teacher Payouts (Monthly History & Status)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.teacher_payouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    month_key TEXT NOT NULL,
+    hours_count NUMERIC(6,2) DEFAULT 0,
+    amount NUMERIC(10,2) DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pago',
+    paid_at TIMESTAMPTZ DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (teacher_id, month_key)
+);
+
+ALTER TABLE public.teacher_payouts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "teacher_payouts_admin_all" ON public.teacher_payouts;
+CREATE POLICY "teacher_payouts_admin_all"
+ON public.teacher_payouts
+FOR ALL
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "teacher_payouts_teacher_select" ON public.teacher_payouts;
+CREATE POLICY "teacher_payouts_teacher_select"
+ON public.teacher_payouts
+FOR SELECT
+TO authenticated
+USING (teacher_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS idx_teacher_payouts_teacher_id ON public.teacher_payouts(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_payouts_month_key ON public.teacher_payouts(month_key);

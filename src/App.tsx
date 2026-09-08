@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Analytics, track } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import LandingApp from './LandingApp';
-import ReminderApp from './reminder/ReminderApp';
-import RegisterApp from './components/RegisterApp';
 import { supabase } from './reminder/lib/supabase';
+
+const LandingApp = lazy(() => import('./LandingApp'));
+const ReminderApp = lazy(() => import('./reminder/ReminderApp'));
+const RegisterApp = lazy(() => import('./components/RegisterApp'));
 
 if (typeof window !== 'undefined') {
   if (window.location.hash.includes('type=recovery')) {
@@ -86,7 +87,33 @@ export default function App() {
 
   return (
     <>
-      {content}
+      <Suspense
+        fallback={
+          <div
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#020617',
+              color: '#38bdf8',
+            }}
+          >
+            <div
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                border: '3px solid rgba(56, 189, 248, 0.2)',
+                borderTopColor: '#38bdf8',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+              }}
+            />
+          </div>
+        }
+      >
+        {content}
+      </Suspense>
       <Analytics />
       <SpeedInsights />
     </>

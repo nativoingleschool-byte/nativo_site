@@ -213,6 +213,51 @@ export default function TeacherPanel({
     [lessons, profile.id]
   )
 
+  // Filter today's lessons for quick attendance bar
+  const teacherTodayLessons = useMemo(() => {
+    const todayZoned = new Intl.DateTimeFormat('en-CA', {
+      timeZone: appTimeZone || 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+
+    return teacherLessons
+      .filter((l) => {
+        if (!l.starts_at) return false
+        const lessonDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: appTimeZone || 'UTC',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date(l.starts_at))
+        return lessonDate === todayZoned
+      })
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+  }, [teacherLessons, appTimeZone])
+
+  const handleUpdateTodayLessonStatus = async (lessonId: string, status: TeacherLessonStatus) => {
+    try {
+      if (updateTeacherSingleLesson) {
+        await updateTeacherSingleLesson({ lesson_id: lessonId, teacher_lesson_status: status })
+      } else {
+        const { error } = await supabase.from('lessons').update({ teacher_lesson_status: status }).eq('id', lessonId)
+        if (error) throw error
+      }
+      void trackEvent('lesson_status_update', { lesson_id: lessonId, status, source: 'quick_bar' }, { userRole: 'teacher', userId: profile.id })
+      await refreshLessons()
+      toast.success(
+        status === 'happened'
+          ? (language === 'es' ? 'Clase marcada como realizada' : language === 'en' ? 'Lesson marked as happened' : 'Aula marcada como realizada!')
+          : status === 'student_no_show'
+          ? (language === 'es' ? 'Marcado como no compareció' : language === 'en' ? 'Marked as student no-show' : 'Marcado como não compareceu.')
+          : (language === 'es' ? 'Clase cancelada' : language === 'en' ? 'Lesson canceled' : 'Aula cancelada.')
+      )
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar aula.')
+    }
+  }
+
   // Filter notes for this teacher
   const myNotes = useMemo(
     () => teacherNotesList.filter((n) => n.teacher_id === profile.id),
@@ -719,6 +764,96 @@ export default function TeacherPanel({
 
         {teacherTab === 'calendar' && (
           <div className="space-y-6 animate-fade-in">
+            {teacherTodayLessons.length > 0 && (
+              <div
+                className="form-card mb-6"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.75))',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: '1.25rem',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>⚡</span>
+                    {language === 'es' ? 'Clases de Hoy (Chamada Rápida)' : language === 'en' ? "Today's Classes (Quick Attendance)" : 'Aulas de Hoje (Chamada Rápida)'}
+                  </h3>
+                  <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>
+                    {teacherTodayLessons.length} {language === 'es' ? 'clase(s)' : language === 'en' ? 'class(es)' : 'aula(s)'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {teacherTodayLessons.map((l) => {
+                    const studentObj = profilesById[l.student_id] || students.find(s => s.id === l.student_id)
+                    const studentName = studentObj?.full_name || l.class_name || 'Aluno'
+                    const timeStr = formatShortDate(l.starts_at, language, appTimeZone)
+
+                    return (
+                      <div
+                        key={l.id}
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.75rem',
+                          padding: '0.85rem 1rem',
+                          borderRadius: '0.75rem',
+                          background: 'rgba(15, 23, 42, 0.75)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                        }}
+                      >
+                        <div style={{ minWidth: '180px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.92rem' }}>{studentName}</span>
+                            {l.teacher_lesson_status && (
+                              <span className={badgeClass(l.teacher_lesson_status)} style={{ fontSize: '0.7rem' }}>
+                                {l.teacher_lesson_status === 'happened' ? '✓ Realizada' : l.teacher_lesson_status === 'student_no_show' ? '⚠️ Não Compareceu' : '✕ Cancelada'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="muted" style={{ fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                            {timeStr} • {l.subject}
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className={l.teacher_lesson_status === 'happened' ? 'primary-button' : 'secondary-button'}
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: l.teacher_lesson_status === 'happened' ? '#10b981' : undefined, borderColor: '#10b981' }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'happened')}
+                          >
+                            {language === 'es' ? '✓ Realizada' : language === 'en' ? '✓ Happened' : '✓ Realizada'}
+                          </button>
+                          <button
+                            type="button"
+                            className={l.teacher_lesson_status === 'student_no_show' ? 'primary-button' : 'secondary-button'}
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: l.teacher_lesson_status === 'student_no_show' ? '#f59e0b' : undefined, borderColor: '#f59e0b', color: l.teacher_lesson_status === 'student_no_show' ? '#000' : undefined }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'student_no_show')}
+                          >
+                            {language === 'es' ? '⚠️ No compareció' : language === 'en' ? '⚠️ No-Show' : '⚠️ Não compareceu'}
+                          </button>
+                          <button
+                            type="button"
+                            className={l.teacher_lesson_status === 'not_happened' ? 'danger-button' : 'secondary-button'}
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'not_happened')}
+                          >
+                            {language === 'es' ? '✕ Cancelada' : language === 'en' ? '✕ Canceled' : '✕ Cancelada'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <div
               className="form-card mb-6"
               style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}

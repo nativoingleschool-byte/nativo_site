@@ -1,4 +1,4 @@
-import { FormEvent, useState, useRef, useMemo } from 'react'
+import { FormEvent, useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState, TeacherNote, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
@@ -122,6 +122,35 @@ export default function AdminStaffTab({
     return {}
   })
 
+  // Load teacher payouts from Supabase on mount to ensure cross-device synchronization
+  useEffect(() => {
+    const fetchTeacherPayouts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('teacher_payouts')
+          .select('teacher_id, month_key, status')
+        if (!error && data) {
+          const map: Record<string, string[]> = {}
+          data.forEach((row: any) => {
+            if (row.status === 'pago') {
+              if (!map[row.teacher_id]) map[row.teacher_id] = []
+              if (!map[row.teacher_id].includes(row.month_key)) {
+                map[row.teacher_id].push(row.month_key)
+              }
+            }
+          })
+          setPaidMonthsByTeacher(map)
+          try {
+            localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(map))
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.debug('Failed to fetch teacher_payouts from DB, using cached map:', err)
+      }
+    }
+    void fetchTeacherPayouts()
+  }, [])
+
   // Get active payout month for a teacher: starting from current month (2026-08), advancing when marked as paid
   const getTeacherActivePayoutMonth = (teacherId: string): string => {
     if (selectedMonthKey && selectedMonthKey !== 'auto') {
@@ -148,6 +177,22 @@ export default function AdminStaffTab({
       const updatedMap = { ...paidMonthsByTeacher, [teacherId]: newList }
       setPaidMonthsByTeacher(updatedMap)
       localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(updatedMap))
+
+      // Persist to Supabase teacher_payouts table
+      try {
+        if (isPaid) {
+          await supabase.from('teacher_payouts').upsert({
+            teacher_id: teacherId,
+            month_key: monthKey,
+            status: 'pago',
+            paid_at: new Date().toISOString(),
+          }, { onConflict: 'teacher_id,month_key' })
+        } else {
+          await supabase.from('teacher_payouts').delete().eq('teacher_id', teacherId).eq('month_key', monthKey)
+        }
+      } catch (payoutDbErr) {
+        console.warn('teacher_payouts DB update notice:', payoutDbErr)
+      }
 
       // If marking as paid, archive the active NF to teacher_invoices and reset the teacher's profile NF status
       const teacherObj = profiles.find((p) => p.id === teacherId) || profilesById[teacherId]

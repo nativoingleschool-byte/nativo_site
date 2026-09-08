@@ -436,9 +436,60 @@ export default function StudentPanel({
             </section>
           </div>
         ) : (
-          <div className="split-column animate-fade-in">
-            <section style={{ flex: 1 }}>
-              <h3>{t(language, 'invoices_title')}</h3>
+          <div className="space-y-6 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Tuition Overview Card */}
+            <div
+              className="form-card"
+              style={{
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.7))',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: '1.25rem',
+                padding: '1.5rem',
+              }}
+            >
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#fff', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>💳</span>
+                {language === 'es' ? 'Resumen de Matrícula y Pagos' : language === 'en' ? 'Tuition & Billing Overview' : 'Resumo da Mensalidade e Pagamentos'}
+              </h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                    {language === 'es' ? 'Valor Mensual' : language === 'en' ? 'Monthly Tuition' : 'Valor da Mensalidade'}
+                  </p>
+                  <p style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#38bdf8' }}>
+                    {profile.tuition_fee ? `R$ ${Number(profile.tuition_fee).toFixed(2).replace('.', ',')}` : 'R$ 0,00'}
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                    {language === 'es' ? 'Vencimiento Preferencial' : language === 'en' ? 'Preferred Due Day' : 'Vencimento Preferencial'}
+                  </p>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc' }}>
+                    {profile.data_pagamento_preferencial
+                      ? (language === 'es' ? `Día ${profile.data_pagamento_preferencial} de cada mes` : language === 'en' ? `Day ${profile.data_pagamento_preferencial} of each month` : `Dia ${profile.data_pagamento_preferencial} de cada mês`)
+                      : (language === 'es' ? 'Día 5 de cada mes' : language === 'en' ? 'Day 5 of each month' : 'Dia 5 de cada mês')}
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                    {language === 'es' ? 'Situación Actual' : language === 'en' ? 'Current Status' : 'Situação Atual'}
+                  </p>
+                  <span className={`${badgeClass(profile.status_pagamento || 'pendente')}`} style={{ fontSize: '0.85rem', display: 'inline-block', marginTop: '0.25rem' }}>
+                    {profile.status_pagamento === 'em_dia' && (language === 'es' ? '✓ Al día' : language === 'en' ? '✓ Paid / Up to Date' : '✓ Em Dia')}
+                    {profile.status_pagamento === 'atrasado' && (language === 'es' ? '⚠️ Atrasado' : language === 'en' ? '⚠️ Overdue' : '⚠️ Atrasado')}
+                    {(profile.status_pagamento === 'pendente' || !profile.status_pagamento) && (language === 'es' ? '⏳ Pendiente' : language === 'en' ? '⏳ Pending' : '⏳ Pendente')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <section>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.75rem' }}>
+                {t(language, 'invoices_title')}
+              </h3>
               {loadingInvoices ? (
                 <p className="muted">{t(language, 'loading_invoices')}</p>
               ) : (
