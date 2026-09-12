@@ -1,8 +1,8 @@
 import { BrowserPermission, InstallPromptEvent, Profile } from '../lib/types'
 import { Language, supportedLanguages, t } from '../lib/i18n'
 import { formatDateTime } from '../lib/utils'
-import { LogOut, Bell, BellOff, Download, Globe, Clock, User, Receipt } from 'lucide-react'
-
+import { LogOut, Bell, BellOff, Download, Globe, Clock, User, Receipt, Settings, X } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 const appTimeZones = [
   { value: 'America/Sao_Paulo', label: 'BRT' },
   { value: 'UTC', label: 'UTC' },
@@ -49,6 +49,23 @@ export default function Topbar({
   adminTab,
   setAdminTab,
 }: TopbarProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false)
+      }
+    }
+    if (isSettingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSettingsOpen])
+
   const isPushEnabled = notificationPermission === 'granted' && profile.push_enabled
   const roleLabel = profile.role === 'admin' 
     ? t(language, 'role_admin') 
@@ -130,68 +147,105 @@ export default function Topbar({
       )}
 
       {/* Right: controls */}
-      <div className="topbar-section">
-        {/* Live clock + timezone */}
-        <div className="topbar-chip">
-          <Clock size={14} />
-          <span className="topbar-time">{timeStr}</span>
-          <select
-            className="topbar-select topbar-timezone-select"
-            value={appTimeZone}
-            onChange={(e) => setAppTimeZone(e.target.value)}
-            title={language === 'es' ? 'Zona horaria' : language === 'pt' ? 'Fuso horário' : 'Timezone'}
-          >
-            {appTimeZones.map((z) => (
-              <option key={z.value} value={z.value}>{z.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Language */}
-        <div className="topbar-chip">
-          <Globe size={14} />
-          <select
-            className="topbar-select"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-            title={t(language, 'language')}
-          >
-            {supportedLanguages.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.value.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Push toggle */}
+      <div className="topbar-section" style={{ position: 'relative' }} ref={settingsRef}>
         <button
-          className={`topbar-icon-btn${isPushEnabled ? ' topbar-icon-btn--active' : ''}`}
-          onClick={isPushEnabled ? disablePush : requestPushPermission}
-          title={isPushEnabled 
-            ? (language === 'es' ? 'Desactivar alertas push' : language === 'pt' ? 'Desativar alertas push' : 'Disable push alerts')
-            : (language === 'es' ? 'Activar alertas push' : language === 'pt' ? 'Ativar alertas push' : 'Enable push alerts')}
+          className="topbar-icon-btn"
+          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+          title={language === 'es' ? 'Ajustes' : language === 'pt' ? 'Configurações' : 'Settings'}
         >
-          {isPushEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+          {isSettingsOpen ? <X size={16} /> : <Settings size={16} />}
         </button>
 
-        {/* Install */}
-        {!isStandalone && installPrompt && (
-          <button
-            className="topbar-icon-btn"
-            onClick={promptInstall}
-            title={language === 'es' ? 'Instalar App' : language === 'pt' ? 'Instalar App' : 'Install App'}
-          >
-            <Download size={16} />
-          </button>
+        {isSettingsOpen && (
+          <div style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            background: 'rgba(15, 23, 42, 0.98)',
+            border: '1px solid rgba(148, 163, 184, 0.18)',
+            borderRadius: '12px',
+            padding: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            minWidth: '220px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(16px)',
+            zIndex: 100
+          }}>
+            {/* Live clock + timezone */}
+            <div className="topbar-chip" style={{ justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Clock size={14} />
+                <span className="topbar-time" style={{ display: 'inline' }}>{timeStr}</span>
+              </div>
+              <select
+                className="topbar-select"
+                value={appTimeZone}
+                onChange={(e) => setAppTimeZone(e.target.value)}
+                title={language === 'es' ? 'Zona horaria' : language === 'pt' ? 'Fuso horário' : 'Timezone'}
+                style={{ display: 'inline', width: 'auto' }}
+              >
+                {appTimeZones.map((z) => (
+                  <option key={z.value} value={z.value}>{z.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Language */}
+            <div className="topbar-chip" style={{ justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Globe size={14} />
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0' }}>{t(language, 'language')}</span>
+              </div>
+              <select
+                className="topbar-select"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+              >
+                {supportedLanguages.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.value.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              {/* Push toggle */}
+              <button
+                className={`topbar-icon-btn${isPushEnabled ? ' topbar-icon-btn--active' : ''}`}
+                onClick={isPushEnabled ? disablePush : requestPushPermission}
+                title={isPushEnabled 
+                  ? (language === 'es' ? 'Desactivar alertas push' : language === 'pt' ? 'Desativar alertas push' : 'Disable push alerts')
+                  : (language === 'es' ? 'Activar alertas push' : language === 'pt' ? 'Ativar alertas push' : 'Enable push alerts')}
+                style={{ flex: 1, width: 'auto' }}
+              >
+                {isPushEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+              </button>
+
+              {/* Install */}
+              {!isStandalone && installPrompt && (
+                <button
+                  className="topbar-icon-btn"
+                  onClick={promptInstall}
+                  title={language === 'es' ? 'Instalar App' : language === 'pt' ? 'Instalar App' : 'Install App'}
+                  style={{ flex: 1, width: 'auto' }}
+                >
+                  <Download size={16} />
+                </button>
+              )}
+
+              {/* Logout */}
+              <button
+                className="topbar-icon-btn topbar-icon-btn--danger"
+                onClick={handleLogout}
+                title={language === 'es' ? 'Cerrar sesión' : language === 'pt' ? 'Sair' : 'Log out'}
+                style={{ flex: 1, width: 'auto' }}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
         )}
-
-        {/* Logout */}
-        <button
-          className="topbar-icon-btn topbar-icon-btn--danger"
-          onClick={handleLogout}
-          title={language === 'es' ? 'Cerrar sesión' : language === 'pt' ? 'Sair' : 'Log out'}
-        >
-          <LogOut size={16} />
-        </button>
       </div>
     </header>
   )

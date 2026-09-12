@@ -4,7 +4,7 @@ import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, Te
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
-import AdminCalendar from './AdminCalendar'
+import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
 import { trackEvent } from '../../lib/telemetry'
@@ -901,25 +901,16 @@ export default function TeacherPanel({
               </form>
             </div>
 
-            <AdminCalendar
+            <TeacherAvailabilityCalendar
               lessons={lessons}
-              profilesById={profilesById}
-              students={sortedStudents}
-              teachers={teachers}
+              availabilities={availabilities}
               timeZone={appTimeZone}
               language={language}
-              role="teacher"
               currentTeacherId={profile.id}
-              allowCreateUsers={false}
-              allowTeacherChange={false}
-              onCreateLesson={createLessonFromDraft}
-              onUpdateLessonGroup={updateTeacherLessonGroup}
-              onDeleteLessonGroup={onDeleteLessonGroup}
-              onCreateStudentLogin={createStudentLoginFromCalendar}
-              onCreateTeacherLogin={createTeacherLoginFromCalendar}
-              availabilities={availabilities}
               onCreateAvailability={onCreateAvailability}
               onDeleteAvailability={onDeleteAvailability}
+              onEditLesson={handleOpenEditLesson}
+              profilesById={profilesById}
             />
           </div>
         )}
@@ -977,41 +968,34 @@ export default function TeacherPanel({
               </div>
 
               {/* Monthly KPI Summary Bar */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: '0.75rem',
-                  marginBottom: '1.25rem',
-                }}
-              >
-                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div className="kpi-grid-mobile">
+                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'classes_conducted')}
                   </span>
-                  <strong style={{ fontSize: '1.3rem', color: '#fff' }}>
+                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#fff' }}>
                     {payableSessions.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthSessions.length}</span>
                   </strong>
                 </div>
 
-                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'total_hours_worked')}
                   </span>
-                  <strong style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
+                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
                 </div>
 
-                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'calculated_amount')}
                   </span>
-                  <strong style={{ fontSize: '1.3rem', color: '#10b981' }}>
+                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#10b981' }}>
                     {currency === 'BRL' ? 'R$' : currency} {totalAmount.toFixed(2)}
                   </strong>
                 </div>
 
-                <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'payments')}
                   </span>
                   <span className={badgeClass(profile.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')} style={{ marginTop: '4px', display: 'inline-block' }}>
