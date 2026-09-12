@@ -278,7 +278,7 @@ export default function TeacherAvailabilityCalendar({
   }, [])
 
   return (
-    <div className="calendar-container w-full h-[700px] bg-slate-900/60 rounded-2xl border border-slate-700/50 p-4 shadow-xl backdrop-blur-md">
+    <div className="calendar-container w-[calc(100%+32px)] -ml-4 sm:w-full sm:ml-0 h-[750px] bg-slate-900/60 rounded-none sm:rounded-2xl border-y sm:border border-slate-700/50 p-1 sm:p-4 shadow-xl backdrop-blur-md">
       <DnDCalendar
         localizer={localizer}
         events={events}
