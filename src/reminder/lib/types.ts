@@ -22,6 +22,7 @@ export type UserFormState = {
   cidade?: string
   uf?: string
   tuition_fee?: number
+  country?: string
 }
 
 export type AccountFormState = {
@@ -54,6 +55,7 @@ export type Profile = {
   push_enabled: boolean
   created_at?: string
   timezone?: string
+  country?: string
   cpf?: string
   data_pagamento_preferencial?: number
   status_pagamento?: 'em_dia' | 'atrasado' | 'pendente' | null

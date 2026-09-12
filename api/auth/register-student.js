@@ -105,9 +105,19 @@ export default async function handler(req, res) {
       status_pagamento: 'pendente'
     };
 
-    const { error: profileError } = await supabaseAdmin
+    let { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert(profilePayload);
+
+    // Fallback: If 'country' column has not been added to the database schema yet
+    if (profileError && profileError.message && profileError.message.toLowerCase().includes('country')) {
+      console.warn('[register-student] Retrying profile upsert without country column:', profileError.message);
+      const { country: _omitted, ...payloadWithoutCountry } = profilePayload;
+      const retryResult = await supabaseAdmin
+        .from('profiles')
+        .upsert(payloadWithoutCountry);
+      profileError = retryResult.error;
+    }
 
     if (profileError) {
       await supabaseAdmin.auth.admin.deleteUser(userId);

@@ -14,6 +14,7 @@ create table if not exists public.profiles (
   created_at timestamptz not null default timezone('utc', now()),
   
   -- Student specific fields
+  country text not null default 'BR',
   cpf text null,
   data_pagamento_preferencial integer null check (data_pagamento_preferencial between 1 and 31),
   status_pagamento text null check (status_pagamento in ('em_dia', 'atrasado', 'pendente')),

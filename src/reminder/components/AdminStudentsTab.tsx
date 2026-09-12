@@ -773,6 +773,25 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                     >
                       {student.full_name}
                     </button>
+                    {student.country && student.country !== 'BR' && (
+                      <span 
+                        title={`País: ${student.country}`}
+                        style={{
+                          marginLeft: '0.45rem',
+                          fontSize: '0.72rem',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '0.35rem',
+                          background: 'rgba(56, 189, 248, 0.15)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          fontWeight: 600,
+                          verticalAlign: 'middle',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {student.country}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {student.tuition_fee !== undefined && student.tuition_fee !== null && Number(student.tuition_fee) > 0 ? (
@@ -992,6 +1011,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                                 class_name: student.class_name || '',
                                 speciality: '',
                                 password: '',
+                                country: student.country || 'BR',
                                 cpf: student.cpf || '',
                                 data_pagamento_preferencial: student.data_pagamento_preferencial || 5,
                                 status_pagamento: student.status_pagamento || 'pendente',
@@ -1042,6 +1062,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
               const isDirty = initialUserForm ? (
                 userForm.full_name !== initialUserForm.full_name ||
                 userForm.email !== initialUserForm.email ||
+                (userForm.country || 'BR') !== (initialUserForm.country || 'BR') ||
                 (userForm.cpf || '') !== (initialUserForm.cpf || '') ||
                 Number(userForm.data_pagamento_preferencial || 5) !== Number(initialUserForm.data_pagamento_preferencial || 5) ||
                 (userForm.status_pagamento || 'pendente') !== (initialUserForm.status_pagamento || 'pendente') ||
@@ -1082,6 +1103,26 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 value={userForm.email}
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
+              <select
+                value={userForm.country || 'BR'}
+                onChange={(e) => setUserForm({ ...userForm, country: e.target.value })}
+              >
+                <option value="BR">🇧🇷 Brasil</option>
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 United Kingdom</option>
+                <option value="PT">🇵🇹 Portugal</option>
+                <option value="ES">🇪🇸 España</option>
+                <option value="AR">🇦🇷 Argentina</option>
+                <option value="CO">🇨🇴 Colombia</option>
+                <option value="MX">🇲🇽 México</option>
+                <option value="DE">🇩🇪 Deutschland</option>
+                <option value="FR">🇫🇷 France</option>
+                <option value="IT">🇮🇹 Italia</option>
+                <option value="JP">🇯🇵 日本</option>
+                <option value="AU">🇦🇺 Australia</option>
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="OTHER">🌍 Outro / Other</option>
+              </select>
               <input
                 placeholder={t(language, 'cpf_label')}
                 value={userForm.cpf || ''}
@@ -1178,6 +1219,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                       .update({
                         full_name: userForm.full_name,
                         email: userForm.email,
+                        country: userForm.country || 'BR',
                         cpf: userForm.cpf || null,
                         data_pagamento_preferencial: userForm.data_pagamento_preferencial || 5,
                         status_pagamento: userForm.status_pagamento || 'pendente',
