@@ -236,6 +236,17 @@ export default function TeacherPanel({
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   }, [teacherLessons, appTimeZone])
 
+  const lastUnmarkedClass = useMemo(() => {
+    const now = new Date()
+    const pastUnmarked = teacherLessons.filter(l => 
+      new Date(l.starts_at) < now && 
+      !l.teacher_lesson_status
+    )
+    if (pastUnmarked.length === 0) return null
+    pastUnmarked.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+    return pastUnmarked[0]
+  }, [teacherLessons])
+
   const handleUpdateTodayLessonStatus = async (lessonId: string, status: TeacherLessonStatus) => {
     try {
       if (updateTeacherSingleLesson) {
@@ -764,9 +775,104 @@ export default function TeacherPanel({
 
         {teacherTab === 'calendar' && (
           <div className="space-y-6 animate-fade-in">
-            {teacherTodayLessons.length > 0 && (
+            {lastUnmarkedClass && (
               <div
                 className="form-card mb-6"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(153, 27, 27, 0.05))',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  borderRadius: '1.25rem',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>⚠️</span>
+                    {language === 'es' ? 'Atención: Clase anterior sin marcar' : language === 'en' ? "Warning: Unmarked Past Class" : 'Atenção: Aula anterior não marcada'}
+                  </h3>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {(() => {
+                    const l = lastUnmarkedClass
+                    const studentObj = profilesById[l.student_id] || students.find(s => s.id === l.student_id)
+                    const studentName = studentObj?.full_name || l.class_name || 'Aluno'
+                    const timeStr = formatShortDate(l.starts_at, language, appTimeZone)
+
+                    return (
+                      <div
+                        key={l.id}
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.75rem',
+                          padding: '0.85rem 1rem',
+                          borderRadius: '0.75rem',
+                          background: 'rgba(15, 23, 42, 0.75)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                        }}
+                      >
+                        <div style={{ minWidth: '180px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.92rem' }}>{studentName}</span>
+                          </div>
+                          <p className="muted" style={{ fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                            {timeStr} • {l.subject}
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderColor: '#10b981' }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'happened')}
+                          >
+                            {language === 'es' ? '✓ Realizada' : language === 'en' ? '✓ Happened' : '✓ Realizada'}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderColor: '#f59e0b' }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'student_no_show')}
+                          >
+                            {language === 'es' ? '⚠️ No compareció' : language === 'en' ? '⚠️ No-Show' : '⚠️ Não compareceu'}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
+                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'not_happened')}
+                          >
+                            {language === 'es' ? '✕ Cancelada' : language === 'en' ? '✕ Canceled' : '✕ Cancelada'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+
+            <TeacherAvailabilityCalendar
+              lessons={lessons}
+              availabilities={availabilities}
+              timeZone={appTimeZone}
+              language={language}
+              currentTeacherId={profile.id}
+              onCreateAvailability={onCreateAvailability}
+              onDeleteAvailability={onDeleteAvailability}
+              onEditLesson={handleOpenEditLesson}
+              profilesById={profilesById}
+            />
+
+            {teacherTodayLessons.length > 0 && (
+              <div
+                className="form-card mb-6 mt-6"
                 style={{
                   background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.75))',
                   border: '1px solid rgba(56, 189, 248, 0.4)',
@@ -855,7 +961,7 @@ export default function TeacherPanel({
             )}
 
             <div
-              className="form-card mb-6"
+              className="form-card mb-6 mt-6"
               style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
             >
               <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
@@ -900,18 +1006,6 @@ export default function TeacherPanel({
                 </div>
               </form>
             </div>
-
-            <TeacherAvailabilityCalendar
-              lessons={lessons}
-              availabilities={availabilities}
-              timeZone={appTimeZone}
-              language={language}
-              currentTeacherId={profile.id}
-              onCreateAvailability={onCreateAvailability}
-              onDeleteAvailability={onDeleteAvailability}
-              onEditLesson={handleOpenEditLesson}
-              profilesById={profilesById}
-            />
           </div>
         )}
 
