@@ -1628,3 +1628,64 @@ body:has(.reminder-app-scope) {
   color: #94a3b8;
   font-size: 0.75rem;
 }
+
+/* Mobile-first horizontally scrollable calendar */
+.calendar-mobile-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-mobile-scroll .rbc-calendar {
+  min-width: 800px; /* Force minimum width to prevent event crushing on mobile */
+}
+
+/* Sticky Time Gutter */
+.calendar-mobile-scroll .rbc-time-header-gutter,
+.calendar-mobile-scroll .rbc-time-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: #0f172a; /* Match slate-900 background */
+}
+
+.calendar-mobile-scroll .rbc-time-header-gutter {
+  z-index: 15; /* Above both time gutter and header row */
+}
+
+.calendar-mobile-scroll .rbc-time-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #0f172a;
+}
+
+/* Modern Event Cards */
+.calendar-container .rbc-event {
+  border-radius: 8px !important;
+  padding: 4px 6px !important;
+  font-size: 0.75rem;
+  border: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: transform 0.1s, filter 0.1s;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-container .rbc-event-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  width: 100%;
+}
+
+.calendar-container .rbc-event:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  z-index: 10 !important;
+}

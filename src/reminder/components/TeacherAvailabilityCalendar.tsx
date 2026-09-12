@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import { Calendar, dateFnsLocalizer, Views, Event as RbcEvent, SlotInfo } from 'react-big-calendar'
 import withDragAndDrop, { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
-import { format, parse, startOfWeek, getDay } from 'date-fns'
+import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { ptBR } from 'date-fns/locale/pt-BR'
 import { es as esLocale } from 'date-fns/locale/es'
@@ -10,7 +10,8 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { useToast } from '../lib/toast'
-import ThreeDayView from './ThreeDayView'
+import { customDayLayoutAlgorithm } from '../lib/customDayLayout'
+
 
 const locales = {
   'en': enUS,
@@ -28,11 +29,13 @@ const localizer = dateFnsLocalizer({
 
 const CustomHeader = ({ date, localizer, culture }: any) => {
   const dayNum = localizer.format(date, 'dd', culture)
-  const dayName = localizer.format(date, 'EEEEE', culture)
+  const dayName = localizer.format(date, 'EEE', culture)
+  const isToday = isSameDay(date, new Date())
+  
   return (
-    <div className="flex flex-col items-center justify-center py-1">
-      <span className="text-lg font-bold leading-none text-slate-200">{dayNum}</span>
-      <span className="text-[11px] font-bold uppercase mt-0.5 text-slate-400">{dayName}</span>
+    <div className={`flex flex-col items-center justify-center py-2 w-full h-full ${isToday ? 'bg-indigo-500/10 border-b-2 border-indigo-500' : ''}`}>
+      <span className={`text-[11px] font-bold uppercase mb-0.5 ${isToday ? 'text-indigo-400' : 'text-slate-400'}`}>{dayName}</span>
+      <span className={`text-xl font-bold leading-none ${isToday ? 'text-indigo-400' : 'text-slate-200'}`}>{dayNum}</span>
     </div>
   )
 }
@@ -290,13 +293,14 @@ export default function TeacherAvailabilityCalendar({
   }, [])
 
   return (
-    <div className="calendar-container w-[calc(100%+32px)] -ml-4 sm:w-full sm:ml-0 h-[750px] bg-slate-900/60 rounded-none sm:rounded-2xl border-y sm:border border-slate-700/50 p-1 sm:p-4 shadow-xl backdrop-blur-md">
+    <div className="calendar-mobile-scroll calendar-container h-[750px] bg-slate-900/60 sm:rounded-2xl border-y sm:border border-slate-700/50 shadow-xl backdrop-blur-md">
       <DnDCalendar
         localizer={localizer}
         culture={language}
         events={events}
-        defaultView={"three-day" as any}
-        views={{ month: true, 'three-day': ThreeDayView, week: true, day: true } as any}
+        defaultView={Views.WEEK}
+        views={[Views.MONTH, Views.WEEK, Views.DAY]}
+        dayLayoutAlgorithm={customDayLayoutAlgorithm}
         step={30}
         timeslots={2}
         selectable
@@ -318,8 +322,7 @@ export default function TeacherAvailabilityCalendar({
           month: t(language, 'month') || 'Month',
           week: t(language, 'week') || 'Week',
           day: t(language, 'day') || 'Day',
-          'three-day': language === 'pt' ? '3 Dias' : language === 'es' ? '3 Días' : '3 Days',
-        } as any}
+        }}
       />
     </div>
   )
