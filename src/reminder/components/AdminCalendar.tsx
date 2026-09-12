@@ -121,6 +121,8 @@ const formatWeekLabel = (weekStart: string, language: Language = 'pt') => {
 const groupKeyForLesson = (lesson: Lesson) =>
   [lesson.subject, lesson.class_name, lesson.teacher_id, lesson.starts_at, lesson.duration_minutes].join('|')
 
+import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
+
 export default function AdminCalendar({
   lessons,
   profilesById,
@@ -839,280 +841,51 @@ export default function AdminCalendar({
         </div>
       </div>
 
-      <div className="calendar-mobile-nav">
-        <button
-          type="button"
-          className={`calendar-mobile-nav-btn ${activeMobileRange === 0 ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMobileRange(0)
-            scrollToDay(0)
-          }}
-        >
-          {dayLabels[0]?.short} - {dayLabels[2]?.short}
-        </button>
-        <button
-          type="button"
-          className={`calendar-mobile-nav-btn ${activeMobileRange === 1 ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMobileRange(1)
-            scrollToDay(3)
-          }}
-        >
-          {dayLabels[3]?.short} - {dayLabels[5]?.short}
-        </button>
-        <button
-          type="button"
-          className={`calendar-mobile-nav-btn ${activeMobileRange === 2 ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMobileRange(2)
-            scrollToDay(4)
-          }}
-        >
-          {dayLabels[4]?.short} - {dayLabels[6]?.short}
-        </button>
-      </div>
-
-      <div ref={gridRef} onScroll={handleGridScroll} className="calendar-grid">
-        <div className="calendar-header-spacer" />
-        {dayLabels.map((label) => {
-          const isToday = label.key === todayKey
-          return (
-            <div key={label.key} className={`calendar-header-cell ${isToday ? 'calendar-header-cell-today' : ''}`}>
-              <strong>{label.short}</strong>
-              <span className="muted tiny-copy">{label.day}</span>
-              {isToday && <span className="calendar-today-badge">{t(language, 'today_badge')}</span>}
-            </div>
-          )
-        })}
-
-        <div className="calendar-time-column">
-          {slots.map((minute) => {
-            const hour = Math.floor(minute / 60)
-            const mins = minute % 60
-            const isHour = mins === 0
-            return (
-              <div key={minute} className={`calendar-time-slot ${isHour ? 'calendar-time-slot-hour' : ''}`}>
-                {isHour ? `${pad2(hour)}:00` : ''}
-              </div>
-            )
-          })}
-        </div>
-
-        {days.map((day) => {
-          const dayGroups = groupsByDay[day] ?? []
-          const dayAvailabilities = availabilitiesByDay[day] ?? []
-
-          return (
-            <div key={day} className="calendar-day-column">
-              {slots.map((minute) => (
-                <button
-                  key={minute}
-                  type="button"
-                  className="calendar-slot"
-                  onClick={() => {
-                    if (calendarMode === 'availability') {
-                      openCreateAvailability(day, minute)
-                    } else {
-                      openCreate(day, minute)
-                    }
-                  }}
-                  aria-label={`${calendarMode === 'availability' ? t(language, 'add_availability') : 'Create class'} on ${day} at ${pad2(Math.floor(minute / 60))}:${pad2(minute % 60)}`}
-                />
-              ))}
-
-              {/* CLASSES VIEW */}
-              {calendarMode === 'classes' &&
-                dayGroups.map((group) => {
-                  const start = getZonedParts(new Date(group.starts_at), timeZone)
-                  const minutesFromMidnight = start.hour * 60 + start.minute
-                  const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
-                  const span = Math.max(1, Math.ceil(group.duration_minutes / slotMinutes))
-                  const teacherName = profilesById[group.teacher_id]?.full_name ?? t(language, 'teacher')
-                  const studentsForGroup = group.student_ids.map((id) => profilesById[id]?.full_name ?? t(language, 'role_student'))
-                  const confirmedCount = group.lessonIds.filter((lessonId) => {
-                    const lesson = lessons.find((item) => item.id === lessonId)
-                    return lesson?.student_attendance === 'attend'
-                  }).length
-                  const cancelledCount = group.lessonIds.filter((lessonId) => {
-                    const lesson = lessons.find((item) => item.id === lessonId)
-                    return lesson?.student_attendance === 'cancel'
-                  }).length
-                  const totalStudents = group.lessonIds.length
-
-                  let groupStatus: 'confirmed' | 'cancelled' | 'partial' | 'pending' = 'pending'
-                  let statusLabel = t(language, 'pending')
-                  let eventClass = 'calendar-event-neutral'
-
-                  if (cancelledCount > 0 && cancelledCount < totalStudents) {
-                    groupStatus = 'partial'
-                    statusLabel = t(language, 'status_partial_text')
-                      .replace('{cancelled}', String(cancelledCount))
-                      .replace('{total}', String(totalStudents))
-                    eventClass = 'calendar-event-warning'
-                  } else if (cancelledCount === totalStudents && totalStudents > 0) {
-                    groupStatus = 'cancelled'
-                    statusLabel = t(language, 'status_cancelled_text')
-                      .replace('{cancelled}', String(cancelledCount))
-                      .replace('{total}', String(totalStudents))
-                    eventClass = 'calendar-event-danger'
-                  } else if (confirmedCount === totalStudents && totalStudents > 0) {
-                    groupStatus = 'confirmed'
-                    statusLabel = t(language, 'status_confirmed_text')
-                      .replace('{confirmed}', String(confirmedCount))
-                      .replace('{total}', String(totalStudents))
-                    eventClass = 'calendar-event-success'
-                  } else {
-                    groupStatus = 'pending'
-                    statusLabel = t(language, 'status_pending_text')
-                      .replace('{confirmed}', String(confirmedCount))
-                      .replace('{total}', String(totalStudents))
-                    eventClass = 'calendar-event-neutral'
-                  }
-
-                  const layout = groupLayouts[group.key] ?? { column: 0, totalColumns: 1 }
-                  const isNarrow = layout.totalColumns > 1
-                  if (startIndex < 0 || startIndex >= slotCount) return null
-
-                  return (
-                    <button
-                      key={group.key}
-                      type="button"
-                      className={`calendar-event ${eventClass}${isNarrow ? ' calendar-event--narrow' : ''}`}
-                      style={{
-                        gridRow: `${startIndex + 1} / span ${span}`,
-                        width: `calc(${100 / layout.totalColumns}% - 6px)`,
-                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 3px)`,
-                      }}
-                      title={`${group.subject} • ${studentsForGroup.join(', ')} ${t(language, 'with_word')} ${teacherName} (${statusLabel})`}
-                      onClick={() => openEdit(group)}
-                    >
-                      <div className="calendar-event-header">
-                        <strong className="calendar-event-title">{group.subject}</strong>
-                        {!isNarrow && (
-                          <span className={`calendar-status-dot calendar-status-dot-${groupStatus}`} title={statusLabel} />
-                        )}
-                      </div>
-                      {span > 1 && !isNarrow && (
-                        <div className="calendar-event-details">
-                          <span className="muted tiny-copy calendar-event-sub">{teacherName}</span>
-                          <span className="muted tiny-copy calendar-event-sub">
-                            {studentsForGroup.length} {studentsForGroup.length === 1 ? t(language, 'student_singular') : t(language, 'student_plural')}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-
-              {/* AVAILABILITY VIEW */}
-              {calendarMode === 'availability' &&
-                (availabilitySegmentsByDay[day] ?? []).map((segment) => {
-                  const start = getZonedParts(new Date(segment.starts_at), timeZone)
-                  const minutesFromMidnight = start.hour * 60 + start.minute
-                  const startIndex = Math.floor((minutesFromMidnight - startHour * 60) / slotMinutes)
-                  const span = Math.max(1, Math.ceil(segment.duration_minutes / slotMinutes))
-                  if (startIndex < 0 || startIndex >= slotCount) return null
-
-                  const isBooked = segment.is_booked
-                  const teacherProfile = profilesById[segment.parent_availability.teacher_id]
-                  const conflictLesson = segment.lesson
-                  const layout = availabilityLayouts[segment.key] ?? { column: 0, totalColumns: 1 }
-                  const isNarrow = layout.totalColumns > 1
-
-                  return (
-                    <button
-                      key={segment.key}
-                      type="button"
-                      className={`calendar-event ${isBooked ? 'calendar-event-booked' : 'calendar-event-available'}${isNarrow ? ' calendar-event--narrow' : ''}`}
-                      style={{
-                        gridRow: `${startIndex + 1} / span ${span}`,
-                        width: `calc(${100 / layout.totalColumns}% - 6px)`,
-                        marginLeft: `calc(${(100 / layout.totalColumns) * layout.column}% + 3px)`,
-                      }}
-                      onClick={() => openViewAvailability(segment.parent_availability)}
-                      title={
-                        isBooked && conflictLesson
-                          ? `${t(language, 'occupied_slot')}: ${conflictLesson.subject} (${profilesById[conflictLesson.student_id]?.full_name || ''})`
-                          : `${t(language, 'available_slot')} (${teacherProfile?.full_name || ''})`
-                      }
-                    >
-                      <div className="calendar-event-header">
-                        <strong className="calendar-event-title" style={{ color: isBooked ? '#c7d2fe' : '#34d399' }}>
-                          {isBooked && conflictLesson ? `🟣 ${conflictLesson.subject || t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
-                        </strong>
-                        {!isNarrow && (
-                          <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
-                        )}
-                      </div>
-                      {span > 1 && !isNarrow && (
-                        <div className="calendar-event-details">
-                          {isBooked && conflictLesson ? (
-                            <>
-                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#e0e7ff' }}>
-                                👤 {profilesById[conflictLesson.student_id]?.full_name ?? t(language, 'role_student')}
-                              </span>
-                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a5b4fc' }}>
-                                {segment.duration_minutes} min • {teacherProfile?.full_name ?? t(language, 'teacher')}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#a7f3d0' }}>
-                                {segment.duration_minutes} min {segment.duration_minutes < (segment.parent_availability.duration_minutes || 60) ? `(${t(language, 'available_remaining')})` : ''}
-                              </span>
-                              <span className="muted tiny-copy calendar-event-sub" style={{ color: '#6ee7b7', fontWeight: 600 }}>
-                                👨‍🏫 {teacherProfile?.full_name || t(language, 'teacher')}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* LEGEND */}
-      {calendarMode === 'classes' ? (
-        <div className="calendar-legend">
-          <span className="calendar-legend-title">{t(language, 'legend_title')}</span>
-          <div className="calendar-legend-items">
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-confirmed" />
-              <span>{t(language, 'legend_confirmed')}</span>
-            </div>
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-partial" />
-              <span>{t(language, 'legend_partial')}</span>
-            </div>
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-cancelled" />
-              <span>{t(language, 'legend_cancelled')}</span>
-            </div>
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-pending" />
-              <span>{t(language, 'legend_pending')}</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="calendar-legend">
-          <span className="calendar-legend-title">{t(language, 'availability_title')}</span>
-          <div className="calendar-legend-items">
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-available" />
-              <span>{t(language, 'availability_legend_free')}</span>
-            </div>
-            <div className="calendar-legend-item">
-              <span className="calendar-status-dot calendar-status-dot-booked" />
-              <span>{t(language, 'availability_legend_booked')}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      <TeacherAvailabilityCalendar
+        lessons={lessons}
+        availabilities={availabilities}
+        timeZone={timeZone}
+        language={language}
+        currentTeacherId={currentTeacherId || undefined}
+        role="admin"
+        onCreateLessonSlot={(startUtc, durationMinutes) => {
+          if (calendarMode === 'availability' && onCreateAvailability) {
+            const localParts = getZonedParts(new Date(startUtc), timeZone)
+            const dayStr = `${localParts.year}-${pad2(localParts.month)}-${pad2(localParts.day)}`
+            const minute = localParts.hour * 60 + localParts.minute
+            openCreateAvailability(dayStr, minute)
+          } else {
+            setDraft({
+              starts_at: startUtc,
+              duration_minutes: durationMinutes,
+              teacher_id: '',
+              subject: '',
+              class_name: '',
+            })
+            setSelectedStudentIds([])
+            setEditingGroupKey(null)
+            setShowModal(true)
+          }
+        }}
+        onEditLesson={(lesson) => {
+          const matchingLessons = lessons.filter(l => groupKeyForLesson(l) === groupKeyForLesson(lesson))
+          const group = {
+            key: groupKeyForLesson(lesson),
+            starts_at: lesson.starts_at,
+            duration_minutes: lesson.duration_minutes,
+            student_ids: matchingLessons.map(l => l.student_id),
+            teacher_id: lesson.teacher_id,
+            subject: lesson.subject,
+            class_name: lesson.class_name,
+            lessonIds: matchingLessons.map(l => l.id)
+          }
+          openEdit(group)
+        }}
+        onEditAvailability={(avail) => openViewAvailability(avail)}
+        onCreateAvailability={onCreateAvailability}
+        onDeleteAvailability={onDeleteAvailability}
+        profilesById={profilesById}
+      />
 
       {/* CLASSES CREATE / EDIT MODAL */}
       {showModal && createPortal(

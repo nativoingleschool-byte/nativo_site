@@ -99,9 +99,12 @@ interface TeacherAvailabilityCalendarProps {
   timeZone: string
   language: Language
   currentTeacherId?: string
+  role?: 'teacher' | 'admin'
   onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
   onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
-  onEditLesson?: (lesson: Lesson) => void // Assuming TeacherPanel provides this or we adapt
+  onEditLesson?: (lesson: Lesson) => void 
+  onCreateLessonSlot?: (startUtc: string, durationMinutes: number) => void
+  onEditAvailability?: (avail: TeacherAvailability) => void
   profilesById: Record<string, Profile>
 }
 
@@ -111,9 +114,12 @@ export default function TeacherAvailabilityCalendar({
   timeZone,
   language,
   currentTeacherId,
+  role = 'teacher',
   onCreateAvailability,
   onDeleteAvailability,
   onEditLesson,
+  onCreateLessonSlot,
+  onEditAvailability,
   profilesById
 }: TeacherAvailabilityCalendarProps) {
   const { toast } = useToast()
@@ -129,11 +135,12 @@ export default function TeacherAvailabilityCalendar({
       
       const studentObj = profilesById[lesson.student_id]
       const studentName = studentObj?.full_name || lesson.class_name || 'Aluno'
+      const teacherName = role === 'admin' ? (profilesById[lesson.teacher_id]?.full_name || 'Teacher') + ' - ' : ''
       
       evts.push({
         id: `lesson-${lesson.id}`,
         type: 'lesson',
-        title: `${studentName} - ${lesson.subject}`,
+        title: `${teacherName}${studentName} - ${lesson.subject}`,
         start,
         end,
         sourceData: lesson
@@ -145,10 +152,12 @@ export default function TeacherAvailabilityCalendar({
     visibleAvailabilities.forEach(avail => {
       const start = shiftToAppTimeZone(avail.starts_at, timeZone)
       const end = new Date(start.getTime() + (avail.duration_minutes || 60) * 60000)
+      const teacherName = role === 'admin' ? (profilesById[avail.teacher_id]?.full_name || 'Teacher') : ''
+
       evts.push({
         id: `avail-${avail.id}`,
         type: 'availability',
-        title: t(language, 'available_status') || 'Available',
+        title: role === 'admin' ? `🟢 ${teacherName}` : (t(language, 'available_status') || 'Available'),
         start,
         end,
         sourceData: avail
@@ -156,13 +165,18 @@ export default function TeacherAvailabilityCalendar({
     })
 
     return evts
-  }, [lessons, availabilities, timeZone, currentTeacherId, profilesById, language])
+  }, [lessons, availabilities, timeZone, currentTeacherId, profilesById, language, role])
 
   const handleSelectSlot = useCallback(async (slotInfo: SlotInfo) => {
-    if (!onCreateAvailability) return
     const utcStart = shiftFromAppTimeZoneToUtcIso(slotInfo.start, timeZone)
     const durationMinutes = Math.round((slotInfo.end.getTime() - slotInfo.start.getTime()) / 60000)
     
+    if (role === 'admin' && onCreateLessonSlot) {
+      onCreateLessonSlot(utcStart, durationMinutes)
+      return
+    }
+
+    if (!onCreateAvailability) return
     try {
       await onCreateAvailability({
         starts_at: utcStart,
@@ -173,7 +187,7 @@ export default function TeacherAvailabilityCalendar({
     } catch (err: any) {
       toast.error(err.message || 'Error creating availability')
     }
-  }, [onCreateAvailability, timeZone, currentTeacherId, language, toast])
+  }, [onCreateAvailability, onCreateLessonSlot, role, timeZone, currentTeacherId, language, toast])
 
   const handleEventDrop = useCallback(async (args: EventInteractionArgs<CalendarEvent>) => {
     const { event, start, end } = args
@@ -187,13 +201,12 @@ export default function TeacherAvailabilityCalendar({
     const durationMinutes = Math.round(((end as Date).getTime() - (start as Date).getTime()) / 60000)
 
     try {
-      // RBC drag-and-drop fires optimistic updates usually, but here we just delete and recreate to update
       if (onDeleteAvailability && onCreateAvailability) {
         await onDeleteAvailability({ id: avail.id })
         await onCreateAvailability({
           starts_at: utcStart,
           duration_minutes: durationMinutes,
-          teacher_id: currentTeacherId
+          teacher_id: currentTeacherId || avail.teacher_id
         })
         toast.success('Availability updated')
       }
@@ -219,7 +232,7 @@ export default function TeacherAvailabilityCalendar({
         await onCreateAvailability({
           starts_at: utcStart,
           duration_minutes: durationMinutes,
-          teacher_id: currentTeacherId
+          teacher_id: currentTeacherId || avail.teacher_id
         })
         toast.success('Availability resized')
       }
@@ -237,17 +250,21 @@ export default function TeacherAvailabilityCalendar({
       }
     } else {
       const avail = event.sourceData as TeacherAvailability
-      if (window.confirm('Delete this availability block?')) {
-        if (onDeleteAvailability) {
-          onDeleteAvailability({ id: avail.id }).then(() => {
-            toast.success('Availability removed')
-          }).catch((err) => {
-            toast.error(err.message || 'Error removing availability')
-          })
+      if (role === 'admin' && onEditAvailability) {
+        onEditAvailability(avail)
+      } else {
+        if (window.confirm('Delete this availability block?')) {
+          if (onDeleteAvailability) {
+            onDeleteAvailability({ id: avail.id }).then(() => {
+              toast.success('Availability removed')
+            }).catch((err) => {
+              toast.error(err.message || 'Error removing availability')
+            })
+          }
         }
       }
     }
-  }, [onEditLesson, onDeleteAvailability, toast])
+  }, [onEditLesson, onDeleteAvailability, onEditAvailability, role, toast])
 
   const eventPropGetter = useCallback((event: CalendarEvent) => {
     if (event.type === 'lesson') {
