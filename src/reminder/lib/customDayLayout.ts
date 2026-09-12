@@ -60,9 +60,20 @@ export function customDayLayoutAlgorithm({ events, slotMetrics, accessors }: any
       for (const event of columns[i]) {
         const { top, height } = slotMetrics.getRange(accessors.start(event), accessors.end(event))
         
-        // Assign each event an appropriate horizontal position and width
-        const left = (i / totalColumns) * 100
-        const width = (1 / totalColumns) * 100
+        let left: number;
+        let width: number;
+        
+        if (totalColumns <= 3) {
+          // Standard side-by-side for readable overlapping
+          left = (i / totalColumns) * 100;
+          width = (1 / totalColumns) * 100;
+        } else {
+          // Elegant Cascade overflow for extreme overlap (e.g. 5-6 events)
+          // Each event gets 75% width, staggered horizontally across the remaining 25% space
+          const staggerStep = 25 / (totalColumns - 1);
+          left = i * staggerStep;
+          width = 75;
+        }
         
         results.push({
           event,
@@ -71,8 +82,7 @@ export function customDayLayoutAlgorithm({ events, slotMetrics, accessors }: any
             height: `${height}%`,
             left: `${left}%`,
             width: `${width}%`,
-            // Enforce a minimum width so text never becomes completely unreadable single letters
-            minWidth: totalColumns >= 3 ? '40px' : 'auto',
+            zIndex: i + 1,
             position: 'absolute'
           }
         })

@@ -1687,5 +1687,5 @@ body:has(.reminder-app-scope) {
 .calendar-container .rbc-event:hover {
   transform: translateY(-1px);
   filter: brightness(1.1);
-  z-index: 10 !important;
+  z-index: 50 !important;
 }
