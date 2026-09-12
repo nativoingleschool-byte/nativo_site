@@ -10,6 +10,7 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { useToast } from '../lib/toast'
+import ThreeDayView from './ThreeDayView'
 
 const locales = {
   'en': enUS,
@@ -24,6 +25,17 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 })
+
+const CustomHeader = ({ date, localizer, culture }: any) => {
+  const dayNum = localizer.format(date, 'dd', culture)
+  const dayName = localizer.format(date, 'EEEEE', culture)
+  return (
+    <div className="flex flex-col items-center justify-center py-1">
+      <span className="text-lg font-bold leading-none text-slate-200">{dayNum}</span>
+      <span className="text-[11px] font-bold uppercase mt-0.5 text-slate-400">{dayName}</span>
+    </div>
+  )
+}
 
 const DnDCalendar = withDragAndDrop(Calendar as any)
 
@@ -281,9 +293,10 @@ export default function TeacherAvailabilityCalendar({
     <div className="calendar-container w-[calc(100%+32px)] -ml-4 sm:w-full sm:ml-0 h-[750px] bg-slate-900/60 rounded-none sm:rounded-2xl border-y sm:border border-slate-700/50 p-1 sm:p-4 shadow-xl backdrop-blur-md">
       <DnDCalendar
         localizer={localizer}
+        culture={language}
         events={events}
-        defaultView={Views.WEEK}
-        views={[Views.MONTH, Views.WEEK, Views.DAY]}
+        defaultView={"three-day" as any}
+        views={{ month: true, 'three-day': ThreeDayView, week: true, day: true } as any}
         step={30}
         timeslots={2}
         selectable
@@ -295,6 +308,9 @@ export default function TeacherAvailabilityCalendar({
         draggableAccessor={(event: CalendarEvent) => event.type === 'availability'}
         resizableAccessor={(event: CalendarEvent) => event.type === 'availability'}
         className="google-calendar-clone"
+        components={{
+          header: (props: any) => <CustomHeader {...props} culture={language} />
+        }}
         messages={{
           today: t(language, 'today') || 'Today',
           previous: '<',
@@ -302,7 +318,8 @@ export default function TeacherAvailabilityCalendar({
           month: t(language, 'month') || 'Month',
           week: t(language, 'week') || 'Week',
           day: t(language, 'day') || 'Day',
-        }}
+          'three-day': language === 'pt' ? '3 Dias' : language === 'es' ? '3 Días' : '3 Days',
+        } as any}
       />
     </div>
   )
