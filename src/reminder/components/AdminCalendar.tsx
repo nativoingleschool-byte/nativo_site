@@ -851,7 +851,7 @@ export default function AdminCalendar({
 
       <TeacherAvailabilityCalendar
         lessons={lessons}
-        availabilities={availabilities}
+        availabilities={calendarMode === 'availability' ? availabilities : []}
         timeZone={timeZone}
         language={language}
         currentTeacherId={currentTeacherId || undefined}
