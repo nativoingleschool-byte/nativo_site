@@ -65,10 +65,10 @@ const shiftFromAppTimeZoneToUtcIso = (fakeLocalDate: Date, timeZone: string): st
   }
   
   let offset = getTimeZoneOffsetMinutes(new Date(utcGuess), timeZone)
-  let timestamp = utcGuess + offset * 60000
+  let timestamp = utcGuess - offset * 60000
   const nextOffset = getTimeZoneOffsetMinutes(new Date(timestamp), timeZone)
   if (nextOffset !== offset) {
-    timestamp = utcGuess + nextOffset * 60000
+    timestamp = utcGuess - nextOffset * 60000
   }
   return new Date(timestamp).toISOString()
 }
