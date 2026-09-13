@@ -1,50 +1,15 @@
 import React, { useState, useMemo, useCallback } from 'react'
-import { Calendar, dateFnsLocalizer, Views, Event as RbcEvent, SlotInfo } from 'react-big-calendar'
-import withDragAndDrop, { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
-import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns'
-import { enUS } from 'date-fns/locale/en-US'
-import { ptBR } from 'date-fns/locale/pt-BR'
-import { es as esLocale } from 'date-fns/locale/es'
-import 'react-big-calendar/lib/css/react-big-calendar.css'
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { useToast } from '../lib/toast'
-import { customDayLayoutAlgorithm } from '../lib/customDayLayout'
+import MobileCalendar from './MobileCalendar'
 
-
-const locales = {
-  'en': enUS,
-  'pt': ptBR,
-  'es': esLocale,
-}
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-})
-
-const CustomHeader = ({ date, localizer, culture }: any) => {
-  const dayNum = localizer.format(date, 'dd', culture)
-  const dayName = localizer.format(date, 'EEE', culture)
-  const isToday = isSameDay(date, new Date())
-  
-  return (
-    <div className={`flex flex-col items-center justify-center py-2 w-full h-full ${isToday ? 'bg-indigo-500/10 border-b-2 border-indigo-500' : ''}`}>
-      <span className={`text-[11px] font-bold uppercase mb-0.5 ${isToday ? 'text-indigo-400' : 'text-slate-400'}`}>{dayName}</span>
-      <span className={`text-xl font-bold leading-none ${isToday ? 'text-indigo-400' : 'text-slate-200'}`}>{dayNum}</span>
-    </div>
-  )
-}
-
-const DnDCalendar = withDragAndDrop(Calendar as any)
-
-type CalendarEvent = RbcEvent & {
+type CalendarEvent = {
   id: string
   type: 'lesson' | 'availability'
+  title: string
+  start: Date
+  end: Date
   sourceData: Lesson | TeacherAvailability
 }
 
@@ -182,7 +147,7 @@ export default function TeacherAvailabilityCalendar({
     return evts
   }, [lessons, availabilities, timeZone, currentTeacherId, profilesById, language, role])
 
-  const handleSelectSlot = useCallback(async (slotInfo: SlotInfo) => {
+  const handleSelectSlot = useCallback(async (slotInfo: { start: Date; end: Date }) => {
     const utcStart = shiftFromAppTimeZoneToUtcIso(slotInfo.start, timeZone)
     const durationMinutes = Math.round((slotInfo.end.getTime() - slotInfo.start.getTime()) / 60000)
     
@@ -204,7 +169,7 @@ export default function TeacherAvailabilityCalendar({
     }
   }, [onCreateAvailability, onCreateLessonSlot, role, timeZone, currentTeacherId, language, toast])
 
-  const handleEventDrop = useCallback(async (args: EventInteractionArgs<CalendarEvent>) => {
+  const handleEventDrop = useCallback(async (args: { event: CalendarEvent; start: Date | string; end: Date | string }) => {
     const { event, start, end } = args
     if (event.type === 'lesson') {
       toast.error('Classes cannot be rescheduled by dragging. Please click to edit.')
@@ -230,7 +195,7 @@ export default function TeacherAvailabilityCalendar({
     }
   }, [onDeleteAvailability, onCreateAvailability, timeZone, currentTeacherId, toast])
 
-  const handleEventResize = useCallback(async (args: EventInteractionArgs<CalendarEvent>) => {
+  const handleEventResize = useCallback(async (args: { event: CalendarEvent; start: Date | string; end: Date | string }) => {
     const { event, start, end } = args
     if (event.type === 'lesson') {
       toast.error('Classes cannot be resized by dragging. Please click to edit.')
@@ -292,38 +257,24 @@ export default function TeacherAvailabilityCalendar({
     }
   }, [])
 
+  const mappedEvents = events.map(e => ({
+    id: e.id,
+    start: e.start,
+    end: e.end,
+    title: e.title as string,
+    color: (e.type === 'lesson' ? 'blue' : 'green') as 'blue' | 'green',
+    sourceData: e.sourceData
+  }))
+
   return (
-    <div className="calendar-mobile-scroll calendar-container h-[750px] bg-slate-900/60 sm:rounded-2xl border-y sm:border border-slate-700/50 shadow-xl backdrop-blur-md">
-      <DnDCalendar
-        localizer={localizer}
-        culture={language}
-        events={events}
-        defaultView={Views.WEEK}
-        views={[Views.MONTH, Views.WEEK, Views.DAY]}
-        dayLayoutAlgorithm={customDayLayoutAlgorithm}
-        step={30}
-        timeslots={2}
-        selectable
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
-        onEventDrop={handleEventDrop}
-        onEventResize={handleEventResize}
-        eventPropGetter={eventPropGetter}
-        draggableAccessor={(event: CalendarEvent) => event.type === 'availability'}
-        resizableAccessor={(event: CalendarEvent) => event.type === 'availability'}
-        className="google-calendar-clone"
-        components={{
-          header: (props: any) => <CustomHeader {...props} culture={language} />
-        }}
-        messages={{
-          today: t(language, 'today') || 'Today',
-          previous: '<',
-          next: '>',
-          month: t(language, 'month') || 'Month',
-          week: t(language, 'week') || 'Week',
-          day: t(language, 'day') || 'Day',
-        }}
-      />
-    </div>
+    <MobileCalendar
+      events={mappedEvents}
+      language={language}
+      onSelectEvent={(e) => handleSelectEvent(e as unknown as CalendarEvent)}
+      onSelectSlot={(start) => {
+        const end = new Date(start.getTime() + 60 * 60000)
+        handleSelectSlot({ start, end, action: 'click', slots: [start] } as any)
+      }}
+    />
   )
 }
