@@ -817,17 +817,25 @@ export default function AdminCalendar({
             </select>
           )}
 
-          {calendarMode === 'availability' && (
-            <button
-              type="button"
-              className="primary-button"
-              style={{ padding: '0.45rem 0.9rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#059669', borderColor: '#10b981' }}
-              onClick={() => openCreateAvailability(days[0], 9 * 60)}
-            >
-              <span>+</span>
-              <span>{t(language, 'add_availability')}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="primary-button"
+            style={{ padding: '0.45rem 0.9rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#059669', borderColor: '#10b981' }}
+            onClick={() => openCreateAvailability(days[0], 9 * 60)}
+          >
+            <span>+</span>
+            <span>{t(language, 'add_availability')}</span>
+          </button>
+
+          <button
+            type="button"
+            className="primary-button"
+            style={{ padding: '0.45rem 0.9rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+            onClick={() => openCreate(days[0], 9 * 60)}
+          >
+            <span>+</span>
+            <span>{t(language, 'add_class')}</span>
+          </button>
 
           <button className="ghost-button" type="button" onClick={() => setWeekStart((current) => addDaysToDateKey(current, -7))}>
             {t(language, 'prev_week')}
@@ -849,22 +857,14 @@ export default function AdminCalendar({
         currentTeacherId={currentTeacherId || undefined}
         role="admin"
         onCreateLessonSlot={(startUtc, durationMinutes) => {
+          const localParts = getZonedParts(new Date(startUtc), timeZone)
+          const dayStr = `${localParts.year}-${pad2(localParts.month)}-${pad2(localParts.day)}`
+          const minute = localParts.hour * 60 + localParts.minute
+
           if (calendarMode === 'availability' && onCreateAvailability) {
-            const localParts = getZonedParts(new Date(startUtc), timeZone)
-            const dayStr = `${localParts.year}-${pad2(localParts.month)}-${pad2(localParts.day)}`
-            const minute = localParts.hour * 60 + localParts.minute
             openCreateAvailability(dayStr, minute)
           } else {
-            setDraft({
-              starts_at: startUtc,
-              duration_minutes: durationMinutes,
-              teacher_id: '',
-              subject: '',
-              class_name: '',
-            })
-            setSelectedStudentIds([])
-            setEditingGroupKey(null)
-            setShowModal(true)
+            openCreate(dayStr, minute)
           }
         }}
         onEditLesson={(lesson) => {

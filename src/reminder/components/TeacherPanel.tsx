@@ -858,6 +858,30 @@ export default function TeacherPanel({
               </div>
             )}
 
+            {/* Calendar Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#059669', borderColor: '#10b981' }}
+                onClick={() => {
+                  toast.info(t(language, 'tap_calendar_to_add') || 'Tap any empty slot on the calendar grid below to add availability.')
+                }}
+              >
+                <span>+</span>
+                <span>{t(language, 'add_availability')}</span>
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                onClick={handleOpenAddLesson}
+              >
+                <span>+</span>
+                <span>{t(language, 'add_class')}</span>
+              </button>
+            </div>
+
             <TeacherAvailabilityCalendar
               lessons={lessons}
               availabilities={availabilities}
