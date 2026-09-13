@@ -61,17 +61,20 @@ export default function MobileCalendar({
 
   // --- Layout Algorithm ---
   const getPlacedEvents = (dayEvents: CalendarEventItem[]) => {
-    if (dayEvents.length === 0) return []
+    if (dayEvents.length === 0) return { maxColumns: 1, placedEvents: [] }
+    
+    // 1. Sort by start time, then by end time (longer events first)
     const sorted = [...dayEvents].sort((a, b) => {
       const aStart = a.start.getTime()
       const bStart = b.start.getTime()
-      if (aStart !== bStart) return aStart - bStart
-      return b.end.getTime() - a.start.getTime() - (a.end.getTime() - a.start.getTime())
+      if (aStart === bStart) return b.end.getTime() - a.end.getTime()
+      return aStart - bStart
     })
     
+    // 2. Group overlapping events
+    const clusters: CalendarEventItem[][] = []
     let currentCluster: CalendarEventItem[] = []
     let clusterEnd = 0
-    const clusters: CalendarEventItem[][] = []
     
     for (const event of sorted) {
       if (currentCluster.length > 0 && event.start.getTime() >= clusterEnd) {
@@ -83,13 +86,17 @@ export default function MobileCalendar({
     }
     if (currentCluster.length > 0) clusters.push(currentCluster)
     
+    let dayMaxCols = 1
     const placed: any[] = []
+    
+    // 3. Assign columns and spans
     for (const cluster of clusters) {
       const columns: CalendarEventItem[][] = []
       for (const event of cluster) {
         let placedCol = false
         for (let i = 0; i < columns.length; i++) {
           const lastEvent = columns[i][columns[i].length - 1]
+          // If the last event in this column ends <= this event starts, they do not overlap
           if (lastEvent.end.getTime() <= event.start.getTime()) {
             columns[i].push(event)
             placedCol = true
@@ -98,39 +105,55 @@ export default function MobileCalendar({
         }
         if (!placedCol) columns.push([event])
       }
-      const totalColumns = columns.length
       
-      for (let i = 0; i < columns.length; i++) {
-        for (const event of columns[i]) {
-          const d = new Date(event.start)
-          d.setHours(dayStartHour, 0, 0, 0)
-          const dayStartMs = d.getTime()
-          const startMins = (event.start.getTime() - dayStartMs) / 60000
-          const durationMins = (event.end.getTime() - event.start.getTime()) / 60000
-          
-          let left = 0
-          let width = 100
-          
-          if (totalColumns <= 3) {
-            left = (i / totalColumns) * 100
-            width = (1 / totalColumns) * 100
-          } else {
-            const staggerStep = 25 / (totalColumns - 1)
-            left = i * staggerStep
-            width = 75
-          }
-          
-          placed.push({
-            event,
-            top: (startMins / totalMinutes) * 100,
-            height: (durationMins / totalMinutes) * 100,
-            left, width, zIndex: i + 1, totalColumns
-          })
+      const numCols = columns.length
+      dayMaxCols = Math.max(dayMaxCols, numCols)
+      
+      const eventColIndex = new Map<CalendarEventItem, number>()
+      for (let i = 0; i < numCols; i++) {
+        for (const ev of columns[i]) {
+          eventColIndex.set(ev, i)
         }
       }
+      
+      for (const ev of cluster) {
+        const colIndex = eventColIndex.get(ev)!
+        let colSpan = 1
+        
+        // Determine how many columns this event can span before hitting an overlapping event
+        for (let c = colIndex + 1; c < numCols; c++) {
+          const overlaps = columns[c].some(other => {
+            return ev.start.getTime() < other.end.getTime() && ev.end.getTime() > other.start.getTime()
+          })
+          if (overlaps) break
+          colSpan++
+        }
+        
+        const d = new Date(ev.start)
+        d.setHours(dayStartHour, 0, 0, 0)
+        const dayStartMs = d.getTime()
+        const startMins = (ev.start.getTime() - dayStartMs) / 60000
+        const durationMins = (ev.end.getTime() - ev.start.getTime()) / 60000
+        
+        placed.push({
+          event: ev,
+          top: (startMins / totalMinutes) * 100,
+          height: (durationMins / totalMinutes) * 100,
+          left: (colIndex / numCols) * 100,
+          width: (colSpan / numCols) * 100,
+          zIndex: colIndex + 1,
+        })
+      }
     }
-    return placed
+    return { maxColumns: dayMaxCols, placedEvents: placed }
   }
+
+  const dayLayouts = useMemo(() => {
+    return days.map(day => {
+      const dayEvents = events.filter(e => isSameDay(e.start, day))
+      return getPlacedEvents(dayEvents)
+    })
+  }, [days, events, dayStartHour, totalMinutes])
 
   return (
     <div className="flex flex-col h-[750px] bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
@@ -155,19 +178,21 @@ export default function MobileCalendar({
 
       {/* Synchronized Scroll Viewport */}
       <div className="flex-1 overflow-auto relative custom-scrollbar bg-[#0f172a]">
-        {/* Force Minimum Width to trigger horizontal scroll on mobile, e.g. 7 days * 120px + 60px time gutter = 900px */}
-        <div className="min-w-[800px] flex flex-col relative h-full">
+        <div className="min-w-full w-max flex flex-col relative h-full">
           
           {/* Day Headers (Sticky Top) */}
-          <div className="sticky top-0 z-40 flex bg-[#0f172a]/95 backdrop-blur-sm border-b border-slate-700/50 shadow-sm">
+          <div className="sticky top-0 z-40 flex bg-[#0f172a]/95 backdrop-blur-sm border-b border-slate-700/50 shadow-sm min-w-full">
             {/* Top-Left Corner (Sticky Top + Left) */}
             <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 z-50 bg-[#0f172a]" />
             
             <div className="flex-1 flex">
               {days.map((day, idx) => {
                 const isToday = isSameDay(day, new Date())
+                const { maxColumns } = dayLayouts[idx]
+                const minWidthPx = Math.max(104, maxColumns * 110)
+
                 return (
-                  <div key={idx} className={`flex-1 min-w-[104px] flex flex-col items-center justify-center py-2 border-r border-slate-700/50 relative ${isToday ? 'bg-indigo-500/10' : ''}`}>
+                  <div key={idx} className={`flex-1 flex flex-col items-center justify-center py-2 border-r border-slate-700/50 relative ${isToday ? 'bg-indigo-500/10' : ''}`} style={{ minWidth: `${minWidthPx}px` }}>
                     {isToday && <div className="absolute top-0 w-full h-[3px] bg-indigo-500" />}
                     <span className={`text-[11px] font-bold uppercase mb-0.5 ${isToday ? 'text-indigo-400' : 'text-slate-400'}`}>
                       {format(day, 'EEE', { locale })}
@@ -182,7 +207,7 @@ export default function MobileCalendar({
           </div>
 
           {/* Grid Area */}
-          <div className="flex flex-1 relative min-h-[900px]">
+          <div className="flex flex-1 relative min-h-[900px] min-w-full">
             {/* Time Axis (Sticky Left) */}
             <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 bg-[#0f172a] z-30 flex flex-col">
               {hours.map(hour => (
@@ -204,13 +229,14 @@ export default function MobileCalendar({
               </div>
 
               {days.map((day, idx) => {
-                const dayEvents = events.filter(e => isSameDay(e.start, day))
-                const placedEvents = getPlacedEvents(dayEvents)
+                const { maxColumns, placedEvents } = dayLayouts[idx]
+                const minWidthPx = Math.max(104, maxColumns * 110)
 
                 return (
                   <div 
                     key={idx} 
-                    className="flex-1 min-w-[104px] relative border-r border-slate-700/30 cursor-pointer hover:bg-slate-800/20 transition-colors group"
+                    className="flex-1 relative border-r border-slate-700/30 cursor-pointer hover:bg-slate-800/20 transition-colors group"
+                    style={{ minWidth: `${minWidthPx}px` }}
                     onClick={(e) => handleSlotClick(day, e)}
                   >
                     {placedEvents.map((pe, eIdx) => {
@@ -227,10 +253,9 @@ export default function MobileCalendar({
                           style={{
                             top: `${pe.top}%`,
                             height: `${pe.height}%`,
-                            left: `${pe.left}%`,
-                            width: `calc(${pe.width}% - 2px)`,
+                            left: `calc(${pe.left}% + 2px)`,
+                            width: `calc(${pe.width}% - 4px)`,
                             zIndex: pe.zIndex,
-                            minWidth: pe.totalColumns > 3 ? '40px' : 'auto'
                           }}
                         >
                           <div className={`text-[11px] font-semibold truncate leading-tight ${textColor}`}>
