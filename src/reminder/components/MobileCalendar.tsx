@@ -8,6 +8,7 @@ const locales: Record<string, any> = { en: enUS, pt: ptBR, es: esLocale }
 
 export type CalendarEventItem = {
   id: string
+  type?: 'lesson' | 'availability'
   start: Date
   end: Date
   title: string

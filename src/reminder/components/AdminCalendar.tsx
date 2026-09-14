@@ -242,6 +242,30 @@ export default function AdminCalendar({
     [visibleLessons, timeZone, weekStart, weekEnd],
   )
 
+  const allLessonGroups = useMemo(() => {
+    const map = new Map<string, CalendarGroup>()
+    for (const lesson of visibleLessons) {
+      const key = groupKeyForLesson(lesson)
+      const current = map.get(key)
+      if (current) {
+        current.lessonIds.push(lesson.id)
+        current.student_ids.push(lesson.student_id)
+      } else {
+        map.set(key, {
+          key,
+          lessonIds: [lesson.id],
+          subject: lesson.subject,
+          class_name: lesson.class_name,
+          starts_at: lesson.starts_at,
+          duration_minutes: lesson.duration_minutes,
+          teacher_id: lesson.teacher_id,
+          student_ids: [lesson.student_id],
+        })
+      }
+    }
+    return Array.from(map.values())
+  }, [visibleLessons])
+
   const groupsThisWeek = useMemo(() => {
     const map = new Map<string, CalendarGroup>()
     for (const lesson of lessonsThisWeek) {
@@ -620,7 +644,7 @@ export default function AdminCalendar({
     setSelectedStudentIds((current) => current.filter((id) => id !== studentId))
   }
 
-  const editingGroup = editingGroupKey ? groupsThisWeek.find((group) => group.key === editingGroupKey) ?? null : null
+  const editingGroup = editingGroupKey ? allLessonGroups.find((group) => group.key === editingGroupKey) ?? null : null
 
   const submitCreate = async (event: FormEvent) => {
     event.preventDefault()

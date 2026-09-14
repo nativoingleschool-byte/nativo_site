@@ -222,7 +222,12 @@ export default function TeacherAvailabilityCalendar({
   }, [onDeleteAvailability, onCreateAvailability, timeZone, currentTeacherId, toast])
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
-    if (event.type === 'lesson') {
+    const isLesson =
+      event.type === 'lesson' ||
+      event.id?.startsWith('lesson-') ||
+      (event.sourceData && ('subject' in event.sourceData || 'student_id' in event.sourceData))
+
+    if (isLesson) {
       if (onEditLesson) {
         onEditLesson(event.sourceData as Lesson)
       } else {
@@ -259,6 +264,7 @@ export default function TeacherAvailabilityCalendar({
 
   const mappedEvents = events.map(e => ({
     id: e.id,
+    type: e.type,
     start: e.start,
     end: e.end,
     title: e.title as string,
