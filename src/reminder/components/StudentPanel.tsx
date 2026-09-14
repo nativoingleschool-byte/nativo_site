@@ -167,7 +167,7 @@ export default function StudentPanel({
     focusedLessonId === lessonId ? 'lesson-card lesson-card-focus' : 'lesson-card'
 
   return (
-    <section className="panel-grid">
+    <section className="flex flex-col w-full gap-6">
       <article className="panel">
         <div className="panel-header">
           <div>
