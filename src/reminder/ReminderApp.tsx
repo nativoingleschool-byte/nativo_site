@@ -619,6 +619,11 @@ function ReminderAppInner() {
 
   const refreshAvailabilities = async () => {
     let list: TeacherAvailability[] = []
+    
+    // Limit payload to recent and future availabilities (last 6 months)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const minDateStr = sixMonthsAgo.toISOString()
 
     const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     if (token) {
@@ -629,7 +634,7 @@ function ReminderAppInner() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ action: 'get_availabilities' }),
+          body: JSON.stringify({ action: 'get_availabilities', start_date: minDateStr }),
         })
         if (response.ok) {
           const result = (await response.json()) as { data?: TeacherAvailability[] }
@@ -644,7 +649,11 @@ function ReminderAppInner() {
 
     if (!list || list.length === 0) {
       try {
-        const { data, error } = await supabase.from('teacher_availability').select('*').order('starts_at', { ascending: true })
+        const { data, error } = await supabase
+          .from('teacher_availability')
+          .select('*')
+          .gte('starts_at', minDateStr)
+          .order('starts_at', { ascending: true })
         if (!error && data) {
           list = data as TeacherAvailability[]
         }
@@ -741,13 +750,31 @@ function ReminderAppInner() {
   }
 
   const refreshLessons = async () => {
-    const { data, error } = await supabase.from('lessons').select('*').order('starts_at', { ascending: true })
+    // Limit payload to recent and future lessons (last 6 months) for faster loading
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    
+    const { data, error } = await supabase
+      .from('lessons')
+      .select('*')
+      .gte('starts_at', sixMonthsAgo.toISOString())
+      .order('starts_at', { ascending: true })
+      
     if (error) throw error
     setLessons((data ?? []) as Lesson[])
   }
 
   const refreshInvoices = async () => {
-    const { data, error } = await supabase.from('invoices').select('*').order('created_at', { ascending: false })
+    // Limit payload to recent invoices (last 6 months)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .gte('created_at', sixMonthsAgo.toISOString())
+      .order('created_at', { ascending: false })
+      
     if (error) throw error
     setInvoices(data ?? [])
   }
@@ -769,22 +796,25 @@ function ReminderAppInner() {
       try {
         const currentProfile = await refreshProfile(session.user.id)
         if (cancelled) return
+
         if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
-          await refreshProfiles()
-          await refreshTeacherNotes()
-          await refreshAvailabilities()
-          await refreshTeacherInvoices()
-          if (currentProfile.role === 'admin') {
-            await refreshInvoices()
-          }
+          // Fire all independent fetches in parallel — no need to wait for each one sequentially
+          await Promise.all([
+            refreshProfiles(),
+            refreshTeacherNotes(),
+            refreshAvailabilities(),
+            refreshTeacherInvoices(),
+            refreshLessons(),
+            ...(currentProfile.role === 'admin' ? [refreshInvoices()] : []),
+          ])
         } else {
           setProfiles([currentProfile])
-          if (currentProfile.role === 'student') {
-            await refreshInvoices()
-          }
+          await Promise.all([
+            refreshLessons(),
+            ...(currentProfile.role === 'student' ? [refreshInvoices()] : []),
+          ])
         }
         if (cancelled) return
-        await refreshLessons()
         setAppError('')
       } catch (error) {
         console.error(error)
