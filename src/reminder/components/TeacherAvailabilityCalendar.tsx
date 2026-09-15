@@ -92,6 +92,8 @@ interface TeacherAvailabilityCalendarProps {
   onCreateLessonSlot?: (startUtc: string, durationMinutes: number) => void
   onEditAvailability?: (avail: TeacherAvailability) => void
   profilesById: Record<string, Profile>
+  dayStartHour?: number
+  dayEndHour?: number
 }
 
 export default function TeacherAvailabilityCalendar({
@@ -106,7 +108,9 @@ export default function TeacherAvailabilityCalendar({
   onEditLesson,
   onCreateLessonSlot,
   onEditAvailability,
-  profilesById
+  profilesById,
+  dayStartHour = 0,
+  dayEndHour = 24,
 }: TeacherAvailabilityCalendarProps) {
   const { toast } = useToast()
 
@@ -282,6 +286,8 @@ export default function TeacherAvailabilityCalendar({
     <MobileCalendar
       events={mappedEvents}
       language={language}
+      dayStartHour={dayStartHour}
+      dayEndHour={dayEndHour}
       onSelectEvent={(e) => handleSelectEvent(e as unknown as CalendarEvent)}
       onSelectSlot={(start) => {
         const end = new Date(start.getTime() + 60 * 60000)

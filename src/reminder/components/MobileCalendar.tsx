@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import { format, addDays, startOfWeek, isSameDay, setHours, setMinutes, startOfDay, addWeeks, subWeeks } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { ptBR } from 'date-fns/locale/pt-BR'
@@ -29,12 +29,31 @@ interface MobileCalendarProps {
 export default function MobileCalendar({
   events,
   language,
-  dayStartHour = 5,
-  dayEndHour = 22,
+  dayStartHour = 0,
+  dayEndHour = 24,
   onSelectEvent,
   onSelectSlot,
 }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const initialScrolledRef = useRef(false)
+
+  useEffect(() => {
+    if (initialScrolledRef.current || !scrollContainerRef.current) return
+    const el = scrollContainerRef.current
+
+    // Check if there are any events earlier than 7am in the visible events
+    const hasEarlyEvents = events.some((e) => {
+      const h = e.start.getHours()
+      return h >= 0 && h < 7
+    })
+
+    const defaultScrollHour = hasEarlyEvents ? 0 : 7
+    const hourHeight = el.scrollHeight > 0 ? el.scrollHeight / (dayEndHour - dayStartHour) : 55
+    el.scrollTop = Math.max(0, (defaultScrollHour - dayStartHour) * hourHeight)
+    initialScrolledRef.current = true
+  }, [events, dayStartHour, dayEndHour])
+
   const locale = locales[language] || enUS
 
   const days = useMemo(() => {
@@ -178,7 +197,7 @@ export default function MobileCalendar({
       </div>
 
       {/* Synchronized Scroll Viewport */}
-      <div className="flex-1 overflow-auto relative custom-scrollbar bg-[#0f172a]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto relative custom-scrollbar bg-[#0f172a]">
         <div className="min-w-full w-max flex flex-col relative h-full">
           
           {/* Day Headers (Sticky Top) */}
@@ -208,12 +227,12 @@ export default function MobileCalendar({
           </div>
 
           {/* Grid Area */}
-          <div className="flex flex-1 relative min-h-[900px] min-w-full">
+          <div className="flex flex-1 relative min-h-[1320px] min-w-full">
             {/* Time Axis (Sticky Left) */}
             <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 bg-[#0f172a] z-30 flex flex-col">
-              {hours.map(hour => (
+              {hours.map((hour, hIdx) => (
                 <div key={hour} className="flex-1 relative border-b border-transparent">
-                  <span className="absolute -top-2.5 right-2 text-[11px] font-medium text-slate-400">
+                  <span className={`absolute right-2 text-[11px] font-medium text-slate-400 ${hIdx === 0 ? 'top-0.5' : '-top-2.5'}`}>
                     {format(setHours(startOfDay(currentDate), hour), 'h:mm a')}
                   </span>
                 </div>
