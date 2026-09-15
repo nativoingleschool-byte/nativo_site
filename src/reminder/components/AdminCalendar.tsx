@@ -40,17 +40,23 @@ type CalendarGroup = {
 
 const pad2 = (value: number) => value.toString().padStart(2, '0')
 const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
-const zonedPartsFormatter = (timeZone: string) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+const formatterCache = new Map<string, Intl.DateTimeFormat>()
+
+const zonedPartsFormatter = (timeZone: string) => {
+  if (!formatterCache.has(timeZone)) {
+    formatterCache.set(timeZone, new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }))
+  }
+  return formatterCache.get(timeZone)!
+}
 
 const getDateKeyParts = (dateKey: string) => {
   const [year, month, day] = dateKey.split('-').map(Number)
@@ -180,6 +186,9 @@ export default function AdminCalendar({
   const [weekStart, setWeekStart] = useState(() => startOfWeekDateKey(todayDateKeyInTimeZone(timeZone)))
   const [showModal, setShowModal] = useState(false)
   const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null)
+  const [showLocateModal, setShowLocateModal] = useState(false)
+  const [locateSearchQuery, setLocateSearchQuery] = useState('')
+  const [locateTab, setLocateTab] = useState<'early' | 'all'>('early')
   const [saving, setSaving] = useState(false)
   const [repeatWeekly, setRepeatWeekly] = useState(false)
   const [repeatCount, setRepeatCount] = useState(4)
@@ -265,6 +274,33 @@ export default function AdminCalendar({
     }
     return Array.from(map.values())
   }, [visibleLessons])
+
+  const earlyLessonGroups = useMemo(() => {
+    return allLessonGroups
+      .filter((group) => {
+        const zoned = getZonedParts(new Date(group.starts_at), timeZone)
+        return zoned.hour >= 0 && zoned.hour < 7
+      })
+      .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+  }, [allLessonGroups, timeZone])
+
+  const allSortedLessonGroups = useMemo(() => {
+    return [...allLessonGroups].sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+  }, [allLessonGroups])
+
+  const filteredLocateGroups = useMemo(() => {
+    const q = locateSearchQuery.trim().toLowerCase()
+    const baseList = locateTab === 'early' ? earlyLessonGroups : allSortedLessonGroups
+    if (!q) return baseList
+    return baseList.filter((g) => {
+      const subjectMatch = (g.subject || '').toLowerCase().includes(q)
+      const classMatch = (g.class_name || '').toLowerCase().includes(q)
+      const teacherName = (profilesById[g.teacher_id]?.full_name || '').toLowerCase()
+      const teacherMatch = teacherName.includes(q)
+      const studentMatch = g.student_ids.some((id) => (profilesById[id]?.full_name || '').toLowerCase().includes(q))
+      return subjectMatch || classMatch || teacherMatch || studentMatch
+    })
+  }, [locateSearchQuery, locateTab, earlyLessonGroups, allSortedLessonGroups, profilesById])
 
   const groupsThisWeek = useMemo(() => {
     const map = new Map<string, CalendarGroup>()
@@ -583,6 +619,29 @@ export default function AdminCalendar({
     }
   }
 
+  const handleRestore6Hours = async (group: CalendarGroup) => {
+    const originalDate = new Date(group.starts_at)
+    const restoredDate = new Date(originalDate.getTime() + 6 * 3600000)
+    setSaving(true)
+    try {
+      await onUpdateLessonGroup({
+        lesson_ids: group.lessonIds,
+        subject: group.subject,
+        starts_at: restoredDate.toISOString(),
+        duration_minutes: group.duration_minutes,
+        student_ids: group.student_ids,
+        teacher_id: group.teacher_id,
+        class_name: group.class_name,
+      })
+      toast.success(`Aula "${group.subject}" restaurada (+6h) com sucesso!`)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Erro ao restaurar aula.'
+      toast.error(errMsg)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const resetDrafts = () => {
     setCreateStudent(false)
     setCreateTeacher(false)
@@ -861,6 +920,27 @@ export default function AdminCalendar({
             <span>{t(language, 'add_class')}</span>
           </button>
 
+          <button
+            type="button"
+            className="ghost-button"
+            style={{
+              padding: '0.45rem 0.9rem',
+              fontSize: '0.84rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              borderColor: earlyLessonGroups.length > 0 ? '#f59e0b' : undefined,
+              color: earlyLessonGroups.length > 0 ? '#b45309' : undefined,
+              fontWeight: earlyLessonGroups.length > 0 ? 600 : undefined,
+              background: earlyLessonGroups.length > 0 ? '#fef3c7' : undefined,
+            }}
+            onClick={() => setShowLocateModal(true)}
+            title="Localizar e restaurar aulas que possam ter sido deslocadas"
+          >
+            <span>🔍</span>
+            <span>Localizar Aulas {earlyLessonGroups.length > 0 ? `(${earlyLessonGroups.length})` : ''}</span>
+          </button>
+
           <button className="ghost-button" type="button" onClick={() => setWeekStart((current) => addDaysToDateKey(current, -7))}>
             {t(language, 'prev_week')}
           </button>
@@ -872,6 +952,52 @@ export default function AdminCalendar({
           </button>
         </div>
       </div>
+
+      {earlyLessonGroups.length > 0 && (
+        <div
+          style={{
+            marginBottom: '1rem',
+            padding: '0.75rem 1rem',
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid #f59e0b',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 600, color: '#fbbf24', fontSize: '0.92rem' }}>
+                {earlyLessonGroups.length} aula{earlyLessonGroups.length > 1 ? 's' : ''} encontrada{earlyLessonGroups.length > 1 ? 's' : ''} em horário de madrugada (00h–07h)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                Aulas que foram salvas antes do ajuste de fuso horário podem ter sido adiantadas em 6 horas. Clique para visualizá-las e restaurá-las com 1 clique (+6h).
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="primary-button"
+            style={{
+              padding: '0.4rem 0.85rem',
+              fontSize: '0.82rem',
+              background: '#d97706',
+              borderColor: '#b45309',
+              whiteSpace: 'nowrap',
+            }}
+            onClick={() => {
+              setLocateTab('early')
+              setShowLocateModal(true)
+            }}
+          >
+            Ver e Restaurar
+          </button>
+        </div>
+      )}
 
       <TeacherAvailabilityCalendar
         lessons={lessons}
@@ -1410,6 +1536,209 @@ export default function AdminCalendar({
                 </div>
               </form>
             )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* LOCATE / RESTORE CLASSES MODAL */}
+      {showLocateModal && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            background: 'rgba(2, 6, 23, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            overflowY: 'auto',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLocateModal(false)
+            }
+          }}
+        >
+          <div
+            className="modal-card"
+            style={{
+              maxHeight: '85vh',
+              width: '100%',
+              maxWidth: '680px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              padding: '1.5rem',
+            }}
+          >
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div>
+                <p className="section-label" style={{ color: '#f59e0b' }}>Recuperação de Horários</p>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Localizar Aulas Deslocadas</h2>
+              </div>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setShowLocateModal(false)}
+                style={{ padding: '0.3rem 0.6rem', fontSize: '1.1rem', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #334155', paddingBottom: '0.75rem' }}>
+              <button
+                type="button"
+                className={locateTab === 'early' ? 'primary-button' : 'ghost-button'}
+                style={{
+                  fontSize: '0.82rem',
+                  padding: '0.4rem 0.8rem',
+                  ...(locateTab === 'early' ? { background: '#d97706', borderColor: '#b45309' } : {})
+                }}
+                onClick={() => setLocateTab('early')}
+              >
+                Madrugada (00h–07h) ({earlyLessonGroups.length})
+              </button>
+              <button
+                type="button"
+                className={locateTab === 'all' ? 'primary-button' : 'ghost-button'}
+                style={{ fontSize: '0.82rem', padding: '0.4rem 0.8rem' }}
+                onClick={() => setLocateTab('all')}
+              >
+                Todas as Aulas Recentes ({allSortedLessonGroups.length})
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Buscar por aluno, professor ou matéria..."
+                value={locateSearchQuery}
+                onChange={(e) => setLocateSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 0.9rem',
+                  borderRadius: '0.5rem',
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  color: '#fff',
+                  fontSize: '0.88rem',
+                }}
+              />
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.25rem' }}>
+              {filteredLocateGroups.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                  Nenhuma aula encontrada nesta categoria.
+                </div>
+              ) : (
+                filteredLocateGroups.map((group) => {
+                  const currentZoned = getZonedParts(new Date(group.starts_at), timeZone)
+                  const restoredDate = new Date(new Date(group.starts_at).getTime() + 6 * 3600000)
+                  const restoredZoned = getZonedParts(restoredDate, timeZone)
+
+                  const teacherName = profilesById[group.teacher_id]?.full_name || 'Professor'
+                  const studentNames = group.student_ids.map((id) => profilesById[id]?.full_name || id).join(', ')
+
+                  return (
+                    <div
+                      key={group.key}
+                      style={{
+                        padding: '0.9rem 1rem',
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '0.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#f8fafc' }}>
+                            {group.subject} {group.class_name ? `(${group.class_name})` : ''}
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                            👤 <strong>Aluno(s):</strong> {studentNames || 'Nenhum'} | 👨‍🏫 <strong>Prof:</strong> {teacherName}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="primary-button"
+                            disabled={saving}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              fontSize: '0.8rem',
+                              background: '#059669',
+                              borderColor: '#10b981',
+                            }}
+                            onClick={() => handleRestore6Hours(group)}
+                            title="Restaura a aula adicionando 6 horas ao horário atual"
+                          >
+                            ⚡ Restaurar (+6h)
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            disabled={saving}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                            onClick={() => {
+                              setShowLocateModal(false)
+                              openEdit(group)
+                            }}
+                          >
+                            ✏️ Editar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          background: 'rgba(30, 41, 59, 0.7)',
+                          padding: '0.4rem 0.6rem',
+                          borderRadius: '0.375rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span style={{ color: '#f87171' }}>
+                          Horário Atual: <strong>{pad2(currentZoned.day)}/{pad2(currentZoned.month)} às {pad2(currentZoned.hour)}:{pad2(currentZoned.minute)}</strong>
+                        </span>
+                        <span style={{ color: '#64748b' }}>➔</span>
+                        <span style={{ color: '#34d399' }}>
+                          Após Restaurar (+6h): <strong>{pad2(restoredZoned.day)}/{pad2(restoredZoned.month)} às {pad2(restoredZoned.hour)}:{pad2(restoredZoned.minute)}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setShowLocateModal(false)}
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>,
         document.body

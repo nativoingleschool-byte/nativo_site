@@ -16,17 +16,23 @@ type CalendarEvent = {
 // --- Timezone Spoofing Helpers ---
 const pad2 = (value: number) => value.toString().padStart(2, '0')
 
-const zonedPartsFormatter = (timeZone: string) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+const formatterCache = new Map<string, Intl.DateTimeFormat>()
+
+const zonedPartsFormatter = (timeZone: string) => {
+  if (!formatterCache.has(timeZone)) {
+    formatterCache.set(timeZone, new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }))
+  }
+  return formatterCache.get(timeZone)!
+}
 
 const getZonedParts = (date: Date, timeZone: string) => {
   const parts = zonedPartsFormatter(timeZone).formatToParts(date)

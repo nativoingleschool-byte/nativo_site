@@ -215,22 +215,18 @@ export default function TeacherPanel({
 
   // Filter today's lessons for quick attendance bar
   const teacherTodayLessons = useMemo(() => {
-    const todayZoned = new Intl.DateTimeFormat('en-CA', {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: appTimeZone || 'UTC',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(new Date())
+    })
+    const todayZoned = formatter.format(new Date())
 
     return teacherLessons
       .filter((l) => {
         if (!l.starts_at) return false
-        const lessonDate = new Intl.DateTimeFormat('en-CA', {
-          timeZone: appTimeZone || 'UTC',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).format(new Date(l.starts_at))
+        const lessonDate = formatter.format(new Date(l.starts_at))
         return lessonDate === todayZoned
       })
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
