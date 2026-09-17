@@ -125,7 +125,7 @@ const formatWeekLabel = (weekStart: string, language: Language = 'pt') => {
 }
 
 const groupKeyForLesson = (lesson: Lesson) =>
-  [lesson.subject, lesson.class_name, lesson.teacher_id, lesson.starts_at, lesson.duration_minutes].join('|')
+  `${lesson.teacher_id || 'no-teacher'}|${lesson.starts_at}`
 
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 
@@ -257,8 +257,21 @@ export default function AdminCalendar({
       const key = groupKeyForLesson(lesson)
       const current = map.get(key)
       if (current) {
-        current.lessonIds.push(lesson.id)
-        current.student_ids.push(lesson.student_id)
+        if (lesson.id && !current.lessonIds.includes(lesson.id)) {
+          current.lessonIds.push(lesson.id)
+        }
+        if (lesson.student_id && !current.student_ids.includes(lesson.student_id)) {
+          current.student_ids.push(lesson.student_id)
+        }
+        if (!current.class_name && lesson.class_name) {
+          current.class_name = lesson.class_name
+        }
+        if (!current.subject && lesson.subject) {
+          current.subject = lesson.subject
+        }
+        if (lesson.duration_minutes && lesson.duration_minutes > current.duration_minutes) {
+          current.duration_minutes = lesson.duration_minutes
+        }
       } else {
         map.set(key, {
           key,
@@ -266,7 +279,7 @@ export default function AdminCalendar({
           subject: lesson.subject,
           class_name: lesson.class_name,
           starts_at: lesson.starts_at,
-          duration_minutes: lesson.duration_minutes,
+          duration_minutes: lesson.duration_minutes || 60,
           teacher_id: lesson.teacher_id,
           student_ids: [lesson.student_id],
         })
@@ -308,8 +321,21 @@ export default function AdminCalendar({
       const key = groupKeyForLesson(lesson)
       const current = map.get(key)
       if (current) {
-        current.lessonIds.push(lesson.id)
-        current.student_ids.push(lesson.student_id)
+        if (lesson.id && !current.lessonIds.includes(lesson.id)) {
+          current.lessonIds.push(lesson.id)
+        }
+        if (lesson.student_id && !current.student_ids.includes(lesson.student_id)) {
+          current.student_ids.push(lesson.student_id)
+        }
+        if (!current.class_name && lesson.class_name) {
+          current.class_name = lesson.class_name
+        }
+        if (!current.subject && lesson.subject) {
+          current.subject = lesson.subject
+        }
+        if (lesson.duration_minutes && lesson.duration_minutes > current.duration_minutes) {
+          current.duration_minutes = lesson.duration_minutes
+        }
       } else {
         map.set(key, {
           key,
@@ -317,7 +343,7 @@ export default function AdminCalendar({
           subject: lesson.subject,
           class_name: lesson.class_name,
           starts_at: lesson.starts_at,
-          duration_minutes: lesson.duration_minutes,
+          duration_minutes: lesson.duration_minutes || 60,
           teacher_id: lesson.teacher_id,
           student_ids: [lesson.student_id],
         })
@@ -1017,17 +1043,22 @@ export default function AdminCalendar({
             openCreate(dayStr, minute)
           }
         }}
-        onEditLesson={(lesson) => {
-          const matchingLessons = lessons.filter(l => groupKeyForLesson(l) === groupKeyForLesson(lesson))
-          const group = {
+        onEditLesson={(lesson: any) => {
+          const matchingLessons = lesson.lessons || lessons.filter(l => groupKeyForLesson(l) === groupKeyForLesson(lesson))
+          const studentIds = lesson.student_ids || Array.from(new Set(matchingLessons.map((l: any) => l.student_id)))
+          const lessonIds = lesson.lessonIds || matchingLessons.map((l: any) => l.id)
+          const distinctClassNames = Array.from(new Set(
+            matchingLessons.map((l: any) => l.class_name?.trim()).filter(Boolean)
+          ))
+          const group: CalendarGroup = {
             key: groupKeyForLesson(lesson),
             starts_at: lesson.starts_at,
-            duration_minutes: lesson.duration_minutes,
-            student_ids: matchingLessons.map(l => l.student_id),
+            duration_minutes: lesson.duration_minutes || 60,
+            student_ids: studentIds,
             teacher_id: lesson.teacher_id,
-            subject: lesson.subject,
-            class_name: lesson.class_name,
-            lessonIds: matchingLessons.map(l => l.id)
+            subject: lesson.subject || matchingLessons[0]?.subject || '',
+            class_name: distinctClassNames[0] || lesson.class_name || '',
+            lessonIds: lessonIds
           }
           openEdit(group)
         }}

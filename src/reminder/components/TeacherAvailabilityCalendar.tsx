@@ -2,15 +2,17 @@ import React, { useState, useMemo, useCallback } from 'react'
 import { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { useToast } from '../lib/toast'
+import { groupLessonsIntoTeacherSessions } from '../lib/utils'
 import MobileCalendar from './MobileCalendar'
 
 type CalendarEvent = {
   id: string
   type: 'lesson' | 'availability'
   title: string
+  subtitle?: string
   start: Date
   end: Date
-  sourceData: Lesson | TeacherAvailability
+  sourceData: any
 }
 
 // --- Timezone Spoofing Helpers ---
@@ -117,23 +119,68 @@ export default function TeacherAvailabilityCalendar({
   const events = useMemo<CalendarEvent[]>(() => {
     const evts: CalendarEvent[] = []
 
-    // 1. Map lessons (read-only)
+    // 1. Map lessons into combined classes (grouped by teacher and start time)
     const visibleLessons = currentTeacherId ? lessons.filter(l => l.teacher_id === currentTeacherId) : lessons
-    visibleLessons.forEach(lesson => {
-      const start = shiftToAppTimeZone(lesson.starts_at, timeZone)
-      const end = new Date(start.getTime() + (lesson.duration_minutes || 60) * 60000)
-      
-      const studentObj = profilesById[lesson.student_id]
-      const studentName = studentObj?.full_name || lesson.class_name || 'Aluno'
-      const teacherName = role === 'admin' ? (profilesById[lesson.teacher_id]?.full_name || 'Teacher') + ' - ' : ''
-      
+    const sessions = groupLessonsIntoTeacherSessions(visibleLessons)
+
+    sessions.forEach(session => {
+      const start = shiftToAppTimeZone(session.starts_at, timeZone)
+      const end = new Date(start.getTime() + (session.duration_minutes || 60) * 60000)
+
+      const teacherObj = profilesById[session.teacher_id]
+      const teacherName = role === 'admin' ? (teacherObj?.full_name || 'Teacher') : ''
+
+      const studentNames = session.student_ids
+        .map(id => profilesById[id]?.full_name)
+        .filter(Boolean) as string[]
+
+      const distinctClassNames = Array.from(new Set(
+        session.lessons.map(l => l.class_name?.trim()).filter(Boolean)
+      ))
+      const className = distinctClassNames[0] || session.class_name || ''
+      const subject = session.lessons.find(l => l.subject?.trim())?.subject || session.subject || 'Aula'
+
+      let eventTitle = ''
+      let eventSubtitle = ''
+
+      if (session.student_ids.length > 1) {
+        // Multi-student class (Turma / Group class)
+        const classLabel = className || subject
+        eventTitle = role === 'admin'
+          ? `${teacherName ? `${teacherName} • ` : ''}${classLabel} (${session.student_ids.length} alunos)`
+          : `${classLabel} (${session.student_ids.length} alunos)`
+
+        eventSubtitle = studentNames.length > 0 ? studentNames.join(', ') : `${session.student_ids.length} alunos`
+      } else {
+        // Individual class (1 student)
+        const studentName = studentNames[0] || className || 'Aluno'
+        eventTitle = role === 'admin'
+          ? `${teacherName ? `${teacherName} • ` : ''}${studentName}`
+          : studentName
+
+        eventSubtitle = subject + (className && className !== studentName ? ` (${className})` : '')
+      }
+
+      const firstLesson = session.lessons[0]
+      const sourceLesson = {
+        ...firstLesson,
+        duration_minutes: session.duration_minutes,
+        class_name: className,
+        subject: subject,
+        student_ids: session.student_ids,
+        lessonIds: session.lessons.map(l => l.id),
+        lessons: session.lessons,
+        is_group: session.student_ids.length > 1,
+      }
+
       evts.push({
-        id: `lesson-${lesson.id}`,
+        id: `class-${session.key}`,
         type: 'lesson',
-        title: `${teacherName}${studentName} - ${lesson.subject}`,
+        title: eventTitle,
+        subtitle: eventSubtitle,
         start,
         end,
-        sourceData: lesson
+        sourceData: sourceLesson
       })
     })
 
@@ -278,6 +325,7 @@ export default function TeacherAvailabilityCalendar({
     start: e.start,
     end: e.end,
     title: e.title as string,
+    subtitle: e.subtitle,
     color: (e.type === 'lesson' ? 'blue' : 'green') as 'blue' | 'green',
     sourceData: e.sourceData
   }))

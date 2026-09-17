@@ -12,6 +12,7 @@ export type CalendarEventItem = {
   start: Date
   end: Date
   title: string
+  subtitle?: string
   color?: 'blue' | 'green'
   sourceData: any
 }
@@ -278,10 +279,15 @@ export default function MobileCalendar({
                             zIndex: pe.zIndex,
                           }}
                         >
-                          <div className={`text-[11px] font-semibold truncate leading-tight ${textColor}`}>
+                          <div className={`text-[11px] font-semibold truncate leading-tight ${textColor}`} title={pe.event.title}>
                             {pe.event.title}
                           </div>
-                          {pe.height > 5 && (
+                          {pe.event.subtitle && (
+                            <div className="text-[10px] text-blue-200/90 truncate leading-tight mt-0.5 font-medium" title={pe.event.subtitle}>
+                              {pe.event.subtitle}
+                            </div>
+                          )}
+                          {pe.height > 4 && (
                             <div className="text-[10px] text-slate-400 truncate opacity-90 mt-0.5 leading-tight">
                               {format(pe.event.start, 'h:mm')} - {format(pe.event.end, 'h:mm a')}
                             </div>
