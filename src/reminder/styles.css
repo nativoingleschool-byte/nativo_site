@@ -1689,3 +1689,239 @@ body:has(.reminder-app-scope) {
   filter: brightness(1.1);
   z-index: 50 !important;
 }
+
+
+/* ========================================================================== */
+/* Teacher workspace visual layer                                             */
+/*                                                                            */
+/* This section intentionally changes presentation only. Data fetching,      */
+/* calendar callbacks, Supabase handlers, modals and form state remain       */
+/* untouched above. The selectors are scoped to .role-teacher so admin,      */
+/* student and login experiences keep their existing behavior and skin.      */
+/* ========================================================================== */
+
+.reminder-app-scope:has(.role-teacher) {
+  min-width: 0;
+  background: #f7f9fb;
+  color: #2c4054;
+}
+
+.role-teacher {
+  min-height: 100vh;
+  display: flex;
+  background: #f7f9fb;
+}
+
+.teacher-sidebar {
+  width: 222px;
+  flex: 0 0 222px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-right: 1px solid #e8edef;
+  z-index: 120;
+}
+
+.teacher-brand-lockup {
+  height: 64px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.teacher-brand-mark,
+.teacher-topbar-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: #1f4268;
+  font-family: Inter, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .12);
+}
+
+.teacher-brand-mark { width: 32px; height: 32px; border-radius: 9px; font-size: 19px; }
+.teacher-brand-lockup strong { display: block; color: #1f4268; font-size: 13px; line-height: 1.05; letter-spacing: -.03em; }
+.teacher-brand-lockup strong span { color: #c39b58; }
+.teacher-brand-lockup small { display: block; margin-top: 4px; color: #9da8b1; font-size: 9px; line-height: 1; }
+
+.teacher-sidebar-nav { padding: 19px 12px; display: grid; gap: 4px; }
+.teacher-nav-item {
+  width: 100%;
+  height: 38px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 13px;
+  color: #526170;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+}
+.teacher-nav-item:hover { color: #1f4268; background: #f4f7f8; }
+.teacher-nav-item-active { color: #fff; background: #1f4268; box-shadow: 0 7px 16px rgba(24, 58, 95, .12); }
+.teacher-nav-item-active:hover { color: #fff; background: #23496f; }
+.teacher-sidebar-footer { margin-top: auto; padding: 0 16px 18px; display: grid; gap: 10px; color: #657281; font-size: 10px; }
+.teacher-sidebar-footer span { display: flex; align-items: center; gap: 7px; }
+.teacher-sidebar-footer small { color: #aab3bb; font-size: 9px; }
+
+.teacher-workspace { min-width: 0; flex: 1; }
+.role-teacher .topbar {
+  height: 64px;
+  padding: 0 32px 0 45px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, .94);
+  border-bottom: 1px solid #e8edef;
+  box-shadow: 0 2px 12px rgba(30, 54, 76, .025);
+  backdrop-filter: blur(12px);
+}
+.teacher-topbar-context { gap: 10px; }
+.teacher-topbar-mark { width: 32px; height: 32px; border-radius: 9px; font-size: 17px; }
+.teacher-topbar-copy { display: flex; align-items: baseline; gap: 11px; }
+.teacher-topbar-copy strong { color: #213c59; font-size: 19px; letter-spacing: -.04em; }
+.teacher-topbar-copy span { color: #87939e; font-size: 11px; }
+.role-teacher .topbar > .topbar-section:last-child { gap: 10px; }
+.role-teacher .topbar-icon-btn { width: 30px; height: 32px; border: 0; color: #536273; background: transparent; border-radius: 8px; }
+.role-teacher .topbar-icon-btn:hover { color: #1f4268; background: #f3f7f9; transform: none; }
+
+.teacher-notification-button { position: relative; width: 30px; height: 32px; display: grid; place-items: center; border: 0; color: #536273; background: transparent; border-radius: 8px; }
+.teacher-notification-button:hover { color: #1f4268; background: #f3f7f9; }
+.teacher-notification-button::after { content: ''; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; background: #e7a917; }
+.teacher-topbar-divider { width: 1px; height: 28px; margin: 0 8px; background: #e4e8eb; }
+.teacher-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: #1f4268; font-size: 11px; font-weight: 750; }
+.teacher-profile-copy { display: grid; gap: 3px; }
+.teacher-profile-copy strong { color: #324153; font-size: 12px; }
+.teacher-profile-copy span { color: #9aa5af; font-size: 10px; }
+
+.role-teacher .main-content {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: 24px 32px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #f7f9fb;
+}
+.role-teacher .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.role-teacher .summary-grid .summary-card,
+.role-teacher .summary-grid > * {
+  min-height: 78px;
+  padding: 15px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #e0e7eb;
+  border-radius: 12px;
+  color: #2c4054;
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(31, 56, 76, .035);
+}
+.role-teacher .summary-grid strong { color: #1f4268; font-size: 19px; }
+.role-teacher .summary-grid span { color: #87929d; font-size: 10px; }
+.role-teacher .teacher-panel-shell > .panel {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #e0e6ea;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(31, 56, 76, .035);
+  color: #30465b;
+}
+.role-teacher .teacher-panel-shell > .panel > .panel-header {
+  min-height: 64px;
+  padding-bottom: 18px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #edf0f2;
+}
+.role-teacher .teacher-panel-shell .section-label { margin-bottom: 6px; color: #bd9b5b; font-size: 10px; letter-spacing: .08em; }
+.role-teacher .teacher-panel-shell .panel-header h2 { color: #213c59; font-size: 21px; letter-spacing: -.035em; }
+.role-teacher .teacher-panel-shell .tab-row { gap: 4px; padding: 3px; border-radius: 11px; background: #f3f6f7; }
+.role-teacher .teacher-panel-shell .tab-button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 8px; color: #647483; background: transparent; font-size: 10px; }
+.role-teacher .teacher-panel-shell .tab-button-active { color: #2d4862; background: #fff; box-shadow: 0 2px 6px rgba(38, 61, 79, .08); }
+.role-teacher .mobile-tab-select { display: none; }
+.role-teacher .teacher-panel-shell .muted { color: #778591; }
+.role-teacher .teacher-panel-shell .form-card { border-color: #e1e7eb !important; border-radius: 14px !important; background: #fff !important; color: #30465b !important; box-shadow: none !important; }
+.role-teacher .teacher-panel-shell .form-card h3,
+.role-teacher .teacher-panel-shell .form-card strong,
+.role-teacher .teacher-panel-shell .form-card span { color: #30465b !important; }
+.role-teacher .teacher-panel-shell .primary-button { color: #fff; background: #1f4268; box-shadow: 0 5px 10px rgba(24, 58, 95, .12); }
+.role-teacher .teacher-panel-shell .secondary-button { color: #41576b; background: #f5f8f9; border: 1px solid #e0e7eb; }
+.role-teacher .teacher-panel-shell .danger-button { color: #ad3f57; background: #fff7f8; border: 1px solid #f0c8d0; }
+
+/* Keep the actual calendar engine and callbacks; only restyle its shell and cells. */
+.role-teacher .mobile-calendar-shell {
+  height: 640px !important;
+  border: 1px solid #e0e6ea !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 24px rgba(31, 56, 76, .04) !important;
+  color: #30465b !important;
+}
+.role-teacher .mobile-calendar-shell [class*="bg-[#030712]"],
+.role-teacher .mobile-calendar-shell [class*="bg-[#0a0f1c]"],
+.role-teacher .mobile-calendar-shell [class*="bg-[#0f172a]"] { background: #fff !important; }
+.role-teacher .mobile-calendar-shell [class*="border-slate"] { border-color: #e8edf0 !important; }
+.role-teacher .mobile-calendar-shell [class*="text-slate-"] { color: #667887 !important; }
+.role-teacher .mobile-calendar-shell [class*="text-indigo-"] { color: #1f4268 !important; }
+.role-teacher .mobile-calendar-shell [class*="bg-indigo-"] { background: #edf4fa !important; }
+.role-teacher .mobile-calendar-shell [class*="border-b-indigo"] { border-bottom-color: #1f4268 !important; }
+.role-teacher .mobile-calendar-shell [class*="bg-blue-500"] { background: #f3f8fc !important; }
+.role-teacher .mobile-calendar-shell [class*="border-blue-500"] { border-color: #1f4268 !important; }
+.role-teacher .mobile-calendar-shell [class*="text-blue-200"] { color: #294765 !important; }
+.role-teacher .mobile-calendar-shell [class*="bg-emerald-500"] { background: #effbf6 !important; }
+.role-teacher .mobile-calendar-shell [class*="border-emerald-500"] { border-color: #15a77f !important; }
+.role-teacher .mobile-calendar-shell [class*="text-emerald-200"] { color: #236a5a !important; }
+.role-teacher .mobile-calendar-shell button { color: #536273; }
+.role-teacher .mobile-calendar-shell button:hover { color: #1f4268; background: #f3f7f9; }
+
+.teacher-mobile-bottom-nav { display: none; }
+
+@media (max-width: 980px) {
+  .role-teacher .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .role-teacher .teacher-profile-copy { display: none; }
+}
+
+@media (max-width: 767px) {
+  .role-teacher { display: block; min-height: calc(100vh - 70px); padding-bottom: 70px; }
+  .teacher-sidebar { display: none; }
+  .teacher-workspace { width: 100%; }
+  .role-teacher .topbar { height: 58px; padding: 0 16px; }
+  .teacher-topbar-mark { width: 32px; height: 32px; }
+  .teacher-topbar-copy strong { font-size: 18px; }
+  .teacher-topbar-copy span { display: none; }
+  .role-teacher .topbar > .topbar-section:last-child { margin-left: auto; }
+  .role-teacher .topbar > .topbar-section:last-child > .topbar-icon-btn { width: 30px; }
+  .teacher-notification-button { width: 30px; }
+  .teacher-topbar-divider { margin: 0 5px; }
+  .role-teacher .main-content { width: 100%; padding: 16px 16px 22px; gap: 16px; }
+  .role-teacher .summary-grid { grid-template-columns: 1fr; gap: 8px; }
+  .role-teacher .summary-grid .summary-card,
+  .role-teacher .summary-grid > * { min-height: 57px; padding: 10px 14px; flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; }
+  .role-teacher .teacher-panel-shell > .panel { padding: 16px; border-radius: 16px; }
+  .role-teacher .teacher-panel-shell > .panel > .panel-header { flex-direction: column; gap: 12px; }
+  .role-teacher .teacher-panel-shell .desktop-only { display: none; }
+  .role-teacher .mobile-tab-select { display: block; width: 100%; }
+  .role-teacher .mobile-tab-select select { width: 100%; min-height: 38px; padding: 0 12px; color: #30465b; background: #f6f8f9; border: 1px solid #e0e7eb; border-radius: 10px; }
+  .role-teacher .mobile-calendar-shell { height: 560px !important; border-radius: 14px !important; }
+  .role-teacher .teacher-panel-shell .calendar-mobile-nav { background: #f3f6f7 !important; border-color: #e0e7eb !important; }
+  .role-teacher .teacher-panel-shell .calendar-mobile-nav-btn.active { color: #1f4268 !important; background: #fff !important; border-color: #dbe5eb !important; }
+  .teacher-mobile-bottom-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 200; height: 70px; padding: 7px 10px max(7px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #e4eaed; background: rgba(255, 255, 255, .98); box-shadow: 0 -5px 18px rgba(31, 56, 76, .06); }
+  .teacher-mobile-bottom-nav button { display: grid; place-items: center; align-content: center; gap: 4px; border: 0; color: #9aa8b3; background: transparent; font-size: 10px; font-weight: 650; }
+  .teacher-mobile-bottom-nav button.is-active { color: #234666; font-weight: 800; }
+}

@@ -177,7 +177,7 @@ export default function MobileCalendar({
   }, [days, events, dayStartHour, totalMinutes])
 
   return (
-    <div className="flex flex-col h-[750px] bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
+    <div className="mobile-calendar-shell flex flex-col h-[750px] bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
       
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0a0f1c]">

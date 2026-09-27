@@ -723,7 +723,7 @@ export default function TeacherPanel({
   }
 
   return (
-    <section className="flex flex-col w-full gap-6">
+    <section className="teacher-panel-shell flex flex-col w-full gap-6">
       <article className="panel">
         <div className="panel-header animate-fade-in">
           <div>
@@ -2091,4 +2091,3 @@ export default function TeacherPanel({
     </section>
   )
 }
-

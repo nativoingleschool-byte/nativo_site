@@ -30,6 +30,7 @@ interface TopbarProps {
   handleLogout: () => Promise<void>
   adminTab?: 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation'
   setAdminTab?: (tab: 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation') => void
+  teacherTab?: 'calendar' | 'worklog' | 'profile'
 }
 
 export default function Topbar({
@@ -48,6 +49,7 @@ export default function Topbar({
   handleLogout,
   adminTab,
   setAdminTab,
+  teacherTab,
 }: TopbarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -77,15 +79,25 @@ export default function Topbar({
 
   return (
     <header className="topbar">
-      {/* Left: user identity */}
-      <div className="topbar-section">
-        <div className="topbar-chip" title={profile.email}>
-          <User size={15} />
-          <span className="topbar-label">
-            {roleLabel}: {profile.full_name.split(' ')[0]}
-          </span>
+      {/* Left: generated teacher context; the original identity remains for admin/student roles. */}
+      {profile.role === 'teacher' ? (
+        <div className="topbar-section teacher-topbar-context">
+          <div className="teacher-topbar-mark">N</div>
+          <div className="teacher-topbar-copy">
+            <strong>{teacherTab === 'worklog' ? t(language, 'tab_worklog_nf') : teacherTab === 'profile' ? t(language, 'tab_profile_data') : t(language, 'tab_schedule')}</strong>
+            <span>• {roleLabel}: {profile.full_name.split(' ')[0]}</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="topbar-section">
+          <div className="topbar-chip" title={profile.email}>
+            <User size={15} />
+            <span className="topbar-label">
+              {roleLabel}: {profile.full_name.split(' ')[0]}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Center: Admin Navigation Bar */}
       {profile.role === 'admin' && adminTab && setAdminTab && (
@@ -148,6 +160,19 @@ export default function Topbar({
 
       {/* Right: controls */}
       <div className="topbar-section" style={{ position: 'relative' }} ref={settingsRef}>
+        {profile.role === 'teacher' && (
+          <>
+            <button type="button" className="teacher-notification-button" aria-label={language === 'pt' ? 'Notificações' : 'Notifications'} title={language === 'pt' ? 'Notificações' : 'Notifications'}>
+              <Bell size={18} strokeWidth={1.7} />
+            </button>
+            <span className="teacher-topbar-divider" />
+            <div className="teacher-avatar">{profile.full_name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</div>
+            <div className="teacher-profile-copy">
+              <strong>{profile.full_name}</strong>
+              <span>{profile.email}</span>
+            </div>
+          </>
+        )}
         <button
           className="topbar-icon-btn"
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}

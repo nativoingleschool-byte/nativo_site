@@ -42,7 +42,7 @@ import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import { registerAppServiceWorker } from './pwa'
-import { Receipt } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, HelpCircle, Receipt, UserRound } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
 
 type AccountFormState = {
@@ -1727,7 +1727,34 @@ function ReminderAppInner() {
 
   return (
     <div className="reminder-app-scope">
-      <div className="app-shell final-shell">
+      <div className={`app-shell final-shell ${isTeacher ? 'role-teacher' : ''}`}>
+      {isTeacher && (
+        <aside className="teacher-sidebar" aria-label="Navegação do professor">
+          <div className="teacher-brand-lockup">
+            <div className="teacher-brand-mark">N</div>
+            <div>
+              <strong>NATIVO <span>ENGLISH</span></strong>
+              <small>Portal do Professor</small>
+            </div>
+          </div>
+          <nav className="teacher-sidebar-nav">
+            <button type="button" className={teacherTab === 'calendar' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('calendar')}>
+              <CalendarDays size={16} /> <span>{language === 'pt' ? 'Agenda' : t(language, 'tab_schedule')}</span>
+            </button>
+            <button type="button" className={teacherTab === 'worklog' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('worklog')}>
+              <CircleDollarSign size={16} /> <span>{language === 'pt' ? 'Financeiro' : t(language, 'tab_worklog_nf')}</span>
+            </button>
+            <button type="button" className={teacherTab === 'profile' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('profile')}>
+              <UserRound size={16} /> <span>{language === 'pt' ? 'Meu perfil' : t(language, 'tab_profile_data')}</span>
+            </button>
+          </nav>
+          <div className="teacher-sidebar-footer">
+            <span><HelpCircle size={14} /> {language === 'pt' ? 'Suporte Docente' : 'Teacher support'}</span>
+            <small>Nativo English</small>
+          </div>
+        </aside>
+      )}
+      <div className={isTeacher ? 'teacher-workspace' : ''}>
       <Topbar
         profile={profile}
         language={language}
@@ -1744,6 +1771,7 @@ function ReminderAppInner() {
         handleLogout={handleLogout}
         adminTab={adminTab}
         setAdminTab={setAdminTab}
+        teacherTab={teacherTab}
       />
 
       <main className="main-content">
@@ -2017,6 +2045,14 @@ function ReminderAppInner() {
           />
         )}
       </main>
+      {isTeacher && (
+        <nav className="teacher-mobile-bottom-nav" aria-label="Navegação mobile do professor">
+          <button type="button" className={teacherTab === 'calendar' ? 'is-active' : ''} onClick={() => setTeacherTab('calendar')}><CalendarDays size={20} /><span>{language === 'pt' ? 'Agenda' : t(language, 'tab_schedule')}</span></button>
+          <button type="button" className={teacherTab === 'worklog' ? 'is-active' : ''} onClick={() => setTeacherTab('worklog')}><CircleDollarSign size={20} /><span>{language === 'pt' ? 'Financeiro' : t(language, 'tab_worklog_nf')}</span></button>
+          <button type="button" className={teacherTab === 'profile' ? 'is-active' : ''} onClick={() => setTeacherTab('profile')}><UserRound size={20} /><span>{language === 'pt' ? 'Meu perfil' : t(language, 'tab_profile_data')}</span></button>
+        </nav>
+      )}
+      </div>
       </div>
       {renderResetPasswordModal()}
     </div>
