@@ -177,10 +177,10 @@ export default function MobileCalendar({
   }, [days, events, dayStartHour, totalMinutes])
 
   return (
-    <div className="mobile-calendar-shell flex flex-col h-[750px] bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
+    <div className="mobile-calendar-shell flex flex-col h-[750px] bg-[#f7f9fb] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
       
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0a0f1c]">
+      <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#ffffff]">
         <button onClick={() => setCurrentDate(subWeeks(currentDate, 1))} className="p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 rounded-lg hover:bg-slate-700">
           &lt;
         </button>
@@ -198,13 +198,13 @@ export default function MobileCalendar({
       </div>
 
       {/* Synchronized Scroll Viewport */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto relative custom-scrollbar bg-[#0f172a]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto relative custom-scrollbar bg-[#ffffff]">
         <div className="min-w-full w-max flex flex-col relative h-full">
           
           {/* Day Headers (Sticky Top) */}
-          <div className="sticky top-0 z-40 flex bg-[#0f172a]/95 backdrop-blur-sm border-b border-slate-700/50 shadow-sm min-w-full">
+          <div className="sticky top-0 z-40 flex bg-[#ffffff]/95 backdrop-blur-sm border-b border-slate-700/50 shadow-sm min-w-full">
             {/* Top-Left Corner (Sticky Top + Left) */}
-            <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 z-50 bg-[#0f172a]" />
+            <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 z-50 bg-[#ffffff]" />
             
             <div className="flex-1 flex">
               {days.map((day, idx) => {
@@ -230,7 +230,7 @@ export default function MobileCalendar({
           {/* Grid Area */}
           <div className="flex flex-1 relative min-h-[1320px] min-w-full">
             {/* Time Axis (Sticky Left) */}
-            <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 bg-[#0f172a] z-30 flex flex-col">
+            <div className="w-[70px] flex-shrink-0 border-r border-slate-700/50 sticky left-0 bg-[#ffffff] z-30 flex flex-col">
               {hours.map((hour, hIdx) => (
                 <div key={hour} className="flex-1 relative border-b border-transparent">
                   <span className={`absolute right-2 text-[11px] font-medium text-slate-400 ${hIdx === 0 ? 'top-0.5' : '-top-2.5'}`}>

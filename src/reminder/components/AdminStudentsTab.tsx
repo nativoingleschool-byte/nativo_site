@@ -157,14 +157,14 @@ const getBillingPeriods = () => {
   const today = new Date()
   const tzOffset = -3 * 60 // UTC-3 (Brasília)
   const localTime = new Date(today.getTime() + tzOffset * 60 * 1000)
-  
+
   const currentPeriod = localTime.toISOString().substring(0, 7) // 'YYYY-MM'
-  
+
   // Previous month in Brasília timezone
   const prevYear = localTime.getUTCMonth() === 0 ? localTime.getUTCFullYear() - 1 : localTime.getUTCFullYear()
   const prevMonthNum = localTime.getUTCMonth() === 0 ? 12 : localTime.getUTCMonth()
   const previousPeriod = `${prevYear}-${String(prevMonthNum).padStart(2, '0')}`
-  
+
   return { currentPeriod, previousPeriod }
 }
 
@@ -194,7 +194,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
   useEffect(() => {
     const { currentPeriod } = getBillingPeriods()
     const mapped: Record<string, { id: string; hasPdf: boolean; hasProtocol: boolean }> = {}
-    
+
     invoices.forEach((inv) => {
       if (inv.billing_period === currentPeriod && (inv.status === 'pago' || inv.nfs_e_pdf_link)) {
         mapped[inv.student_id] = {
@@ -253,7 +253,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       } else if (data.status === 'erro') {
         toast.error(`Erro: ${data.message}`)
       }
-      
+
       setLastIssuedPdf(prev => prev ? { ...prev } : null)
       await refreshInvoices()
     } catch (err: any) {
@@ -327,10 +327,10 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          student_id: studentId, 
+        body: JSON.stringify({
+          student_id: studentId,
           billing_period: targetPeriod,
-          force_retry: true 
+          force_retry: true
         })
       })
 
@@ -414,7 +414,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null)
 
   const activeStudents = students.filter(s => !s.archived)
-  
+
   const selectables = activeStudents.filter(
     (s) => !currentPeriodInvoices[s.id] && s.tuition_fee && Number(s.tuition_fee) > 0
   )
@@ -588,7 +588,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           </div>
         </div>
       )}
-      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
+      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(255, 255, 255, 0.76)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
         <form onSubmit={(e) => handleGenerateInviteLink(e)} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
           <input
@@ -597,17 +597,17 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             placeholder={t(language, 'invite_email_placeholder')}
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            style={{ flex: 1, padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
+            style={{ flex: 1, padding: '0.75rem 1rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.75rem', color: '#fff' }}
           />
           <button className="primary-button" style={{ padding: '0.75rem 1.5rem', whiteSpace: 'nowrap' }} disabled={inviteLoading}>
             {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
           </button>
         </form>
         <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-start' }}>
-          <button 
-            type="button" 
-            className="secondary-button" 
-            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }} 
+          <button
+            type="button"
+            className="secondary-button"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
             onClick={(e) => handleGenerateInviteLink(e, true)}
             disabled={inviteLoading}
           >
@@ -635,7 +635,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       </div>
 
       {/* Bulk Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: 'rgba(30, 41, 59, 0.3)', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: 'rgba(31, 66, 104, 0.06)', padding: '1rem', borderRadius: '1rem', border: '1px solid #e0e7eb' }}>
         <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
           {t(language, 'bulk_invoices_selected').replace('{count}', String(selectedStudentIds.length))}
         </div>
@@ -695,15 +695,15 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
         </div>
       )}
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(255, 255, 255, 0.88)', borderRadius: '1.5rem', border: '1px solid #e0e7eb', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid #e0e7eb', color: '#94a3b8', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem', width: '40px' }}>
-                <input 
-                  type="checkbox" 
-                  checked={selectedStudentIds.length === selectables.length && selectables.length > 0} 
-                  onChange={handleToggleAll} 
+                <input
+                  type="checkbox"
+                  checked={selectedStudentIds.length === selectables.length && selectables.length > 0}
+                  onChange={handleToggleAll}
                 />
               </th>
               <th
@@ -751,17 +751,17 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           <tbody>
             {sortedStudents.map((student) => {
               const studentLessons = lessons.filter(l => l.student_id === student.id)
-              const scheduleText = studentLessons.length > 0 
+              const scheduleText = studentLessons.length > 0
                 ? formatShortDateLabel(studentLessons[0].starts_at).split(' · ')[1] || t(language, 'class_scheduled')
                 : t(language, 'student_no_classes')
 
               return (
-                <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                <tr key={student.id} style={{ borderBottom: '1px solid #e0e7eb', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', width: '40px' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedStudentIds.includes(student.id)} 
-                      onChange={() => handleToggleStudent(student.id)} 
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.includes(student.id)}
+                      onChange={() => handleToggleStudent(student.id)}
                       disabled={!!currentPeriodInvoices[student.id] || !student.tuition_fee || Number(student.tuition_fee) <= 0}
                     />
                   </td>
@@ -774,7 +774,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                       {student.full_name}
                     </button>
                     {student.country && student.country !== 'BR' && (
-                      <span 
+                      <span
                         title={`País: ${student.country}`}
                         style={{
                           marginLeft: '0.45rem',
@@ -845,7 +845,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                     })()}
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <span 
+                    <span
                       title={t(language, 'calendar_time_hint')}
                       style={{ borderBottom: '1px dotted #64748b', cursor: 'help', color: '#38bdf8' }}
                     >
@@ -871,12 +871,12 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         if (invoiceInfo.hasProtocol) {
                           return (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <button 
-                                className="secondary-button" 
-                                style={{ 
-                                  padding: '0.4rem 0.8rem', 
-                                  fontSize: '0.8rem', 
-                                  marginRight: '0.2rem', 
+                              <button
+                                className="secondary-button"
+                                style={{
+                                  padding: '0.4rem 0.8rem',
+                                  fontSize: '0.8rem',
+                                  marginRight: '0.2rem',
                                   background: '#f59e0b',
                                   borderColor: '#f59e0b',
                                   color: '#000'
@@ -898,12 +898,12 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                           )
                         }
                         return (
-                          <button 
-                            className="primary-button" 
-                            style={{ 
-                              padding: '0.4rem 0.8rem', 
-                              fontSize: '0.8rem', 
-                              marginRight: '0.5rem', 
+                          <button
+                            className="primary-button"
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.8rem',
+                              marginRight: '0.5rem',
                               background: '#0284c7',
                               cursor: 'pointer'
                             }}
@@ -953,12 +953,12 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         )
                       }
                       return (
-                        <button 
-                          className="primary-button" 
-                          style={{ 
-                            padding: '0.4rem 0.8rem', 
-                            fontSize: '0.8rem', 
-                            marginRight: '0.5rem', 
+                        <button
+                          className="primary-button"
+                          style={{
+                            padding: '0.4rem 0.8rem',
+                            fontSize: '0.8rem',
+                            marginRight: '0.5rem',
                             background: '#0284c7',
                             cursor: 'pointer'
                           }}
@@ -969,11 +969,11 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         </button>
                       )
                     })()}
-                    
+
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
-                        <button 
-                          className="secondary-button" 
+                        <button
+                          className="secondary-button"
                           style={{ padding: '0.4rem', border: 'none', background: 'transparent' }}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -981,25 +981,25 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         </button>
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Portal>
-                        <DropdownMenu.Content 
+                        <DropdownMenu.Content
                           align="end"
-                          style={{ 
-                            background: '#1e293b', 
-                            border: '1px solid #334155', 
-                            borderRadius: '0.5rem', 
+                          style={{
+                            background: '#e0e7eb',
+                            border: '1px solid #536273',
+                            borderRadius: '0.5rem',
                             padding: '0.5rem',
                             minWidth: '150px',
                             zIndex: 50,
                             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
                           }}
                         >
-                          <DropdownMenu.Item 
+                          <DropdownMenu.Item
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#38bdf8', borderRadius: '0.25rem' }}
                             onSelect={() => void handleResetAndRetryNfse(student.id, student.full_name)}
                           >
                             {t(language, 'reissue_reset')}
                           </DropdownMenu.Item>
-                          <DropdownMenu.Item 
+                          <DropdownMenu.Item
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
                             onSelect={() => {
                               setSavingUserId(student.id)
@@ -1030,13 +1030,13 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                           >
                             {t(language, 'edit')}
                           </DropdownMenu.Item>
-                          <DropdownMenu.Item 
+                          <DropdownMenu.Item
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#f59e0b', borderRadius: '0.25rem' }}
                             onSelect={() => void handleArchiveStudent(student.id, student.full_name)}
                           >
                             {t(language, 'archive_btn')}
                           </DropdownMenu.Item>
-                          <DropdownMenu.Item 
+                          <DropdownMenu.Item
                             style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#ef4444', borderRadius: '0.25rem' }}
                             onSelect={() => void handleDeleteStudent(student.id, student.full_name)}
                           >
@@ -1056,7 +1056,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       {savingUserId && userForm.role === 'student' && createPortal(
         <div
           className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (editStudentCardRef.current && !editStudentCardRef.current.contains(e.target as Node)) {
               const isDirty = initialUserForm ? (
@@ -1087,7 +1087,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             }
           }}
         >
-          <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
@@ -1263,14 +1263,14 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       {historyStudent && createPortal(
         <div
           className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (historyStudentCardRef.current && !historyStudentCardRef.current.contains(e.target as Node)) {
               setHistoryStudent(null)
             }
           }}
         >
-          <div ref={historyStudentCardRef} className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div ref={historyStudentCardRef} className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
               <p className="muted">{t(language, 'loading_invoices')}</p>
@@ -1278,7 +1278,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
               <div className="list-stack" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {historyInvoices.map((inv) => {
                   return (
-                    <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                    <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.80)', border: '1px solid #e0e7eb', borderRadius: '1rem' }}>
                       <div>
                         <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>NFS-e Ref. {inv.billing_period || '-'}</p>
                         <p className="muted text-xs">{t(language, 'emission_date')}: {new Date(inv.created_at).toLocaleDateString()}</p>
@@ -1288,8 +1288,8 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                       </div>
                       <div>
                         {(inv.nfs_e_pdf_link || inv.nfse_url || inv.nfse_numero) ? (
-                          <button 
-                            className="primary-button" 
+                          <button
+                            className="primary-button"
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: '#10b981', borderColor: '#10b981' }}
                             disabled={downloadingPdfId === inv.id}
                             onClick={() => void downloadNfsePdf(inv.id, historyStudent.full_name)}
@@ -1326,7 +1326,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(2, 6, 23, 0.78)',
+            background: 'rgba(31, 66, 104, 0.14)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -1341,8 +1341,8 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             style={{
               maxWidth: '480px',
               width: '100%',
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: '#ffffff',
+              border: '1px solid #e0e7eb',
               borderRadius: '1.5rem',
               padding: '2rem',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'

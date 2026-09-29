@@ -187,7 +187,7 @@ function ReminderAppInner() {
     return createPortal(
       <div
         className="reminder-app-scope modal-overlay"
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
         onClick={(e) => {
           if (resetPasswordCardRef.current && !resetPasswordCardRef.current.contains(e.target as Node)) {
             const isDirty = newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0
@@ -201,7 +201,7 @@ function ReminderAppInner() {
           }
         }}
       >
-        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
             {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
           </h3>
@@ -241,7 +241,7 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#e0e7eb', border: '1px solid #536273', color: '#fff' }}
               />
             </div>
 
@@ -255,7 +255,7 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#e0e7eb', border: '1px solid #536273', color: '#fff' }}
               />
             </div>
 
@@ -2062,7 +2062,7 @@ function ReminderAppInner() {
 export default function ReminderApp() {
   return (
     <ToastProvider>
-      <div className="reminder-app-scope bg-[#020617] text-[#e5eefc] min-h-screen">
+      <div className="reminder-app-scope min-h-screen">
         <ReminderAppInner />
       </div>
     </ToastProvider>

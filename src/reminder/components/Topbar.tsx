@@ -186,7 +186,7 @@ export default function Topbar({
             position: 'absolute',
             top: 'calc(100% + 8px)',
             right: 0,
-            background: 'rgba(15, 23, 42, 0.98)',
+            background: 'rgba(255, 255, 255, 0.98)',
             border: '1px solid rgba(148, 163, 184, 0.18)',
             borderRadius: '12px',
             padding: '12px',

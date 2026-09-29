@@ -95,16 +95,16 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#020617',
-              color: '#38bdf8',
+              background: '#f7f9fb',
+              color: '#1f4268',
             }}
           >
             <div
               style={{
                 width: '2.5rem',
                 height: '2.5rem',
-                border: '3px solid rgba(56, 189, 248, 0.2)',
-                borderTopColor: '#38bdf8',
+              border: '3px solid rgba(31, 66, 104, 0.14)',
+              borderTopColor: '#1f4268',
                 borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite',
               }}

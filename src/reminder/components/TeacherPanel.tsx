@@ -808,7 +808,7 @@ export default function TeacherPanel({
                           gap: '0.75rem',
                           padding: '0.85rem 1rem',
                           borderRadius: '0.75rem',
-                          background: 'rgba(15, 23, 42, 0.75)',
+                          background: 'rgba(255, 255, 255, 0.94)',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
                         }}
                       >
@@ -894,7 +894,7 @@ export default function TeacherPanel({
               <div
                 className="form-card mb-6 mt-6"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.75))',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.94))',
                   border: '1px solid rgba(56, 189, 248, 0.4)',
                   borderRadius: '1.25rem',
                   padding: '1.25rem',
@@ -929,7 +929,7 @@ export default function TeacherPanel({
                           gap: '0.75rem',
                           padding: '0.85rem 1rem',
                           borderRadius: '0.75rem',
-                          background: 'rgba(15, 23, 42, 0.75)',
+                          background: 'rgba(255, 255, 255, 0.94)',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
                         }}
                       >
@@ -982,7 +982,7 @@ export default function TeacherPanel({
 
             <div
               className="form-card mb-6 mt-6"
-              style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
+              style={{ background: 'rgba(255, 255, 255, 0.76)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
             >
               <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
                 {t(language, 'propose_new_class_title')}
@@ -1054,8 +1054,8 @@ export default function TeacherPanel({
                     onChange={(e) => setSelectedMonthKey(e.target.value)}
                     style={{
                       padding: '0.5rem 1rem',
-                      background: '#090d16',
-                      border: '1px solid #334155',
+                      background: '#f7f9fb',
+                      border: '1px solid #536273',
                       borderRadius: '0.6rem',
                       color: '#fff',
                       fontSize: '0.88rem',
@@ -1083,7 +1083,7 @@ export default function TeacherPanel({
 
               {/* Monthly KPI Summary Bar */}
               <div className="kpi-grid-mobile">
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                <div className="kpi-card" style={{ background: 'rgba(255, 255, 255, 0.82)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'classes_conducted')}
                   </span>
@@ -1092,14 +1092,14 @@ export default function TeacherPanel({
                   </strong>
                 </div>
 
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                <div className="kpi-card" style={{ background: 'rgba(255, 255, 255, 0.82)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'total_hours_worked')}
                   </span>
                   <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
                 </div>
 
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                <div className="kpi-card" style={{ background: 'rgba(255, 255, 255, 0.82)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'calculated_amount')}
                   </span>
@@ -1108,7 +1108,7 @@ export default function TeacherPanel({
                   </strong>
                 </div>
 
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                <div className="kpi-card" style={{ background: 'rgba(255, 255, 255, 0.82)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t(language, 'payments')}
                   </span>
@@ -1138,7 +1138,7 @@ export default function TeacherPanel({
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     background: statusFilter === 'all' ? '#38bdf8' : 'transparent',
-                    color: statusFilter === 'all' ? '#0f172a' : '#94a3b8',
+                    color: statusFilter === 'all' ? '#ffffff' : '#94a3b8',
                   }}
                 >
                   {t(language, 'all_filter')} ({monthSessions.length})
@@ -1152,7 +1152,7 @@ export default function TeacherPanel({
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     background: statusFilter === 'happened' ? '#10b981' : 'transparent',
-                    color: statusFilter === 'happened' ? '#0f172a' : '#94a3b8',
+                    color: statusFilter === 'happened' ? '#ffffff' : '#94a3b8',
                   }}
                 >
                   {t(language, 'status_happened')} ({completedSessions.length})
@@ -1166,7 +1166,7 @@ export default function TeacherPanel({
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     background: statusFilter === 'scheduled' ? '#818cf8' : 'transparent',
-                    color: statusFilter === 'scheduled' ? '#0f172a' : '#94a3b8',
+                    color: statusFilter === 'scheduled' ? '#ffffff' : '#94a3b8',
                   }}
                 >
                   {t(language, 'scheduled_badge')} ({scheduledSessions.length})
@@ -1180,7 +1180,7 @@ export default function TeacherPanel({
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     background: statusFilter === 'issues' ? '#f59e0b' : 'transparent',
-                    color: statusFilter === 'issues' ? '#0f172a' : '#94a3b8',
+                    color: statusFilter === 'issues' ? '#ffffff' : '#94a3b8',
                   }}
                 >
                   {t(language, 'issues_filter')} ({issueSessions.length})
@@ -1213,7 +1213,7 @@ export default function TeacherPanel({
                         flexDirection: 'column',
                         gap: '0.75rem',
                         padding: '1rem',
-                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : isNoShow ? 'rgba(245, 158, 11, 0.05)' : 'rgba(15, 23, 42, 0.6)',
+                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : isNoShow ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255, 255, 255, 0.88)',
                         border: isHappened ? '1px solid rgba(16, 185, 129, 0.2)' : isNoShow ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(148, 163, 184, 0.12)',
                         borderRadius: '0.85rem',
                       }}
@@ -1281,7 +1281,7 @@ export default function TeacherPanel({
                               fontSize: '0.75rem',
                               fontWeight: 600,
                               background: isHappened ? '#10b981' : 'rgba(16, 185, 129, 0.15)',
-                              color: isHappened ? '#0f172a' : '#10b981',
+                              color: isHappened ? '#ffffff' : '#10b981',
                               border: '1px solid rgba(16, 185, 129, 0.3)',
                             }}
                             title={t(language, 'status_happened')}
@@ -1298,7 +1298,7 @@ export default function TeacherPanel({
                               fontSize: '0.75rem',
                               fontWeight: 600,
                               background: isNoShow ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
-                              color: isNoShow ? '#0f172a' : '#fbbf24',
+                              color: isNoShow ? '#ffffff' : '#fbbf24',
                               border: '1px solid rgba(245, 158, 11, 0.3)',
                             }}
                             title={t(language, 'status_student_noshow')}
@@ -1377,9 +1377,9 @@ export default function TeacherPanel({
                     style={{
                       padding: '2.5rem 1rem',
                       textAlign: 'center',
-                      background: 'rgba(15, 23, 42, 0.3)',
+                      background: 'rgba(31, 66, 104, 0.06)',
                       borderRadius: '1rem',
-                      border: '1px dashed #334155',
+                      border: '1px dashed #536273',
                     }}
                   >
                     <p className="empty-state" style={{ margin: 0, marginBottom: '0.75rem' }}>
@@ -1406,7 +1406,7 @@ export default function TeacherPanel({
                   placeholder={t(language, 'notes_placeholder')}
                   value={teacherNotes}
                   onChange={(e) => setTeacherNotes(e.target.value)}
-                  style={{ width: '100%', height: '100px', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
+                  style={{ width: '100%', height: '100px', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
                 />
                 <button
                   className="secondary-button mt-2"
@@ -1433,7 +1433,7 @@ export default function TeacherPanel({
 
                 {/* Sent Notes History */}
                 {myNotes.length > 0 && (
-                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid #1e293b', paddingTop: '1rem' }}>
+                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid #e0e7eb', paddingTop: '1rem' }}>
                     <p style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '0.6rem' }}>
                       {t(language, 'notes_history')} ({myNotes.length})
                     </p>
@@ -1442,8 +1442,8 @@ export default function TeacherPanel({
                         <div
                           key={n.id}
                           style={{
-                            background: '#090d16',
-                            border: '1px solid #1e293b',
+                            background: '#f7f9fb',
+                            border: '1px solid #e0e7eb',
                             borderRadius: '0.5rem',
                             padding: '0.6rem 0.8rem',
                             fontSize: '0.82rem',
@@ -1492,7 +1492,7 @@ export default function TeacherPanel({
             {/* MEI Invoice Upload Section */}
             <section style={{ flex: 0.8 }}>
               <h3>{t(language, 'nf_submission_title')}</h3>
-              <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="form-card" style={{ background: 'rgba(255,255,255,0.72)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span
@@ -1584,8 +1584,8 @@ export default function TeacherPanel({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              background: '#090d16',
-                              border: '1px solid #334155',
+                              background: '#f7f9fb',
+                              border: '1px solid #536273',
                               padding: '0.4rem 0.6rem',
                               borderRadius: '0.5rem',
                               fontSize: '0.78rem',
@@ -1694,7 +1694,7 @@ export default function TeacherPanel({
               right: 0,
               bottom: 0,
               zIndex: 99999,
-              background: 'rgba(2, 6, 23, 0.8)',
+              background: 'rgba(31, 66, 104, 0.14)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
@@ -1716,13 +1716,13 @@ export default function TeacherPanel({
                 width: '100%',
                 maxHeight: '90vh',
                 overflowY: 'auto',
-                background: '#0f172a',
-                border: '1px solid #1e293b',
+                background: '#ffffff',
+                border: '1px solid #e0e7eb',
                 borderRadius: '1.5rem',
                 padding: '2rem',
               }}
             >
-              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e0e7eb', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(language, 'tab_worklog_nf')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'add_class')}</h2>
@@ -1766,7 +1766,7 @@ export default function TeacherPanel({
                         setNewLessonStudentName('')
                       }
                     }}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   >
                     <option value="">{t(language, 'select_student')}...</option>
                     {sortedStudents.map((s) => (
@@ -1784,7 +1784,7 @@ export default function TeacherPanel({
                         placeholder="Digite o nome do aluno (ex: Lucas Silva)"
                         value={newLessonStudentName}
                         onChange={(e) => setNewLessonStudentName(e.target.value)}
-                        style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #38bdf8', borderRadius: '0.6rem', color: '#fff' }}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #38bdf8', borderRadius: '0.6rem', color: '#fff' }}
                       />
                       <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', marginBottom: 0 }}>
                         {sortedStudents.length > 0
@@ -1802,7 +1802,7 @@ export default function TeacherPanel({
                     placeholder={t(language, 'subject_placeholder')}
                     value={newLessonSubject}
                     onChange={(e) => setNewLessonSubject(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   />
                   <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
                     {['Conversação', 'Inglês Geral', 'Business English', 'Gramática', 'Reforço'].map((preset) => (
@@ -1844,7 +1844,7 @@ export default function TeacherPanel({
                       step={5}
                       value={newLessonDuration}
                       onChange={(e) => setNewLessonDuration(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                     />
                     <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
                       {[30, 45, 60, 90].map((mins) => (
@@ -1858,7 +1858,7 @@ export default function TeacherPanel({
                             borderRadius: '0.3rem',
                             fontSize: '0.72rem',
                             background: newLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
-                            color: newLessonDuration === mins ? '#0f172a' : '#cbd5e1',
+                            color: newLessonDuration === mins ? '#ffffff' : '#cbd5e1',
                             fontWeight: newLessonDuration === mins ? 'bold' : 'normal',
                           }}
                         >
@@ -1873,7 +1873,7 @@ export default function TeacherPanel({
                   <select
                     value={newLessonStatus || 'agendada'}
                     onChange={(e) => setNewLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   >
                     <option value="happened">✓ {t(language, 'status_happened')}</option>
                     <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
@@ -1915,7 +1915,7 @@ export default function TeacherPanel({
               right: 0,
               bottom: 0,
               zIndex: 99999,
-              background: 'rgba(2, 6, 23, 0.8)',
+              background: 'rgba(31, 66, 104, 0.14)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
@@ -1937,13 +1937,13 @@ export default function TeacherPanel({
                 width: '100%',
                 maxHeight: '90vh',
                 overflowY: 'auto',
-                background: '#0f172a',
-                border: '1px solid #1e293b',
+                background: '#ffffff',
+                border: '1px solid #e0e7eb',
                 borderRadius: '1.5rem',
                 padding: '2rem',
               }}
             >
-              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e0e7eb', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(language, 'adjust_class_label')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'modify_class_details')}</h2>
@@ -1957,7 +1957,7 @@ export default function TeacherPanel({
                     required
                     value={editLessonStudentId}
                     onChange={(e) => setEditLessonStudentId(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   >
                     <option value="">{t(language, 'select_student')}...</option>
                     {sortedStudents.map((s) => (
@@ -1979,7 +1979,7 @@ export default function TeacherPanel({
                     required
                     value={editLessonSubject}
                     onChange={(e) => setEditLessonSubject(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   />
                 </div>
 
@@ -2002,7 +2002,7 @@ export default function TeacherPanel({
                       step={5}
                       value={editLessonDuration}
                       onChange={(e) => setEditLessonDuration(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                     />
                     <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
                       {[30, 45, 60, 90].map((mins) => (
@@ -2016,7 +2016,7 @@ export default function TeacherPanel({
                             borderRadius: '0.3rem',
                             fontSize: '0.72rem',
                             background: editLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
-                            color: editLessonDuration === mins ? '#0f172a' : '#cbd5e1',
+                            color: editLessonDuration === mins ? '#ffffff' : '#cbd5e1',
                             fontWeight: editLessonDuration === mins ? 'bold' : 'normal',
                           }}
                         >
@@ -2031,7 +2031,7 @@ export default function TeacherPanel({
                   <select
                     value={editLessonStatus || 'agendada'}
                     onChange={(e) => setEditLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.6rem', color: '#fff' }}
                   >
                     <option value="happened">✓ {t(language, 'status_happened')}</option>
                     <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
@@ -2048,7 +2048,7 @@ export default function TeacherPanel({
                     alignItems: 'center',
                     gap: '0.75rem',
                     marginTop: '1.25rem',
-                    borderTop: '1px solid #1e293b',
+                    borderTop: '1px solid #e0e7eb',
                     paddingTop: '1rem',
                   }}
                 >
