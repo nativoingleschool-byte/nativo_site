@@ -29,37 +29,74 @@ const getSupabaseAdmin = () => {
   });
 };
 
-/**
- * Helper to fetch city IBGE code dynamically, with hardcoded fast-lookups.
- */
-async function getIbgeCode(cidade, uf) {
-  if (!cidade || !uf) {
-    return '3505708'; // Default fallback to Barueri
-  }
+const STATE_PREFIXES = {
+  RO: '11', AC: '12', AM: '13', RR: '14', PA: '15', AP: '16', TO: '17',
+  MA: '21', PI: '22', CE: '23', RN: '24', PB: '25', PE: '26', AL: '27',
+  SE: '28', BA: '29', MG: '31', ES: '32', RJ: '33', SP: '35', PR: '41',
+  SC: '42', RS: '43', MS: '50', MT: '51', GO: '52', DF: '53'
+};
 
-  const cleanCity = cidade.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  const cleanUf = uf.toUpperCase().trim();
+const STATE_DEFAULT_IBGE = {
+  RO: '1100205', AC: '1200401', AM: '1302603', RR: '1400100', PA: '1501402',
+  AP: '1600303', TO: '1721000', MA: '2111300', PI: '2211005', CE: '2304400',
+  RN: '2408102', PB: '2507507', PE: '2611606', AL: '2704302', SE: '2800308',
+  BA: '2927408', MG: '3106200', ES: '3205309', RJ: '3304557', SP: '3505708',
+  PR: '4106902', SC: '4205407', RS: '4314902', MS: '5002704', MT: '5103403',
+  GO: '5208707', DF: '5300108'
+};
+
+/**
+ * Helper to fetch city IBGE code dynamically, prioritizing ViaCEP and state-consistent fallbacks.
+ */
+async function getIbgeCode(cidade, uf, cep) {
+  const cleanUf = (uf || '').toUpperCase().trim();
+  const cleanCep = String(cep || '').replace(/\D/g, '');
+  const cleanCity = (cidade || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
   // Instant local mappings to avoid API overhead for typical locations
   if (cleanCity === 'barueri' && cleanUf === 'sp') return '3505708';
   if (cleanCity === 'sao paulo' && cleanUf === 'sp') return '3550308';
   if (cleanCity === 'itaberai' && cleanUf === 'go') return '5210406';
 
-  try {
-    const url = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${cleanUf}/municipios`;
-    const response = await axios.get(url, { timeout: 3000 });
-    const municipio = response.data.find(m => {
-      const nameNorm = m.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-      return nameNorm === cleanCity;
-    });
-    if (municipio) {
-      return String(municipio.id);
+  // 1. Fast lookup via ViaCEP if CEP is available (typically resolves in <100ms)
+  if (cleanCep.length === 8) {
+    try {
+      const viaCepRes = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/`, { timeout: 3000 });
+      if (viaCepRes.data && viaCepRes.data.ibge && !viaCepRes.data.erro) {
+        const ibge = String(viaCepRes.data.ibge).trim();
+        const expectedPrefix = STATE_PREFIXES[cleanUf];
+        if (!expectedPrefix || ibge.startsWith(expectedPrefix)) {
+          return ibge;
+        }
+      }
+    } catch (err) {
+      console.warn(`ViaCEP lookup failed for CEP ${cleanCep}:`, err.message);
     }
-  } catch (error) {
-    console.warn(`IBGE API lookup failed for ${cidade}-${uf}:`, error.message);
   }
 
-  return '3505708'; // Default fallback
+  // 2. Query government IBGE API by city name
+  if (cleanCity && cleanUf) {
+    try {
+      const url = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${cleanUf}/municipios`;
+      const response = await axios.get(url, { timeout: 5000 });
+      const municipio = response.data.find(m => {
+        const nameNorm = m.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        return nameNorm === cleanCity;
+      });
+      if (municipio) {
+        return String(municipio.id);
+      }
+    } catch (error) {
+      console.warn(`IBGE API lookup failed for ${cidade}-${uf}:`, error.message);
+    }
+  }
+
+  // 3. Safe fallback per state to prevent cross-state mismatches (Error 244)
+  if (cleanUf && STATE_DEFAULT_IBGE[cleanUf]) {
+    return STATE_DEFAULT_IBGE[cleanUf];
+  }
+
+  return '3505708'; // Default fallback (Barueri / SP)
 }
 
 /**
@@ -131,7 +168,7 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
   });
 
   // Get student IBGE city code
-  const studentIbgeCode = await getIbgeCode(studentData.cidade, studentData.uf);
+  const studentIbgeCode = await getIbgeCode(studentData.cidade, studentData.uf, studentData.cep);
 
   // Type 4 Row (ADN/Reforma Tributária) - mandatory 1:1 with Type 2 in PMB004
   const type4Row = buildTaxRow({
