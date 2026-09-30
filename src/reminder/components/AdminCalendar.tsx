@@ -846,10 +846,10 @@ export default function AdminCalendar({
               className="calendar-view-toggle"
               style={{
                 display: 'inline-flex',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(255, 255, 255, 0.96)',
                 padding: '0.2rem',
                 borderRadius: '0.75rem',
-                border: '1px solid #334155',
+                border: '1px solid #536273',
               }}
             >
               <button
@@ -907,8 +907,8 @@ export default function AdminCalendar({
               onChange={(e) => setSelectedTeacherId(e.target.value)}
               style={{
                 padding: '0.45rem 0.85rem',
-                background: '#090d16',
-                border: '1px solid #334155',
+                background: '#f7f9fb',
+                border: '1px solid #536273',
                 borderRadius: '0.6rem',
                 color: '#fff',
                 fontSize: '0.84rem',
@@ -1074,7 +1074,7 @@ export default function AdminCalendar({
           className="reminder-app-scope modal-overlay"
           role="dialog"
           aria-modal="true"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (calendarCardRef.current && !calendarCardRef.current.contains(e.target as Node)) {
               const currentSt = JSON.stringify({ draft, selectedStudentIds })
@@ -1356,7 +1356,7 @@ export default function AdminCalendar({
           className="reminder-app-scope modal-overlay"
           role="dialog"
           aria-modal="true"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               closeAvailabilityModal()
@@ -1427,7 +1427,7 @@ export default function AdminCalendar({
 
                       {/* Deletion Scope Selector if part of a recurring series */}
                       {selectedAvailability.series_id && (
-                        <div style={{ padding: '0.85rem', background: '#0f172a', borderRadius: '0.65rem', border: '1px solid #334155' }}>
+                        <div style={{ padding: '0.85rem', background: '#ffffff', borderRadius: '0.65rem', border: '1px solid #536273' }}>
                           <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}>
                             {t(language, 'delete_scope_prompt')}
                           </p>
@@ -1585,7 +1585,7 @@ export default function AdminCalendar({
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(2, 6, 23, 0.78)',
+            background: 'rgba(31, 66, 104, 0.14)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -1626,7 +1626,7 @@ export default function AdminCalendar({
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #334155', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #536273', paddingBottom: '0.75rem' }}>
               <button
                 type="button"
                 className={locateTab === 'early' ? 'primary-button' : 'ghost-button'}
@@ -1659,8 +1659,8 @@ export default function AdminCalendar({
                   width: '100%',
                   padding: '0.6rem 0.9rem',
                   borderRadius: '0.5rem',
-                  background: '#1e293b',
-                  border: '1px solid #334155',
+                  background: '#e0e7eb',
+                  border: '1px solid #536273',
                   color: '#fff',
                   fontSize: '0.88rem',
                 }}
@@ -1686,8 +1686,8 @@ export default function AdminCalendar({
                       key={group.key}
                       style={{
                         padding: '0.9rem 1rem',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
+                        background: '#ffffff',
+                        border: '1px solid #536273',
                         borderRadius: '0.5rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -1738,7 +1738,7 @@ export default function AdminCalendar({
                       <div
                         style={{
                           fontSize: '0.78rem',
-                          background: 'rgba(30, 41, 59, 0.7)',
+                          background: 'rgba(255, 255, 255, 0.92)',
                           padding: '0.4rem 0.6rem',
                           borderRadius: '0.375rem',
                           display: 'flex',
@@ -1761,7 +1761,7 @@ export default function AdminCalendar({
               )}
             </div>
 
-            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #536273', display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 className="secondary-button"
