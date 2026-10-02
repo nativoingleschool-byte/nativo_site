@@ -42,7 +42,7 @@ import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import { registerAppServiceWorker } from './pwa'
-import { CalendarDays, CircleDollarSign, HelpCircle, Receipt, UserRound } from 'lucide-react'
+import { Receipt } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
 
 type AccountFormState = {
@@ -187,7 +187,7 @@ function ReminderAppInner() {
     return createPortal(
       <div
         className="reminder-app-scope modal-overlay"
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
         onClick={(e) => {
           if (resetPasswordCardRef.current && !resetPasswordCardRef.current.contains(e.target as Node)) {
             const isDirty = newPassword.trim().length > 0 || confirmNewPassword.trim().length > 0
@@ -201,7 +201,7 @@ function ReminderAppInner() {
           }
         }}
       >
-        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
+        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
             {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
           </h3>
@@ -241,7 +241,7 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#e0e7eb', border: '1px solid #536273', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
               />
             </div>
 
@@ -255,7 +255,7 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#e0e7eb', border: '1px solid #536273', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
               />
             </div>
 
@@ -1727,34 +1727,7 @@ function ReminderAppInner() {
 
   return (
     <div className="reminder-app-scope">
-      <div className={`app-shell final-shell ${isTeacher ? 'role-teacher' : ''}`}>
-      {isTeacher && (
-        <aside className="teacher-sidebar" aria-label="Navegação do professor">
-          <div className="teacher-brand-lockup">
-            <div className="teacher-brand-mark">N</div>
-            <div>
-              <strong>NATIVO <span>ENGLISH</span></strong>
-              <small>Portal do Professor</small>
-            </div>
-          </div>
-          <nav className="teacher-sidebar-nav">
-            <button type="button" className={teacherTab === 'calendar' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('calendar')}>
-              <CalendarDays size={16} /> <span>{language === 'pt' ? 'Agenda' : t(language, 'tab_schedule')}</span>
-            </button>
-            <button type="button" className={teacherTab === 'worklog' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('worklog')}>
-              <CircleDollarSign size={16} /> <span>{language === 'pt' ? 'Financeiro' : t(language, 'tab_worklog_nf')}</span>
-            </button>
-            <button type="button" className={teacherTab === 'profile' ? 'teacher-nav-item teacher-nav-item-active' : 'teacher-nav-item'} onClick={() => setTeacherTab('profile')}>
-              <UserRound size={16} /> <span>{language === 'pt' ? 'Meu perfil' : t(language, 'tab_profile_data')}</span>
-            </button>
-          </nav>
-          <div className="teacher-sidebar-footer">
-            <span><HelpCircle size={14} /> {language === 'pt' ? 'Suporte Docente' : 'Teacher support'}</span>
-            <small>Nativo English</small>
-          </div>
-        </aside>
-      )}
-      <div className={isTeacher ? 'teacher-workspace' : ''}>
+      <div className="app-shell final-shell">
       <Topbar
         profile={profile}
         language={language}
@@ -1771,7 +1744,6 @@ function ReminderAppInner() {
         handleLogout={handleLogout}
         adminTab={adminTab}
         setAdminTab={setAdminTab}
-        teacherTab={teacherTab}
       />
 
       <main className="main-content">
@@ -2045,14 +2017,6 @@ function ReminderAppInner() {
           />
         )}
       </main>
-      {isTeacher && (
-        <nav className="teacher-mobile-bottom-nav" aria-label="Navegação mobile do professor">
-          <button type="button" className={teacherTab === 'calendar' ? 'is-active' : ''} onClick={() => setTeacherTab('calendar')}><CalendarDays size={20} /><span>{language === 'pt' ? 'Agenda' : t(language, 'tab_schedule')}</span></button>
-          <button type="button" className={teacherTab === 'worklog' ? 'is-active' : ''} onClick={() => setTeacherTab('worklog')}><CircleDollarSign size={20} /><span>{language === 'pt' ? 'Financeiro' : t(language, 'tab_worklog_nf')}</span></button>
-          <button type="button" className={teacherTab === 'profile' ? 'is-active' : ''} onClick={() => setTeacherTab('profile')}><UserRound size={20} /><span>{language === 'pt' ? 'Meu perfil' : t(language, 'tab_profile_data')}</span></button>
-        </nav>
-      )}
-      </div>
       </div>
       {renderResetPasswordModal()}
     </div>
@@ -2062,7 +2026,7 @@ function ReminderAppInner() {
 export default function ReminderApp() {
   return (
     <ToastProvider>
-      <div className="reminder-app-scope min-h-screen">
+      <div className="reminder-app-scope bg-[#020617] text-[#e5eefc] min-h-screen">
         <ReminderAppInner />
       </div>
     </ToastProvider>

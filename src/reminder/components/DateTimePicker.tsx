@@ -265,8 +265,8 @@ export default function DateTimePicker({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0.65rem 0.85rem',
-            background: '#ffffff',
-            border: `1px solid ${showCalendar ? '#6366f1' : '#536273'}`,
+            background: '#0f172a',
+            border: `1px solid ${showCalendar ? '#6366f1' : '#334155'}`,
             borderRadius: '0.75rem',
             color: '#f8fafc',
             fontSize: '0.88rem',
@@ -291,10 +291,10 @@ export default function DateTimePicker({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            background: '#ffffff',
+            background: '#0f172a',
             padding: '0.3rem 0.5rem',
             borderRadius: '0.75rem',
-            border: '1px solid #536273',
+            border: '1px solid #334155',
           }}
         >
           {/* Hour Dropdown */}
@@ -303,7 +303,7 @@ export default function DateTimePicker({
             onChange={(e) => handleHourChange(Number(e.target.value))}
             style={{
               padding: '0.35rem 0.45rem',
-              background: '#e0e7eb',
+              background: '#1e293b',
               border: '1px solid #475569',
               borderRadius: '0.5rem',
               color: '#fff',
@@ -329,7 +329,7 @@ export default function DateTimePicker({
             onChange={(e) => handleMinuteChange(Number(e.target.value))}
             style={{
               padding: '0.35rem 0.45rem',
-              background: '#e0e7eb',
+              background: '#1e293b',
               border: '1px solid #475569',
               borderRadius: '0.5rem',
               color: '#fff',
@@ -397,8 +397,8 @@ export default function DateTimePicker({
               style={{
                 padding: '0.2rem 0.5rem',
                 borderRadius: '0.4rem',
-                border: isSelected ? '1px solid #10b981' : '1px solid #536273',
-                background: isSelected ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.88)',
+                border: isSelected ? '1px solid #10b981' : '1px solid #334155',
+                background: isSelected ? 'rgba(16, 185, 129, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                 color: isSelected ? '#34d399' : '#94a3b8',
                 fontSize: '0.74rem',
                 fontWeight: isSelected ? 700 : 500,
@@ -421,8 +421,8 @@ export default function DateTimePicker({
             top: 'calc(100% + 4px)',
             left: 0,
             zIndex: 999999,
-            background: '#f7f9fb',
-            border: '1px solid #536273',
+            background: '#090d16',
+            border: '1px solid #334155',
             borderRadius: '1rem',
             padding: '1rem',
             width: '310px',
@@ -436,8 +436,8 @@ export default function DateTimePicker({
               type="button"
               onClick={prevMonth}
               style={{
-                background: '#e0e7eb',
-                border: '1px solid #536273',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 borderRadius: '0.5rem',
                 color: '#f8fafc',
                 width: '32px',
@@ -456,8 +456,8 @@ export default function DateTimePicker({
               type="button"
               onClick={nextMonth}
               style={{
-                background: '#e0e7eb',
-                border: '1px solid #536273',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 borderRadius: '0.5rem',
                 color: '#f8fafc',
                 width: '32px',
@@ -509,7 +509,7 @@ export default function DateTimePicker({
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = '#e0e7eb'
+                      e.currentTarget.style.background = '#1e293b'
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -532,7 +532,7 @@ export default function DateTimePicker({
               alignItems: 'center',
               marginTop: '0.85rem',
               paddingTop: '0.65rem',
-              borderTop: '1px solid #e0e7eb',
+              borderTop: '1px solid #1e293b',
             }}
           >
             <button
@@ -559,8 +559,8 @@ export default function DateTimePicker({
               type="button"
               onClick={() => setShowCalendar(false)}
               style={{
-                background: '#e0e7eb',
-                border: '1px solid #536273',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 borderRadius: '0.45rem',
                 color: '#cbd5e1',
                 fontSize: '0.78rem',

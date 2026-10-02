@@ -277,7 +277,7 @@ export default function StudentPanel({
 
             <section style={{ flex: 0.7 }}>
               <h3>{t(language, 'alert_settings_title')}</h3>
-              <div className="form-card" style={{ background: 'rgba(255,255,255,0.72)', padding: '1rem', borderRadius: '1rem' }}>
+              <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
                 <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
                   {t(language, 'alert_settings_desc')}
                 </p>
@@ -398,7 +398,7 @@ export default function StudentPanel({
                 {invoices
                   .filter(inv => inv.student_id === profile.id)
                   .map((inv) => (
-                    <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.80)', border: '1px solid #e0e7eb', borderRadius: '1rem' }}>
+                    <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                       <div>
                         <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>{t(language, 'invoice_nativo')}</p>
                         <p className="muted text-xs">{new Date(inv.created_at).toLocaleDateString()}</p>
@@ -441,7 +441,7 @@ export default function StudentPanel({
             <div
               className="form-card"
               style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92))',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.7))',
                 border: '1px solid rgba(56, 189, 248, 0.3)',
                 borderRadius: '1.25rem',
                 padding: '1.5rem',
@@ -453,7 +453,7 @@ export default function StudentPanel({
               </h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.88)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Valor Mensual' : language === 'en' ? 'Monthly Tuition' : 'Valor da Mensalidade'}
                   </p>
@@ -462,7 +462,7 @@ export default function StudentPanel({
                   </p>
                 </div>
 
-                <div style={{ background: 'rgba(255, 255, 255, 0.88)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Vencimiento Preferencial' : language === 'en' ? 'Preferred Due Day' : 'Vencimento Preferencial'}
                   </p>
@@ -473,7 +473,7 @@ export default function StudentPanel({
                   </p>
                 </div>
 
-                <div style={{ background: 'rgba(255, 255, 255, 0.88)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Situación Actual' : language === 'en' ? 'Current Status' : 'Situação Atual'}
                   </p>
@@ -496,7 +496,7 @@ export default function StudentPanel({
                 <div className="list-stack">
                   {myInvoices.map((inv) => {
                     return (
-                      <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.80)', border: '1px solid #e0e7eb', borderRadius: '1rem' }}>
+                      <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
                         <div>
                           <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo Languages Brazil LTDA - NFS-e</p>
                           <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>

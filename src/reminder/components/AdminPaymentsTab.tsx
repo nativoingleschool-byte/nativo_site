@@ -307,7 +307,7 @@ export default function AdminPaymentsTab({
 
   return (
     <>
-      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(255, 255, 255, 0.76)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
+      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
         <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
           <input
             placeholder={t(language, 'search_student_placeholder')}
@@ -374,10 +374,10 @@ export default function AdminPaymentsTab({
         </div>
       )}
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(255, 255, 255, 0.88)', borderRadius: '1.5rem', border: '1px solid #e0e7eb', padding: '1rem' }}>
+      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #e0e7eb', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => handleSort('name')}
@@ -416,7 +416,7 @@ export default function AdminPaymentsTab({
                 )
 
                 return (
-                  <tr key={student.id} style={{ borderBottom: '1px solid #e0e7eb', fontSize: '0.9rem' }}>
+                  <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ fontWeight: 'bold' }}>{student.full_name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{student.email}</div>
@@ -565,7 +565,7 @@ export default function AdminPaymentsTab({
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(31, 66, 104, 0.14)',
+            background: 'rgba(2, 6, 23, 0.78)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -580,8 +580,8 @@ export default function AdminPaymentsTab({
             style={{
               maxWidth: '480px',
               width: '100%',
-              background: '#ffffff',
-              border: '1px solid #e0e7eb',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
               borderRadius: '1.5rem',
               padding: '2rem',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'

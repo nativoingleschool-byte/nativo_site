@@ -383,7 +383,7 @@ export default function AdminStaffTab({
       <div
         className="form-card mb-6 animate-slide-up"
         style={{
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 100%)',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%)',
           borderRadius: '1.25rem',
           border: '1px solid rgba(56, 189, 248, 0.2)',
           padding: '1.5rem',
@@ -424,8 +424,8 @@ export default function AdminStaffTab({
             style={{
               padding: '1.5rem',
               borderRadius: '0.75rem',
-              background: 'rgba(31, 66, 104, 0.08)',
-              border: '1px dashed #536273',
+              background: 'rgba(2, 6, 23, 0.4)',
+              border: '1px dashed #334155',
               textAlign: 'center',
               color: '#64748b',
               fontSize: '0.88rem',
@@ -455,8 +455,8 @@ export default function AdminStaffTab({
                 <div
                   key={noteItem.id}
                   style={{
-                    background: '#f7f9fb',
-                    border: '1px solid #e0e7eb',
+                    background: '#090d16',
+                    border: '1px solid #1e293b',
                     borderRadius: '0.85rem',
                     padding: '1rem 1.25rem',
                     position: 'relative',
@@ -538,7 +538,7 @@ export default function AdminStaffTab({
                       lineHeight: 1.5,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      background: 'rgba(255, 255, 255, 0.80)',
+                      background: 'rgba(15, 23, 42, 0.4)',
                       padding: '0.75rem',
                       borderRadius: '0.5rem',
                       borderLeft: '3px solid #38bdf8',
@@ -564,7 +564,7 @@ export default function AdminStaffTab({
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(31, 66, 104, 0.14)',
+            background: 'rgba(2, 6, 23, 0.8)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -583,13 +583,13 @@ export default function AdminStaffTab({
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              background: '#ffffff',
-              border: '1px solid #e0e7eb',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
               borderRadius: '1.5rem',
               padding: '2rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e0e7eb', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>➕</span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
@@ -619,7 +619,7 @@ export default function AdminStaffTab({
                   placeholder={t(language, 'full_name')}
                   value={userForm.full_name}
                   onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -630,7 +630,7 @@ export default function AdminStaffTab({
                   placeholder="Email"
                   value={userForm.email}
                   onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -641,7 +641,7 @@ export default function AdminStaffTab({
                   placeholder={t(language, 'password')}
                   value={userForm.password}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -649,7 +649,7 @@ export default function AdminStaffTab({
                 <select
                   value={userForm.role === 'student' ? 'teacher' : userForm.role}
                   onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 >
                   <option value="teacher">Professor (Teacher)</option>
                   <option value="admin">Administrador (Admin)</option>
@@ -662,7 +662,7 @@ export default function AdminStaffTab({
                   placeholder="E.g. Business, TOEFL"
                   value={userForm.speciality}
                   onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -672,7 +672,7 @@ export default function AdminStaffTab({
                   placeholder="Celular, E-mail, CPF..."
                   value={userForm.chave_pix || ''}
                   onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -682,7 +682,7 @@ export default function AdminStaffTab({
                   placeholder="CNPJ ou CPF"
                   value={userForm.cnpj || ''}
                   onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -692,7 +692,7 @@ export default function AdminStaffTab({
                   placeholder="Valor hora aula"
                   value={userForm.taxa_hora_aula || ''}
                   onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: '1 / -1', marginTop: '0.5rem' }}>
@@ -717,7 +717,7 @@ export default function AdminStaffTab({
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(31, 66, 104, 0.14)',
+            background: 'rgba(2, 6, 23, 0.8)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -736,13 +736,13 @@ export default function AdminStaffTab({
               width: '95vw',
               maxHeight: '90vh',
               overflowY: 'auto',
-              background: '#ffffff',
-              border: '1px solid #e0e7eb',
+              background: '#0f172a',
+              border: '1px solid #1e293b',
               borderRadius: '1.5rem',
               padding: '1.5rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e0e7eb', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>👥</span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
@@ -759,10 +759,10 @@ export default function AdminStaffTab({
               </button>
             </div>
 
-            <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(255, 255, 255, 0.88)', borderRadius: '1rem', border: '1px solid #e0e7eb', padding: '0.5rem' }}>
+            <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '0.5rem' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #e0e7eb', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.8rem' }}>
                     <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'full_name')}</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Email</th>
                     <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'role_label').split(' ')[0]}</th>
@@ -780,7 +780,7 @@ export default function AdminStaffTab({
                       const currency = staff.moeda_taxa ?? 'BRL'
 
                       return (
-                        <tr key={staff.id} style={{ borderBottom: '1px solid #e0e7eb', fontSize: '0.85rem' }}>
+                        <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.85rem' }}>
                           <td style={{ padding: '0.65rem 0.75rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                             {staff.role === 'teacher' ? (
                               <button
@@ -872,7 +872,7 @@ export default function AdminStaffTab({
       {savingUserId && (userForm.role === 'admin' || userForm.role === 'teacher') && createPortal(
         <div
           className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (editStaffCardRef.current && !editStaffCardRef.current.contains(e.target as Node)) {
               const isDirty = initialUserForm ? (
@@ -899,7 +899,7 @@ export default function AdminStaffTab({
             }
           }}
         >
-          <div ref={editStaffCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div ref={editStaffCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
@@ -922,7 +922,7 @@ export default function AdminStaffTab({
                   placeholder={t(language, 'new_password_placeholder')}
                   value={userForm.password || ''}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <select
@@ -1037,7 +1037,7 @@ export default function AdminStaffTab({
       {changePasswordStaff && createPortal(
         <div
           className="reminder-app-scope modal-overlay"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
             if (changePasswordCardRef.current && !changePasswordCardRef.current.contains(e.target as Node)) {
               const isDirty = newPasswordValue.trim().length > 0 || confirmPasswordValue.trim().length > 0
@@ -1053,7 +1053,7 @@ export default function AdminStaffTab({
             }
           }}
         >
-          <div ref={changePasswordCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div ref={changePasswordCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
               {t(language, 'change_password_title').replace('{name}', changePasswordStaff.full_name)}
             </h3>
@@ -1097,7 +1097,7 @@ export default function AdminStaffTab({
                   placeholder={t(language, 'new_password')}
                   value={newPasswordValue}
                   onChange={(e) => setNewPasswordValue(e.target.value)}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -1108,7 +1108,7 @@ export default function AdminStaffTab({
                   placeholder={t(language, 'confirm_new_password')}
                   value={confirmPasswordValue}
                   onChange={(e) => setConfirmPasswordValue(e.target.value)}
-                  style={{ padding: '0.6rem 0.8rem', background: '#f7f9fb', border: '1px solid #e0e7eb', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
                 />
               </div>
               <div className="button-stack mt-6" style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
@@ -1142,8 +1142,8 @@ export default function AdminStaffTab({
               onChange={(e) => setSelectedMonthKey(e.target.value === 'auto' ? '' : e.target.value)}
               style={{
                 padding: '0.5rem 1rem',
-                background: '#f7f9fb',
-                border: '1px solid #536273',
+                background: '#090d16',
+                border: '1px solid #334155',
                 borderRadius: '0.6rem',
                 color: '#fff',
                 fontSize: '0.88rem',
@@ -1178,10 +1178,10 @@ export default function AdminStaffTab({
         </div>
       </div>
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(255, 255, 255, 0.88)', borderRadius: '1.5rem', border: '1px solid #e0e7eb', padding: '1rem' }}>
+      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #e0e7eb', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
               <th style={{ padding: '1rem' }}>Mês Referência</th>
               <th style={{ padding: '1rem' }}>Chave PIX</th>
@@ -1222,7 +1222,7 @@ export default function AdminStaffTab({
               const monthLabel = getMonthLabel(teacherActiveMonth, language)
 
               return (
-                <tr key={teacher.id} style={{ borderBottom: '1px solid #e0e7eb', fontSize: '0.9rem' }}>
+                <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                     <button
                       type="button"
@@ -1492,17 +1492,17 @@ export default function AdminStaffTab({
         return createPortal(
           <div
             className="reminder-app-scope modal-overlay"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(31, 66, 104, 0.14)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
             onClick={(e) => {
               if (teacherDetailCardRef.current && !teacherDetailCardRef.current.contains(e.target as Node)) {
                 setSelectedTeacherForDetail(null)
               }
             }}
           >
-            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#ffffff', border: '1px solid #e0e7eb', borderRadius: '1.5rem', padding: '2rem' }}>
+            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
               
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #e0e7eb', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
@@ -1516,7 +1516,7 @@ export default function AdminStaffTab({
                   <select
                     value={activeMonthKey}
                     onChange={(e) => setSelectedMonthKey(e.target.value)}
-                    style={{ padding: '0.45rem 0.85rem', background: '#f7f9fb', border: '1px solid #536273', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
+                    style={{ padding: '0.45rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
                   >
                     {availableMonths.map(([mKey, mLabel]) => (
                       <option key={mKey} value={mKey}>{mLabel}</option>
@@ -1536,7 +1536,7 @@ export default function AdminStaffTab({
               {/* Highlight Card: PIX Key & Payment Action */}
               <div
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.98) 100%)',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
                   border: isCurrentMonthPaid ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '1.25rem',
                   padding: '1.5rem',
@@ -1573,8 +1573,8 @@ export default function AdminStaffTab({
                   {/* PIX Box */}
                   <div
                     style={{
-                      background: '#f7f9fb',
-                      border: '1px solid #536273',
+                      background: '#090d16',
+                      border: '1px solid #334155',
                       borderRadius: '0.75rem',
                       padding: '0.75rem 1rem',
                       display: 'flex',
@@ -1657,7 +1657,7 @@ export default function AdminStaffTab({
               </div>
 
               {/* NF Card (Current Month) */}
-              <div style={{ background: 'rgba(31, 66, 104, 0.06)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #e0e7eb', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ background: 'rgba(30, 41, 59, 0.3)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Nota Fiscal Mês Vigente ({activeMonthLabel}):</span>
                   <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
@@ -1762,7 +1762,7 @@ export default function AdminStaffTab({
                   return list
                 })()
                 return (
-                  <div style={{ background: 'rgba(255, 255, 255, 0.86)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #e0e7eb', marginBottom: '1.5rem' }}>
+                  <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span>📁</span>
@@ -1792,8 +1792,8 @@ export default function AdminStaffTab({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                background: '#f7f9fb',
-                                border: '1px solid #536273',
+                                background: '#090d16',
+                                border: '1px solid #334155',
                                 padding: '0.5rem 0.85rem',
                                 borderRadius: '0.65rem',
                                 flexWrap: 'wrap',
@@ -1877,7 +1877,7 @@ export default function AdminStaffTab({
               })()}
 
               {/* Monthly Lesson History / Registry that amounts are based on */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.80)', borderRadius: '1rem', border: '1px solid #e0e7eb', padding: '1.25rem' }}>
+              <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
@@ -1905,7 +1905,7 @@ export default function AdminStaffTab({
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #e0e7eb', color: '#94a3b8' }}>
+                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'date_time_col')}</th>
                         <th style={{ padding: '0.6rem' }}>Alunos / Turma</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'class_subject_col')}</th>
@@ -1931,7 +1931,7 @@ export default function AdminStaffTab({
                         const allLessonIds = session.lessons.map((l) => l.id)
 
                         return (
-                          <tr key={session.key} style={{ borderBottom: '1px solid #e0e7eb' }}>
+                          <tr key={session.key} style={{ borderBottom: '1px solid #1e293b' }}>
                             <td style={{ padding: '0.6rem', color: '#f8fafc', whiteSpace: 'nowrap' }}>
                               {new Date(session.starts_at).toLocaleString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </td>
@@ -1974,7 +1974,7 @@ export default function AdminStaffTab({
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
                                     background: isHappened ? '#10b981' : 'rgba(16, 185, 129, 0.15)',
-                                    color: isHappened ? '#ffffff' : '#10b981',
+                                    color: isHappened ? '#0f172a' : '#10b981',
                                     border: '1px solid rgba(16, 185, 129, 0.3)',
                                   }}
                                   title="Marcar aula/turma como Realizada"
@@ -1990,7 +1990,7 @@ export default function AdminStaffTab({
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
                                     background: isNoShow ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
-                                    color: isNoShow ? '#ffffff' : '#fbbf24',
+                                    color: isNoShow ? '#0f172a' : '#fbbf24',
                                     border: '1px solid rgba(245, 158, 11, 0.3)',
                                   }}
                                   title="Marcar como Falta do(s) Aluno(s)"
