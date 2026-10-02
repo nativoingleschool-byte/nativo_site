@@ -2,11 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { issueBarueriNFSe, consultarBarueriNFSe } from '../../services/barueri/nfse-service.js';
 import { generateDanfsePdf } from '../../services/barueri/generate-danfse-pdf.js';
 
-// Vercel may still have the names used by the original deployment. Keep the
-// canonical names first, then accept the existing aliases without changing
-// the credential values or the authorization flow.
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const json = (res, status, body) => {
   res.statusCode = status;
