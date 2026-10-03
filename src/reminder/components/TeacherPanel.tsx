@@ -141,6 +141,22 @@ export default function TeacherPanel({
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
+  // A NFS-e acompanha o ciclo real do mês, independentemente do mês visual
+  // selecionado no calendário de aulas: se a nota ainda está pendente,
+  // trabalhamos com o mês anterior; depois do envio, a referência passa para
+  // o mês atual. Isso evita referências artificiais como 2027 vindas de
+  // selectedMonth, que pertence somente à navegação do calendário.
+  const nfReferenceDate = useMemo(() => {
+    const date = new Date()
+    if (profile.status_nota_fiscal !== 'enviada') date.setMonth(date.getMonth() - 1)
+    return date
+  }, [profile.status_nota_fiscal])
+  const nfReferenceMonthKey = `${nfReferenceDate.getFullYear()}-${String(nfReferenceDate.getMonth() + 1).padStart(2, '0')}`
+  const nfReferenceMonthLabel = new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(nfReferenceDate)
+
   const [isSendingNotes, setIsSendingNotes] = useState(false)
 
   // Worklog Month & Filter states
@@ -651,7 +667,7 @@ export default function TeacherPanel({
         try {
           const fileDataUrl = reader.result as string
 
-          const activeMonthKey = `${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}`
+          const activeMonthKey = nfReferenceMonthKey
 
           const res = await fetch('/api/me/upload-nf', {
             method: 'POST',
@@ -1504,7 +1520,7 @@ export default function TeacherPanel({
                       }}
                     />
                     <span className="text-sm">
-                      {t(language, 'nf_previous_month')} <strong>{profile.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : t(language, 'nf_status_pending')}</strong>
+                      {t(language, 'nf_previous_month')} <strong>{nfReferenceMonthLabel} · {profile.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : t(language, 'nf_status_pending')}</strong>
                     </span>
                   </div>
 
@@ -1560,9 +1576,9 @@ export default function TeacherPanel({
                       list.unshift({
                         id: `profile-nf-${profile.id}`,
                         teacher_id: profile.id,
-                        month_key: `${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}`,
+                        month_key: nfReferenceMonthKey,
                         file_url: profile.nota_fiscal_url,
-                        file_name: `Nota_Fiscal_${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
+                        file_name: `Nota_Fiscal_${nfReferenceMonthKey}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
                         status: profile.status_nota_fiscal || 'enviada',
                         created_at: new Date().toISOString(),
                       })
