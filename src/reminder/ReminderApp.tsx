@@ -41,6 +41,7 @@ import AdminStaffTab from './components/AdminStaffTab'
 import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
+import TeacherShell from './components/TeacherShell'
 import { registerAppServiceWorker } from './pwa'
 import { Receipt } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
@@ -1150,9 +1151,35 @@ function ReminderAppInner() {
         localStorage.removeItem('nativo_saved_email')
       }
     } catch (err: any) {
-      const errMsg = err.message || 'Erro de conexão com o servidor.'
-      setLoginError(errMsg)
-      void trackEvent('login_failed', { reason: errMsg }, { skipDatabase: true })
+      // O deployment Vercel continua sendo a rota principal. Em previews locais
+      // sem runtime de Functions, o proxy pode retornar uma resposta sem corpo;
+      // nesse caso, autenticar diretamente no mesmo projeto Supabase permite
+      // validar o frontend sem copiar credenciais privadas nem mudar o backend.
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginForm.email.trim().toLowerCase(),
+          password: loginForm.password,
+        })
+        if (error) throw error
+        if (!data.session) throw new Error('A sessão não foi criada.')
+
+        void trackEvent('login_success', {
+          email_domain: loginForm.email.split('@')[1] || 'unknown',
+        })
+
+        if (keepLoggedIn) {
+          localStorage.setItem('nativo_keep_logged_in', 'true')
+          localStorage.setItem('nativo_saved_email', loginForm.email.trim())
+        } else {
+          localStorage.setItem('nativo_keep_logged_in', 'false')
+          localStorage.removeItem('nativo_saved_email')
+        }
+        return
+      } catch (fallbackError: any) {
+        const errMsg = fallbackError.message || err.message || 'Erro de conexão com o servidor.'
+        setLoginError(errMsg)
+        void trackEvent('login_failed', { reason: errMsg }, { skipDatabase: true })
+      }
     }
   }
 
@@ -1727,7 +1754,7 @@ function ReminderAppInner() {
 
   return (
     <div className="reminder-app-scope">
-      <div className="app-shell final-shell">
+      <div className={`app-shell final-shell${isTeacher ? ' teacher-app-shell' : ''}`}>
       <Topbar
         profile={profile}
         language={language}
@@ -1746,7 +1773,7 @@ function ReminderAppInner() {
         setAdminTab={setAdminTab}
       />
 
-      <main className="main-content">
+      <main className={`main-content${isTeacher ? ' teacher-host-main' : ''}`}>
         <section className="summary-grid">
           {summaryCards.map((card) => (
             <StatCard key={card.label} label={card.label} value={card.value} />
@@ -1972,49 +1999,63 @@ function ReminderAppInner() {
         )}
 
         {isTeacher && (
-          <TeacherPanel
-            language={language}
-            teacherTab={teacherTab}
-            setTeacherTab={setTeacherTab}
-            students={students}
-            teachers={teachers}
+          <TeacherShell
             profile={profile}
-            lessons={lessons}
-            appTimeZone={appTimeZone}
-            createLessonFromDraft={createLessonFromDraft}
-            updateTeacherLessonGroup={updateTeacherLessonGroup}
-            onDeleteLessonGroup={deleteLessonGroup}
-            createStudentLoginFromCalendar={createStudentLoginFromCalendar}
-            createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
-            createTeacherSingleLesson={createTeacherSingleLesson}
-            updateTeacherSingleLesson={updateTeacherSingleLesson}
-            deleteTeacherSingleLesson={deleteTeacherSingleLesson}
-            profilesById={profilesById}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            teacherNotes={teacherNotes}
-            setTeacherNotes={setTeacherNotes}
-            uploadingNf={uploadingNf}
-            setUploadingNf={setUploadingNf}
-            refreshProfile={refreshProfile}
-            refreshProfiles={refreshProfiles}
-            refreshLessons={refreshLessons}
-            accountForm={accountForm}
-            setAccountForm={setAccountForm}
-            accountSaving={accountSaving}
-            setAccountSaving={setAccountSaving}
-            focusedLessonId={focusedLessonId}
-            teacherNotesList={teacherNotesList}
-            onCreateTeacherNote={createTeacherNote}
-            onDeleteTeacherNote={deleteTeacherNote}
-            refreshTeacherNotes={refreshTeacherNotes}
-            availabilities={availabilities}
-            onCreateAvailability={createAvailability}
-            onDeleteAvailability={deleteAvailability}
-            refreshAvailabilities={refreshAvailabilities}
-            teacherInvoices={teacherInvoices}
-            refreshTeacherInvoices={refreshTeacherInvoices}
-          />
+            activeTab={teacherTab}
+            onTabChange={setTeacherTab}
+            unreadNotifications={dueNotifications.length}
+            onLogout={handleLogout}
+            pageSubtitles={{
+              calendar: 'Acompanhe suas aulas e disponibilidade.',
+              worklog: 'Demonstrativo e NFS-e MEI.',
+              profile: 'Cadastro e dados bancários.',
+            }}
+          >
+            <TeacherPanel
+              language={language}
+              teacherTab={teacherTab}
+              setTeacherTab={setTeacherTab}
+              hideShellHeader
+              students={students}
+              teachers={teachers}
+              profile={profile}
+              lessons={lessons}
+              appTimeZone={appTimeZone}
+              createLessonFromDraft={createLessonFromDraft}
+              updateTeacherLessonGroup={updateTeacherLessonGroup}
+              onDeleteLessonGroup={deleteLessonGroup}
+              createStudentLoginFromCalendar={createStudentLoginFromCalendar}
+              createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
+              createTeacherSingleLesson={createTeacherSingleLesson}
+              updateTeacherSingleLesson={updateTeacherSingleLesson}
+              deleteTeacherSingleLesson={deleteTeacherSingleLesson}
+              profilesById={profilesById}
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              teacherNotes={teacherNotes}
+              setTeacherNotes={setTeacherNotes}
+              uploadingNf={uploadingNf}
+              setUploadingNf={setUploadingNf}
+              refreshProfile={refreshProfile}
+              refreshProfiles={refreshProfiles}
+              refreshLessons={refreshLessons}
+              accountForm={accountForm}
+              setAccountForm={setAccountForm}
+              accountSaving={accountSaving}
+              setAccountSaving={setAccountSaving}
+              focusedLessonId={focusedLessonId}
+              teacherNotesList={teacherNotesList}
+              onCreateTeacherNote={createTeacherNote}
+              onDeleteTeacherNote={deleteTeacherNote}
+              refreshTeacherNotes={refreshTeacherNotes}
+              availabilities={availabilities}
+              onCreateAvailability={createAvailability}
+              onDeleteAvailability={deleteAvailability}
+              refreshAvailabilities={refreshAvailabilities}
+              teacherInvoices={teacherInvoices}
+              refreshTeacherInvoices={refreshTeacherInvoices}
+            />
+          </TeacherShell>
         )}
       </main>
       </div>
