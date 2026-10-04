@@ -20,3 +20,5 @@ scratch-*.js
 scratch-*.py
 
 .agents/
+
+.env.local

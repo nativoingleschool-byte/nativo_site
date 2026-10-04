@@ -5,6 +5,7 @@ import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
+import TeacherAgendaView from './TeacherAgendaView'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
 import { trackEvent } from '../../lib/telemetry'
@@ -13,6 +14,8 @@ interface TeacherPanelProps {
   language: Language
   teacherTab: 'calendar' | 'worklog' | 'profile'
   setTeacherTab: (tab: 'calendar' | 'worklog' | 'profile') => void
+  /** Quando true, a navegação fica sob responsabilidade do TeacherShell. */
+  hideShellHeader?: boolean
   students: Profile[]
   teachers: Profile[]
   profile: Profile
@@ -99,6 +102,7 @@ export default function TeacherPanel({
   language,
   teacherTab,
   setTeacherTab,
+  hideShellHeader = false,
   students,
   teachers,
   profile,
@@ -257,6 +261,13 @@ export default function TeacherPanel({
     if (pastUnmarked.length === 0) return null
     pastUnmarked.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
     return pastUnmarked[0]
+  }, [teacherLessons])
+
+  const teacherUpcomingLessons = useMemo(() => {
+    const now = Date.now()
+    return teacherLessons
+      .filter((lesson) => new Date(lesson.starts_at).getTime() >= now)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   }, [teacherLessons])
 
   const handleUpdateTodayLessonStatus = async (lessonId: string, status: TeacherLessonStatus) => {
@@ -740,8 +751,8 @@ export default function TeacherPanel({
 
   return (
     <section className="flex flex-col w-full gap-6">
-      <article className="panel">
-        <div className="panel-header animate-fade-in">
+      <article className={hideShellHeader ? 'panel teacher-panel-content-only' : 'panel'}>
+        {!hideShellHeader && <div className="panel-header animate-fade-in">
           <div>
             <p className="section-label">{t(language, 'role_teacher')}</p>
             <h2>
@@ -783,9 +794,28 @@ export default function TeacherPanel({
               {t(language, 'tab_profile_data')}
             </button>
           </div>
-        </div>
+        </div>}
 
-        {teacherTab === 'calendar' && (
+        {teacherTab === 'calendar' && hideShellHeader && (
+          <TeacherAgendaView
+            profile={profile}
+            lessons={lessons}
+            students={students}
+            profilesById={profilesById}
+            availabilities={availabilities}
+            language={language}
+            pendingConfirmation={lastUnmarkedClass}
+            upcomingLessons={teacherUpcomingLessons}
+            completedCount={completedSessions.length}
+            accruedAmount={totalAmount}
+            onUpdateLessonStatus={handleUpdateTodayLessonStatus}
+            onOpenLesson={handleOpenEditLesson}
+            onAddLesson={handleOpenAddLesson}
+            onAddAvailability={() => toast.info(t(language, 'tap_calendar_to_add') || 'Selecione um horário para adicionar disponibilidade.')}
+          />
+        )}
+
+        {teacherTab === 'calendar' && !hideShellHeader && (
           <div className="space-y-6 animate-fade-in">
             {lastUnmarkedClass && (
               <div
@@ -2107,4 +2137,3 @@ export default function TeacherPanel({
     </section>
   )
 }
-
