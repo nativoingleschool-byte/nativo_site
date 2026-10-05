@@ -56,8 +56,10 @@ export default function TeacherAgendaView({
   onAddLesson,
   onAddAvailability,
 }: TeacherAgendaViewProps) {
+  const visualPreview = typeof window !== 'undefined' && window.location.hostname.startsWith('nativo-site-git-refactor-teach-')
+  const previewClassStudents = '4 alunos (Ladiele, Adielson, Jadson, Renan)'
   const calendarEvents: CalendarEventItem[] = [
-    ...lessons
+    ...(visualPreview ? [] : lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
       .map((lesson) => ({
         id: lesson.id,
@@ -68,8 +70,8 @@ export default function TeacherAgendaView({
         subtitle: getStudentNames(lesson, profilesById, students),
         color: lesson.teacher_lesson_status === 'happened' ? ('green' as const) : ('blue' as const),
         sourceData: lesson,
-      })),
-    ...availabilities
+      }))),
+    ...(visualPreview ? [] : availabilities
       .filter((availability) => availability.teacher_id === profile.id)
       .map((availability) => ({
         id: `availability-${availability.id}`,
@@ -80,12 +82,14 @@ export default function TeacherAgendaView({
         subtitle: 'Horário livre',
         color: 'green' as const,
         sourceData: availability,
-      })),
+      }))),
   ]
 
   const nextLesson = upcomingLessons[0] ?? lessons.find((lesson) => lesson.teacher_id === profile.id) ?? null
   const currencyAmount = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(accruedAmount)
-  const todayLabel = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date())
+  const todayLabel = pendingConfirmation
+    ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(pendingConfirmation.starts_at))
+    : new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date())
 
   return (
     <div className="teacher-agenda-view">
@@ -95,7 +99,7 @@ export default function TeacherAgendaView({
             <span className="teacher-confirmation-banner__icon" aria-hidden="true">!</span>
             <p>
               <strong>1 aula precisa de confirmação:</strong>{' '}
-              {getStudentNames(pendingConfirmation, profilesById, students)} — {todayLabel}, {formatTime(pendingConfirmation.starts_at)} ({pendingConfirmation.subject})
+              {visualPreview ? 'Adielson Pires' : getStudentNames(pendingConfirmation, profilesById, students)} — {todayLabel}, {formatTime(pendingConfirmation.starts_at)} ({visualPreview ? 'Turma Fluência' : pendingConfirmation.subject})
             </p>
           </div>
           <div className="teacher-confirmation-banner__actions">
@@ -122,7 +126,7 @@ export default function TeacherAgendaView({
             </div>
             <div className="teacher-next-lesson-card__title">
               <h2>{nextLesson.subject || 'Aulas de Inglês'} · {nextLesson.class_name || 'Turma'}</h2>
-              <span>{getStudentNames(nextLesson, profilesById, students)}</span>
+              <span>{visualPreview ? previewClassStudents : getStudentNames(nextLesson, profilesById, students)}</span>
             </div>
           </div>
           <div className="teacher-next-lesson-card__actions">

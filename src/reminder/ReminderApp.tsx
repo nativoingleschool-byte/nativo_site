@@ -172,7 +172,7 @@ const createPreviewFixture = () => {
     {
       id: 'preview-lesson-next',
       subject: 'Aulas de Inglês',
-      class_name: 'Turma Fluência',
+      class_name: 'Turma',
       student_id: previewStudentId,
       teacher_id: previewTeacherId,
       starts_at: at(0, 20),
@@ -183,7 +183,7 @@ const createPreviewFixture = () => {
     },
     {
       id: 'preview-lesson-future',
-      subject: 'Conversação',
+      subject: 'Inglês Turma',
       class_name: 'Turma Fluência',
       student_id: previewStudentId,
       teacher_id: previewTeacherId,
@@ -195,7 +195,7 @@ const createPreviewFixture = () => {
     },
     {
       id: 'preview-lesson-past',
-      subject: 'Inglês · Revisão',
+      subject: 'Inglês B1',
       class_name: 'Turma Fluência',
       student_id: previewStudentId,
       teacher_id: previewTeacherId,
@@ -207,11 +207,23 @@ const createPreviewFixture = () => {
     },
     {
       id: 'preview-lesson-next-month',
-      subject: 'Aulas de Inglês',
+      subject: 'Business Eng.',
       class_name: 'Turma Fluência',
       student_id: previewStudentId,
       teacher_id: previewTeacherId,
       starts_at: at(8, 20),
+      duration_minutes: 60,
+      student_attendance: null,
+      student_lesson_status: null,
+      teacher_lesson_status: null,
+    },
+    {
+      id: 'preview-lesson-pending',
+      subject: 'Turma Fluência',
+      class_name: 'Turma Fluência',
+      student_id: previewStudentId,
+      teacher_id: previewTeacherId,
+      starts_at: at(-28, 20),
       duration_minutes: 60,
       student_attendance: null,
       student_lesson_status: null,
@@ -2121,9 +2133,9 @@ function ReminderAppInner() {
             unreadNotifications={dueNotifications.length}
             onLogout={handleLogout}
             pageSubtitles={{
-              calendar: 'Acompanhe suas aulas e disponibilidade.',
+              calendar: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(now).replace(/^./, (letter) => letter.toUpperCase()),
               worklog: 'Demonstrativo e NFS-e MEI.',
-              profile: 'Cadastro e dados bancários.',
+              profile: 'Cadastro & Dados Bancários',
             }}
           >
             <TeacherPanel

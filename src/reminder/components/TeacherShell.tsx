@@ -52,7 +52,7 @@ const pageTitles: Record<TeacherTab, string> = {
 const defaultPageSubtitles: Record<TeacherTab, string> = {
   calendar: 'Acompanhe suas aulas e disponibilidade.',
   worklog: 'Demonstrativo e NFS-e MEI.',
-  profile: 'Cadastro e dados bancários.',
+  profile: 'Cadastro & Dados Bancários',
 }
 
 function getInitials(fullName: string) {
@@ -126,7 +126,7 @@ export default function TeacherShell({
       <aside className="teacher-sidebar" aria-label="Portal do Professor">
         <div className="teacher-sidebar__brand">
           <div className="teacher-sidebar__monogram" aria-hidden="true">
-            N
+            <img src="/hero/logo-white.png" alt="" />
           </div>
           <div className="teacher-sidebar__brand-copy">
             <strong>NATIVO ENGLISH</strong>

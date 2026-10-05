@@ -2312,6 +2312,13 @@ body:has(.reminder-app-scope) {
   line-height: 1;
 }
 
+.teacher-sidebar__monogram img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .teacher-sidebar__brand-copy {
   display: flex;
   min-width: 0;
