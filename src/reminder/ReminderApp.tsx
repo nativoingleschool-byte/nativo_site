@@ -128,12 +128,116 @@ const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
   confirm_password: '',
 })
 
+// Fixture visual isolado: nunca é ativado no domínio oficial ou na main.
+// O formato replica Profile/Lesson/TeacherAvailability para que a troca pelos
+// dados reais seja apenas a remoção do modo preview, sem refatorar componentes.
+const isVisualPreviewMode = () =>
+  typeof window !== 'undefined' &&
+  (window.location.hostname.startsWith('nativo-site-git-refactor-teach-') || import.meta.env.VITE_VISUAL_PREVIEW === 'true')
+
+const previewTeacherId = 'preview-teacher-eric'
+const previewStudentId = 'preview-student-ladiele'
+
+const createPreviewFixture = () => {
+  const now = new Date()
+  const at = (dayOffset: number, hour: number, minute = 0) => {
+    const date = new Date(now)
+    date.setDate(date.getDate() + dayOffset)
+    date.setHours(hour, minute, 0, 0)
+    return date.toISOString()
+  }
+  const teacher: Profile = {
+    id: previewTeacherId,
+    email: 'ericlucas.lucas@gmail.com',
+    full_name: 'Eric Lucas',
+    role: 'teacher',
+    class_name: '',
+    speciality: 'Inglês',
+    push_enabled: false,
+    status_nota_fiscal: 'pendente',
+    taxa_hora_aula: 56,
+    moeda_taxa: 'BRL',
+    status_pagamento_professor: 'pendente',
+  }
+  const student: Profile = {
+    id: previewStudentId,
+    email: 'ladiele.rodrigues@example.com',
+    full_name: 'Ladiele Rodrigues',
+    role: 'student',
+    class_name: 'Turma Fluência',
+    speciality: '',
+    push_enabled: false,
+  }
+  const lessons: Lesson[] = [
+    {
+      id: 'preview-lesson-next',
+      subject: 'Aulas de Inglês',
+      class_name: 'Turma Fluência',
+      student_id: previewStudentId,
+      teacher_id: previewTeacherId,
+      starts_at: at(0, 20),
+      duration_minutes: 60,
+      student_attendance: 'attend',
+      student_lesson_status: null,
+      teacher_lesson_status: null,
+    },
+    {
+      id: 'preview-lesson-future',
+      subject: 'Conversação',
+      class_name: 'Turma Fluência',
+      student_id: previewStudentId,
+      teacher_id: previewTeacherId,
+      starts_at: at(2, 19, 30),
+      duration_minutes: 60,
+      student_attendance: null,
+      student_lesson_status: null,
+      teacher_lesson_status: null,
+    },
+    {
+      id: 'preview-lesson-past',
+      subject: 'Inglês · Revisão',
+      class_name: 'Turma Fluência',
+      student_id: previewStudentId,
+      teacher_id: previewTeacherId,
+      starts_at: at(-3, 20),
+      duration_minutes: 60,
+      student_attendance: 'attend',
+      student_lesson_status: 'done',
+      teacher_lesson_status: 'happened',
+    },
+    {
+      id: 'preview-lesson-next-month',
+      subject: 'Aulas de Inglês',
+      class_name: 'Turma Fluência',
+      student_id: previewStudentId,
+      teacher_id: previewTeacherId,
+      starts_at: at(8, 20),
+      duration_minutes: 60,
+      student_attendance: null,
+      student_lesson_status: null,
+      teacher_lesson_status: null,
+    },
+  ]
+  const availabilities: TeacherAvailability[] = [
+    { id: 'preview-availability-1', teacher_id: previewTeacherId, starts_at: at(1, 9), duration_minutes: 180 },
+  ]
+  const session = {
+    user: { id: previewTeacherId, email: teacher.email },
+    access_token: 'preview-session',
+    refresh_token: 'preview-refresh',
+  } as unknown as Session
+  return { teacher, profiles: [teacher, student], lessons, availabilities, session }
+}
+
+const previewFixture = createPreviewFixture()
+
 function ReminderAppInner() {
   const { toast } = useToast()
+  const visualPreviewMode = isVisualPreviewMode()
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage() ?? getDeviceLanguage())
   const [appTimeZone, setAppTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState<Session | null>(() => (visualPreviewMode ? previewFixture.session : null))
+  const [loading, setLoading] = useState(!visualPreviewMode)
   const [appError, setAppError] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -146,9 +250,9 @@ function ReminderAppInner() {
     password: '',
   }))
   const [loginError, setLoginError] = useState('')
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [profiles, setProfiles] = useState<Profile[]>([])
-  const [lessons, setLessons] = useState<Lesson[]>([])
+  const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? previewFixture.teacher : null))
+  const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? previewFixture.profiles : []))
+  const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? previewFixture.lessons : []))
   const [userForm, setUserForm] = useState<UserFormState>(defaultUserForm())
   const [notificationPermission, setNotificationPermission] = useState<BrowserPermission>(() =>
     'Notification' in window ? Notification.permission : 'unsupported',
@@ -616,7 +720,7 @@ function ReminderAppInner() {
     }
   }
 
-  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>([])
+  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>(() => (visualPreviewMode ? previewFixture.availabilities : []))
 
   const refreshAvailabilities = async () => {
     let list: TeacherAvailability[] = []
@@ -781,6 +885,16 @@ function ReminderAppInner() {
   }
 
   useEffect(() => {
+    if (visualPreviewMode) {
+      setProfile(previewFixture.teacher)
+      setProfiles(previewFixture.profiles)
+      setLessons(previewFixture.lessons)
+      setAvailabilities(previewFixture.availabilities)
+      setInvoices([])
+      setTeacherNotesList([])
+      setAppError('')
+      return
+    }
     if (!session?.user || !isSupabaseConfigured) {
       setProfile(null)
       setProfiles([])
@@ -830,13 +944,14 @@ function ReminderAppInner() {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [session, visualPreviewMode])
 
   useEffect(() => {
     setAccountForm(defaultAccountForm(profile))
   }, [profile?.id])
 
   useEffect(() => {
+    if (visualPreviewMode) return
     if (!session?.user?.id) return
 
     const channel = supabase
@@ -867,7 +982,7 @@ function ReminderAppInner() {
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [session?.user?.id, profile?.role])
+  }, [session?.user?.id, profile?.role, visualPreviewMode])
 
   useEffect(() => {
     if (!pendingLink.lessonId || !pendingLink.intent || !session?.user) return
@@ -1652,7 +1767,7 @@ function ReminderAppInner() {
     )
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !visualPreviewMode) {
     return (
       <div className="login-shell">
         <section className="login-panel">
