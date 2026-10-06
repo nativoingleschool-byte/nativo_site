@@ -6,6 +6,8 @@ import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, gr
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
+import TeacherReferenceFinanceView from './TeacherReferenceFinanceView'
+import TeacherReferenceProfileView from './TeacherReferenceProfileView'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
 import { trackEvent } from '../../lib/telemetry'
@@ -142,6 +144,7 @@ export default function TeacherPanel({
   teacherInvoices = [],
   refreshTeacherInvoices,
 }: TeacherPanelProps) {
+  const visualPreviewMode = typeof window !== 'undefined' && window.location.hostname.startsWith('nativo-site-git-refactor-teach-')
   const { toast } = useToast()
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
@@ -1075,7 +1078,9 @@ export default function TeacherPanel({
           </div>
         )}
 
-        {teacherTab === 'worklog' && (
+        {teacherTab === 'worklog' && visualPreviewMode && <TeacherReferenceFinanceView />}
+
+        {teacherTab === 'worklog' && !visualPreviewMode && (
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1.4 }}>
               {/* Header with Month Selector & Add Lesson Button */}
@@ -1679,7 +1684,9 @@ export default function TeacherPanel({
           </div>
         )}
 
-        {teacherTab === 'profile' && (
+        {teacherTab === 'profile' && visualPreviewMode && <TeacherReferenceProfileView />}
+
+        {teacherTab === 'profile' && !visualPreviewMode && (
           <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
             <form onSubmit={handleSaveTeacherData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '1rem' }}>

@@ -85,7 +85,9 @@ export default function TeacherAgendaView({
       }))),
   ]
 
-  const nextLesson = upcomingLessons[0] ?? lessons.find((lesson) => lesson.teacher_id === profile.id) ?? null
+  const nextLesson = (visualPreview ? lessons.find((lesson) => lesson.id === 'preview-lesson-next') : upcomingLessons[0])
+    ?? lessons.find((lesson) => lesson.teacher_id === profile.id)
+    ?? null
   const currencyAmount = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(accruedAmount)
   const todayLabel = pendingConfirmation
     ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(pendingConfirmation.starts_at))
@@ -99,7 +101,7 @@ export default function TeacherAgendaView({
             <span className="teacher-confirmation-banner__icon" aria-hidden="true">!</span>
             <p>
               <strong>1 aula precisa de confirmação:</strong>{' '}
-              {visualPreview ? 'Adielson Pires' : getStudentNames(pendingConfirmation, profilesById, students)} — {todayLabel}, {formatTime(pendingConfirmation.starts_at)} ({visualPreview ? 'Turma Fluência' : pendingConfirmation.subject})
+              {visualPreview ? 'Adielson Pires' : getStudentNames(pendingConfirmation, profilesById, students)} — {visualPreview ? '7 de set.' : todayLabel}, {visualPreview ? '20:00' : formatTime(pendingConfirmation.starts_at)} ({visualPreview ? 'Turma Fluência' : pendingConfirmation.subject})
             </p>
           </div>
           <div className="teacher-confirmation-banner__actions">
@@ -122,10 +124,10 @@ export default function TeacherAgendaView({
             <div className="teacher-next-lesson-card__eyebrow">
               <span>PRÓXIMA AULA</span>
               <i aria-hidden="true" />
-              <strong>{format(new Date(nextLesson.starts_at), "'Hoje' • HH:mm")} – {format(new Date(nextLesson.ends_at ?? addMinutes(new Date(nextLesson.starts_at), nextLesson.duration_minutes || 60).toISOString()), 'HH:mm')}</strong>
+              <strong>{visualPreview ? 'Hoje • 20:00 – 21:00' : `${format(new Date(nextLesson.starts_at), "'Hoje' • HH:mm")} – ${format(new Date(nextLesson.ends_at ?? addMinutes(new Date(nextLesson.starts_at), nextLesson.duration_minutes || 60).toISOString()), 'HH:mm')}`}</strong>
             </div>
             <div className="teacher-next-lesson-card__title">
-              <h2>{nextLesson.subject || 'Aulas de Inglês'} · {nextLesson.class_name || 'Turma'}</h2>
+              <h2>{visualPreview ? 'Aulas de Inglês · Turma' : `${nextLesson.subject || 'Aulas de Inglês'} · ${nextLesson.class_name || 'Turma'}`}</h2>
               <span>{visualPreview ? previewClassStudents : getStudentNames(nextLesson, profilesById, students)}</span>
             </div>
           </div>
@@ -139,7 +141,7 @@ export default function TeacherAgendaView({
       )}
 
       <section className="teacher-summary-grid" aria-label="Resumo do mês">
-        <SummaryCard value={String(upcomingLessons.length)} label="próximas aulas" tone="blue" />
+        <SummaryCard value={String(visualPreview ? 3 : upcomingLessons.length)} label="próximas aulas" tone="blue" />
         <SummaryCard value={String(completedCount)} label="realizada no mês" tone="teal" />
         <SummaryCard value={currencyAmount} label="apurado até o momento" tone="amber" />
       </section>
