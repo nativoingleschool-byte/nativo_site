@@ -2471,13 +2471,13 @@ body:has(.reminder-app-scope) {
 }
 
 .teacher-context-header__separator {
-  color: #b8c2cf;
+  color: #8da0ae;
   font-size: 0.9rem;
 }
 
 .teacher-context-header__subtitle {
   overflow: hidden;
-  color: #8995a7;
+  color: #5d7180;
   font-size: 0.76rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2564,7 +2564,7 @@ body:has(.reminder-app-scope) {
 .teacher-profile-chip__copy span {
   overflow: hidden;
   max-width: 180px;
-  color: #9aa5b4;
+  color: #6f808d;
   font-size: 0.64rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3113,3 +3113,23 @@ body:has(.reminder-app-scope) {
 .login-reference-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 26px; text-decoration: none; }
 .login-reference-footer { padding: 0 16px 22px; text-align: center; color: #a5b0b8; font-size: 10px; }
 @media (max-width: 520px) { .login-reference-brand { padding: 20px 18px; } .login-reference-main { padding: 18px 14px 32px; } .login-reference-card { padding: 30px 22px 22px; } .login-reference-options { align-items: flex-start; flex-direction: column; gap: 9px; } }
+
+.reference-agenda-modal-date { margin-top: -2px !important; color: #536b7c !important; font-weight: 700; }
+.reference-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.reference-detail-grid span { display: grid; gap: 4px; padding: 11px; border: 1px solid #e3eaed; border-radius: 9px; color: #84939d; font-size: 10px; }
+.reference-detail-grid strong { color: #324d66; font-size: 11px; }
+.reference-agenda-modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+.reference-agenda-modal-actions > button:first-child { padding: 8px 13px; border: 1px solid #dfe6ea; border-radius: 8px; color: #657684; background: #fff; font-size: 11px; font-weight: 700; }
+.reference-modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+.reference-modal-form-grid label, .reference-availability-editor label { display: grid; gap: 6px; color: #657684; font-size: 10px; font-weight: 700; }
+.reference-modal-form-grid .is-wide { grid-column: 1 / -1; }
+.reference-modal-form-grid input, .reference-modal-form-grid select, .reference-availability-editor input, .reference-availability-editor select { min-height: 38px; padding: 8px 10px; border: 1px solid #dce5e9; border-radius: 8px; color: #324d66; background: #fff; font-size: 11px; }
+.reference-availability-list { display: grid; gap: 8px; margin-top: 18px; }
+.reference-availability-list > div { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 12px; border: 1px solid #e3eaed; border-radius: 9px; }
+.reference-availability-list strong { color: #324d66; font-size: 11px; }
+.reference-availability-list span { color: #83919b; font-size: 10px; }
+.reference-availability-list button { grid-column: 1 / -1; justify-self: start; padding: 0; border: 0; color: #1f4268; background: transparent; font-size: 10px; font-weight: 750; }
+.reference-availability-editor { position: absolute; right: 28px; bottom: 26px; left: 28px; display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; padding: 14px; border: 1px solid #d8e5ea; border-radius: 11px; background: #f8fbfc; box-shadow: 0 10px 24px rgba(31,56,76,.1); }
+.reference-availability-editor .reference-checkbox { align-self: end; }
+.reference-availability-editor > button { grid-column: 1 / -1; justify-self: end; }
+@media (max-width: 520px) { .reference-detail-grid, .reference-modal-form-grid, .reference-availability-editor { grid-template-columns: 1fr; } .reference-modal-form-grid .is-wide { grid-column: auto; } .reference-availability-editor { right: 18px; bottom: 18px; left: 18px; } }

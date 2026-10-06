@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { addMinutes, format } from 'date-fns'
 import { CalendarPlus, Check, Clock3, Video, X } from 'lucide-react'
 import type { Lesson, Profile, TeacherAvailability, TeacherLessonStatus } from '../lib/types'
@@ -58,6 +59,8 @@ export default function TeacherAgendaView({
 }: TeacherAgendaViewProps) {
   const visualPreview = typeof window !== 'undefined' && window.location.hostname.startsWith('nativo-site-git-refactor-teach-')
   const previewClassStudents = '4 alunos (Ladiele, Adielson, Jadson, Renan)'
+  const [previewModal, setPreviewModal] = useState<'details' | 'new' | 'availability' | null>(null)
+  const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false)
   const calendarEvents: CalendarEventItem[] = [
     ...(visualPreview ? [] : lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
@@ -132,7 +135,7 @@ export default function TeacherAgendaView({
             </div>
           </div>
           <div className="teacher-next-lesson-card__actions">
-            <button type="button" className="teacher-soft-button" onClick={() => onOpenLesson(nextLesson)}>Ver detalhes</button>
+            <button type="button" className="teacher-soft-button" onClick={() => visualPreview ? setPreviewModal('details') : onOpenLesson(nextLesson)}>Ver detalhes</button>
             <button type="button" className="teacher-join-button" onClick={() => window.open('https://meet.google.com', '_blank', 'noopener,noreferrer')}>
               <Video size={14} aria-hidden="true" /> Entrar na aula
             </button>
@@ -153,10 +156,10 @@ export default function TeacherAgendaView({
             <h2>Calendário de aulas</h2>
           </div>
           <div className="teacher-calendar-card__actions">
-            <button type="button" className="teacher-availability-button" onClick={onAddAvailability}>
+            <button type="button" className="teacher-availability-button" onClick={() => visualPreview ? setPreviewModal('availability') : onAddAvailability()}>
               <Clock3 size={14} aria-hidden="true" /> Disponibilidade
             </button>
-            <button type="button" className="teacher-new-lesson-button" onClick={onAddLesson}>
+            <button type="button" className="teacher-new-lesson-button" onClick={() => visualPreview ? setPreviewModal('new') : onAddLesson()}>
               <CalendarPlus size={15} aria-hidden="true" /> Nova aula
             </button>
           </div>
@@ -167,9 +170,36 @@ export default function TeacherAgendaView({
           onSelectEvent={(event) => {
             if (event.type === 'lesson') onOpenLesson(event.sourceData as Lesson)
           }}
-          onSelectSlot={onAddAvailability}
-        />
+            onSelectSlot={() => visualPreview ? setPreviewModal('availability') : onAddAvailability()}
+          />
       </section>
+
+      {visualPreview && previewModal && (
+        <div className="reference-modal-backdrop" role="presentation" onClick={() => setPreviewModal(null)}>
+          <section className="reference-modal reference-agenda-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="reference-modal-close" aria-label="Fechar" onClick={() => setPreviewModal(null)}><X size={18} /></button>
+            {previewModal === 'details' && <>
+              <span className="reference-kicker">DETALHES DA AULA</span>
+              <h2>Aulas de Inglês · Turma</h2>
+              <p className="reference-agenda-modal-date">Hoje · 20:00 – 21:00</p>
+              <div className="reference-detail-grid"><span>Nível<strong>Fluência</strong></span><span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span><span>Sala virtual<strong>Google Meet</strong></span><span>Honorário previsto<strong>R$ 56,00</strong></span></div>
+              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" className="reference-primary-button" onClick={() => window.open('https://meet.google.com', '_blank', 'noopener,noreferrer')}><Video size={15} /> Entrar na aula</button></div>
+            </>}
+            {previewModal === 'new' && <>
+              <span className="reference-kicker">AGENDA DO PROFESSOR</span>
+              <h2>Adicionar Nova Aula</h2>
+              <div className="reference-modal-form-grid"><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário<input type="time" defaultValue="20:00" /></label><label className="is-wide">Assunto<input defaultValue="Aulas de Inglês" /></label><label className="is-wide">Alunos<select defaultValue="preview-student"><option value="preview-student">Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos</option></select></label></div>
+              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Cancelar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
+            </>}
+            {previewModal === 'availability' && <>
+              <span className="reference-kicker">AGENDA DO PROFESSOR</span>
+              <h2>Disponibilidade semanal</h2>
+              <div className="reference-availability-list"><div><strong>Segunda-feira</strong><span>09:00 – 12:00</span><button type="button" onClick={() => setAvailabilityEditorOpen(true)}>+ Adicionar horário</button></div><div><strong>Quarta-feira</strong><span>Nenhum horário configurado</span><button type="button" onClick={() => setAvailabilityEditorOpen(true)}>+ Adicionar horário</button></div></div>
+              {availabilityEditorOpen && <div className="reference-availability-editor"><label>Dia da semana<select defaultValue="segunda"><option value="segunda">Segunda-feira</option><option value="quarta">Quarta-feira</option></select></label><label>Início<input type="time" defaultValue="09:00" /></label><label>Término<input type="time" defaultValue="12:00" /></label><label className="reference-checkbox"><input type="checkbox" defaultChecked /><span>Repetir semanalmente</span></label><button type="button" className="reference-primary-button" onClick={() => { setAvailabilityEditorOpen(false); setPreviewModal(null) }}>Salvar horário</button></div>}
+            </>}
+          </section>
+        </div>
+      )}
     </div>
   )
 }
