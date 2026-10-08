@@ -3171,7 +3171,9 @@ body:has(.reminder-app-scope) {
 body:has(.teacher-agenda-view) .teacher-portal-content { width: 100%; max-width: none; padding: 0; }
 body:has(.teacher-agenda-view) .teacher-agenda-view { gap: 18px; padding: 20px 0 36px; }
 body:has(.teacher-agenda-view) .teacher-confirmation-banner,
-body:has(.teacher-agenda-view) .teacher-next-lesson-card { padding: 16px 20px; }
+body:has(.teacher-agenda-view) .teacher-next-lesson-card { margin-inline: 20px; padding: 16px 20px; }
+body:has(.teacher-agenda-view) .teacher-summary-grid,
+body:has(.teacher-agenda-view) .teacher-calendar-card { margin-inline: 20px; }
 body:has(.teacher-agenda-view) .teacher-summary-card { padding: 15px 18px; }
 body:has(.teacher-agenda-view) .teacher-calendar-card { padding: 0 20px 20px; }
 body:has(.teacher-agenda-view) .teacher-calendar-card__header { padding: 18px 0 14px; }
@@ -3180,6 +3182,8 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 @media (max-width: 800px) {
   body:has(.teacher-agenda-view) .teacher-agenda-view { padding: 16px 0 32px; }
   body:has(.teacher-agenda-view) .teacher-confirmation-banner,
-  body:has(.teacher-agenda-view) .teacher-next-lesson-card { padding: 14px 16px; }
+  body:has(.teacher-agenda-view) .teacher-next-lesson-card { margin-inline: 14px; padding: 14px 16px; }
+  body:has(.teacher-agenda-view) .teacher-summary-grid,
+  body:has(.teacher-agenda-view) .teacher-calendar-card { margin-inline: 14px; }
   body:has(.teacher-agenda-view) .teacher-calendar-card { padding: 0 14px 14px; }
 }
