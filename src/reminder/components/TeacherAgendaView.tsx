@@ -176,7 +176,7 @@ export default function TeacherAgendaView({
 
       {visualPreview && previewModal && (
         <div className="reference-modal-backdrop" role="presentation" onClick={() => setPreviewModal(null)}>
-          <section className="reference-modal reference-agenda-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+          <section className={`reference-modal reference-agenda-modal${previewModal === 'availability' ? ' reference-availability-modal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="reference-modal-close" aria-label="Fechar" onClick={() => setPreviewModal(null)}><X size={18} /></button>
             {previewModal === 'details' && <>
               <span className="reference-kicker">DETALHES DA AULA</span>
@@ -188,14 +188,30 @@ export default function TeacherAgendaView({
             {previewModal === 'new' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
               <h2>Adicionar Nova Aula</h2>
-              <div className="reference-modal-form-grid"><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário<input type="time" defaultValue="20:00" /></label><label className="is-wide">Assunto<input defaultValue="Aulas de Inglês" /></label><label className="is-wide">Alunos<select defaultValue="preview-student"><option value="preview-student">Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos</option></select></label></div>
+              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (opcional)<input defaultValue="https://meet.google.com/abc-defg-hij" /></label><label className="is-wide">Alunos (separados por vírgula)<input defaultValue="Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos" /></label></div>
               <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Cancelar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
             </>}
             {previewModal === 'availability' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
               <h2>Disponibilidade semanal</h2>
-              <div className="reference-availability-list"><div><strong>Segunda-feira</strong><span>09:00 – 12:00</span><button type="button" onClick={() => setAvailabilityEditorOpen(true)}>+ Adicionar horário</button></div><div><strong>Quarta-feira</strong><span>Nenhum horário configurado</span><button type="button" onClick={() => setAvailabilityEditorOpen(true)}>+ Adicionar horário</button></div></div>
-              {availabilityEditorOpen && <div className="reference-availability-editor"><label>Dia da semana<select defaultValue="segunda"><option value="segunda">Segunda-feira</option><option value="quarta">Quarta-feira</option></select></label><label>Início<input type="time" defaultValue="09:00" /></label><label>Término<input type="time" defaultValue="12:00" /></label><label className="reference-checkbox"><input type="checkbox" defaultChecked /><span>Repetir semanalmente</span></label><button type="button" className="reference-primary-button" onClick={() => { setAvailabilityEditorOpen(false); setPreviewModal(null) }}>Salvar horário</button></div>}
+              <p className="reference-availability-intro">Define e gerencie os horários recorrentes em que você está livre para aulas.</p>
+              <span className="reference-availability-badge">Recorrente</span>
+              <div className="reference-availability-list reference-availability-list--full">
+                {[
+                  ['Segunda-feira', ['08:00 às 11:00', '19:00 às 22:00']],
+                  ['Terça-feira', []],
+                  ['Quarta-feira', ['08:00 às 11:00', '19:00 às 22:00']],
+                  ['Quinta-feira', []],
+                  ['Sexta-feira', []],
+                ].map(([day, slots]) => <div className="reference-availability-day" key={day as string}>
+                  <strong>{day as string}</strong>
+                  <button type="button" onClick={() => setAvailabilityEditorOpen(true)}>+ Adicionar horário</button>
+                  {(slots as string[]).length > 0 ? (slots as string[]).map((slot) => <span className="reference-availability-slot" key={slot}><i />{slot} <small>{slot.startsWith('08') ? '(Manhã)' : '(Noite)'}</small><button type="button" onClick={() => setAvailabilityEditorOpen(true)}>Editar</button><button type="button">Remover</button></span>) : <span className="reference-availability-empty">Nenhum horário cadastrado <small>Indisponível</small></span>}
+                </div>)}
+              </div>
+              <p className="reference-availability-sync">Horários sincronizados com sua grade da coordenação</p>
+              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
+              {availabilityEditorOpen && <div className="reference-availability-editor"><label>Dia da semana<select defaultValue="segunda"><option value="segunda">Segunda-feira</option><option value="terca">Terça-feira</option><option value="quarta">Quarta-feira</option><option value="quinta">Quinta-feira</option><option value="sexta">Sexta-feira</option></select></label><label>Início<input type="time" defaultValue="09:00" /></label><label>Término<input type="time" defaultValue="12:00" /></label><label className="reference-checkbox"><input type="checkbox" defaultChecked /><span>Repetir semanalmente</span></label><button type="button" className="reference-primary-button" onClick={() => setAvailabilityEditorOpen(false)}>Salvar horário</button></div>}
             </>}
           </section>
         </div>

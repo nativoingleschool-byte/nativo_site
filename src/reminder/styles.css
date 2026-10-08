@@ -3133,3 +3133,25 @@ body:has(.reminder-app-scope) {
 .reference-availability-editor .reference-checkbox { align-self: end; }
 .reference-availability-editor > button { grid-column: 1 / -1; justify-self: end; }
 @media (max-width: 520px) { .reference-detail-grid, .reference-modal-form-grid, .reference-availability-editor { grid-template-columns: 1fr; } .reference-modal-form-grid .is-wide { grid-column: auto; } .reference-availability-editor { right: 18px; bottom: 18px; left: 18px; } }
+
+/* Preview QA: modal geometry aligned with nativoagenda-neurj38j.manus.space. */
+.reference-agenda-modal { width: min(100%, 430px); max-height: min(78vh, 560px); overflow: auto; }
+.reference-new-lesson-grid { gap: 10px 12px; }
+.reference-new-lesson-grid label { line-height: 1.15; }
+.reference-new-lesson-grid input { min-height: 36px; }
+.reference-availability-modal { width: min(100%, 430px); max-height: min(78vh, 580px); padding: 24px; }
+.reference-availability-modal h2 { margin-bottom: 5px; }
+.reference-availability-intro { max-width: 320px; margin: 0 0 7px; line-height: 1.45; }
+.reference-availability-badge { display: inline-flex; margin: 0 0 10px; padding: 4px 8px; border-radius: 999px; color: #2d8b72; background: #eaf7f1; font-size: 9px; font-weight: 800; }
+.reference-availability-list--full { gap: 10px; margin-top: 0; }
+.reference-availability-day { grid-template-columns: 1fr auto !important; gap: 7px 10px !important; padding: 11px 12px !important; }
+.reference-availability-day > button { grid-column: 2; grid-row: 1; align-self: center; padding: 0; border: 0; color: #1f4268; background: transparent; font-size: 10px; font-weight: 750; }
+.reference-availability-slot { display: flex; grid-column: 1 / -1; align-items: center; gap: 5px; color: #536c7c !important; font-size: 10px !important; }
+.reference-availability-slot i { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #30b68b; }
+.reference-availability-slot small, .reference-availability-empty small { color: #99a6ad; font-size: 9px; }
+.reference-availability-slot button { margin-left: auto; padding: 0; border: 0; color: #5e7b8d; background: transparent; font-size: 9px; }
+.reference-availability-slot button + button { margin-left: 2px; color: #b27676; }
+.reference-availability-empty { display: flex; grid-column: 1 / -1; align-items: center; gap: 5px; color: #9aa5ac !important; font-size: 10px !important; }
+.reference-availability-sync { margin: 13px 0 0; color: #9aa6ad; font-size: 9px !important; }
+.reference-availability-modal .reference-agenda-modal-actions { position: sticky; bottom: -24px; margin: 14px -24px -24px; padding: 12px 24px; background: rgba(255,255,255,.96); }
+@media (max-width: 520px) { .reference-availability-modal { padding: 20px 18px; } .reference-availability-modal .reference-agenda-modal-actions { bottom: -20px; margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; } }
