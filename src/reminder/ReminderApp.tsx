@@ -178,6 +178,7 @@ const createPreviewFixture = () => {
       teacher_id: previewTeacherId,
       starts_at: at(0, 20),
       duration_minutes: 60,
+      meeting_url: 'https://zoom.us/j/00000000000',
       student_attendance: 'attend',
       student_lesson_status: null,
       teacher_lesson_status: null,
@@ -1580,6 +1581,7 @@ function ReminderAppInner() {
     teacher_id?: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
   }) => {
     setAppError('')
@@ -1606,6 +1608,7 @@ function ReminderAppInner() {
     teacher_id?: string
     starts_at?: string
     duration_minutes?: number
+    meeting_url?: string | null
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
   }) => {
     setAppError('')

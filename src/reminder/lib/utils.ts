@@ -87,6 +87,31 @@ export const storeNotificationKeys = (keys: string[]) => {
   localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(keys))
 }
 
+export const buildGoogleCalendarInviteUrl = (options: {
+  title: string
+  startsAt: string
+  durationMinutes: number
+  attendees: string[]
+  meetingUrl?: string | null
+}) => {
+  const start = new Date(options.startsAt)
+  const end = new Date(start.getTime() + options.durationMinutes * 60000)
+  const calendarDate = (value: Date) => value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+  const details = [
+    'Aula Nativo English',
+    options.meetingUrl ? `Link Zoom: ${options.meetingUrl}` : '',
+  ].filter(Boolean).join('\n')
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: options.title,
+    dates: `${calendarDate(start)}/${calendarDate(end)}`,
+    details,
+    location: options.meetingUrl ?? '',
+    add: options.attendees.filter(Boolean).join(','),
+  })
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
 const pad2 = (value: number) => value.toString().padStart(2, '0')
 
 const zonedPartsFormatter = (timeZone: string) =>
@@ -341,5 +366,4 @@ export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 
     downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
   }
 }
-
 

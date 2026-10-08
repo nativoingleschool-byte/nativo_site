@@ -2,7 +2,7 @@ import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
+import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
@@ -60,6 +60,7 @@ interface TeacherPanelProps {
     teacher_id?: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
     teacher_lesson_status?: TeacherLessonStatus
   }) => Promise<Lesson | undefined>
   updateTeacherSingleLesson?: (draft: {
@@ -70,6 +71,7 @@ interface TeacherPanelProps {
     teacher_id?: string
     starts_at?: string
     duration_minutes?: number
+    meeting_url?: string | null
     teacher_lesson_status?: TeacherLessonStatus
   }) => Promise<Lesson | undefined>
   deleteTeacherSingleLesson?: (lessonId: string) => Promise<void>
@@ -190,6 +192,7 @@ export default function TeacherPanel({
   const [editLessonSubject, setEditLessonSubject] = useState('')
   const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
   const [editLessonDuration, setEditLessonDuration] = useState(60)
+  const [editLessonMeetingUrl, setEditLessonMeetingUrl] = useState('')
   const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
 
   // Propose Class Form State
@@ -496,6 +499,7 @@ export default function TeacherPanel({
     setEditLessonStudentId(lesson.student_id)
     setEditLessonSubject(lesson.subject)
     setEditLessonDuration(lesson.duration_minutes || 60)
+    setEditLessonMeetingUrl(lesson.meeting_url ?? '')
     setEditLessonStatus(lesson.teacher_lesson_status ?? null)
     setEditLessonStartsAt(isoToDateTimeLocal(lesson.starts_at, appTimeZone))
   }
@@ -524,6 +528,7 @@ export default function TeacherPanel({
           class_name: className,
           starts_at: utcIso,
           duration_minutes: editLessonDuration,
+          meeting_url: editLessonMeetingUrl.trim() || null,
           teacher_lesson_status: editLessonStatus,
         })
       } else {
@@ -548,6 +553,7 @@ export default function TeacherPanel({
               class_name: className,
               starts_at: utcIso,
               duration_minutes: editLessonDuration,
+              meeting_url: editLessonMeetingUrl.trim() || null,
               teacher_lesson_status: editLessonStatus,
             },
           }),
@@ -2047,6 +2053,17 @@ export default function TeacherPanel({
                 </div>
 
                 <div>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (Zoom)</label>
+                  <input
+                    type="url"
+                    value={editLessonMeetingUrl}
+                    onChange={(e) => setEditLessonMeetingUrl(e.target.value)}
+                    placeholder="https://zoom.us/j/..."
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                  />
+                </div>
+
+                <div>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -2122,7 +2139,24 @@ export default function TeacherPanel({
                     🗑️ {t(language, 'delete_class_btn')}
                   </button>
 
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        const student = profilesById[editLessonStudentId]
+                        const url = buildGoogleCalendarInviteUrl({
+                          title: `${editLessonSubject} · ${editingLesson.class_name || 'Aula'}`,
+                          startsAt: dateTimeLocalToIso(editLessonStartsAt, appTimeZone),
+                          durationMinutes: editLessonDuration,
+                          attendees: student?.email ? [student.email] : [],
+                          meetingUrl: editingLesson.meeting_url,
+                        })
+                        window.open(url, '_blank', 'noopener,noreferrer')
+                      }}
+                    >
+                      Adicionar ao Google Agenda
+                    </button>
                     <button
                       type="button"
                       className="secondary-button"

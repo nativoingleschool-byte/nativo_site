@@ -148,6 +148,7 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
+    meeting_url: payload.meeting_url || null,
     teacher_lesson_status: teacherLessonStatus,
   }))
 
@@ -188,6 +189,7 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
+    meeting_url: payload.meeting_url ?? existingLessons[0].meeting_url ?? null,
   }
 
   if (payload.teacher_lesson_status !== undefined) {
@@ -255,6 +257,7 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
+    meeting_url: payload.meeting_url || null,
     teacher_lesson_status: teacherLessonStatus,
   }
 
@@ -297,6 +300,7 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
+    meeting_url: payload.meeting_url ?? existingLesson.meeting_url ?? null,
   }
 
   if (payload.teacher_lesson_status !== undefined) {
@@ -689,5 +693,3 @@ export default async function handler(req, res) {
     return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected server error.' })
   }
 }
-
-

@@ -83,6 +83,7 @@ export type Lesson = {
   teacher_id: string
   starts_at: string
   duration_minutes: number
+  meeting_url?: string | null
   student_attendance: StudentAttendance
   student_lesson_status: StudentLessonStatus
   teacher_lesson_status: TeacherLessonStatus
@@ -166,5 +167,4 @@ export type TeacherInvoice = {
   status?: string
   created_at: string
 }
-
 

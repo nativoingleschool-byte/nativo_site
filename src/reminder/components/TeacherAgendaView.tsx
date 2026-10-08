@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addMinutes, format } from 'date-fns'
 import { CalendarPlus, Check, Clock3, Video, X } from 'lucide-react'
 import type { Lesson, Profile, TeacherAvailability, TeacherLessonStatus } from '../lib/types'
+import { buildGoogleCalendarInviteUrl } from '../lib/utils'
 import MobileCalendar, { type CalendarEventItem } from './MobileCalendar'
 
 type TeacherAgendaViewProps = {
@@ -95,6 +96,20 @@ export default function TeacherAgendaView({
   const todayLabel = pendingConfirmation
     ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(pendingConfirmation.starts_at))
     : new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date())
+  const nextLessonStudent = nextLesson ? profilesById[nextLesson.student_id] ?? students.find((item) => item.id === nextLesson.student_id) : null
+  const addNextLessonToGoogleCalendar = () => {
+    if (!nextLesson) return
+    const url = buildGoogleCalendarInviteUrl({
+      title: `${nextLesson.subject} · ${nextLesson.class_name}`,
+      startsAt: nextLesson.starts_at,
+      durationMinutes: nextLesson.duration_minutes || 60,
+      attendees: visualPreview
+        ? ['ericlucas.lucas@gmail.com']
+        : nextLessonStudent?.email ? [nextLessonStudent.email] : [],
+      meetingUrl: nextLesson.meeting_url,
+    })
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="teacher-agenda-view">
@@ -136,8 +151,8 @@ export default function TeacherAgendaView({
           </div>
           <div className="teacher-next-lesson-card__actions">
             <button type="button" className="teacher-soft-button" onClick={() => visualPreview ? setPreviewModal('details') : onOpenLesson(nextLesson)}>Ver detalhes</button>
-            <button type="button" className="teacher-join-button" onClick={() => window.open('https://meet.google.com', '_blank', 'noopener,noreferrer')}>
-              <Video size={14} aria-hidden="true" /> Entrar na aula
+            <button type="button" className="teacher-join-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}>
+              <Video size={14} aria-hidden="true" /> Entrar no Zoom
             </button>
           </div>
         </section>
@@ -182,13 +197,13 @@ export default function TeacherAgendaView({
               <span className="reference-kicker">DETALHES DA AULA</span>
               <h2>Aulas de Inglês · Turma</h2>
               <p className="reference-agenda-modal-date">Hoje · 20:00 – 21:00</p>
-              <div className="reference-detail-grid"><span>Nível<strong>Fluência</strong></span><span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span><span>Sala virtual<strong>Google Meet</strong></span><span>Honorário previsto<strong>R$ 56,00</strong></span></div>
-              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" className="reference-primary-button" onClick={() => window.open('https://meet.google.com', '_blank', 'noopener,noreferrer')}><Video size={15} /> Entrar na aula</button></div>
+              <div className="reference-detail-grid"><span>Nível<strong>Fluência</strong></span><span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span><span>Sala virtual<strong>Zoom</strong></span><span>Honorário previsto<strong>R$ 56,00</strong></span></div>
+              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" onClick={addNextLessonToGoogleCalendar}>Adicionar ao Google Agenda</button><button type="button" className="reference-primary-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}><Video size={15} /> Entrar no Zoom</button></div>
             </>}
             {previewModal === 'new' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
               <h2>Adicionar Nova Aula</h2>
-              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (opcional)<input defaultValue="https://meet.google.com/abc-defg-hij" /></label><label className="is-wide">Alunos (separados por vírgula)<input defaultValue="Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos" /></label></div>
+              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (Zoom, opcional)<input defaultValue="https://zoom.us/j/00000000000" /></label><label className="is-wide">Alunos (separados por vírgula)<input defaultValue="Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos" /></label></div>
               <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Cancelar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
             </>}
             {previewModal === 'availability' && <>
