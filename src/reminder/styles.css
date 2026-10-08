@@ -3166,3 +3166,7 @@ body:has(.reminder-app-scope) {
 .teacher-calendar-list-event { display: flex; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid #e6edf0; border-radius: 10px; color: #324d66; background: #fbfcfd; text-align: left; font-size: 10px; }
 .teacher-calendar-list-event:hover { border-color: #c8d9e2; background: #f6fafc; }
 .teacher-calendar-list-event span { color: #7d8e99; }
+
+/* Agenda: the outer canvas needs a small, even gutter; card internals keep their own padding. */
+body:has(.teacher-agenda-view) .teacher-portal-content { width: 100%; max-width: none; padding: 22px 24px 36px; }
+@media (max-width: 800px) { body:has(.teacher-agenda-view) .teacher-portal-content { padding: 16px 14px 32px; } }
