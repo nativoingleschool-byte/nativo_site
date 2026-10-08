@@ -3167,6 +3167,19 @@ body:has(.reminder-app-scope) {
 .teacher-calendar-list-event:hover { border-color: #c8d9e2; background: #f6fafc; }
 .teacher-calendar-list-event span { color: #7d8e99; }
 
-/* Agenda: the outer canvas needs a small, even gutter; card internals keep their own padding. */
-body:has(.teacher-agenda-view) .teacher-portal-content { width: 100%; max-width: none; padding: 22px 24px 36px; }
-@media (max-width: 800px) { body:has(.teacher-agenda-view) .teacher-portal-content { padding: 16px 14px 32px; } }
+/* Agenda: keep the canvas flush and give each inner section an even rhythm. */
+body:has(.teacher-agenda-view) .teacher-portal-content { width: 100%; max-width: none; padding: 0; }
+body:has(.teacher-agenda-view) .teacher-agenda-view { gap: 18px; padding: 20px 0 36px; }
+body:has(.teacher-agenda-view) .teacher-confirmation-banner,
+body:has(.teacher-agenda-view) .teacher-next-lesson-card { padding: 16px 20px; }
+body:has(.teacher-agenda-view) .teacher-summary-card { padding: 15px 18px; }
+body:has(.teacher-agenda-view) .teacher-calendar-card { padding: 0 20px 20px; }
+body:has(.teacher-agenda-view) .teacher-calendar-card__header { padding: 18px 0 14px; }
+body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-shell { border: 1px solid #edf0f2; border-radius: 12px; }
+body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar { padding: 14px 16px; }
+@media (max-width: 800px) {
+  body:has(.teacher-agenda-view) .teacher-agenda-view { padding: 16px 0 32px; }
+  body:has(.teacher-agenda-view) .teacher-confirmation-banner,
+  body:has(.teacher-agenda-view) .teacher-next-lesson-card { padding: 14px 16px; }
+  body:has(.teacher-agenda-view) .teacher-calendar-card { padding: 0 14px 14px; }
+}
