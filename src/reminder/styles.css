@@ -3155,3 +3155,14 @@ body:has(.reminder-app-scope) {
 .reference-availability-sync { margin: 13px 0 0; color: #9aa6ad; font-size: 9px !important; }
 .reference-availability-modal .reference-agenda-modal-actions { position: sticky; bottom: -24px; margin: 14px -24px -24px; padding: 12px 24px; background: rgba(255,255,255,.96); }
 @media (max-width: 520px) { .reference-availability-modal { padding: 20px 18px; } .reference-availability-modal .reference-agenda-modal-actions { bottom: -20px; margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; } }
+
+/* Calendar controls and breadcrumb title match the reference visual. */
+.teacher-context-header h1 { background: none !important; -webkit-background-clip: initial !important; background-clip: initial !important; -webkit-text-fill-color: #17365d !important; }
+.teacher-calendar-list-view { min-height: 370px; padding: 20px; border-top: 1px solid #edf0f2; background: #fff; }
+.teacher-calendar-list-view__heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #8b98a3; font-size: 10px; }
+.teacher-calendar-list-view__heading strong { color: #526778; font-size: 10px; }
+.teacher-calendar-empty { margin-top: 36px !important; color: #93a0aa; font-size: 11px; }
+.teacher-calendar-week-list { display: grid; gap: 8px; margin-top: 18px; }
+.teacher-calendar-list-event { display: flex; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid #e6edf0; border-radius: 10px; color: #324d66; background: #fbfcfd; text-align: left; font-size: 10px; }
+.teacher-calendar-list-event:hover { border-color: #c8d9e2; background: #f6fafc; }
+.teacher-calendar-list-event span { color: #7d8e99; }

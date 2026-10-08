@@ -41,6 +41,7 @@ export default function MobileCalendar({
   onSelectSlot,
 }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [view, setView] = useState<'month' | 'week' | 'agenda'>('month')
   const locale = locales[language] || enUS
   const today = new Date()
 
@@ -77,6 +78,10 @@ export default function MobileCalendar({
 
   const monthLabel = format(currentDate, 'MMMM yyyy', { locale })
   const todayKey = format(today, 'yyyy-MM-dd')
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
+  const weekLabel = `${format(weekStart, 'd', { locale })} a ${format(weekEnd, "d 'de' MMMM", { locale })}`
+  const agendaEvents = Array.from(eventsByDay.values()).flat().sort((a, b) => a.start.getTime() - b.start.getTime())
 
   return (
     <div className="teacher-calendar-shell" aria-label={language === 'pt' ? 'Calendário mensal' : 'Monthly calendar'}>
@@ -91,9 +96,9 @@ export default function MobileCalendar({
         </div>
         <div className="teacher-calendar-toolbar-right">
           <div className="calendar-view-switcher" aria-label="Calendar view">
-            <button type="button" className="is-active">{language === 'pt' ? 'Mês' : 'Month'}</button>
-            <button type="button">{language === 'pt' ? 'Semana' : 'Week'}</button>
-            <button type="button">{language === 'pt' ? 'Agenda' : 'Agenda'}</button>
+            <button type="button" className={view === 'month' ? 'is-active' : ''} onClick={() => setView('month')}>{language === 'pt' ? 'Mês' : 'Month'}</button>
+            <button type="button" className={view === 'week' ? 'is-active' : ''} onClick={() => setView('week')}>{language === 'pt' ? 'Semana' : 'Week'}</button>
+            <button type="button" className={view === 'agenda' ? 'is-active' : ''} onClick={() => setView('agenda')}>{language === 'pt' ? 'Agenda' : 'Agenda'}</button>
           </div>
           <button type="button" className="calendar-availability-button" onClick={() => onSelectSlot(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 9, 0, 0))}>
             <span aria-hidden="true">◷</span> {language === 'pt' ? 'Disponibilidade' : 'Availability'}
@@ -101,7 +106,7 @@ export default function MobileCalendar({
         </div>
       </div>
 
-      <div className="teacher-calendar-grid">
+      {view === 'month' && <div className="teacher-calendar-grid">
         <div className="teacher-calendar-weekdays">
           {weekDays.map((day) => (
             <div key={format(day, 'EEE')} className="teacher-calendar-weekday">{format(day, 'EEEE', { locale })}</div>
@@ -144,7 +149,15 @@ export default function MobileCalendar({
             )
           })}
         </div>
-      </div>
+      </div>}
+      {view === 'week' && <section className="teacher-calendar-list-view" aria-label="Visualização semanal">
+        <div className="teacher-calendar-list-view__heading"><span>Semana de {weekLabel}</span><strong>{agendaEvents.length} {agendaEvents.length === 1 ? 'aula nesta semana' : 'aulas nesta semana'}</strong></div>
+        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhuma aula cadastrada nesta semana</p> : <div className="teacher-calendar-week-list">{agendaEvents.filter((event) => event.start >= weekStart && event.start <= weekEnd).map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
+      </section>}
+      {view === 'agenda' && <section className="teacher-calendar-list-view" aria-label="Visualização em agenda">
+        <div className="teacher-calendar-list-view__heading"><span>Próximos encontros</span><strong>{agendaEvents.length} {agendaEvents.length === 1 ? 'aula cadastrada' : 'aulas cadastradas'}</strong></div>
+        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhum próximo encontro</p> : <div className="teacher-calendar-week-list">{agendaEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
+      </section>}
     </div>
   )
 }
