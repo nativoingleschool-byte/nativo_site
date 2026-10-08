@@ -166,7 +166,7 @@ export default function TeacherAgendaView({
         </div>
         <MobileCalendar
           events={calendarEvents}
-          language={language}
+          language={visualPreview ? 'pt' : language}
           onSelectEvent={(event) => {
             if (event.type === 'lesson') onOpenLesson(event.sourceData as Lesson)
           }}
