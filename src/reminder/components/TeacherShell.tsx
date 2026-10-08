@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Bell,
   CalendarDays,
@@ -6,7 +6,8 @@ import {
   LogOut,
   UserRound,
 } from 'lucide-react'
-import type { Profile } from '../lib/types'
+import type { AppNotification, Profile } from '../lib/types'
+import TeacherNotificationPanel from './TeacherNotificationPanel'
 
 export type TeacherTab = 'calendar' | 'worklog' | 'profile'
 
@@ -23,6 +24,9 @@ type TeacherShellProps = {
   unreadNotifications?: number
   /** Abre o painel de notificações existente, quando fornecido. */
   onOpenNotifications?: () => void
+  notifications?: AppNotification[]
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
   /** Mantém o logout existente fora do shell. */
   onLogout?: () => void | Promise<void>
   /** Ação opcional do suporte; permanece desacoplada da camada visual. */
@@ -112,6 +116,9 @@ export default function TeacherShell({
   children,
   unreadNotifications = 0,
   onOpenNotifications,
+  notifications = [],
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
   onLogout,
   onSupport,
   pageSubtitles,
@@ -120,6 +127,7 @@ export default function TeacherShell({
   const pageTitle = pageTitles[activeTab]
   const pageSubtitle = pageSubtitles?.[activeTab] ?? defaultPageSubtitles[activeTab]
   const hasUnreadNotifications = unreadNotifications > 0
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   return (
     <div className="teacher-portal-shell">
@@ -161,23 +169,37 @@ export default function TeacherShell({
           </div>
 
           <div className="teacher-context-header__actions">
-            <button
-              type="button"
-              className="teacher-notification-button"
-              aria-label={
-                hasUnreadNotifications
-                  ? `${unreadNotifications} notificações não lidas`
-                  : 'Notificações'
-              }
-              onClick={onOpenNotifications}
-            >
-              <Bell aria-hidden="true" size={18} strokeWidth={1.9} />
-              {hasUnreadNotifications && (
-                <span className="teacher-notification-button__badge" aria-hidden="true">
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                </span>
+            <div className="teacher-notification-anchor">
+              <button
+                type="button"
+                className="teacher-notification-button"
+                aria-label={
+                  hasUnreadNotifications
+                    ? `${unreadNotifications} notificações não lidas`
+                    : 'Notificações'
+                }
+                aria-expanded={notificationsOpen}
+                onClick={() => {
+                  setNotificationsOpen((open) => !open)
+                  onOpenNotifications?.()
+                }}
+              >
+                <Bell aria-hidden="true" size={18} strokeWidth={1.9} />
+                {hasUnreadNotifications && (
+                  <span className="teacher-notification-button__badge" aria-hidden="true">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                )}
+              </button>
+              {notificationsOpen && (
+                <TeacherNotificationPanel
+                  notifications={notifications}
+                  onClose={() => setNotificationsOpen(false)}
+                  onMarkRead={(id) => onMarkNotificationRead?.(id)}
+                  onMarkAllRead={() => onMarkAllNotificationsRead?.()}
+                />
               )}
-            </button>
+            </div>
 
             <div className="teacher-profile-chip" title={profile.email}>
               <span className="teacher-profile-chip__avatar" aria-hidden="true">

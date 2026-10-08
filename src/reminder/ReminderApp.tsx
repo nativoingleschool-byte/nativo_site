@@ -8,6 +8,7 @@ import { ToastProvider, useToast } from './lib/toast'
 import { getDeviceLanguage, getStoredLanguage, Language, storeLanguage, t } from './lib/i18n'
 import {
   BrowserPermission,
+  AppNotification,
   InstallPromptEvent,
   Lesson,
   Profile,
@@ -243,6 +244,21 @@ const createPreviewFixture = () => {
 
 const previewFixture = createPreviewFixture()
 
+const previewNotifications: AppNotification[] = [
+  {
+    id: 'preview-notification-lesson',
+    user_id: previewTeacherId,
+    type: 'lesson_reminder',
+    title: 'Aula próxima',
+    body: 'A aula de Aulas de Inglês começa hoje às 20:00.',
+    entity_type: 'lesson',
+    entity_id: 'preview-lesson-next',
+    action_url: '/reminder?lessonId=preview-lesson-next',
+    dedupe_key: 'preview-lesson-next',
+    created_at: new Date().toISOString(),
+  },
+]
+
 function ReminderAppInner() {
   const { toast } = useToast()
   const visualPreviewMode = isVisualPreviewMode()
@@ -263,6 +279,7 @@ function ReminderAppInner() {
   }))
   const [loginError, setLoginError] = useState('')
   const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? previewFixture.teacher : null))
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => (visualPreviewMode ? previewNotifications : []))
   const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? previewFixture.profiles : []))
   const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? previewFixture.lessons : []))
   const [userForm, setUserForm] = useState<UserFormState>(defaultUserForm())
@@ -534,6 +551,47 @@ function ReminderAppInner() {
     if (error) throw error
     setProfile(data as Profile)
     return data as Profile
+  }
+
+  const refreshNotifications = async (userId = session?.user?.id) => {
+    if (!userId || visualPreviewMode || !isSupabaseConfigured) return
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (error) {
+      console.warn('Notifications could not be loaded:', error.message)
+      return
+    }
+    setNotifications((data ?? []) as AppNotification[])
+  }
+
+  const markNotificationRead = async (id: string) => {
+    if (visualPreviewMode) {
+      setNotifications((items) => items.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item))
+      return
+    }
+    const readAt = new Date().toISOString()
+    setNotifications((items) => items.map((item) => item.id === id ? { ...item, read_at: readAt } : item))
+    const { error } = await supabase.from('notifications').update({ read_at: readAt }).eq('id', id).eq('user_id', profile?.id ?? '')
+    if (error) {
+      console.warn('Notification could not be marked as read:', error.message)
+      void refreshNotifications()
+    }
+  }
+
+  const markAllNotificationsRead = async () => {
+    const readAt = new Date().toISOString()
+    setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })))
+    if (visualPreviewMode || !profile?.id) return
+    const { error } = await supabase.from('notifications').update({ read_at: readAt }).eq('user_id', profile.id).is('read_at', null)
+    if (error) {
+      console.warn('Notifications could not be marked as read:', error.message)
+      void refreshNotifications()
+    }
   }
 
   const refreshProfiles = async () => {
@@ -904,6 +962,7 @@ function ReminderAppInner() {
       setAvailabilities(previewFixture.availabilities)
       setInvoices([])
       setTeacherNotesList([])
+      setNotifications(previewNotifications)
       setAppError('')
       return
     }
@@ -913,6 +972,7 @@ function ReminderAppInner() {
       setLessons([])
       setInvoices([])
       setTeacherNotesList([])
+      setNotifications([])
       setAvailabilities([])
       return
     }
@@ -923,6 +983,7 @@ function ReminderAppInner() {
       try {
         const currentProfile = await refreshProfile(session.user.id)
         if (cancelled) return
+        await refreshNotifications(session.user.id)
 
         if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
           // Fire all independent fetches in parallel — no need to wait for each one sequentially
@@ -988,6 +1049,9 @@ function ReminderAppInner() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_availability' }, () => {
         void refreshAvailabilities()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` }, () => {
+        void refreshNotifications(session.user.id)
       })
       .subscribe()
 
@@ -1235,6 +1299,27 @@ function ReminderAppInner() {
 
     void sendNotifications()
   }, [dueNotifications, notificationPermission, profile])
+
+  useEffect(() => {
+    if (visualPreviewMode || !profile?.id || !isSupabaseConfigured || dueNotifications.length === 0) return
+    const persistDueNotifications = async () => {
+      const rows = dueNotifications.map((item) => ({
+        user_id: item.userId,
+        type: 'lesson_reminder',
+        title: item.title,
+        body: item.body,
+        entity_type: 'lesson',
+        entity_id: item.lessonId,
+        action_url: `/reminder?lessonId=${encodeURIComponent(item.lessonId)}`,
+        action_intent: Object.values(item.intentMap)[0] ?? null,
+        dedupe_key: item.key,
+      }))
+      const { error } = await supabase.from('notifications').upsert(rows, { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
+      if (!error) void refreshNotifications(profile.id)
+      else console.warn('Lesson reminders could not be persisted:', error.message)
+    }
+    void persistDueNotifications()
+  }, [dueNotifications, profile?.id, visualPreviewMode])
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault()
@@ -2130,7 +2215,10 @@ function ReminderAppInner() {
             profile={profile}
             activeTab={teacherTab}
             onTabChange={setTeacherTab}
-            unreadNotifications={dueNotifications.length}
+            notifications={notifications}
+            unreadNotifications={notifications.filter((item) => !item.read_at).length}
+            onMarkNotificationRead={markNotificationRead}
+            onMarkAllNotificationsRead={markAllNotificationsRead}
             onLogout={handleLogout}
             pageSubtitles={{
               calendar: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(now).replace(/^./, (letter) => letter.toUpperCase()),

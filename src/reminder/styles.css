@@ -3187,3 +3187,40 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   body:has(.teacher-agenda-view) .teacher-calendar-card { margin-inline: 14px; }
   body:has(.teacher-agenda-view) .teacher-calendar-card { padding: 0 14px 14px; }
 }
+
+
+.teacher-notification-anchor { position: relative; display: flex; }
+.teacher-notification-popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 12px);
+  right: -10px;
+  width: min(390px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid #dfe8ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(28, 55, 78, .18);
+}
+.teacher-notification-popover__header { display: flex; align-items: flex-start; justify-content: space-between; padding: 17px 18px 13px; border-bottom: 1px solid #edf1f3; }
+.teacher-notification-popover__kicker { color: #9aa8b2; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.teacher-notification-popover__header h2 { margin: 4px 0 0; color: #213c59; font-size: 17px; letter-spacing: -.02em; }
+.teacher-notification-popover__close { display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 50%; background: #f5f8fa; color: #718096; }
+.teacher-notification-popover__close:hover { background: #eaf2f6; color: #17365d; }
+.teacher-notification-popover__mark-all { display: inline-flex; align-items: center; gap: 6px; margin: 11px 17px 2px; padding: 0; border: 0; background: transparent; color: #286087; font-size: 10px; font-weight: 750; }
+.teacher-notification-popover__mark-all:hover { color: #17365d; text-decoration: underline; }
+.teacher-notification-popover__list { max-height: 380px; overflow-y: auto; padding: 7px; }
+.teacher-notification-popover__empty { display: grid; justify-items: center; gap: 6px; padding: 35px 20px 39px; color: #91a0aa; text-align: center; }
+.teacher-notification-popover__empty svg { color: #c4d1d8; }
+.teacher-notification-popover__empty strong { color: #496176; font-size: 12px; }
+.teacher-notification-popover__empty span { font-size: 10px; }
+.teacher-notification-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) 7px; align-items: start; gap: 10px; width: 100%; padding: 11px 10px; border: 0; border-radius: 11px; background: transparent; color: #4e6273; text-align: left; }
+.teacher-notification-item:hover { background: #f5f9fb; }
+.teacher-notification-item.is-unread { background: #f5fafc; }
+.teacher-notification-item__icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #e9f2f7; color: #2c658d; }
+.teacher-notification-item__content { display: grid; min-width: 0; gap: 3px; }
+.teacher-notification-item__content strong { overflow: hidden; color: #2d4862; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.teacher-notification-item__content span { color: #718391; font-size: 10px; line-height: 1.35; }
+.teacher-notification-item__content small { color: #a0adb5; font-size: 9px; }
+.teacher-notification-item__dot { width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: #e0a728; }
+@media (max-width: 800px) { .teacher-notification-popover { position: fixed; top: 72px; right: 14px; } }

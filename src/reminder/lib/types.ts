@@ -101,6 +101,22 @@ export type ReminderNotification = {
   intentMap: Record<string, ReminderIntent>
 }
 
+export type AppNotification = {
+  id: string
+  user_id: string
+  type: string
+  title: string
+  body: string
+  entity_type?: string | null
+  entity_id?: string | null
+  action_url?: string | null
+  action_intent?: string | null
+  dedupe_key?: string | null
+  read_at?: string | null
+  created_at: string
+  expires_at?: string | null
+}
+
 export type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
@@ -150,6 +166,5 @@ export type TeacherInvoice = {
   status?: string
   created_at: string
 }
-
 
 
