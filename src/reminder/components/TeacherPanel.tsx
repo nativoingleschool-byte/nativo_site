@@ -869,6 +869,7 @@ export default function TeacherPanel({
             onUpdateLessonStatus={handleUpdateTodayLessonStatus}
             onOpenLesson={handleOpenEditLesson}
             onAddLesson={handleOpenAddLesson}
+            onCreatePreviewLesson={createLessonFromDraft}
             onAddAvailability={() => toast.info(t(language, 'tap_calendar_to_add') || 'Selecione um horário para adicionar disponibilidade.')}
           />
         )}
