@@ -133,9 +133,12 @@ const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
 // Fixture visual isolado: nunca é ativado no domínio oficial ou na main.
 // O formato replica Profile/Lesson/TeacherAvailability para que a troca pelos
 // dados reais seja apenas a remoção do modo preview, sem refatorar componentes.
-const isVisualPreviewMode = () =>
-  typeof window !== 'undefined' &&
-  (window.location.hostname.startsWith('nativo-site-git-refactor-teach-') || import.meta.env.VITE_VISUAL_PREVIEW === 'true')
+const isVisualPreviewMode = () => {
+  if (typeof window === 'undefined') return false
+  const { hostname, search } = window.location
+  const previewDeployment = hostname.endsWith('.vercel.app') && hostname.startsWith('nativo-site-') && new URLSearchParams(search).has('preview')
+  return previewDeployment || hostname.startsWith('nativo-site-git-refactor-teach-') || import.meta.env.VITE_VISUAL_PREVIEW === 'true'
+}
 
 const previewTeacherId = 'preview-teacher-eric'
 const previewStudentId = 'preview-student-ladiele'
