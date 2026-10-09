@@ -930,6 +930,7 @@ function ReminderAppInner() {
   }
 
   const refreshLessons = async () => {
+    if (visualPreviewMode) return
     // Limit payload to recent and future lessons (last 6 months) for faster loading
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
@@ -1501,6 +1502,10 @@ function ReminderAppInner() {
   }
 
   const updateLesson = async (lessonId: string, changes: Partial<Lesson>) => {
+    if (visualPreviewMode) {
+      setLessons((items) => items.map((lesson) => lesson.id === lessonId ? { ...lesson, ...changes } : lesson))
+      return
+    }
     const { error } = await supabase.from('lessons').update(changes).eq('id', lessonId)
     if (error) {
       setAppError(error.message)
@@ -1595,6 +1600,24 @@ function ReminderAppInner() {
       starts_at: /[zZ]$|[+-]\d{2}:\d{2}$/.test(draft.starts_at) ? draft.starts_at : new Date(draft.starts_at).toISOString(),
     }
     try {
+      if (visualPreviewMode) {
+        const created: Lesson = {
+          id: `preview-lesson-${Date.now()}`,
+          subject: payload.subject,
+          class_name: payload.class_name ?? '',
+          student_id: payload.student_id,
+          teacher_id: payload.teacher_id ?? previewTeacherId,
+          starts_at: payload.starts_at,
+          duration_minutes: payload.duration_minutes,
+          meeting_url: payload.meeting_url ?? null,
+          student_attendance: null,
+          student_lesson_status: null,
+          teacher_lesson_status: payload.teacher_lesson_status ?? null,
+          teacher_attendance: null,
+        }
+        setLessons((items) => [...items, created])
+        return created
+      }
       const created = await callLessonsApi<Lesson>('create_lesson', payload)
       await refreshLessons()
       return created
@@ -1623,6 +1646,15 @@ function ReminderAppInner() {
       starts_at: draft.starts_at ? (/[zZ]$|[+-]\d{2}:\d{2}$/.test(draft.starts_at) ? draft.starts_at : new Date(draft.starts_at).toISOString()) : undefined,
     }
     try {
+      if (visualPreviewMode) {
+        let updated: Lesson | undefined
+        setLessons((items) => items.map((lesson) => {
+          if (lesson.id !== payload.lesson_id) return lesson
+          updated = { ...lesson, ...payload } as Lesson
+          return updated
+        }))
+        return updated
+      }
       const updated = await callLessonsApi<Lesson>('update_lesson', payload)
       await refreshLessons()
       return updated
@@ -1659,6 +1691,24 @@ function ReminderAppInner() {
     }
 
     try {
+      if (visualPreviewMode) {
+        const newLessons: Lesson[] = payload.student_ids.map((studentId, index) => ({
+          id: `preview-group-${Date.now()}-${index}`,
+          subject: payload.subject,
+          class_name: payload.class_name,
+          student_id: studentId,
+          teacher_id: payload.teacher_id,
+          starts_at: payload.starts_at,
+          duration_minutes: payload.duration_minutes,
+          meeting_url: null,
+          student_attendance: null,
+          student_lesson_status: null,
+          teacher_lesson_status: null,
+          teacher_attendance: null,
+        }))
+        setLessons((items) => [...items, ...newLessons])
+        return
+      }
       await callLessonsApi('create_group', payload)
       await refreshLessons()
     } catch (error) {

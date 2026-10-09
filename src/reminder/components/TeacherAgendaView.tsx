@@ -58,10 +58,11 @@ export default function TeacherAgendaView({
   onAddLesson,
   onAddAvailability,
 }: TeacherAgendaViewProps) {
-  const visualPreview = typeof window !== 'undefined' && window.location.hostname.startsWith('nativo-site-git-refactor-teach-')
+  const visualPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app') && (window.location.hostname.startsWith('nativo-site-') || window.location.hostname.startsWith('lesslesson-reminder-')) && new URLSearchParams(window.location.search).has('preview')
   const previewClassStudents = '4 alunos (Ladiele, Adielson, Jadson, Renan)'
   const [previewModal, setPreviewModal] = useState<'details' | 'new' | 'availability' | null>(null)
   const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false)
+  const [previewStudents, setPreviewStudents] = useState(['Ladiele Rodrigues'])
   const calendarEvents: CalendarEventItem[] = [
     ...(visualPreview ? [] : lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
@@ -203,7 +204,7 @@ export default function TeacherAgendaView({
             {previewModal === 'new' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
               <h2>Adicionar Nova Aula</h2>
-              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (Zoom, opcional)<input defaultValue="https://zoom.us/j/00000000000" /></label><label className="is-wide">Alunos (separados por vírgula)<input defaultValue="Ladiele Rodrigues, Adielson Pires, Jadson Bibiano, Renan Vasconcelos" /></label></div>
+              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (Zoom, opcional)<input defaultValue="https://zoom.us/j/00000000000" /></label><div className="is-wide reference-student-checkboxes"><span>Alunos</span>{['Ladiele Rodrigues', 'Adielson Pires', 'Jadson Bibiano', 'Renan Vasconcelos'].map((name) => <label key={name}><input type="checkbox" checked={previewStudents.includes(name)} onChange={(event) => setPreviewStudents((current) => event.target.checked ? [...new Set([...current, name])] : current.filter((item) => item !== name))} />{name}</label>)}</div></div>
               <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Cancelar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
             </>}
             {previewModal === 'availability' && <>

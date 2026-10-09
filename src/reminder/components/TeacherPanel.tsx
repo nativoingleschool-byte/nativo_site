@@ -2023,7 +2023,7 @@ export default function TeacherPanel({
 
       {attendanceLessons.length > 0 && createPortal(
         <div className="reminder-app-scope modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div className="modal-card animate-fade-in" style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div className={`modal-card animate-fade-in ${typeof window !== 'undefined' && window.location.search.includes('preview=') ? 'teacher-preview-attendance-modal' : ''}`} style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
             <div className="panel-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
               <div><p className="section-label">CHAMADA DA AULA</p><h2 style={{ fontSize: '1.4rem' }}>Quem compareceu?</h2></div>
             </div>

@@ -3227,3 +3227,17 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 
 /* O indicador do sino deve ser controlado somente pelo contador real de não lidas. */
 .teacher-notification-button::after { display: none !important; }
+
+/* Preview: chamada com a mesma linguagem visual dos modais de referência. */
+.teacher-preview-attendance-modal { max-width: 430px !important; padding: 28px !important; border: 1px solid #e0e6ea !important; border-radius: 18px !important; background: #fff !important; box-shadow: 0 20px 60px rgba(26,54,75,.2) !important; color: #324d66 !important; }
+.teacher-preview-attendance-modal .panel-header { border-color: #edf1f3 !important; }
+.teacher-preview-attendance-modal .section-label { color: #9aa8b2 !important; }
+.teacher-preview-attendance-modal h2 { color: #1f4268 !important; }
+.teacher-preview-attendance-modal p { color: #72808d !important; }
+.teacher-preview-attendance-modal label { border-color: #dce5e9 !important; color: #324d66 !important; background: #fff !important; }
+.teacher-preview-attendance-modal .secondary-button { border-color: #dfe6ea !important; color: #657684 !important; background: #fff !important; }
+.teacher-preview-attendance-modal .primary-button { color: #fff !important; background: #1f4268 !important; }
+.reference-student-checkboxes { display: grid; gap: 7px; color: #657684; font-size: 10px; font-weight: 700; }
+.reference-student-checkboxes > span { margin-bottom: 1px; }
+.reference-student-checkboxes label { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 9px; border: 1px solid #dce5e9; border-radius: 8px; color: #324d66; background: #fff; font-size: 11px; font-weight: 600; }
+.reference-student-checkboxes input { accent-color: #1f4268; }
