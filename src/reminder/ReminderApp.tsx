@@ -136,7 +136,7 @@ const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
 const isVisualPreviewMode = () => {
   if (typeof window === 'undefined') return false
   const { hostname, search } = window.location
-  const previewDeployment = hostname.endsWith('.vercel.app') && hostname.startsWith('nativo-site-') && new URLSearchParams(search).has('preview')
+  const previewDeployment = hostname.endsWith('.vercel.app') && (hostname.startsWith('nativo-site-') || hostname.startsWith('lesslesson-reminder-')) && new URLSearchParams(search).has('preview')
   return previewDeployment || hostname.startsWith('nativo-site-git-refactor-teach-') || import.meta.env.VITE_VISUAL_PREVIEW === 'true'
 }
 
