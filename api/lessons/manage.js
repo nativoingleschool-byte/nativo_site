@@ -195,6 +195,9 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   if (payload.teacher_lesson_status !== undefined) {
     sharedUpdate.teacher_lesson_status = payload.teacher_lesson_status
   }
+  if (payload.teacher_attendance !== undefined) {
+    sharedUpdate.teacher_attendance = payload.teacher_attendance
+  }
 
   const { error: updateError } = await supabaseAdmin.from('lessons').update(sharedUpdate).in('id', lessonIds)
   if (updateError) {
@@ -305,6 +308,9 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
 
   if (payload.teacher_lesson_status !== undefined) {
     updateData.teacher_lesson_status = payload.teacher_lesson_status
+  }
+  if (payload.teacher_attendance !== undefined) {
+    updateData.teacher_attendance = payload.teacher_attendance
   }
 
   const { data: updated, error: updateError } = await supabaseAdmin

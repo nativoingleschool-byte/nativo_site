@@ -3224,3 +3224,6 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .teacher-notification-item__content small { color: #a0adb5; font-size: 9px; }
 .teacher-notification-item__dot { width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: #e0a728; }
 @media (max-width: 800px) { .teacher-notification-popover { position: fixed; top: 72px; right: 14px; } }
+
+/* O indicador do sino deve ser controlado somente pelo contador real de não lidas. */
+.teacher-notification-button::after { display: none !important; }

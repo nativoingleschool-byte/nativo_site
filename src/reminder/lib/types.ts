@@ -35,6 +35,7 @@ export type AccountFormState = {
 export type StudentAttendance = 'attend' | 'cancel' | null
 export type StudentLessonStatus = 'done' | 'not_done' | null
 export type TeacherLessonStatus = 'happened' | 'not_happened' | 'student_no_show' | null
+export type TeacherAttendance = 'present' | 'absent' | null
 export type BrowserPermission = NotificationPermission | 'unsupported'
 export type ReminderIntent =
   | 'attend'
@@ -87,6 +88,7 @@ export type Lesson = {
   student_attendance: StudentAttendance
   student_lesson_status: StudentLessonStatus
   teacher_lesson_status: TeacherLessonStatus
+  teacher_attendance?: TeacherAttendance
   created_at?: string
   ends_at?: string
   recurrence?: string
@@ -167,4 +169,3 @@ export type TeacherInvoice = {
   status?: string
   created_at: string
 }
-

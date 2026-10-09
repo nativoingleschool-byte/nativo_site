@@ -48,6 +48,7 @@ create table if not exists public.lessons (
   student_attendance text null check (student_attendance in ('attend', 'cancel')),
   student_lesson_status text null check (student_lesson_status in ('done', 'not_done')),
   teacher_lesson_status text null check (teacher_lesson_status in ('happened', 'not_happened', 'student_no_show')),
+  teacher_attendance text null check (teacher_attendance in ('present', 'absent')),
   created_at timestamptz not null default timezone('utc', now())
 );
 

@@ -1,6 +1,6 @@
 import { FormEvent, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, AccountFormState, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
+import { Lesson, Profile, AccountFormState, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -72,6 +72,7 @@ interface TeacherPanelProps {
     starts_at?: string
     duration_minutes?: number
     meeting_url?: string | null
+    teacher_attendance?: TeacherAttendance
     teacher_lesson_status?: TeacherLessonStatus
   }) => Promise<Lesson | undefined>
   deleteTeacherSingleLesson?: (lessonId: string) => Promise<void>
@@ -179,6 +180,7 @@ export default function TeacherPanel({
 
   // Add Lesson Form State
   const [newLessonStudentId, setNewLessonStudentId] = useState('')
+  const [newLessonStudentIds, setNewLessonStudentIds] = useState<string[]>([])
   const [newLessonStudentName, setNewLessonStudentName] = useState('')
   const [addStudentMode, setAddStudentMode] = useState<'select' | 'custom'>('select')
   const [newLessonSubject, setNewLessonSubject] = useState('')
@@ -194,6 +196,8 @@ export default function TeacherPanel({
   const [editLessonDuration, setEditLessonDuration] = useState(60)
   const [editLessonMeetingUrl, setEditLessonMeetingUrl] = useState('')
   const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
+  const [attendanceLessons, setAttendanceLessons] = useState<Lesson[]>([])
+  const [attendanceDraft, setAttendanceDraft] = useState<Record<string, boolean>>({})
 
   // Propose Class Form State
   const [proposeStudentId, setProposeStudentId] = useState('')
@@ -277,6 +281,15 @@ export default function TeacherPanel({
   }, [teacherLessons])
 
   const handleUpdateTodayLessonStatus = async (lessonId: string, status: TeacherLessonStatus) => {
+    if (status === 'happened') {
+      const target = lessons.find((lesson) => lesson.id === lessonId)
+      if (!target) return
+      const group = lessons.filter((lesson) => lesson.teacher_id === target.teacher_id && lesson.starts_at === target.starts_at && lesson.subject === target.subject)
+      const promptLessons = group.length > 0 ? group : [target]
+      setAttendanceLessons(promptLessons)
+      setAttendanceDraft(Object.fromEntries(promptLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
+      return
+    }
     try {
       if (updateTeacherSingleLesson) {
         await updateTeacherSingleLesson({ lesson_id: lessonId, teacher_lesson_status: status })
@@ -287,14 +300,33 @@ export default function TeacherPanel({
       void trackEvent('lesson_status_update', { lesson_id: lessonId, status, source: 'quick_bar' }, { userRole: 'teacher', userId: profile.id })
       await refreshLessons()
       toast.success(
-        status === 'happened'
-          ? (language === 'es' ? 'Clase marcada como realizada' : language === 'en' ? 'Lesson marked as happened' : 'Aula marcada como realizada!')
-          : status === 'student_no_show'
+        status === 'student_no_show'
           ? (language === 'es' ? 'Marcado como no compareció' : language === 'en' ? 'Marked as student no-show' : 'Marcado como não compareceu.')
           : (language === 'es' ? 'Clase cancelada' : language === 'en' ? 'Lesson canceled' : 'Aula cancelada.')
       )
     } catch (err: any) {
       toast.error(err.message || 'Erro ao atualizar aula.')
+    }
+  }
+
+  const saveAttendance = async () => {
+    if (attendanceLessons.length === 0) return
+    try {
+      for (const lesson of attendanceLessons) {
+        const teacherAttendance: TeacherAttendance = attendanceDraft[lesson.id] ? 'present' : 'absent'
+        if (updateTeacherSingleLesson) {
+          await updateTeacherSingleLesson({ lesson_id: lesson.id, teacher_lesson_status: 'happened', teacher_attendance: teacherAttendance })
+        } else {
+          const { error } = await supabase.from('lessons').update({ teacher_lesson_status: 'happened', teacher_attendance: teacherAttendance }).eq('id', lesson.id)
+          if (error) throw error
+        }
+      }
+      await refreshLessons()
+      setAttendanceLessons([])
+      setAttendanceDraft({})
+      toast.success('Presença registrada com sucesso.')
+    } catch (err: any) {
+      toast.error(err.message || 'Não foi possível registrar a presença.')
     }
   }
 
@@ -400,6 +432,7 @@ export default function TeacherPanel({
     }
     const defaultStudent = sortedStudents[0]?.id || '__NEW__'
     setNewLessonStudentId(defaultStudent)
+    setNewLessonStudentIds(defaultStudent === '__NEW__' ? [] : [defaultStudent])
     setNewLessonStudentName('')
     setNewLessonSubject(t(language, 'individual_class'))
     setNewLessonDuration(60)
@@ -424,7 +457,8 @@ export default function TeacherPanel({
   const handleAddLessonSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const isCustom = newLessonStudentId === '__NEW__' || !newLessonStudentId
-    const studentIdentifier = isCustom ? newLessonStudentName.trim() : newLessonStudentId
+    const selectedStudentIds = isCustom ? [] : newLessonStudentIds.filter(Boolean)
+    const studentIdentifier = isCustom ? newLessonStudentName.trim() : selectedStudentIds[0]
     if (!studentIdentifier || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
@@ -436,7 +470,16 @@ export default function TeacherPanel({
       const studentProfile = profilesById[newLessonStudentId]
       const className = studentProfile?.class_name || ''
 
-      if (createTeacherSingleLesson) {
+      if (selectedStudentIds.length > 1) {
+        await createLessonFromDraft({
+          student_ids: selectedStudentIds,
+          teacher_id: profile.id,
+          subject: newLessonSubject.trim(),
+          class_name: profilesById[selectedStudentIds[0]]?.class_name || '',
+          starts_at: utcIso,
+          duration_minutes: newLessonDuration,
+        })
+      } else if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
           student_id: studentIdentifier,
           teacher_id: profile.id,
@@ -580,6 +623,12 @@ export default function TeacherPanel({
     try {
       const targetLessons = Array.isArray(target) ? target : [target]
       const lessonIds = targetLessons.map((l) => l.id)
+
+      if (newStatus === 'happened') {
+        setAttendanceLessons(targetLessons)
+        setAttendanceDraft(Object.fromEntries(targetLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
+        return
+      }
 
       if (updateTeacherSingleLesson && lessonIds.length === 1) {
         await updateTeacherSingleLesson({
@@ -1255,6 +1304,9 @@ export default function TeacherPanel({
                   const isNoShow = session.is_no_show
                   const isNotHappened = session.is_cancelled
                   const isScheduled = session.is_scheduled
+                  const attendanceRecorded = session.lessons.filter((lesson) => lesson.teacher_attendance)
+                  const presentCount = session.lessons.filter((lesson) => lesson.teacher_attendance === 'present').length
+                  const absentCount = session.lessons.filter((lesson) => lesson.teacher_attendance === 'absent').length
 
                   const isPayable = isHappened || isNoShow
                   const sessionHours = (session.duration_minutes || 60) / 60
@@ -1311,6 +1363,11 @@ export default function TeacherPanel({
                           <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isPayable ? '#10b981' : '#64748b' }}>
                             {currency === 'BRL' ? 'R$' : currency} {sessionValue.toFixed(2)}
                           </span>
+                          {attendanceRecorded.length > 0 && (
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              Presença: {presentCount} presente{presentCount === 1 ? '' : 's'} · {absentCount} falta{absentCount === 1 ? '' : 's'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1816,25 +1873,29 @@ export default function TeacherPanel({
                     </button>
                   </div>
 
-                  <select
-                    required
-                    value={newLessonStudentId}
-                    onChange={(e) => {
-                      setNewLessonStudentId(e.target.value)
-                      if (e.target.value !== '__NEW__') {
-                        setNewLessonStudentName('')
-                      }
-                    }}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                  >
-                    <option value="">{t(language, 'select_student')}...</option>
+                  <div role="group" aria-label="Selecionar alunos" style={{ display: 'grid', gap: '0.45rem', maxHeight: '180px', overflowY: 'auto', padding: '0.65rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem' }}>
                     {sortedStudents.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
-                      </option>
+                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem', borderRadius: '0.4rem', background: newLessonStudentIds.includes(s.id) ? 'rgba(56, 189, 248, 0.12)' : 'transparent', color: '#e2e8f0', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={newLessonStudentIds.includes(s.id)}
+                          onChange={() => {
+                            setNewLessonStudentIds((current) => {
+                              const next = current.includes(s.id) ? current.filter((id) => id !== s.id) : [...current, s.id]
+                              setNewLessonStudentId(next[0] || '')
+                              return next
+                            })
+                            setNewLessonStudentName('')
+                          }}
+                        />
+                        <span>{s.full_name} {s.class_name ? `(${s.class_name})` : ''}</span>
+                      </label>
                     ))}
-                    <option value="__NEW__">✍️ + Digitar outro aluno...</option>
-                  </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem', color: '#38bdf8', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={newLessonStudentId === '__NEW__'} onChange={(e) => { setNewLessonStudentId(e.target.checked ? '__NEW__' : (newLessonStudentIds[0] || '')); if (!e.target.checked) setNewLessonStudentName('') }} />
+                      <span>+ Digitar outro aluno</span>
+                    </label>
+                  </div>
 
                   {(newLessonStudentId === '__NEW__' || sortedStudents.length === 0) && (
                     <div style={{ marginTop: '0.65rem' }}>
@@ -1959,6 +2020,31 @@ export default function TeacherPanel({
           </div>,
           document.body
         )}
+
+      {attendanceLessons.length > 0 && createPortal(
+        <div className="reminder-app-scope modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div className="modal-card animate-fade-in" style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <div className="panel-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div><p className="section-label">CHAMADA DA AULA</p><h2 style={{ fontSize: '1.4rem' }}>Quem compareceu?</h2></div>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>Marque os alunos presentes. Os desmarcados serão registrados como faltantes.</p>
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {attendanceLessons.map((lesson) => {
+                const student = profilesById[lesson.student_id] || students.find((item) => item.id === lesson.student_id)
+                return <label key={lesson.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.65rem', color: '#f8fafc', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={Boolean(attendanceDraft[lesson.id])} onChange={(event) => setAttendanceDraft((current) => ({ ...current, [lesson.id]: event.target.checked }))} />
+                  <span>{student?.full_name || lesson.class_name || 'Aluno'}</span>
+                </label>
+              })}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button type="button" className="secondary-button" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}>Cancelar</button>
+              <button type="button" className="primary-button" onClick={() => void saveAttendance()}>Salvar presença</button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {/* Modal: Modificar Aula */}
       {editingLesson &&

@@ -19,6 +19,7 @@ import {
   TeacherNote,
   TeacherAvailability,
   TeacherInvoice,
+  TeacherAttendance,
 } from './lib/types'
 import {
   formatShortDate,
@@ -1609,6 +1610,7 @@ function ReminderAppInner() {
     starts_at?: string
     duration_minutes?: number
     meeting_url?: string | null
+    teacher_attendance?: TeacherAttendance
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
   }) => {
     setAppError('')
