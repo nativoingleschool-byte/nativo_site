@@ -66,7 +66,7 @@ export default function TeacherAgendaView({
   const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false)
   const [previewStudents, setPreviewStudents] = useState(['Ladiele Rodrigues'])
   const calendarEvents: CalendarEventItem[] = [
-    ...(visualPreview ? [] : lessons
+    ...lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
       .map((lesson) => ({
         id: lesson.id,
@@ -77,8 +77,8 @@ export default function TeacherAgendaView({
         subtitle: getStudentNames(lesson, profilesById, students),
         color: lesson.teacher_lesson_status === 'happened' ? ('green' as const) : ('blue' as const),
         sourceData: lesson,
-      }))),
-    ...(visualPreview ? [] : availabilities
+      })),
+    ...availabilities
       .filter((availability) => availability.teacher_id === profile.id)
       .map((availability) => ({
         id: `availability-${availability.id}`,
@@ -89,7 +89,7 @@ export default function TeacherAgendaView({
         subtitle: 'Horário livre',
         color: 'green' as const,
         sourceData: availability,
-      }))),
+      })),
   ]
 
   const nextLesson = (visualPreview ? lessons.find((lesson) => lesson.id === 'preview-lesson-next') : upcomingLessons[0])
