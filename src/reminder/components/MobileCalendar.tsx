@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { addMonths, addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
+import { format, addDays, startOfWeek, isSameDay, setHours, setMinutes, startOfDay, addWeeks, subWeeks } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { ptBR } from 'date-fns/locale/pt-BR'
 import { es as esLocale } from 'date-fns/locale/es'
@@ -25,19 +25,14 @@ interface MobileCalendarProps {
   onSelectEvent: (event: CalendarEventItem) => void
   onSelectAgendaEvent?: (event: CalendarEventItem) => void
   onSelectSlot: (start: Date) => void
-  onEventDrop?: (event: CalendarEventItem, newStart: Date, newEnd: Date) => void
+  onEventDrop?: (event: CalendarEventItem, newStart: Date, newEnd: Date) => void // Kept for API compatibility, though DnD is omitted for mobile simplicity
 }
 
-/**
- * Grade mensal do portal docente.
- *
- * A camada abaixo é apenas a apresentação do calendário: os eventos continuam
- * vindo do mesmo array, os cliques continuam chamando os mesmos callbacks e
- * nenhuma regra de persistência ou consulta foi alterada.
- */
 export default function MobileCalendar({
   events,
   language,
+  dayStartHour = 0,
+  dayEndHour = 24,
   onSelectEvent,
   onSelectAgendaEvent,
   onSelectSlot,
@@ -47,36 +42,15 @@ export default function MobileCalendar({
   const locale = locales[language] || enUS
   const today = new Date()
 
-  const calendarDays = useMemo(() => {
-    const monthStart = startOfMonth(currentDate)
-    const monthEnd = endOfMonth(currentDate)
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
-    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
-    const days: Date[] = []
-    let cursor = gridStart
-    while (cursor <= gridEnd) {
-      days.push(cursor)
-      cursor = addDays(cursor, 1)
-    }
-    return days
-  }, [currentDate])
+  useEffect(() => {
+    if (initialScrolledRef.current || !scrollContainerRef.current) return
+    const el = scrollContainerRef.current
 
-  const weekDays = useMemo(() => {
-    const monday = startOfWeek(currentDate, { weekStartsOn: 1 })
-    return Array.from({ length: 7 }, (_, index) => addDays(monday, index))
-  }, [currentDate])
-
-  const eventsByDay = useMemo(() => {
-    const grouped = new Map<string, CalendarEventItem[]>()
-    events.forEach((event) => {
-      const key = format(event.start, 'yyyy-MM-dd')
-      const current = grouped.get(key) || []
-      current.push(event)
-      grouped.set(key, current)
+    // Check if there are any events earlier than 7am in the visible events
+    const hasEarlyEvents = events.some((e) => {
+      const h = e.start.getHours()
+      return h >= 0 && h < 7
     })
-    grouped.forEach((items) => items.sort((a, b) => a.start.getTime() - b.start.getTime()))
-    return grouped
-  }, [events])
 
   const monthLabel = format(currentDate, 'MMMM yyyy', { locale })
   const todayKey = format(today, 'yyyy-MM-dd')
@@ -86,10 +60,18 @@ export default function MobileCalendar({
   const agendaEvents = Array.from(eventsByDay.values()).flat().sort((a, b) => a.start.getTime() - b.start.getTime())
 
   return (
-    <div className="teacher-calendar-shell" aria-label={language === 'pt' ? 'Calendário mensal' : 'Monthly calendar'}>
-      <div className="teacher-calendar-toolbar">
-        <div className="teacher-calendar-toolbar-left">
-          <button type="button" className="calendar-today-button" onClick={() => setCurrentDate(new Date())}>
+    <div className="flex flex-col h-[750px] bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-sans">
+      
+      {/* Toolbar */}
+      <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0a0f1c]">
+        <button onClick={() => setCurrentDate(subWeeks(currentDate, 1))} className="p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 rounded-lg hover:bg-slate-700">
+          &lt;
+        </button>
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-lg text-slate-200 capitalize">
+            {format(currentDate, 'MMMM yyyy', { locale })}
+          </span>
+          <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-sm font-semibold text-indigo-400 bg-indigo-500/10 rounded-md hover:bg-indigo-500/20">
             {language === 'pt' ? 'Hoje' : language === 'es' ? 'Hoy' : 'Today'}
           </button>
           <button type="button" className="calendar-nav-button" aria-label="Previous month" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>‹</button>
@@ -106,6 +88,9 @@ export default function MobileCalendar({
             <span aria-hidden="true">◷</span> {language === 'pt' ? 'Disponibilidade' : 'Availability'}
           </button>
         </div>
+        <button onClick={() => setCurrentDate(addWeeks(currentDate, 1))} className="p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 rounded-lg hover:bg-slate-700">
+          &gt;
+        </button>
       </div>
 
       {view === 'month' && <div className="teacher-calendar-grid">
@@ -147,9 +132,69 @@ export default function MobileCalendar({
                   ))}
                   {dayEvents.length > 3 && <span className="teacher-calendar-more">+{dayEvents.length - 3} mais</span>}
                 </div>
+              ))}
+            </div>
+
+            {/* Days Content */}
+            <div className="flex-1 flex relative">
+              {/* Horizontal Lines */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col">
+                {hours.map(hour => (
+                  <div key={hour} className="flex-1 border-b border-slate-700/30" />
+                ))}
               </div>
-            )
-          })}
+
+              {days.map((day, idx) => {
+                const { maxColumns, placedEvents } = dayLayouts[idx]
+                const minWidthPx = Math.max(104, maxColumns * 110)
+
+                return (
+                  <div 
+                    key={idx} 
+                    className="flex-1 relative border-r border-slate-700/30 cursor-pointer hover:bg-slate-800/20 transition-colors group"
+                    style={{ minWidth: `${minWidthPx}px` }}
+                    onClick={(e) => handleSlotClick(day, e)}
+                  >
+                    {placedEvents.map((pe, eIdx) => {
+                      const isBlue = pe.event.color === 'blue'
+                      const bgColor = isBlue ? 'bg-blue-500/20' : 'bg-emerald-500/20'
+                      const borderColor = isBlue ? 'border-blue-500' : 'border-emerald-500'
+                      const textColor = isBlue ? 'text-blue-200' : 'text-emerald-200'
+
+                      return (
+                        <div
+                          key={eIdx}
+                          onClick={(e) => { e.stopPropagation(); onSelectEvent(pe.event) }}
+                          className={`absolute rounded-md border-l-[3px] p-1 overflow-hidden transition-all hover:brightness-125 cursor-pointer shadow-sm hover:z-50 ${bgColor} ${borderColor}`}
+                          style={{
+                            top: `${pe.top}%`,
+                            height: `${pe.height}%`,
+                            left: `calc(${pe.left}% + 2px)`,
+                            width: `calc(${pe.width}% - 4px)`,
+                            zIndex: pe.zIndex,
+                          }}
+                        >
+                          <div className={`text-[11px] font-semibold truncate leading-tight ${textColor}`} title={pe.event.title}>
+                            {pe.event.title}
+                          </div>
+                          {pe.event.subtitle && (
+                            <div className="text-[10px] text-blue-200/90 truncate leading-tight mt-0.5 font-medium" title={pe.event.subtitle}>
+                              {pe.event.subtitle}
+                            </div>
+                          )}
+                          {pe.height > 4 && (
+                            <div className="text-[10px] text-slate-400 truncate opacity-90 mt-0.5 leading-tight">
+                              {format(pe.event.start, 'h:mm')} - {format(pe.event.end, 'h:mm a')}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </div>}
       {view === 'week' && <section className="teacher-calendar-list-view" aria-label="Visualização semanal">

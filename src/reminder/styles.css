@@ -3,7 +3,7 @@
   line-height: 1.6;
   font-weight: 400;
   color: #f1f5f9;
-  background: #f7f9fb;
+  background: #030712;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -22,7 +22,7 @@
   height: 8px;
 }
 .reminder-app-scope ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.80);
+  background: rgba(15, 23, 42, 0.4);
 }
 .reminder-app-scope ::-webkit-scrollbar-thumb {
   background: rgba(99, 102, 241, 0.3);
@@ -38,13 +38,13 @@
   background:
     radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.12), transparent 35%),
-    linear-gradient(180deg, #f7f9fb 0%, #f7f9fb 100%);
+    linear-gradient(180deg, #090d16 0%, #030712 100%);
 }
 
 /* Ensure browser html/body background scales properly and doesn't leak white color */
 html:has(.reminder-app-scope),
 body:has(.reminder-app-scope) {
-  background-color: #f7f9fb !important;
+  background-color: #030712 !important;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -225,7 +225,7 @@ body:has(.reminder-app-scope) {
   gap: 6px;
   padding: 5px 12px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(15, 23, 42, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #cbd5e1;
   font-size: 0.82rem;
@@ -265,7 +265,7 @@ body:has(.reminder-app-scope) {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #94a3b8;
   transition: all 0.2s ease;
@@ -332,7 +332,7 @@ body:has(.reminder-app-scope) {
 .tab-button {
   border-radius: 999px;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(30, 41, 59, 0.5);
   color: #94a3b8;
   border: 1px solid rgba(255, 255, 255, 0.05);
   font-size: 0.88rem;
@@ -374,13 +374,13 @@ body:has(.reminder-app-scope) {
 }
 
 .ghost-button {
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(30, 41, 59, 0.4);
   color: #cbd5e1;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .ghost-button:hover {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(30, 41, 59, 0.8);
   color: #fff;
 }
 
@@ -511,7 +511,7 @@ body:has(.reminder-app-scope) {
   width: 100%;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(9, 13, 22, 0.85);
   color: #f8fafc;
   padding: 12px 16px;
   outline: none;
@@ -524,7 +524,7 @@ body:has(.reminder-app-scope) {
 .reminder-app-scope select:focus {
   border-color: rgba(99, 102, 241, 0.5);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(9, 13, 22, 0.95);
 }
 
 .reminder-app-scope input::placeholder {
@@ -678,7 +678,7 @@ body:has(.reminder-app-scope) {
   width: 100vw;
   height: 100vh;
   z-index: 99999;
-  background: rgba(31, 66, 104, 0.14);
+  background: rgba(2, 6, 23, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -693,9 +693,9 @@ body:has(.reminder-app-scope) {
   overflow: auto;
   padding: 22px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(15, 23, 42, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 24px 60px rgba(31, 56, 76, 0.16);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
 }
 
 .calendar-shell {
@@ -730,7 +730,7 @@ body:has(.reminder-app-scope) {
   min-height: 100%;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(15, 23, 42, 0.55);
   padding: 12px 14px;
   display: flex;
   align-items: center;
@@ -742,7 +742,7 @@ body:has(.reminder-app-scope) {
   justify-content: space-between;
   gap: 6px;
   padding: 4px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 12px;
   margin-bottom: 8px;
@@ -783,7 +783,7 @@ body:has(.reminder-app-scope) {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(31, 66, 104, 0.04);
+  background: rgba(2, 6, 23, 0.2);
   touch-action: pan-x pan-y;
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
@@ -794,7 +794,7 @@ body:has(.reminder-app-scope) {
 }
 
 .calendar-grid::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.80);
+  background: rgba(15, 23, 42, 0.4);
 }
 
 .calendar-grid::-webkit-scrollbar-thumb {
@@ -803,7 +803,7 @@ body:has(.reminder-app-scope) {
 }
 
 .calendar-header-spacer {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(15, 23, 42, 0.96);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
   position: sticky;
   left: 0;
@@ -817,7 +817,7 @@ body:has(.reminder-app-scope) {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(15, 23, 42, 0.78);
   border-left: 1px solid rgba(148, 163, 184, 0.12);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
   scroll-snap-align: start;
@@ -848,7 +848,7 @@ body:has(.reminder-app-scope) {
 .calendar-time-column {
   display: grid;
   grid-template-rows: repeat(32, 26px);
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(15, 23, 42, 0.96);
   border-right: 1px solid rgba(148, 163, 184, 0.16);
   position: sticky;
   left: 0;
@@ -895,7 +895,7 @@ body:has(.reminder-app-scope) {
   padding: 3px 6px;
   background: rgba(59, 130, 246, 0.22);
   border: 1px solid rgba(96, 165, 250, 0.35);
-  box-shadow: 0 4px 12px rgba(31, 56, 76, 0.08);
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.35);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1060,7 +1060,7 @@ body:has(.reminder-app-scope) {
   gap: 16px;
   padding: 12px 18px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.90);
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(148, 163, 184, 0.16);
   backdrop-filter: blur(10px);
   font-size: 0.82rem;
@@ -1104,7 +1104,7 @@ body:has(.reminder-app-scope) {
   gap: 10px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
@@ -1154,7 +1154,7 @@ body:has(.reminder-app-scope) {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(15, 23, 42, 0.55);
 }
 
 /* Navigation Tab Responsiveness */
@@ -1169,7 +1169,7 @@ body:has(.reminder-app-scope) {
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(15, 23, 42, 0.95);
   color: #f8fafc;
   outline: none;
   font-size: 16px !important;
@@ -1355,7 +1355,7 @@ body:has(.reminder-app-scope) {
   .calendar-header-spacer {
     position: static;
     z-index: auto;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(15, 23, 42, 0.78);
   }
 
   .calendar-header-cell {
@@ -1366,7 +1366,7 @@ body:has(.reminder-app-scope) {
   .calendar-time-column {
     position: static;
     z-index: auto;
-    background: rgba(255, 255, 255, 0.90);
+    background: rgba(15, 23, 42, 0.65);
     border-right: 1px solid rgba(148, 163, 184, 0.12);
     box-shadow: none;
   }
@@ -1558,7 +1558,7 @@ body:has(.reminder-app-scope) {
 .calendar-container .rbc-month-view {
   border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.80);
+  background: rgba(15, 23, 42, 0.4);
 }
 
 .calendar-container .rbc-day-bg + .rbc-day-bg,
@@ -1609,7 +1609,7 @@ body:has(.reminder-app-scope) {
 .calendar-container .rbc-toolbar button {
   color: #e2e8f0;
   border-color: rgba(148, 163, 184, 0.2);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(30, 41, 59, 0.6);
   transition: all 0.2s ease;
 }
 
@@ -1647,7 +1647,7 @@ body:has(.reminder-app-scope) {
   position: sticky;
   left: 0;
   z-index: 10;
-  background-color: #ffffff; /* Match slate-900 background */
+  background-color: #0f172a; /* Match slate-900 background */
 }
 
 .calendar-mobile-scroll .rbc-time-header-gutter {
@@ -1658,7 +1658,7 @@ body:has(.reminder-app-scope) {
   position: sticky;
   top: 0;
   z-index: 5;
-  background-color: #ffffff;
+  background-color: #0f172a;
 }
 
 /* Modern Event Cards */
