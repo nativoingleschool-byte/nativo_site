@@ -51,6 +51,9 @@ export default async function handler(req, res) {
     }
 
     const { status_nota_fiscal, nota_fiscal_url, month_key, amount, file_name } = body || {};
+    if (nota_fiscal_url && (typeof nota_fiscal_url !== 'string' || !nota_fiscal_url.startsWith('data:application/pdf;base64,'))) {
+      return json(res, 400, { error: 'Envie um arquivo PDF válido.' });
+    }
 
     const updatePayload = {
       status_nota_fiscal: status_nota_fiscal || 'enviada',
@@ -69,7 +72,7 @@ export default async function handler(req, res) {
     if (nota_fiscal_url) {
       const activeMonth = month_key || new Date().toISOString().slice(0, 7);
       try {
-        await supabaseAdmin.from('teacher_invoices').insert({
+        const { error: invoiceError } = await supabaseAdmin.from('teacher_invoices').insert({
           teacher_id: user.id,
           month_key: activeMonth,
           file_url: nota_fiscal_url,
@@ -77,8 +80,10 @@ export default async function handler(req, res) {
           amount: amount ? Number(amount) : null,
           status: 'enviada',
         });
+        if (invoiceError) throw invoiceError;
       } catch (invErr) {
-        console.warn('teacher_invoices insert warning:', invErr);
+        console.error('teacher_invoices insert failed:', invErr);
+        return json(res, 500, { error: `Não foi possível salvar a nota no histórico: ${invErr.message || 'erro inesperado'}` });
       }
     }
 
