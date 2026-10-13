@@ -167,10 +167,17 @@ const updateWeeklySeries = async (db, profile, payload) => {
   const { data: reference, error: refError } = await db.from('lessons').select('*').eq('id', payload.lesson_id).single()
   if (refError || !reference) throw new Error('A aula selecionada não foi encontrada.')
   ensureTeacherPermission(profile, reference.teacher_id)
+  // For a nonrecurring group, adopt ALL rows of the selected occurrence.
+  // Without this, selecting multiple students would duplicate existing lessons.
+  const initialIds = [...new Set([reference.id, ...(payload.lesson_ids || [])])]
   const { data: series, error: seriesError } = reference.recurrence_series_id
     ? await db.from('lessons').select('*').eq('recurrence_series_id', reference.recurrence_series_id).eq('teacher_id', reference.teacher_id)
-    : await db.from('lessons').select('*').eq('id', reference.id)
+    : await db.from('lessons').select('*').in('id', initialIds)
   if (seriesError || !series?.length) throw new Error('Não foi possível localizar as aulas recorrentes.')
+  if (series.some((row) => row.teacher_id !== reference.teacher_id ||
+      (!reference.recurrence_series_id && row.starts_at !== reference.starts_at))) {
+    throw new Error('A seleção contém aulas de outras turmas ou horários.')
+  }
   const weeks = recurrenceCount(payload)
   const selectedIds = [...new Set((payload.student_ids || [reference.student_id]).filter(Boolean))]
   if (!selectedIds.length || !selectedIds.every(isUuid)) throw new Error('Selecione alunos cadastrados.')
