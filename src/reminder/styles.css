@@ -4014,3 +4014,13 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   caret-color: #243e58 !important;
   background: #fff !important;
 }
+
+/* Financeiro: preserve upload button background and make only its label/icon white. */
+.reminder-app-scope .reference-invoice-card .reference-primary-button {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+.reminder-app-scope .reference-invoice-card .reference-primary-button svg {
+  color: #fff !important;
+  stroke: currentColor;
+}
