@@ -84,6 +84,8 @@ export default function MobileCalendar({
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
   const weekLabel = `${format(weekStart, 'd', { locale })} a ${format(weekEnd, "d 'de' MMMM", { locale })}`
   const agendaEvents = Array.from(eventsByDay.values()).flat().sort((a, b) => a.start.getTime() - b.start.getTime())
+  const weekEvents = agendaEvents.filter((event) => event.start >= weekStart && event.start <= weekEnd)
+  const upcomingAgendaEvents = agendaEvents.filter((event) => event.start >= today)
 
   return (
     <div className="teacher-calendar-shell" aria-label={language === 'pt' ? 'Calendário mensal' : 'Monthly calendar'}>
@@ -153,12 +155,12 @@ export default function MobileCalendar({
         </div>
       </div>}
       {view === 'week' && <section className="teacher-calendar-list-view" aria-label="Visualização semanal">
-        <div className="teacher-calendar-list-view__heading"><span>Semana de {weekLabel}</span><strong>{agendaEvents.length} {agendaEvents.length === 1 ? 'aula nesta semana' : 'aulas nesta semana'}</strong></div>
-        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhuma aula cadastrada nesta semana</p> : <div className="teacher-calendar-week-list">{agendaEvents.filter((event) => event.start >= weekStart && event.start <= weekEnd).map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
+        <div className="teacher-calendar-list-view__heading"><span>Semana de {weekLabel}</span><strong>{weekEvents.length} {weekEvents.length === 1 ? 'aula nesta semana' : 'aulas nesta semana'}</strong></div>
+        {weekEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhuma aula cadastrada nesta semana</p> : <div className="teacher-calendar-week-list">{weekEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
       </section>}
       {view === 'agenda' && <section className="teacher-calendar-list-view" aria-label="Visualização em agenda">
-        <div className="teacher-calendar-list-view__heading"><span>Próximos encontros</span><strong>{agendaEvents.length} {agendaEvents.length === 1 ? 'aula cadastrada' : 'aulas cadastradas'}</strong></div>
-        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhum próximo encontro</p> : <div className="teacher-calendar-week-list">{agendaEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" aria-label={event.type === 'lesson' ? `${event.title}: adicionar ao Google Agenda` : undefined} onClick={() => (onSelectAgendaEvent ?? onSelectEvent)(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}{event.type === 'lesson' ? ' · Adicionar ao Google Agenda' : ''}</span></button>)}</div>}
+        <div className="teacher-calendar-list-view__heading"><span>Próximos encontros</span><strong>{upcomingAgendaEvents.length} {upcomingAgendaEvents.length === 1 ? 'aula cadastrada' : 'aulas cadastradas'}</strong></div>
+        {upcomingAgendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhum próximo encontro</p> : <div className="teacher-calendar-week-list">{upcomingAgendaEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" aria-label={event.type === 'lesson' ? `${event.title}: adicionar ao Google Agenda` : undefined} onClick={() => (onSelectAgendaEvent ?? onSelectEvent)(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}{event.type === 'lesson' ? ' · Adicionar ao Google Agenda' : ''}</span></button>)}</div>}
       </section>}
     </div>
   )

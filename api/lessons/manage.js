@@ -176,7 +176,12 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
 
   const currentTeacherId = existingLessons[0].teacher_id
   const nextTeacherId = payload.teacher_id || currentTeacherId
-  ensureTeacherPermission(profile, currentTeacherId)
+  existingLessons.forEach((lesson) => {
+    if (lesson.teacher_id !== currentTeacherId) {
+      throw new Error('Selected lessons must belong to the same teacher.')
+    }
+    ensureTeacherPermission(profile, lesson.teacher_id)
+  })
   ensureTeacherPermission(profile, nextTeacherId)
 
   const duration = Number(payload.duration_minutes) || existingLessons[0].duration_minutes || 60
@@ -189,7 +194,7 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
-    meeting_url: payload.meeting_url ?? existingLessons[0].meeting_url ?? null,
+    meeting_url: payload.meeting_url !== undefined ? payload.meeting_url : existingLessons[0].meeting_url ?? null,
   }
 
   if (payload.teacher_lesson_status !== undefined) {
@@ -205,7 +210,15 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   }
 
   const existingStudentIds = new Set(existingLessons.map((lesson) => lesson.student_id))
-  const newStudentIds = Array.from(new Set((payload.student_ids ?? []).filter(Boolean))).filter((id) => !existingStudentIds.has(id))
+  const selectedStudentIds = Array.from(new Set((payload.student_ids ?? []).filter(Boolean)))
+  if (!selectedStudentIds.length) {
+    throw new Error('At least one student must remain in the class.')
+  }
+  const selectedStudentSet = new Set(selectedStudentIds)
+  const removedLessonIds = existingLessons
+    .filter((lesson) => !selectedStudentSet.has(lesson.student_id))
+    .map((lesson) => lesson.id)
+  const newStudentIds = selectedStudentIds.filter((id) => !existingStudentIds.has(id))
 
   if (newStudentIds.length) {
     const insertedRows = newStudentIds.map((studentId) => ({
@@ -218,15 +231,22 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     }
   }
 
-  const finalStudentIds = Array.from(new Set([...existingStudentIds, ...newStudentIds]))
+  if (removedLessonIds.length) {
+    const { error: deleteError } = await supabaseAdmin.from('lessons').delete().in('id', removedLessonIds)
+    if (deleteError) {
+      throw new Error(deleteError.message)
+    }
+  }
+
   const { data: refreshedLessons, error: refreshError } = await supabaseAdmin
     .from('lessons')
     .select('*')
     .eq('teacher_id', nextTeacherId)
     .eq('starts_at', sharedUpdate.starts_at)
     .eq('subject', sharedUpdate.subject)
+    .eq('class_name', sharedUpdate.class_name)
     .eq('duration_minutes', sharedUpdate.duration_minutes)
-    .in('student_id', finalStudentIds)
+    .in('student_id', selectedStudentIds)
 
   if (refreshError) {
     throw new Error(refreshError.message)

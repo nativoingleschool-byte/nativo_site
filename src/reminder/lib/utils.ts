@@ -206,7 +206,13 @@ export const groupLessonsIntoTeacherSessions = (lessons: Lesson[]): TeacherLesso
 
   lessons.forEach((l) => {
     if (!l.starts_at) return
-    const key = `${l.teacher_id || 'no-teacher'}|${l.starts_at}`
+    const key = [
+      l.teacher_id || 'no-teacher',
+      l.starts_at,
+      l.subject?.trim() || '',
+      l.class_name?.trim() || '',
+      l.duration_minutes || 60,
+    ].join('|')
     const existing = map.get(key) || []
     existing.push(l)
     map.set(key, existing)
@@ -366,4 +372,3 @@ export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 
     downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
   }
 }
-

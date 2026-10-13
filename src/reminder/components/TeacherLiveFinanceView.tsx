@@ -40,7 +40,7 @@ type TeacherLiveFinanceViewProps = {
   uploadingInvoice: boolean
   onUploadInvoice: (event: ChangeEvent<HTMLInputElement>) => void
   onUpdateStatus: (lessons: Lesson[], status: TeacherLessonStatus) => Promise<void>
-  onEditLesson: (lesson: Lesson) => void
+  onEditLesson: (lesson: Lesson, group?: Lesson[]) => void
   onDeleteLessons: (lessonIds: string[]) => Promise<void>
   onAddLesson: () => void
 }
@@ -239,7 +239,7 @@ export default function TeacherLiveFinanceView({
                 <strong className="reference-amount">{formatMoney(amount)}</strong>
                 <div className="reference-meeting-actions">
                   <button type="button" onClick={() => setSelectedSession(session)}>{language === 'pt' ? 'Detalhes' : language === 'es' ? 'Detalles' : 'Details'}</button>
-                  <button type="button" aria-label={t(language, 'edit')} onClick={() => onEditLesson(session.lessons[0])}><Pencil size={14} /></button>
+                  <button type="button" aria-label={t(language, 'edit')} onClick={() => onEditLesson(session.lessons[0], session.lessons)}><Pencil size={14} /></button>
                   <button type="button" aria-label={t(language, 'delete_class_btn')} onClick={() => void deleteSession(session)}><Trash2 size={14} /></button>
                 </div>
                 <div className="reference-status-actions" aria-label={t(language, 'status')}>
@@ -287,7 +287,7 @@ export default function TeacherLiveFinanceView({
               <h2>{selectedSession.subject || t(language, 'individual_class')} · {selectedSession.class_name}</h2>
               <p>{formatShortDate(selectedSession.starts_at, language, appTimeZone)} · {selectedSession.duration_minutes} min</p>
               <p>{selectedSession.student_ids.map((id) => profilesById[id]?.full_name || t(language, 'role_student')).join(', ')}</p>
-              <button type="button" className="reference-primary-button" onClick={() => { setSelectedSession(null); onEditLesson(selectedSession.lessons[0]) }}>{t(language, 'edit')}</button>
+              <button type="button" className="reference-primary-button" onClick={() => { setSelectedSession(null); onEditLesson(selectedSession.lessons[0], selectedSession.lessons) }}>{t(language, 'edit')}</button>
             </section>
           </div>
         </div>,

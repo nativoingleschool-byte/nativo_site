@@ -90,7 +90,7 @@ interface TeacherAvailabilityCalendarProps {
   role?: 'teacher' | 'admin'
   onCreateAvailability?: (draft: { starts_at: string; duration_minutes: number; teacher_id?: string; repeat_weeks?: number; series_id?: string | null }) => Promise<void>
   onDeleteAvailability?: (options: { id: string; series_id?: string | null; starts_at?: string; series_scope?: 'this' | 'future' }) => Promise<void>
-  onEditLesson?: (lesson: Lesson) => void 
+  onEditLesson?: (lesson: Lesson, group?: Lesson[]) => void
   onCreateLessonSlot?: (startUtc: string, durationMinutes: number) => void
   onEditAvailability?: (avail: TeacherAvailability) => void
   profilesById: Record<string, Profile>
@@ -286,7 +286,8 @@ export default function TeacherAvailabilityCalendar({
 
     if (isLesson) {
       if (onEditLesson) {
-        onEditLesson(event.sourceData as Lesson)
+        const lesson = event.sourceData as Lesson & { lessons?: Lesson[] }
+        onEditLesson(lesson, lesson.lessons ?? [lesson])
       } else {
         toast.info('Click edit on the list view to modify this class.')
       }

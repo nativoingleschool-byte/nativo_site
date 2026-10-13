@@ -7,7 +7,6 @@ import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, gr
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
-import TeacherReferenceFinanceView from './TeacherReferenceFinanceView'
 import TeacherReferenceProfileView from './TeacherReferenceProfileView'
 import TeacherLiveFinanceView from './TeacherLiveFinanceView'
 import TeacherLiveProfileView, { type TeacherProfileDetails } from './TeacherLiveProfileView'
@@ -45,6 +44,8 @@ interface TeacherPanelProps {
     teacher_id: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
+    teacher_lesson_status?: TeacherLessonStatus
   }) => Promise<void>
   onDeleteLessonGroup?: (lessonIds: string[]) => Promise<void>
   createStudentLoginFromCalendar: (draft: {
@@ -194,6 +195,8 @@ export default function TeacherPanel({
 
   // Edit Lesson Form State
   const [editLessonStudentId, setEditLessonStudentId] = useState('')
+  const [editLessonStudentIds, setEditLessonStudentIds] = useState<string[]>([])
+  const [editLessonIds, setEditLessonIds] = useState<string[]>([])
   const [editLessonStudentName, setEditLessonStudentName] = useState('')
   const [editStudentsOpen, setEditStudentsOpen] = useState(false)
   const [editStudentSearch, setEditStudentSearch] = useState('')
@@ -298,30 +301,27 @@ export default function TeacherPanel({
     })
     const todayZoned = formatter.format(new Date())
 
-    return teacherLessons
+    const todaysLessons = teacherLessons
       .filter((l) => {
         if (!l.starts_at) return false
         const lessonDate = formatter.format(new Date(l.starts_at))
         return lessonDate === todayZoned
       })
+    return groupLessonsIntoTeacherSessions(todaysLessons)
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   }, [teacherLessons, appTimeZone])
 
   const lastUnmarkedClass = useMemo(() => {
     const now = new Date()
-    const pastUnmarked = teacherLessons.filter(l => 
-      new Date(l.starts_at) < now && 
-      !l.teacher_lesson_status
-    )
-    if (pastUnmarked.length === 0) return null
-    pastUnmarked.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
-    return pastUnmarked[0]
+    return groupLessonsIntoTeacherSessions(teacherLessons).find((session) =>
+      new Date(session.starts_at) < now && session.lessons.every((lesson) => !lesson.teacher_lesson_status)
+    ) ?? null
   }, [teacherLessons])
 
   const teacherUpcomingLessons = useMemo(() => {
     const now = Date.now()
-    return teacherLessons
-      .filter((lesson) => new Date(lesson.starts_at).getTime() >= now)
+    return groupLessonsIntoTeacherSessions(teacherLessons)
+      .filter((session) => new Date(session.starts_at).getTime() >= now)
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
   }, [teacherLessons])
 
@@ -329,17 +329,20 @@ export default function TeacherPanel({
     if (status === 'happened') {
       const target = lessons.find((lesson) => lesson.id === lessonId)
       if (!target) return
-      const group = lessons.filter((lesson) => lesson.teacher_id === target.teacher_id && lesson.starts_at === target.starts_at && lesson.subject === target.subject)
-      const promptLessons = group.length > 0 ? group : [target]
+      const promptLessons = groupLessonsIntoTeacherSessions(teacherLessons)
+        .find((session) => session.lessons.some((lesson) => lesson.id === target.id))?.lessons ?? [target]
       setAttendanceLessons(promptLessons)
       setAttendanceDraft(Object.fromEntries(promptLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
       return
     }
     try {
-      if (updateTeacherSingleLesson) {
+      const sessionLessons = groupLessonsIntoTeacherSessions(teacherLessons)
+        .find((session) => session.lessons.some((lesson) => lesson.id === lessonId))?.lessons ?? []
+      const lessonIds = sessionLessons.length > 0 ? sessionLessons.map((lesson) => lesson.id) : [lessonId]
+      if (updateTeacherSingleLesson && lessonIds.length === 1) {
         await updateTeacherSingleLesson({ lesson_id: lessonId, teacher_lesson_status: status })
       } else {
-        const { error } = await supabase.from('lessons').update({ teacher_lesson_status: status }).eq('id', lessonId)
+        const { error } = await supabase.from('lessons').update({ teacher_lesson_status: status }).in('id', lessonIds)
         if (error) throw error
       }
       void trackEvent('lesson_status_update', { lesson_id: lessonId, status, source: 'quick_bar' }, { userRole: 'teacher', userId: profile.id })
@@ -384,10 +387,11 @@ export default function TeacherPanel({
   // Generate available months list from teacher lessons
   const availableMonths = useMemo(() => {
     const monthsMap = new Map<string, string>()
+    const currentMonthKey = new Date().toISOString().slice(0, 7)
     teacherLessons.forEach((l) => {
       if (l.starts_at) {
         const key = l.starts_at.slice(0, 7)
-        if (!monthsMap.has(key)) {
+        if (key <= currentMonthKey && !monthsMap.has(key)) {
           const [yr, mo] = key.split('-')
           const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
           const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
@@ -399,7 +403,6 @@ export default function TeacherPanel({
       }
     })
 
-    const currentMonthKey = new Date().toISOString().slice(0, 7)
     if (!monthsMap.has(currentMonthKey)) {
       const dObj = new Date()
       const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
@@ -417,7 +420,7 @@ export default function TeacherPanel({
     if (selectedMonthKey && availableMonths.some(([k]) => k === selectedMonthKey)) {
       return selectedMonthKey
     }
-    return availableMonths[0]?.[0] || new Date().toISOString().slice(0, 7)
+    return new Date().toISOString().slice(0, 7)
   }, [selectedMonthKey, availableMonths])
 
   // Month lessons list
@@ -468,7 +471,9 @@ export default function TeacherPanel({
   // Open Add Lesson Modal
   const handleOpenAddLesson = () => {
     if ((!students || students.length === 0) && refreshProfiles) {
-      void refreshProfiles()
+      void refreshProfiles().catch((error) => {
+        toast.error(error instanceof Error ? error.message : 'Não foi possível carregar os alunos.')
+      })
     }
     const defaultStudent = visualPreviewMode ? '' : sortedStudents[0]?.id || '__NEW__'
     setNewLessonStudentId(defaultStudent)
@@ -484,16 +489,7 @@ export default function TeacherPanel({
 
     // Set initial date within active month
     const now = new Date()
-    const currentMonthPrefix = now.toISOString().slice(0, 7)
-    let initialDateStr = ''
-    if (activeMonthKey === currentMonthPrefix) {
-      initialDateStr = isoToDateTimeLocal(now.toISOString(), appTimeZone)
-    } else {
-      const [yr, mo] = activeMonthKey.split('-')
-      const targetDate = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 15, 14, 0, 0)
-      initialDateStr = isoToDateTimeLocal(targetDate.toISOString(), appTimeZone)
-    }
-    setNewLessonStartsAt(initialDateStr)
+    setNewLessonStartsAt(isoToDateTimeLocal(now.toISOString(), appTimeZone))
     setShowAddLessonModal(true)
   }
 
@@ -584,9 +580,11 @@ export default function TeacherPanel({
   }
 
   // Open Edit Lesson Modal
-  const handleOpenEditLesson = (lesson: Lesson) => {
+  const handleOpenEditLesson = (lesson: Lesson, group: Lesson[] = [lesson]) => {
     setEditingLesson(lesson)
     setEditLessonStudentId(lesson.student_id)
+    setEditLessonStudentIds(Array.from(new Set(group.map((item) => item.student_id).filter(Boolean))))
+    setEditLessonIds(group.map((item) => item.id))
     setEditStudentsOpen(false)
     setEditStudentSearch('')
     setEditLessonSubject(lesson.subject)
@@ -600,7 +598,7 @@ export default function TeacherPanel({
   const handleEditLessonSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!editingLesson) return
-    if (!editLessonStudentId || !editLessonSubject.trim() || !editLessonStartsAt) {
+    if (!editLessonStudentIds.length || !editLessonSubject.trim() || !editLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
@@ -608,13 +606,25 @@ export default function TeacherPanel({
     setIsSubmitting(true)
     try {
       const utcIso = dateTimeLocalToIso(editLessonStartsAt, appTimeZone)
-      const studentProfile = profilesById[editLessonStudentId]
+      const studentProfile = profilesById[editLessonStudentIds[0]]
       const className = studentProfile?.class_name || editingLesson.class_name || ''
 
-      if (updateTeacherSingleLesson) {
+      if (editLessonIds.length > 1 || editLessonStudentIds.length > 1) {
+        await updateTeacherLessonGroup({
+          lesson_ids: editLessonIds,
+          student_ids: editLessonStudentIds,
+          subject: editLessonSubject.trim(),
+          class_name: className,
+          teacher_id: profile.id,
+          starts_at: utcIso,
+          duration_minutes: editLessonDuration,
+          meeting_url: editLessonMeetingUrl.trim() || null,
+          teacher_lesson_status: editLessonStatus,
+        })
+      } else if (updateTeacherSingleLesson) {
         await updateTeacherSingleLesson({
           lesson_id: editingLesson.id,
-          student_id: editLessonStudentId,
+          student_id: editLessonStudentIds[0],
           teacher_id: profile.id,
           subject: editLessonSubject.trim(),
           class_name: className,
@@ -639,7 +649,7 @@ export default function TeacherPanel({
             action: 'update_lesson',
             payload: {
               lesson_id: editingLesson.id,
-              student_id: editLessonStudentId,
+              student_id: editLessonStudentIds[0],
               teacher_id: profile.id,
               subject: editLessonSubject.trim(),
               class_name: className,
@@ -679,9 +689,31 @@ export default function TeacherPanel({
         return
       }
 
+      if (visualPreviewMode) {
+        if (!updateTeacherSingleLesson) throw new Error('Preview lesson updates are unavailable.')
+        for (const lesson of targetLessons) {
+          await updateTeacherSingleLesson({ lesson_id: lesson.id, teacher_lesson_status: newStatus })
+        }
+        toast.success(t(language, 'lesson_status_updated'))
+        return
+      }
+
       if (updateTeacherSingleLesson && lessonIds.length === 1) {
         await updateTeacherSingleLesson({
           lesson_id: lessonIds[0],
+          teacher_lesson_status: newStatus,
+        })
+      } else if (updateTeacherLessonGroup && targetLessons.length > 1) {
+        const firstLesson = targetLessons[0]
+        await updateTeacherLessonGroup({
+          lesson_ids: lessonIds,
+          student_ids: targetLessons.map((lesson) => lesson.student_id),
+          subject: firstLesson.subject,
+          class_name: firstLesson.class_name,
+          teacher_id: firstLesson.teacher_id,
+          starts_at: firstLesson.starts_at,
+          duration_minutes: firstLesson.duration_minutes,
+          meeting_url: firstLesson.meeting_url,
           teacher_lesson_status: newStatus,
         })
       } else {
@@ -773,6 +805,11 @@ export default function TeacherPanel({
 
   const handleUploadNf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return
+    if (visualPreviewMode) {
+      toast.info('O envio de NFS-e fica desativado na preview.')
+      e.target.value = ''
+      return
+    }
     const file = e.target.files[0]
     setUploadingNf(true)
     try {
@@ -919,10 +956,12 @@ export default function TeacherPanel({
             upcomingLessons={teacherUpcomingLessons}
             completedCount={completedSessions.length}
             accruedAmount={totalAmount}
-            onUpdateLessonStatus={handleUpdateTodayLessonStatus}
+            appTimeZone={appTimeZone}
+            onUpdateLessonStatus={handleQuickStatusChange}
             onOpenLesson={handleOpenEditLesson}
             onAddLesson={handleOpenAddLesson}
-            onAddAvailability={() => toast.info(t(language, 'tap_calendar_to_add') || 'Selecione um horário para adicionar disponibilidade.')}
+            onCreateAvailability={onCreateAvailability}
+            onDeleteAvailability={onDeleteAvailability}
           />
         )}
 
@@ -949,14 +988,14 @@ export default function TeacherPanel({
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {(() => {
-                    const l = lastUnmarkedClass
-                    const studentObj = profilesById[l.student_id] || students.find(s => s.id === l.student_id)
-                    const studentName = studentObj?.full_name || l.class_name || 'Aluno'
-                    const timeStr = formatShortDate(l.starts_at, language, appTimeZone)
+                    const session = lastUnmarkedClass
+                    const l = session.lessons[0]
+                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
                       <div
-                        key={l.id}
+                        key={session.key}
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
@@ -983,7 +1022,7 @@ export default function TeacherPanel({
                             type="button"
                             className="secondary-button"
                             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderColor: '#10b981' }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'happened')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'happened')}
                           >
                             {language === 'es' ? '✓ Realizada' : language === 'en' ? '✓ Happened' : '✓ Realizada'}
                           </button>
@@ -991,7 +1030,7 @@ export default function TeacherPanel({
                             type="button"
                             className="secondary-button"
                             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderColor: '#f59e0b' }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'student_no_show')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'student_no_show')}
                           >
                             {language === 'es' ? '⚠️ No compareció' : language === 'en' ? '⚠️ No-Show' : '⚠️ Não compareceu'}
                           </button>
@@ -999,7 +1038,7 @@ export default function TeacherPanel({
                             type="button"
                             className="secondary-button"
                             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'not_happened')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'not_happened')}
                           >
                             {language === 'es' ? '✕ Cancelada' : language === 'en' ? '✕ Canceled' : '✕ Cancelada'}
                           </button>
@@ -1070,14 +1109,14 @@ export default function TeacherPanel({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {teacherTodayLessons.map((l) => {
-                    const studentObj = profilesById[l.student_id] || students.find(s => s.id === l.student_id)
-                    const studentName = studentObj?.full_name || l.class_name || 'Aluno'
-                    const timeStr = formatShortDate(l.starts_at, language, appTimeZone)
+                  {teacherTodayLessons.map((session) => {
+                    const l = session.lessons[0]
+                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
                       <div
-                        key={l.id}
+                        key={session.key}
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
@@ -1093,9 +1132,9 @@ export default function TeacherPanel({
                         <div style={{ minWidth: '180px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.92rem' }}>{studentName}</span>
-                            {l.teacher_lesson_status && (
+                            {session.lessons.some((lesson) => lesson.teacher_lesson_status) && (
                               <span className={badgeClass(l.teacher_lesson_status)} style={{ fontSize: '0.7rem' }}>
-                                {l.teacher_lesson_status === 'happened' ? '✓ Realizada' : l.teacher_lesson_status === 'student_no_show' ? '⚠️ Não Compareceu' : '✕ Cancelada'}
+                                {session.is_happened ? '✓ Realizada' : session.is_no_show ? '⚠️ Não Compareceu' : session.is_cancelled ? '✕ Cancelada' : 'Agendada'}
                               </span>
                             )}
                           </div>
@@ -1107,25 +1146,25 @@ export default function TeacherPanel({
                         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                           <button
                             type="button"
-                            className={l.teacher_lesson_status === 'happened' ? 'primary-button' : 'secondary-button'}
-                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: l.teacher_lesson_status === 'happened' ? '#10b981' : undefined, borderColor: '#10b981' }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'happened')}
+                            className={session.is_happened ? 'primary-button' : 'secondary-button'}
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: session.is_happened ? '#10b981' : undefined, borderColor: '#10b981' }}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'happened')}
                           >
                             {language === 'es' ? '✓ Realizada' : language === 'en' ? '✓ Happened' : '✓ Realizada'}
                           </button>
                           <button
                             type="button"
-                            className={l.teacher_lesson_status === 'student_no_show' ? 'primary-button' : 'secondary-button'}
-                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: l.teacher_lesson_status === 'student_no_show' ? '#f59e0b' : undefined, borderColor: '#f59e0b', color: l.teacher_lesson_status === 'student_no_show' ? '#000' : undefined }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'student_no_show')}
+                            className={session.is_no_show ? 'primary-button' : 'secondary-button'}
+                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: session.is_no_show ? '#f59e0b' : undefined, borderColor: '#f59e0b', color: session.is_no_show ? '#000' : undefined }}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'student_no_show')}
                           >
                             {language === 'es' ? '⚠️ No compareció' : language === 'en' ? '⚠️ No-Show' : '⚠️ Não compareceu'}
                           </button>
                           <button
                             type="button"
-                            className={l.teacher_lesson_status === 'not_happened' ? 'danger-button' : 'secondary-button'}
+                            className={session.is_cancelled ? 'danger-button' : 'secondary-button'}
                             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
-                            onClick={() => handleUpdateTodayLessonStatus(l.id, 'not_happened')}
+                            onClick={() => handleQuickStatusChange(session.lessons, 'not_happened')}
                           >
                             {language === 'es' ? '✕ Cancelada' : language === 'en' ? '✕ Canceled' : '✕ Cancelada'}
                           </button>
@@ -1186,9 +1225,7 @@ export default function TeacherPanel({
           </div>
         )}
 
-        {teacherTab === 'worklog' && visualPreviewMode && <TeacherReferenceFinanceView />}
-
-        {teacherTab === 'worklog' && !visualPreviewMode && (
+        {teacherTab === 'worklog' && (
           <TeacherLiveFinanceView
             language={language}
             profile={profile}
@@ -1282,7 +1319,7 @@ export default function TeacherPanel({
               <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(modalLanguage, 'tab_worklog_nf')}</p>
-                  <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Adicionar Nova Aula' : t(language, 'add_class')}</h2>
+                  <h2 style={{ fontSize: '1.4rem' }}>Adicionar Nova Aula</h2>
                 </div>
                 <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setShowAddLessonModal(false)}><X size={19} /></button>
               </div>
@@ -1290,15 +1327,7 @@ export default function TeacherPanel({
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
-                    {!visualPreviewMode && <button type="button" onClick={() => {
-                      setNewLessonStudentsOpen(false)
-                      setStudentSearch('')
-                      setAddStudentMode(addStudentMode === 'custom' ? 'select' : 'custom')
-                      setNewLessonStudentId(addStudentMode === 'custom' ? (newLessonStudentIds[0] || '') : '__NEW__')
-                    }}>
-                      {addStudentMode === 'custom' ? '← Selecionar da lista' : '+ Digitar nome'}
-                    </button>}
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
 
                   {addStudentMode === 'select' && <div className="teacher-student-dropdown">
@@ -1382,33 +1411,14 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Título do Encontro / Módulo' : `${t(language, 'subject_topic')} *`}</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
                   <input
                     required
-                    placeholder={visualPreviewMode ? '' : t(language, 'subject_placeholder')}
+                    placeholder=""
                     value={newLessonSubject}
                     onChange={(e) => setNewLessonSubject(e.target.value)}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   />
-                  {!visualPreviewMode && <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                    {['Conversação', 'Inglês Geral', 'Business English', 'Gramática', 'Reforço'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setNewLessonSubject(preset)}
-                        style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '0.4rem',
-                          fontSize: '0.72rem',
-                          background: 'rgba(51, 65, 85, 0.4)',
-                          color: '#cbd5e1',
-                          border: '1px solid rgba(148, 163, 184, 0.1)',
-                        }}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>}
                 </div>
 
                 <div className="teacher-preview-dialog-date-time">
@@ -1423,7 +1433,7 @@ export default function TeacherPanel({
                   <input type="url" placeholder="https://meet.google.com/..." value={newLessonMeetingUrl} onChange={(event) => setNewLessonMeetingUrl(event.target.value)} />
                 </div>
 
-                <div className={`teacher-modal-extra-field teacher-lesson-form-duration${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className="teacher-modal-extra-field teacher-lesson-form-duration teacher-preview-dialog-extra">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1456,7 +1466,7 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div className={`teacher-modal-extra-field teacher-lesson-form-status${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className="teacher-modal-extra-field teacher-lesson-form-status teacher-preview-dialog-extra">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={newLessonStatus || 'agendada'}
@@ -1480,7 +1490,7 @@ export default function TeacherPanel({
                     {t(modalLanguage, 'cancel')}
                   </button>
                   <button type="submit" className="primary-button" disabled={isSubmitting}>
-                    {isSubmitting ? t(modalLanguage, 'saving_label') : visualPreviewMode ? 'Salvar' : t(language, 'add_class')}
+                    {isSubmitting ? t(modalLanguage, 'saving_label') : 'Salvar'}
                   </button>
                 </div>
               </form>
@@ -1545,7 +1555,7 @@ export default function TeacherPanel({
           >
             <div
               ref={editModalRef}
-              className={`modal-card animate-fade-in teacher-preview-functional-modal teacher-edit-modal-layout teacher-lesson-form-modal${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
+              className="modal-card animate-fade-in teacher-preview-functional-modal teacher-preview-edit-modal teacher-edit-modal-layout teacher-lesson-form-modal"
               style={{
                 maxWidth: '520px',
                 width: '100%',
@@ -1560,14 +1570,14 @@ export default function TeacherPanel({
               <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(modalLanguage, 'adjust_class_label')}</p>
-                  <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Detalhes da aula' : t(language, 'modify_class_details')}</h2>
+                  <h2 style={{ fontSize: '1.4rem' }}>Detalhes da aula</h2>
                 </div>
                 <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setEditingLesson(null)}><X size={19} /></button>
               </div>
 
               <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="teacher-preview-dialog-student">
-                  <label className="teacher-modal-field-label">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
+                  <label className="teacher-modal-field-label">Alunos</label>
                   <div className="teacher-student-dropdown">
                     <button
                       type="button"
@@ -1578,12 +1588,14 @@ export default function TeacherPanel({
                       }}
                       aria-expanded={editStudentsOpen}
                     >
-                      <span>{sortedStudents.find((student) => student.id === editLessonStudentId)?.full_name
-                        || profilesById[editLessonStudentId]?.full_name
-                        || 'Aluno Atual'}</span>
+                      <span>{editLessonStudentIds.map((id) =>
+                        sortedStudents.find((student) => student.id === id)?.full_name
+                        || profilesById[id]?.full_name
+                        || 'Aluno Atual'
+                      ).join(', ') || 'Selecionar alunos'}</span>
                       <ChevronDown size={15} />
                     </button>
-                    {editStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar aluno">
+                    {editStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar alunos">
                       <label className="teacher-student-dropdown__search">
                         <Search size={14} aria-hidden="true" />
                         <input
@@ -1598,13 +1610,16 @@ export default function TeacherPanel({
                         {filteredEditStudents.map((student) => (
                           <label key={student.id}>
                             <input
-                              type="radio"
-                              name="edit-lesson-student"
-                              checked={editLessonStudentId === student.id}
-                              onChange={() => {
-                                setEditLessonStudentId(student.id)
-                                setEditStudentsOpen(false)
-                                setEditStudentSearch('')
+                              type="checkbox"
+                              checked={editLessonStudentIds.includes(student.id)}
+                              onChange={(event) => {
+                                setEditLessonStudentIds((current) => {
+                                  const next = event.target.checked
+                                    ? [...current, student.id]
+                                    : current.filter((id) => id !== student.id)
+                                  setEditLessonStudentId(next[0] ?? '')
+                                  return next
+                                })
                               }}
                             />
                             <span>{student.full_name}</span>
@@ -1613,7 +1628,7 @@ export default function TeacherPanel({
                         ))}
                         {showEditStudentFallback && (
                           <label>
-                            <input type="radio" name="edit-lesson-student" checked disabled />
+                            <input type="checkbox" checked={editLessonStudentIds.includes(editLessonStudentId)} disabled />
                             <span>{editCurrentStudentName}</span>
                             {editingLesson?.class_name && <small>{editingLesson.class_name}</small>}
                           </label>
@@ -1627,7 +1642,7 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Título do Encontro / Módulo' : `${t(language, 'subject_topic')} *`}</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
                   <input
                     required
                     value={editLessonSubject}
@@ -1644,7 +1659,7 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Link da aula (opcional)' : 'Link da aula (Zoom)'}</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (opcional)</label>
                   <input
                     type="url"
                     value={editLessonMeetingUrl}
@@ -1654,7 +1669,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className={`teacher-modal-extra-field teacher-lesson-form-duration${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className="teacher-modal-extra-field teacher-lesson-form-duration teacher-preview-dialog-extra">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1667,7 +1682,7 @@ export default function TeacherPanel({
                     />
                   </div>
 
-                <div className={`teacher-modal-extra-field teacher-lesson-form-status${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className="teacher-modal-extra-field teacher-lesson-form-status teacher-preview-dialog-extra">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={editLessonStatus || 'agendada'}

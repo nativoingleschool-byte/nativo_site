@@ -20,6 +20,7 @@ import {
   TeacherAvailability,
   TeacherInvoice,
   TeacherAttendance,
+  TeacherLessonStatus,
 } from './lib/types'
 import {
   formatShortDate,
@@ -32,6 +33,7 @@ import {
   getStandaloneMode,
   getStoredNotificationKeys,
   storeNotificationKeys,
+  groupLessonsIntoTeacherSessions,
 } from './lib/utils'
 
 import StatCard from './components/StatCard'
@@ -162,32 +164,41 @@ const createPreviewFixture = () => {
   }
   const additionalStudents: Profile[] = [
     {
-      id: 'preview-student-sofia',
-      email: 'sofia.martins@example.com',
-      full_name: 'Sofia Martins',
+      id: 'preview-student-jadson',
+      email: 'jadson.silva@example.com',
+      full_name: 'Jadson Silva',
       role: 'student',
       class_name: 'Turma Fluência',
       speciality: '',
       push_enabled: false,
     },
     {
-      id: 'preview-student-pedro',
-      email: 'pedro.almeida@example.com',
-      full_name: 'Pedro Almeida',
+      id: 'preview-student-renan',
+      email: 'renan.costa@example.com',
+      full_name: 'Renan Costa',
+      role: 'student',
+      class_name: 'Turma Fluência',
+      speciality: '',
+      push_enabled: false,
+    },
+    {
+      id: 'preview-student-adielson',
+      email: 'adielson.pires@example.com',
+      full_name: 'Adielson Pires',
       role: 'student',
       class_name: 'Turma Fluência',
       speciality: '',
       push_enabled: false,
     },
   ]
-  const lessons: Lesson[] = [
+  const lessonTemplates: Lesson[] = [
     {
       id: 'preview-lesson-next',
       subject: 'Aulas de Inglês',
       class_name: 'Turma',
       student_id: previewStudentId,
       teacher_id: previewTeacherId,
-      starts_at: at(0, 20),
+      starts_at: at(1, 20),
       duration_minutes: 60,
       meeting_url: 'https://zoom.us/j/00000000000',
       student_attendance: 'attend',
@@ -242,6 +253,42 @@ const createPreviewFixture = () => {
       student_lesson_status: null,
       teacher_lesson_status: null,
     },
+  ]
+  const repeatedLessons = (sessionId: string, startsAt: string, status: Lesson['teacher_lesson_status']) =>
+    [student, ...additionalStudents].map((learner) => ({
+      id: `${sessionId}-${learner.id}`,
+      subject: 'Aulas de Inglês',
+      class_name: 'Turma Fluência',
+      student_id: learner.id,
+      teacher_id: previewTeacherId,
+      starts_at: startsAt,
+      duration_minutes: 60,
+      meeting_url: 'https://zoom.us/j/00000000000',
+      student_attendance: status === 'happened' ? 'attend' as const : null,
+      student_lesson_status: null,
+      teacher_lesson_status: status,
+      teacher_attendance: status === 'happened' ? 'present' as const : null,
+    }))
+  const lessons: Lesson[] = [
+    ...lessonTemplates.filter((lesson) => lesson.id !== 'preview-lesson-past').flatMap((lesson) =>
+      [student, ...additionalStudents].map((learner) => ({
+        ...lesson,
+        id: learner.id === lesson.student_id ? lesson.id : `${lesson.id}-${learner.id}`,
+        student_id: learner.id,
+        teacher_attendance: lesson.teacher_lesson_status === 'happened' ? 'present' as const : null,
+      }))
+    ),
+    ...[1, 8, 15, 22].flatMap((day, index) =>
+      repeatedLessons(`preview-invoice-${index + 1}`, new Date(now.getFullYear(), now.getMonth() - 1, day, 20).toISOString(), 'happened')
+    ),
+    ...[2, 6, 10].flatMap((day, index) => {
+      const startsAt = new Date(now.getFullYear(), now.getMonth(), day, 20).toISOString()
+      return repeatedLessons(
+        `preview-current-${index + 1}`,
+        startsAt,
+        new Date(startsAt).getTime() < now.getTime() ? 'happened' : null
+      )
+    }),
   ]
   const availabilities: TeacherAvailability[] = [
     { id: 'preview-availability-1', teacher_id: previewTeacherId, starts_at: at(1, 9), duration_minutes: 180 },
@@ -605,8 +652,10 @@ function ReminderAppInner() {
     }
   }
 
-  const refreshProfiles = async () => {
+  const refreshProfiles = async (expectedRole = profile?.role) => {
     let list: Profile[] = []
+    let apiError: Error | null = null
+    let apiLoaded = false
 
     const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     if (token) {
@@ -619,31 +668,33 @@ function ReminderAppInner() {
           },
           body: JSON.stringify({ action: 'get_profiles' }),
         })
-        if (response.ok) {
-          const result = (await response.json()) as { data?: Profile[] }
-          if (Array.isArray(result.data) && result.data.length > 0) {
-            list = result.data
-          }
-        }
+        const result = (await response.json().catch(() => ({}))) as { data?: Profile[]; error?: string }
+        if (!response.ok) throw new Error(result.error || `Profile request failed (${response.status}).`)
+        if (!Array.isArray(result.data)) throw new Error('Profile request returned an invalid response.')
+        list = result.data
+        apiLoaded = list.length > 0
       } catch (err) {
-        console.warn('API get_profiles error, falling back to direct query:', err)
+        apiError = err instanceof Error ? err : new Error('Profile request failed.')
+        console.warn('API get_profiles error, falling back to direct query:', apiError)
       }
     }
 
-    if (!list || list.length === 0) {
+    if (!apiLoaded) {
       try {
         const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
-        if (!error && data && data.length > 0) {
-          list = data as Profile[]
-        }
-      } catch (e) {
-        console.warn('Direct query profiles error:', e)
+        if (error) throw error
+        list = (data ?? []) as Profile[]
+      } catch (err) {
+        const directQueryError = err instanceof Error ? err : new Error('The profile query failed.')
+        console.error('Could not load teacher/student profiles:', { apiError, directQueryError })
+        throw new Error(`Não foi possível carregar a lista de alunos. ${apiError ? `${apiError.message} ` : ''}${directQueryError.message}`)
       }
     }
 
-    if (list.length > 0) {
-      setProfiles(list)
+    if (list.length === 0 && expectedRole === 'teacher') {
+      throw new Error('A lista de alunos retornou vazia. Verifique os cadastros ativos de alunos vinculados à conta.')
     }
+    setProfiles(list)
   }
 
   const [teacherNotesList, setTeacherNotesList] = useState<TeacherNote[]>([])
@@ -682,6 +733,17 @@ function ReminderAppInner() {
     if (!profile?.id) throw new Error('Your profile could not be verified.')
     if (!cleanNote) throw new Error('Note content is required.')
 
+    if (visualPreviewMode) {
+      setTeacherNotesList((items) => [{
+        id: `preview-note-${Date.now()}`,
+        teacher_id: profile.id,
+        note: cleanNote,
+        month_key: monthKey ?? null,
+        created_at: new Date().toISOString(),
+      }, ...items])
+      return
+    }
+
     const { data, error } = await supabase
       .from('teacher_notes')
       .insert({ teacher_id: profile.id, note: cleanNote, month_key: monthKey || null })
@@ -694,6 +756,11 @@ function ReminderAppInner() {
   }
 
   const deleteTeacherNote = async (noteId: string) => {
+    if (visualPreviewMode) {
+      setTeacherNotesList((items) => items.filter((item) => item.id !== noteId))
+      return
+    }
+
     const { data, error } = await supabase
       .from('teacher_notes')
       .delete()
@@ -958,7 +1025,7 @@ function ReminderAppInner() {
         if (currentProfile.role === 'admin' || currentProfile.role === 'teacher') {
           // Fire all independent fetches in parallel — no need to wait for each one sequentially
           await Promise.all([
-            refreshProfiles(),
+            refreshProfiles(currentProfile.role),
             refreshTeacherNotes(),
             refreshAvailabilities(),
             refreshTeacherInvoices(),
@@ -977,7 +1044,7 @@ function ReminderAppInner() {
       } catch (error) {
         console.error(error)
         if (!cancelled) {
-          setAppError('The app could not load data from Supabase. Check the environment variables and database setup.')
+          setAppError(error instanceof Error ? error.message : 'The app could not load data from Supabase.')
         }
       }
     }
@@ -1084,21 +1151,21 @@ function ReminderAppInner() {
     : []
 
   const teacherPastWeek = profile?.role === 'teacher'
-    ? visibleLessons
-        .filter((lesson) => {
-          const lessonTime = new Date(lesson.starts_at).getTime()
+    ? groupLessonsIntoTeacherSessions(visibleLessons)
+        .filter((session) => {
+          const lessonTime = new Date(session.starts_at).getTime()
           return lessonTime < now.getTime() && lessonTime >= now.getTime() - ONE_WEEK_MS
         })
-        .sort(sortByDateDesc)
+        .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
     : []
 
   const teacherUpcomingTenDays = profile?.role === 'teacher'
-    ? visibleLessons
-        .filter((lesson) => {
-          const lessonTime = new Date(lesson.starts_at).getTime()
+    ? groupLessonsIntoTeacherSessions(visibleLessons)
+        .filter((session) => {
+          const lessonTime = new Date(session.starts_at).getTime()
           return lessonTime >= now.getTime() && lessonTime <= now.getTime() + TEN_DAYS_MS
         })
-        .sort(sortByDateAsc)
+        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
     : []
 
   const dueStudentFourHourReminders = profile?.role === 'student'
@@ -1630,6 +1697,10 @@ function ReminderAppInner() {
   const deleteTeacherSingleLesson = async (lessonId: string) => {
     setAppError('')
     try {
+      if (visualPreviewMode) {
+        setLessons((items) => items.filter((lesson) => lesson.id !== lessonId))
+        return
+      }
       await callLessonsApi('delete_lesson', { lesson_id: lessonId })
       await refreshLessons()
     } catch (error) {
@@ -1689,8 +1760,9 @@ function ReminderAppInner() {
     teacher_id: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
+    teacher_lesson_status?: TeacherLessonStatus
   }) => {
-    window.confirm(t(language, 'update_recurring_confirm'))
     await updateLessonGroup(draft)
   }
 
@@ -1702,6 +1774,8 @@ function ReminderAppInner() {
     teacher_id: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
+    teacher_lesson_status?: TeacherLessonStatus
   }) => {
     setAppError('')
 
@@ -1711,6 +1785,34 @@ function ReminderAppInner() {
     }
 
     try {
+      if (visualPreviewMode) {
+        const selectedStudentIds = Array.from(new Set(draft.student_ids.filter(Boolean)))
+        if (!selectedStudentIds.length) throw new Error('Selecione pelo menos um aluno para a aula.')
+        const existingGroup = lessons.filter((lesson) => draft.lesson_ids.includes(lesson.id))
+        const template = existingGroup[0]
+        if (!template) throw new Error('A aula selecionada não foi encontrada na preview.')
+        const updatedLessons = selectedStudentIds.map((studentId) => {
+          const existing = existingGroup.find((lesson) => lesson.student_id === studentId)
+          return {
+            ...template,
+            ...existing,
+            id: existing?.id ?? `preview-edited-${Date.now()}-${studentId}`,
+            student_id: studentId,
+            subject: draft.subject,
+            class_name: draft.class_name,
+            teacher_id: draft.teacher_id,
+            starts_at: payload.starts_at,
+            duration_minutes: draft.duration_minutes,
+            meeting_url: draft.meeting_url ?? null,
+            teacher_lesson_status: draft.teacher_lesson_status ?? existing?.teacher_lesson_status ?? null,
+          }
+        })
+        setLessons((items) => [
+          ...items.filter((lesson) => !draft.lesson_ids.includes(lesson.id)),
+          ...updatedLessons,
+        ])
+        return
+      }
       await callLessonsApi('update_group', payload)
       await refreshLessons()
     } catch (error) {
@@ -1722,6 +1824,10 @@ function ReminderAppInner() {
   const deleteLessonGroup = async (lessonIds: string[]) => {
     setAppError('')
     try {
+      if (visualPreviewMode) {
+        setLessons((items) => items.filter((lesson) => !lessonIds.includes(lesson.id)))
+        return
+      }
       for (const id of lessonIds) {
         await callLessonsApi('delete_lesson', { lesson_id: id })
       }
