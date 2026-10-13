@@ -121,3 +121,6 @@ END;
 $fn$;
 REVOKE ALL ON FUNCTION public.update_teacher_weekly_series(jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.update_teacher_weekly_series(jsonb) TO authenticated;
+
+-- Ensure PostgREST discovers the newly created RPC.
+NOTIFY pgrst, 'reload schema';
