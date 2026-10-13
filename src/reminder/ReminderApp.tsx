@@ -1596,7 +1596,7 @@ function ReminderAppInner() {
   }
 
   const callLessonsApi = async <T,>(
-    action: 'create_group' | 'update_group' | 'create_lesson' | 'update_lesson' | 'delete_lesson',
+    action: 'create_group' | 'update_group' | 'create_lesson' | 'update_lesson' | 'delete_lesson' | 'create_weekly_series' | 'update_weekly_series',
     payload: unknown
   ): Promise<T> => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -1635,6 +1635,23 @@ function ReminderAppInner() {
     }
 
     return result.data
+  }
+
+  const saveWeeklySeries = async (draft: {
+    lesson_id?: string
+    teacher_id: string
+    student_ids: string[]
+    subject: string
+    class_name: string
+    starts_at: string
+    duration_minutes: number
+    meeting_url?: string | null
+    teacher_lesson_status?: TeacherLessonStatus
+    recurrence_weeks: number
+  }) => {
+    const action = draft.lesson_id ? 'update_weekly_series' : 'create_weekly_series'
+    await callLessonsApi<Lesson[]>(action, draft)
+    await refreshLessons()
   }
 
   const createTeacherSingleLesson = async (draft: {
@@ -2395,6 +2412,7 @@ function ReminderAppInner() {
               onDeleteLessonGroup={deleteLessonGroup}
               createStudentLoginFromCalendar={createStudentLoginFromCalendar}
               createTeacherLoginFromCalendar={createTeacherLoginFromCalendar}
+              saveWeeklySeries={saveWeeklySeries}
               createTeacherSingleLesson={createTeacherSingleLesson}
               updateTeacherSingleLesson={updateTeacherSingleLesson}
               deleteTeacherSingleLesson={deleteTeacherSingleLesson}
