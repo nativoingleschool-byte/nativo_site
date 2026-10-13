@@ -3442,6 +3442,157 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 }
 .teacher-preview-add-modal .teacher-modal-extra-field > div button:hover { border-color: #9eb3c0; background: #edf3f6 !important; }
 .teacher-preview-add-modal { overflow: visible !important; }
+
+/* Keep legacy portal dialogs on the same light, blurred modal system. */
+.reminder-app-scope.modal-overlay {
+  box-sizing: border-box;
+  display: grid !important;
+  place-items: center;
+  width: 100vw;
+  height: 100dvh;
+  padding: 12px !important;
+  overflow: hidden !important;
+  background: rgba(16, 33, 49, .42) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+.reminder-app-scope.modal-overlay > .modal-card,
+.reminder-app-scope.modal-overlay > .form-card {
+  box-sizing: border-box;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 28px !important;
+  border: 1px solid #e0e6ea !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 20px 60px rgba(26, 54, 75, .2) !important;
+  color: #324d66 !important;
+}
+.reminder-app-scope.modal-overlay > .modal-card:not(.teacher-preview-functional-modal):not(.teacher-preview-attendance-modal):not([style*="1240px"]),
+.reminder-app-scope.modal-overlay > .form-card:not([style*="1240px"]) {
+  width: min(560px, 100%) !important;
+  max-width: 560px !important;
+}
+.reminder-app-scope.modal-overlay > .modal-card .panel-header,
+.reminder-app-scope.modal-overlay > .form-card .panel-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px !important;
+  border-bottom: 1px solid #edf0f2 !important;
+  padding-bottom: 13px !important;
+  text-align: left;
+}
+.reminder-app-scope.modal-overlay > .modal-card .panel-header h2,
+.reminder-app-scope.modal-overlay > .modal-card h3,
+.reminder-app-scope.modal-overlay > .form-card .panel-header h2,
+.reminder-app-scope.modal-overlay > .form-card h3 {
+  color: #1f4268 !important;
+}
+.reminder-app-scope.modal-overlay > .modal-card .section-label,
+.reminder-app-scope.modal-overlay > .form-card .section-label {
+  display: none !important;
+}
+.teacher-preview-add-modal .panel-header { flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; }
+.teacher-preview-add-modal .panel-header > div:first-child { text-align: left; }
+.teacher-preview-add-modal .teacher-preview-dialog-subject > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+.teacher-preview-add-modal .teacher-preview-dialog-subject > div > button {
+  min-height: 30px;
+  padding: 5px 9px !important;
+  border: 1px solid #dfe6ea !important;
+  border-radius: 8px !important;
+  color: #526778 !important;
+  background: #f6f8f9 !important;
+  font-size: 10px !important;
+  font-weight: 600;
+}
+.teacher-preview-add-modal .teacher-preview-dialog-actions {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+}
+.teacher-preview-add-modal .teacher-preview-dialog-actions .secondary-button,
+.teacher-preview-add-modal .teacher-preview-dialog-actions .primary-button { width: auto !important; }
+.teacher-lesson-form-modal form {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px !important;
+}
+.teacher-lesson-form-modal .panel-header {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+.teacher-lesson-form-modal .panel-header > div:first-child { text-align: left; }
+.teacher-lesson-form-modal form > .teacher-preview-dialog-subject { grid-column: 1 / -1; order: 1; }
+.teacher-lesson-form-modal form > .teacher-preview-dialog-date-time { grid-column: 1 / -1; order: 2; }
+.teacher-lesson-form-modal form > .teacher-preview-dialog-link { grid-column: 1 / -1; order: 3; }
+.teacher-lesson-form-modal form > .teacher-preview-dialog-student,
+.teacher-lesson-form-modal form > .teacher-student-field { grid-column: 1 / -1; order: 4; }
+.teacher-lesson-form-modal form > .teacher-lesson-form-duration { grid-column: span 1; order: 5; }
+.teacher-lesson-form-modal form > .teacher-lesson-form-status { grid-column: span 1; order: 6; }
+.teacher-lesson-form-modal form > .teacher-preview-dialog-actions { grid-column: 1 / -1; order: 7; }
+.teacher-edit-modal-layout .teacher-preview-dialog-actions {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "calendar calendar calendar" "delete cancel save";
+  align-items: center;
+  gap: 8px 12px !important;
+}
+.teacher-edit-modal-layout .teacher-preview-dialog-actions > button:first-child {
+  grid-area: delete;
+  justify-self: start;
+  min-width: 0;
+  padding: 7px 9px !important;
+  border: 1px solid #f0c8d0 !important;
+  border-radius: 9px !important;
+  color: #ad3f57 !important;
+  background: #fff7f8 !important;
+  font-size: 11px !important;
+}
+.teacher-edit-modal-layout .teacher-preview-dialog-actions > div { display: contents !important; }
+.teacher-edit-modal-layout .teacher-preview-dialog-actions > div > button:first-child { grid-area: calendar; justify-self: end; }
+.teacher-edit-modal-layout .teacher-preview-dialog-actions > div > button:nth-child(2) { grid-area: cancel; }
+.teacher-edit-modal-layout .teacher-preview-dialog-actions > div > button:nth-child(3) { grid-area: save; }
+@media (max-width: 520px) {
+  .reminder-app-scope.modal-overlay > .modal-card,
+  .reminder-app-scope.modal-overlay > .form-card { padding: 16px !important; }
+  .reminder-app-scope.modal-overlay > .modal-card .panel-header,
+  .reminder-app-scope.modal-overlay > .form-card .panel-header {
+    margin-bottom: 12px !important;
+    padding-bottom: 10px !important;
+  }
+  .teacher-preview-add-modal .teacher-preview-dialog-actions { gap: 8px !important; }
+  .teacher-lesson-form-modal form { gap: 12px !important; }
+  .teacher-edit-modal-layout .teacher-preview-dialog-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "calendar calendar" "delete delete" "cancel save";
+    gap: 7px 8px !important;
+  }
+  .teacher-edit-modal-layout .teacher-preview-dialog-actions > button:first-child { justify-self: start; }
+  .teacher-edit-modal-layout .teacher-preview-dialog-actions > div > button:first-child { justify-self: end; }
+}
+@media (max-height: 700px) {
+  .reminder-app-scope.modal-overlay > .modal-card,
+  .reminder-app-scope.modal-overlay > .form-card { padding: 12px !important; }
+  .reminder-app-scope.modal-overlay > .modal-card .panel-header,
+  .reminder-app-scope.modal-overlay > .form-card .panel-header {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .reminder-app-scope.modal-overlay > .teacher-preview-add-modal { padding: 8px !important; }
+  .reminder-app-scope.modal-overlay > .teacher-preview-add-modal .panel-header {
+    min-height: 36px;
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+  }
+}
 .teacher-preview-add-modal .teacher-student-dropdown__menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -3461,6 +3612,7 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .teacher-preview-edit-modal .teacher-preview-dialog-actions > button:first-child { display: none; }
 .teacher-preview-edit-modal .teacher-preview-dialog-actions > div > button:first-child { display: none; }
 .teacher-preview-edit-modal .teacher-preview-dialog-actions > div { margin-left: auto; }
+.teacher-preview-edit-modal .teacher-preview-dialog-extra { display: none !important; }
 .teacher-preview-functional-modal .teacher-preview-dialog-actions { justify-content: flex-end !important; }
 .teacher-edit-modal-layout { max-width: 560px !important; }
 .teacher-edit-modal-layout form {
@@ -3755,3 +3907,56 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   }
 }
 .teacher-preview-add-modal { overflow: visible !important; }
+.teacher-lesson-form-modal {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 560px !important;
+  overflow: visible !important;
+}
+.teacher-lesson-form-modal .teacher-preview-dialog-field input,
+.teacher-lesson-form-modal .teacher-preview-dialog-date-time input,
+.teacher-lesson-form-modal .teacher-modal-extra-field > input,
+.teacher-lesson-form-modal .teacher-modal-extra-field > select,
+.teacher-lesson-form-modal .teacher-student-dropdown__trigger {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px !important;
+  padding: 10px 13px !important;
+  border: 1px solid #d7e0e5 !important;
+  border-radius: 11px !important;
+  color: #405364 !important;
+  background: #fff !important;
+  font-size: 13px !important;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  max-height: min(210px, 35dvh);
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__results {
+  max-height: min(150px, calc(35dvh - 50px));
+}
+@media (max-width: 520px) {
+  .teacher-lesson-form-modal { max-width: 100% !important; }
+  .teacher-lesson-form-modal .teacher-lesson-form-status > select {
+    padding-right: 18px !important;
+    padding-left: 8px !important;
+    font-size: 11px !important;
+  }
+}
+@media (max-height: 700px) {
+  .teacher-lesson-form-modal { padding: 10px !important; }
+  .teacher-lesson-form-modal .teacher-preview-dialog-field input,
+  .teacher-lesson-form-modal .teacher-preview-dialog-date-time input,
+  .teacher-lesson-form-modal .teacher-modal-extra-field > input,
+  .teacher-lesson-form-modal .teacher-modal-extra-field > select,
+  .teacher-lesson-form-modal .teacher-student-dropdown__trigger {
+    min-height: 34px !important;
+    padding: 6px 9px !important;
+  }
+  .teacher-lesson-form-modal .teacher-student-dropdown__menu { max-height: min(210px, 35dvh); }
+  .teacher-lesson-form-modal .teacher-student-dropdown__results { max-height: min(150px, calc(35dvh - 50px)); }
+}

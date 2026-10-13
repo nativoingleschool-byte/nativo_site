@@ -160,6 +160,26 @@ const createPreviewFixture = () => {
     speciality: '',
     push_enabled: false,
   }
+  const additionalStudents: Profile[] = [
+    {
+      id: 'preview-student-sofia',
+      email: 'sofia.martins@example.com',
+      full_name: 'Sofia Martins',
+      role: 'student',
+      class_name: 'Turma Fluência',
+      speciality: '',
+      push_enabled: false,
+    },
+    {
+      id: 'preview-student-pedro',
+      email: 'pedro.almeida@example.com',
+      full_name: 'Pedro Almeida',
+      role: 'student',
+      class_name: 'Turma Fluência',
+      speciality: '',
+      push_enabled: false,
+    },
+  ]
   const lessons: Lesson[] = [
     {
       id: 'preview-lesson-next',
@@ -231,7 +251,7 @@ const createPreviewFixture = () => {
     access_token: 'preview-session',
     refresh_token: 'preview-refresh',
   } as unknown as Session
-  return { teacher, profiles: [teacher, student], lessons, availabilities, session }
+  return { teacher, profiles: [teacher, student, ...additionalStudents], lessons, availabilities, session }
 }
 
 const previewFixture = createPreviewFixture()
