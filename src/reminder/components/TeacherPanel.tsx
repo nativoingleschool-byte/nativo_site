@@ -265,12 +265,8 @@ export default function TeacherPanel({
       `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
     )
   }, [classStudents, studentSearch])
-  const editClassStudents = useMemo(() => {
-    const currentClass = (profilesById[editLessonStudentId]?.class_name || editingLesson?.class_name || '').trim()
-    return sortedStudents.filter((student) =>
-      !currentClass || (student.class_name || '').trim() === currentClass
-    )
-  }, [editLessonStudentId, editingLesson?.class_name, profilesById, sortedStudents])
+  // Do not hide valid students when a lesson has a stale or different class label.
+  const editClassStudents = sortedStudents
   const filteredEditStudents = useMemo(() => {
     const query = editStudentSearch.trim().toLocaleLowerCase()
     if (!query) return editClassStudents
@@ -1630,7 +1626,11 @@ export default function TeacherPanel({
                         ))}
                         {showEditStudentFallback && (
                           <label>
-                            <input type="checkbox" checked={editLessonStudentIds.includes(editLessonStudentId)} disabled />
+                            <input type="checkbox" checked={editLessonStudentIds.includes(editLessonStudentId)} onChange={(event) => {
+                              setEditLessonStudentIds((current) => event.target.checked
+                                ? Array.from(new Set([...current, editLessonStudentId]))
+                                : current.filter((id) => id !== editLessonStudentId))
+                            }} />
                             <span>{editCurrentStudentName}</span>
                             {editingLesson?.class_name && <small>{editingLesson.class_name}</small>}
                           </label>
