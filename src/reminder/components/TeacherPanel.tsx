@@ -536,6 +536,7 @@ export default function TeacherPanel({
               class_name: className,
               starts_at: utcIso,
               duration_minutes: newLessonDuration,
+              meeting_url: newLessonMeetingUrl.trim() || null,
               teacher_lesson_status: newLessonStatus,
             },
           }),
@@ -1217,7 +1218,7 @@ export default function TeacherPanel({
       {showAddLessonModal &&
         createPortal(
           <div
-            className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop' : ''}`}
+            className="reminder-app-scope modal-overlay teacher-preview-dialog-backdrop"
             role="dialog"
             aria-modal="true"
             style={{
@@ -1233,7 +1234,7 @@ export default function TeacherPanel({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              overflowY: visualPreviewMode ? 'hidden' : 'auto',
+              overflow: 'hidden',
             }}
             onClick={(e) => {
               if (addModalRef.current && !addModalRef.current.contains(e.target as Node)) {
@@ -1243,12 +1244,12 @@ export default function TeacherPanel({
           >
             <div
               ref={addModalRef}
-              className={`modal-card animate-fade-in${visualPreviewMode ? ' teacher-preview-functional-modal teacher-preview-add-modal' : ''}`}
+              className="modal-card animate-fade-in teacher-preview-functional-modal teacher-preview-add-modal"
               style={{
                 maxWidth: '520px',
                 width: '100%',
-                maxHeight: visualPreviewMode ? 'calc(100dvh - 24px)' : '90vh',
-                overflowY: visualPreviewMode ? 'hidden' : 'auto',
+                maxHeight: 'calc(100dvh - 24px)',
+                overflow: 'hidden',
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: '1.5rem',
@@ -1260,7 +1261,7 @@ export default function TeacherPanel({
                   <p className="section-label">{t(modalLanguage, 'tab_worklog_nf')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Adicionar Nova Aula' : t(language, 'add_class')}</h2>
                 </div>
-                {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setShowAddLessonModal(false)}><X size={19} /></button>}
+                <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setShowAddLessonModal(false)}><X size={19} /></button>
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -1387,28 +1388,20 @@ export default function TeacherPanel({
                   </div>}
                 </div>
 
-                <div className={visualPreviewMode ? 'teacher-preview-dialog-date-time' : undefined}>
-                  {visualPreviewMode ? <>
-                    <label className="teacher-modal-field-label">Data</label>
-                    <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                    <label className="teacher-modal-field-label teacher-preview-dialog-time-label">Horário de Início</label>
-                    <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                  </> : <DateTimePicker
-                    value={newLessonStartsAt}
-                    onChange={(val) => setNewLessonStartsAt(val)}
-                    language={language}
-                    label={`${t(language, 'date_and_time')} *`}
-                    required
-                  />}
+                <div className="teacher-preview-dialog-date-time">
+                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
+                  <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
+                  <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
                 </div>
 
-                {visualPreviewMode && <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
+                <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="teacher-modal-field-label">Link da aula <span>(opcional)</span></label>
                   <input type="url" placeholder="https://meet.google.com/..." value={newLessonMeetingUrl} onChange={(event) => setNewLessonMeetingUrl(event.target.value)} />
-                </div>}
+                </div>
 
-                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -1440,8 +1433,8 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
+                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={newLessonStatus || 'agendada'}
                     onChange={(e) => setNewLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
@@ -1474,9 +1467,9 @@ export default function TeacherPanel({
         )}
 
       {attendanceLessons.length > 0 && createPortal(
-        <div className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop teacher-preview-attendance-backdrop' : ''}`} role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div className={`modal-card animate-fade-in ${visualPreviewMode ? 'teacher-preview-attendance-modal' : ''}`} style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}><X size={19} /></button>}
+        <div className="reminder-app-scope modal-overlay teacher-preview-dialog-backdrop teacher-preview-attendance-backdrop" role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflow: 'hidden' }}>
+          <div className="modal-card animate-fade-in teacher-preview-attendance-modal" style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}><X size={19} /></button>
             <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
               <div><p className="section-label">CHAMADA DA AULA</p><h2 style={{ fontSize: '1.4rem' }}>Quem compareceu?</h2></div>
             </div>
@@ -1503,7 +1496,7 @@ export default function TeacherPanel({
       {editingLesson &&
         createPortal(
           <div
-            className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop' : ''}`}
+            className="reminder-app-scope modal-overlay teacher-preview-dialog-backdrop"
             role="dialog"
             aria-modal="true"
             style={{
@@ -1519,7 +1512,7 @@ export default function TeacherPanel({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              overflowY: visualPreviewMode ? 'hidden' : 'auto',
+              overflow: 'hidden',
             }}
             onClick={(e) => {
               if (editModalRef.current && !editModalRef.current.contains(e.target as Node)) {
@@ -1529,12 +1522,12 @@ export default function TeacherPanel({
           >
             <div
               ref={editModalRef}
-              className={`modal-card animate-fade-in${visualPreviewMode ? ' teacher-preview-functional-modal teacher-preview-edit-modal' : ''}`}
+              className={`modal-card animate-fade-in teacher-preview-functional-modal${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
               style={{
                 maxWidth: '520px',
                 width: '100%',
-                maxHeight: visualPreviewMode ? 'calc(100dvh - 24px)' : '90vh',
-                overflowY: visualPreviewMode ? 'hidden' : 'auto',
+                maxHeight: 'calc(100dvh - 24px)',
+                overflow: 'hidden',
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: '1.5rem',
@@ -1546,7 +1539,7 @@ export default function TeacherPanel({
                   <p className="section-label">{t(modalLanguage, 'adjust_class_label')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Detalhes da aula' : t(language, 'modify_class_details')}</h2>
                 </div>
-                {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setEditingLesson(null)}><X size={19} /></button>}
+                <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setEditingLesson(null)}><X size={19} /></button>
               </div>
 
               <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -1582,21 +1575,11 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div>
-                  {visualPreviewMode ? <>
-                    <div className="teacher-preview-dialog-date-time">
-                      <label className="teacher-modal-field-label">Data</label>
-                      <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                      <label className="teacher-modal-field-label teacher-preview-dialog-time-label">Horário de Início</label>
-                      <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                    </div>
-                  </> : <DateTimePicker
-                    value={editLessonStartsAt}
-                    onChange={(val) => setEditLessonStartsAt(val)}
-                    language={language}
-                    label={`${t(language, 'date_and_time')} *`}
-                    required
-                  />}
+                <div className="teacher-preview-dialog-date-time">
+                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
+                  <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
+                  <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
                 </div>
 
                 <div>
@@ -1610,7 +1593,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
+                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1643,7 +1626,7 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
+                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={editLessonStatus || 'agendada'}

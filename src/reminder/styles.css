@@ -3425,7 +3425,32 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .teacher-preview-add-modal form > .teacher-preview-dialog-link { grid-column: 1 / -1; order: 3; }
 .teacher-preview-add-modal form > .teacher-student-field { grid-column: 1 / -1; order: 4; }
 .teacher-preview-add-modal form > .teacher-preview-dialog-extra { display: none !important; }
-.teacher-preview-add-modal form > .teacher-preview-dialog-actions { grid-column: 1 / -1; order: 5; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-actions { grid-column: 1 / -1; order: 7; }
+.teacher-preview-add-modal form > .teacher-modal-extra-field { grid-column: span 1; min-width: 0; order: 5; }
+.teacher-preview-add-modal form > .teacher-modal-extra-field:nth-of-type(6) { order: 6; }
+.teacher-preview-add-modal .teacher-modal-extra-field { display: grid; align-content: start; gap: 6px; }
+.teacher-preview-add-modal .teacher-modal-extra-field > input,
+.teacher-preview-add-modal .teacher-modal-extra-field > select { box-sizing: border-box; width: 100%; }
+.teacher-preview-add-modal .teacher-modal-extra-field > div { display: flex; gap: 5px !important; margin-top: 0 !important; }
+.teacher-preview-add-modal .teacher-modal-extra-field > div button {
+  min-height: 28px;
+  border: 1px solid #dfe6ea;
+  border-radius: 7px;
+  color: #526778 !important;
+  background: #f6f8f9 !important;
+  font-size: 10px !important;
+}
+.teacher-preview-add-modal .teacher-modal-extra-field > div button:hover { border-color: #9eb3c0; background: #edf3f6 !important; }
+.teacher-preview-add-modal { overflow: visible !important; }
+.teacher-preview-add-modal .teacher-student-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  max-height: min(210px, 35dvh);
+}
+.teacher-preview-add-modal .teacher-student-dropdown__results { max-height: min(150px, calc(35dvh - 50px)); }
 .teacher-preview-add-modal .teacher-preview-dialog-close { top: 24px; right: 23px; }
 .teacher-preview-add-modal .teacher-student-field__heading label { color: #526778 !important; font-size: 11px !important; font-weight: 700 !important; }
 .teacher-preview-add-modal .teacher-student-field__heading > button { margin-left: auto; }
@@ -3480,6 +3505,9 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .teacher-preview-functional-modal .secondary-button { border-color: #dfe6ea !important; color: #657684 !important; background: #fff !important; }
 .teacher-preview-functional-modal .primary-button { color: #fff !important; background: #1f4268 !important; }
 .teacher-preview-functional-modal .button-row { border-color: #edf0f2 !important; }
+.teacher-preview-functional-modal .teacher-modal-extra-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.teacher-preview-functional-modal .teacher-modal-extra-field > input,
+.teacher-preview-functional-modal .teacher-modal-extra-field > select { box-sizing: border-box; width: 100%; }
 .teacher-modal-field-label { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 700; }
 .teacher-student-field { display: grid; gap: 6px; }
 .teacher-student-field__heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -3662,9 +3690,10 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   .teacher-reference-preview-portal .reference-availability-sync { margin-top: 7px; }
   .teacher-preview-functional-modal { padding: 12px !important; }
   .teacher-preview-add-modal form { gap: 8px !important; }
-  .teacher-preview-add-modal .teacher-student-dropdown__menu { max-height: 110px; }
-  .teacher-preview-add-modal .teacher-student-dropdown__results { max-height: 50px; }
+  .teacher-preview-add-modal .teacher-student-dropdown__menu { max-height: min(210px, 35dvh); }
+  .teacher-preview-add-modal .teacher-student-dropdown__results { max-height: min(150px, calc(35dvh - 50px)); }
   .teacher-preview-add-modal .teacher-preview-dialog-field input,
   .teacher-preview-add-modal .teacher-preview-dialog-date-time input,
   .teacher-preview-add-modal .teacher-student-dropdown__trigger { min-height: 34px !important; padding: 6px 9px !important; }
 }
+.teacher-preview-add-modal { overflow: visible !important; }

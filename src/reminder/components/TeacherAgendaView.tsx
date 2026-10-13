@@ -65,7 +65,7 @@ export default function TeacherAgendaView({
   const previewClassStudents = '4 alunos (Ladiele, Adielson, Jadson, Renan)'
   const [previewModal, setPreviewModal] = useState<'details' | 'availability' | null>(null)
   const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false)
-  useBodyScrollLock(visualPreview && previewModal !== null)
+  useBodyScrollLock(previewModal !== null)
   const calendarEvents: CalendarEventItem[] = [
     ...lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
@@ -158,7 +158,7 @@ export default function TeacherAgendaView({
             </div>
           </div>
           <div className="teacher-next-lesson-card__actions">
-            <button type="button" className="teacher-soft-button" onClick={() => visualPreview ? setPreviewModal('details') : onOpenLesson(nextLesson)}>Ver detalhes</button>
+            <button type="button" className="teacher-soft-button" onClick={() => setPreviewModal('details')}>Ver detalhes</button>
             <button type="button" className="teacher-join-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}>
               <Video size={14} aria-hidden="true" /> Entrar no Zoom
             </button>
@@ -199,17 +199,48 @@ export default function TeacherAgendaView({
           />
       </section>
 
-      {visualPreview && previewModal && createPortal(
+      {previewModal && (visualPreview || previewModal === 'details') && createPortal(
         <div className="teacher-reference-preview-portal">
           <div className="reference-modal-backdrop" role="presentation" onClick={() => setPreviewModal(null)}>
             <section className={`reference-modal reference-agenda-modal${previewModal === 'availability' ? ' reference-availability-modal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="reference-modal-close" aria-label="Fechar" onClick={() => setPreviewModal(null)}><X size={18} /></button>
-            {previewModal === 'details' && <>
+            {previewModal === 'details' && nextLesson && <>
               <span className="reference-kicker">DETALHES DA AULA</span>
-              <h2>Aulas de Inglês · Turma</h2>
-              <p className="reference-agenda-modal-date">Hoje · 20:00 – 21:00</p>
-              <div className="reference-detail-grid"><span>Nível<strong>Fluência</strong></span><span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span><span>Sala virtual<strong>Zoom</strong></span><span>Honorário previsto<strong>R$ 56,00</strong></span></div>
-              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" onClick={addNextLessonToGoogleCalendar}>Adicionar ao Google Agenda</button><button type="button" className="reference-primary-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}><Video size={15} /> Entrar no Zoom</button></div>
+              <h2>{visualPreview ? 'Aulas de Inglês · Turma' : `${nextLesson.subject || 'Aulas de Inglês'} · ${nextLesson.class_name || 'Turma'}`}</h2>
+              <p className="reference-agenda-modal-date">{visualPreview
+                ? 'Hoje · 20:00 – 21:00'
+                : new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }).format(new Date(nextLesson.starts_at))}</p>
+              <div className="reference-detail-grid">
+                {visualPreview ? <>
+                  <span>Nível<strong>Fluência</strong></span>
+                  <span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span>
+                  <span>Sala virtual<strong>Zoom</strong></span>
+                  <span>Honorário previsto<strong>R$ 56,00</strong></span>
+                </> : <>
+                  <span>Aluno<strong>{getStudentNames(nextLesson, profilesById, students)}</strong></span>
+                  <span>Duração<strong>{nextLesson.duration_minutes || 60} min</strong></span>
+                  <span>Status<strong>{nextLesson.teacher_lesson_status === 'happened'
+                    ? 'Realizada'
+                    : nextLesson.teacher_lesson_status === 'student_no_show'
+                      ? 'Não compareceu'
+                      : nextLesson.teacher_lesson_status === 'not_happened'
+                        ? 'Cancelada'
+                        : 'Agendada'}</strong></span>
+                  <span>Sala virtual<strong>{nextLesson.meeting_url ? 'Link disponível' : 'Não informada'}</strong></span>
+                </>}
+              </div>
+              <div className="reference-agenda-modal-actions">
+                <button type="button" onClick={() => setPreviewModal(null)}>Fechar</button>
+                {!visualPreview && <button type="button" onClick={() => { setPreviewModal(null); onOpenLesson(nextLesson) }}>Editar aula</button>}
+                <button type="button" onClick={addNextLessonToGoogleCalendar}>Adicionar ao Google Agenda</button>
+                <button type="button" className="reference-primary-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}><Video size={15} /> Entrar no Zoom</button>
+              </div>
             </>}
             {previewModal === 'availability' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
