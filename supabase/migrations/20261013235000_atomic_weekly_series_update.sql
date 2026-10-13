@@ -44,7 +44,7 @@ BEGIN
   weeks := COALESCE((p->>'recurrence_weeks')::integer,1);
   IF weeks < 1 OR weeks > 52 THEN RAISE EXCEPTION 'Limite de 1 a 52 semanas.'; END IF;
   shift_by := start_at - ref.starts_at;
-  series_id := COALESCE(ref.recurrence_series_id, extensions.gen_random_uuid());
+  series_id := COALESCE(ref.recurrence_series_id, pg_catalog.gen_random_uuid());
 
   IF ref.recurrence_series_id IS NULL THEN
     SELECT array_agg(DISTINCT lesson_id) INTO initial_ids FROM (
