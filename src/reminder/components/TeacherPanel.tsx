@@ -64,6 +64,7 @@ interface TeacherPanelProps {
     subject: string
     class_name?: string
     student_id: string
+    student_name?: string
     teacher_id?: string
     starts_at: string
     duration_minutes: number
@@ -475,13 +476,13 @@ export default function TeacherPanel({
         toast.error(error instanceof Error ? error.message : 'Não foi possível carregar os alunos.')
       })
     }
-    const defaultStudent = visualPreviewMode ? '' : sortedStudents[0]?.id || '__NEW__'
+    const defaultStudent = '__NEW__'
     setNewLessonStudentId(defaultStudent)
     setNewLessonStudentIds(defaultStudent && defaultStudent !== '__NEW__' ? [defaultStudent] : [])
     setStudentSearch('')
     setNewLessonStudentName('')
     setNewLessonMeetingUrl('')
-    setAddStudentMode('select')
+    setAddStudentMode('custom')
     setNewLessonStudentsOpen(false)
     setNewLessonSubject(visualPreviewMode ? 'Aulas de Inglês · Turma Fluência' : t(language, 'individual_class'))
     setNewLessonDuration(60)
@@ -496,7 +497,7 @@ export default function TeacherPanel({
   // Submit Add Lesson
   const handleAddLessonSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const isCustom = newLessonStudentId === '__NEW__' || !newLessonStudentId
+    const isCustom = addStudentMode === 'custom' || newLessonStudentId === '__NEW__' || !newLessonStudentId
     const selectedStudentIds = isCustom ? [] : newLessonStudentIds.filter(Boolean)
     const studentIdentifier = isCustom ? newLessonStudentName.trim() : selectedStudentIds[0]
     if (!studentIdentifier || !newLessonSubject.trim() || !newLessonStartsAt) {
@@ -523,6 +524,8 @@ export default function TeacherPanel({
       } else if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
           student_id: studentIdentifier,
+          student_name: isCustom ? newLessonStudentName.trim() : undefined,
+          student_name: isCustom ? newLessonStudentName.trim() : undefined,
           teacher_id: profile.id,
           subject: newLessonSubject.trim(),
           class_name: className,
@@ -1392,7 +1395,7 @@ export default function TeacherPanel({
                     </div>}
                   </div>}
 
-                  {(addStudentMode === 'custom' || (!visualPreviewMode && sortedStudents.length === 0)) && (
+                  {addStudentMode === 'custom' && (
                     <div style={{ marginTop: '0.65rem' }}>
                       <input
                         required
@@ -1403,8 +1406,8 @@ export default function TeacherPanel({
                       />
                       <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', marginBottom: 0 }}>
                         {sortedStudents.length > 0
-                          ? 'Digite o nome do novo aluno acima.'
-                          : 'Carregando lista de alunos. Você também pode digitar o nome do aluno diretamente.'}
+                          ? 'Digite o nome do aluno para adicioná-lo à aula.'
+                          : 'Digite o nome do aluno para adicioná-lo à aula.'}
                       </p>
                     </div>
                   )}
