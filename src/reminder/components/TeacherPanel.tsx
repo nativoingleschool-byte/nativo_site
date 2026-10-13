@@ -339,8 +339,10 @@ export default function TeacherPanel({
       const sessionLessons = groupLessonsIntoTeacherSessions(teacherLessons)
         .find((session) => session.lessons.some((lesson) => lesson.id === lessonId))?.lessons ?? []
       const lessonIds = sessionLessons.length > 0 ? sessionLessons.map((lesson) => lesson.id) : [lessonId]
-      if (updateTeacherSingleLesson && lessonIds.length === 1) {
-        await updateTeacherSingleLesson({ lesson_id: lessonId, teacher_lesson_status: status })
+      if (updateTeacherSingleLesson) {
+        for (const id of lessonIds) {
+          await updateTeacherSingleLesson({ lesson_id: id, teacher_lesson_status: status })
+        }
       } else {
         const { error } = await supabase.from('lessons').update({ teacher_lesson_status: status }).in('id', lessonIds)
         if (error) throw error
