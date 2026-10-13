@@ -6,9 +6,7 @@ const supabaseAuthKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 const supabaseServiceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -68,9 +66,35 @@ const assertAuthenticated = async (req) => {
   }
   const supabaseAdmin = getSupabaseAdmin()
 
-  const { data: profile, error: profileError } = await supabaseAdmin.from('profiles').select('*').eq('id', user.id).single()
+  // Read the signed-in user's own profile with their JWT. This follows the
+  // existing profiles SELECT RLS policy and does not depend on service-role
+  // privileges simply to establish the caller's identity.
+  const { data: profile, error: profileError } = await authClient
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
   if (profileError || !profile) {
-    throw new Error('The profile could not be loaded.')
+    console.error('[reminder:profiles] own profile lookup failed', {
+      code: profileError?.code || 'no_profile',
+      message: profileError?.message || 'No matching profile',
+    })
+    throw new Error('Não foi possível carregar o perfil autenticado. Verifique o cadastro e as permissões.')
+  }
+
+  // The privileged client must truly be capable of reading the selected
+  // profile; do not silently use an anon/publishable key for writes.
+  const { data: privilegedProfile, error: adminError } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single()
+  if (adminError || !privilegedProfile) {
+    console.error('[reminder:profiles] administrative profile lookup failed', {
+      code: adminError?.code || 'no_profile',
+      message: adminError?.message || 'No matching profile',
+    })
+    throw new Error('A API não possui acesso administrativo ao cadastro. Verifique SUPABASE_SECRET_KEY da produção.')
   }
 
   return { supabaseAdmin, user, profile }
