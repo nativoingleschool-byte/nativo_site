@@ -1650,8 +1650,10 @@ function ReminderAppInner() {
     recurrence_weeks: number
   }) => {
     const action = draft.lesson_id ? 'update_weekly_series' : 'create_weekly_series'
-    await callLessonsApi<Lesson[]>(action, draft)
-    await refreshLessons()
+    await callLessonsApi<{ success?: boolean; lesson_count?: number } | Lesson[]>(action, draft)
+    void refreshLessons().catch((error) =>
+      console.warn('[reminder:lessons] saved, but refresh failed:', error)
+    )
   }
 
   const createTeacherSingleLesson = async (draft: {
@@ -1691,7 +1693,7 @@ function ReminderAppInner() {
         return created
       }
       const created = await callLessonsApi<Lesson>('create_lesson', payload)
-      await refreshLessons()
+      void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
       return created
     } catch (error) {
       setAppError(error instanceof Error ? error.message : 'Could not create the class.')
@@ -1728,7 +1730,7 @@ function ReminderAppInner() {
         return updated
       }
       const updated = await callLessonsApi<Lesson>('update_lesson', payload)
-      await refreshLessons()
+      void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
       return updated
     } catch (error) {
       setAppError(error instanceof Error ? error.message : 'Could not update the class.')
@@ -1787,7 +1789,7 @@ function ReminderAppInner() {
         return
       }
       await callLessonsApi('create_group', payload)
-      await refreshLessons()
+      void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
     } catch (error) {
       setAppError(error instanceof Error ? error.message : 'Could not create the class.')
       throw error
@@ -1856,7 +1858,7 @@ function ReminderAppInner() {
         return
       }
       await callLessonsApi('update_group', payload)
-      await refreshLessons()
+      void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
     } catch (error) {
       setAppError(error instanceof Error ? error.message : 'Could not update the class.')
       throw error
