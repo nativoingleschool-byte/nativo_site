@@ -1599,8 +1599,10 @@ function ReminderAppInner() {
     action: 'create_group' | 'update_group' | 'create_lesson' | 'update_lesson' | 'delete_lesson',
     payload: unknown
   ): Promise<T> => {
-    if (!session?.access_token) {
-      throw new Error('You are not signed in.')
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    const currentToken = sessionData.session?.access_token
+    if (sessionError || !currentToken) {
+      throw new Error('Sua sessão expirou. Entre novamente para salvar a aula.')
     }
 
     const requestId = crypto.randomUUID()
@@ -1611,7 +1613,7 @@ function ReminderAppInner() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentToken}`,
           'X-Request-ID': requestId,
         },
         body: JSON.stringify({ action, payload }),
