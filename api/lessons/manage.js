@@ -721,6 +721,12 @@ export default async function handler(req, res) {
 
     return json(res, 400, { error: 'Unknown action.' })
   } catch (error) {
-    return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected server error.' })
+    const requestId = String(req.headers['x-request-id'] || '').slice(0, 80)
+    console.error('[reminder:lessons] operation failed', {
+      requestId,
+      action: typeof body?.action === 'string' ? body.action : 'unknown',
+      message: error instanceof Error ? error.message : 'Unexpected server error.',
+    })
+    return json(res, 400, { error: error instanceof Error ? error.message : 'Unexpected server error.', requestId })
   }
 }
