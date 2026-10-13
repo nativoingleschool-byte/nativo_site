@@ -1603,19 +1603,30 @@ function ReminderAppInner() {
       throw new Error('You are not signed in.')
     }
 
-    const response = await fetch('/api/lessons/manage', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ action, payload }),
-    })
-
-    const result = (await response.json()) as { data?: T; error?: string }
-    if (!response.ok) {
-      throw new Error(result.error ?? 'Request failed.')
+    const requestId = crypto.randomUUID()
+    console.info('[reminder:lessons] request', { requestId, action })
+    let response: Response
+    try {
+      response = await fetch('/api/lessons/manage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          'X-Request-ID': requestId,
+        },
+        body: JSON.stringify({ action, payload }),
+      })
+    } catch (error) {
+      console.error('[reminder:lessons] network failure', { requestId, action, error })
+      throw error
     }
+
+    const result = (await response.json().catch(() => ({}))) as { data?: T; error?: string; requestId?: string }
+    if (!response.ok) {
+      console.error('[reminder:lessons] failed', { requestId, action, status: response.status, message: result.error })
+      throw new Error(`${result.error ?? 'Falha ao salvar a aula'} (HTTP ${response.status}; ref: ${requestId})`)
+    }
+    console.info('[reminder:lessons] completed', { requestId, action, status: response.status })
 
     if (!result.data) {
       throw new Error('Unexpected API response.')
