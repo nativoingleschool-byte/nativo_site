@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseAuthKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
@@ -35,15 +36,22 @@ const assertAuthenticated = async (req) => {
     throw new Error('Missing bearer token.')
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
+  // Validate the user's JWT using the public Auth API key; use the
+  // privileged server client only for authorized database operations.
+  if (!supabaseAuthKey) throw new Error('Server Auth configuration is missing.')
+  const authClient = createClient(supabaseUrl, supabaseAuthKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
   const {
     data: { user },
     error: userError,
-  } = await supabaseAdmin.auth.getUser(token)
+  } = await authClient.auth.getUser(token)
 
   if (userError || !user) {
-    throw new Error('The session could not be verified.')
+    console.warn('[reminder:auth] JWT validation failed', { code: userError?.code, status: userError?.status })
+    throw new Error('Sessão inválida ou expirada. Saia da conta e entre novamente.')
   }
+  const supabaseAdmin = getSupabaseAdmin()
 
   const { data: profile, error: profileError } = await supabaseAdmin.from('profiles').select('*').eq('id', user.id).single()
   if (profileError || !profile) {
