@@ -517,7 +517,6 @@ export default function TeacherPanel({
       } else if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
           student_id: studentIdentifier,
-          student_name: isCustom ? newLessonStudentName.trim() : undefined,
           teacher_id: profile.id,
           subject: newLessonSubject.trim(),
           class_name: className,
