@@ -3968,3 +3968,49 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   .teacher-lesson-form-modal .teacher-student-dropdown__menu { max-height: min(210px, 35dvh); }
   .teacher-lesson-form-modal .teacher-student-dropdown__results { max-height: min(150px, calc(35dvh - 50px)); }
 }
+
+/* Keep long student selections inside the lesson dialog on narrow screens. */
+.teacher-lesson-form-modal,
+.teacher-lesson-form-modal form,
+.teacher-lesson-form-modal .teacher-preview-dialog-student,
+.teacher-lesson-form-modal .teacher-student-dropdown {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__trigger {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__trigger span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__menu {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  max-height: min(300px, 45dvh) !important;
+  overflow: hidden;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__menu--above {
+  top: auto !important;
+  bottom: calc(100% + 4px) !important;
+  max-height: min(300px, 45dvh) !important;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__results {
+  overflow-y: auto !important;
+  max-height: min(235px, calc(45dvh - 60px)) !important;
+}
+.teacher-lesson-form-modal .teacher-student-dropdown__search input {
+  width: 100% !important;
+  min-width: 0 !important;
+  color: #243e58 !important;
+  -webkit-text-fill-color: #243e58 !important;
+  caret-color: #243e58 !important;
+  background: #fff !important;
+}
