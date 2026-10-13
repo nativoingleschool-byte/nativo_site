@@ -179,7 +179,7 @@ export default function TeacherLiveFinanceView({
           <label className="reference-primary-button">
             <FileUp size={15} aria-hidden="true" />
             {uploadingInvoice ? t(language, 'saving_label') : profile.status_nota_fiscal === 'enviada' ? t(language, 'replace_resend_nf') : t(language, 'select_nf_file')}
-            <input type="file" accept=".pdf,image/*" disabled={uploadingInvoice} onChange={onUploadInvoice} />
+            <input type="file" accept=".pdf,application/pdf" disabled={uploadingInvoice} onChange={onUploadInvoice} />
           </label>
         </div>
         <div className="reference-invoice-notice"><Info size={15} /><span>{t(language, 'teacher_mei_alert_desc')}</span></div>

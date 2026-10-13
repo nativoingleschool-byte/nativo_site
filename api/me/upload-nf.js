@@ -1,13 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SECRET_KEY ||
-  process.env.SUPABASE_SERVICE_KEY ||
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY;
+const supabasePublicKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -15,12 +9,13 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
+const getUserClient = (token) => {
+  if (!supabaseUrl || !supabasePublicKey) {
+    throw new Error('Supabase server authentication configuration is missing.');
   }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
+  return createClient(supabaseUrl, supabasePublicKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 };
 
@@ -45,10 +40,15 @@ export default async function handler(req, res) {
       return json(res, 401, { error: 'Missing bearer token.' });
     }
 
-    const supabaseAdmin = getSupabaseAdmin();
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const userClient = getUserClient(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser(token);
     if (userError || !user) {
-      return json(res, 401, { error: 'Invalid session.' });
+      return json(res, 401, { error: 'Sessão inválida. Entre novamente.' });
+    }
+    const { data: profile, error: roleError } = await userClient.from('profiles')
+      .select('id,role,archived').eq('id', user.id).single();
+    if (roleError || !profile || profile.archived || profile.role !== 'teacher') {
+      return json(res, 403, { error: 'Somente professores ativos podem enviar notas fiscais.' });
     }
 
     const { status_nota_fiscal, nota_fiscal_url, month_key, amount, file_name } = body || {};
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       ...(nota_fiscal_url ? { nota_fiscal_url } : {})
     };
 
-    const { error: profileError } = await supabaseAdmin
+    const { error: profileError } = await userClient
       .from('profiles')
       .update(updatePayload)
       .eq('id', user.id);
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     if (nota_fiscal_url) {
       const activeMonth = month_key || new Date().toISOString().slice(0, 7);
       try {
-        const { error: invoiceError } = await supabaseAdmin.from('teacher_invoices').insert({
+        const { error: invoiceError } = await userClient.from('teacher_invoices').insert({
           teacher_id: user.id,
           month_key: activeMonth,
           file_url: nota_fiscal_url,
