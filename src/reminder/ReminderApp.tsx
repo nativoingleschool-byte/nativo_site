@@ -653,11 +653,10 @@ function ReminderAppInner() {
   }
 
   const refreshProfiles = async (expectedRole = profile?.role) => {
-    let list: Profile[] = []
+    const token = (await supabase.auth.getSession()).data.session?.access_token
+    let apiProfiles: Profile[] | null = null
     let apiError: Error | null = null
-    let apiLoaded = false
 
-    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     if (token) {
       try {
         const response = await fetch('/api/lessons/manage', {
@@ -671,30 +670,42 @@ function ReminderAppInner() {
         const result = (await response.json().catch(() => ({}))) as { data?: Profile[]; error?: string }
         if (!response.ok) throw new Error(result.error || `Profile request failed (${response.status}).`)
         if (!Array.isArray(result.data)) throw new Error('Profile request returned an invalid response.')
-        list = result.data
-        apiLoaded = true
-      } catch (err) {
-        apiError = err instanceof Error ? err : new Error('Profile request failed.')
-        console.warn('API get_profiles error, falling back to direct query:', apiError)
+        apiProfiles = result.data.filter((item) => !item.archived)
+      } catch (error) {
+        apiError = error instanceof Error ? error : new Error('Profile request failed.')
+        console.warn('Could not load profiles from server API:', apiError)
       }
     }
 
-    if (!apiLoaded) {
-      try {
-        const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
-        if (error) throw error
-        list = (data ?? []) as Profile[]
-      } catch (err) {
-        const directQueryError = err instanceof Error ? err : new Error('The profile query failed.')
-        console.error('Could not load teacher/student profiles:', { apiError, directQueryError })
-        throw new Error(`Não foi possível carregar a lista de alunos. ${apiError ? `${apiError.message} ` : ''}${directQueryError.message}`)
+    // Teachers must see real student names even when a server route is unavailable
+    // or its credentials are misconfigured. This RPC exposes ONLY directory fields.
+    if (expectedRole === 'teacher' && !apiProfiles?.some((item) => item.role === 'student')) {
+      const { data: directory, error: directoryError } = await supabase.rpc('list_active_students_for_teachers')
+      if (directoryError) {
+        throw new Error(`Não foi possível carregar os alunos. ${directoryError.message}${apiError ? ` (API: ${apiError.message})` : ''}`)
       }
+      const students = (directory ?? []) as Pick<Profile, 'id' | 'full_name' | 'role' | 'class_name' | 'archived'>[]
+      if (students.length === 0) {
+        throw new Error('Nenhum aluno ativo foi encontrado no cadastro.')
+      }
+      // Keep the signed-in teacher profile for components that reference it.
+      const ownProfile = profile?.id === session?.user?.id ? [profile] : []
+      setProfiles([...ownProfile, ...students] as Profile[])
+      return
     }
 
-    if (!list.some((item) => item.role === 'student' && !item.archived) && expectedRole === 'teacher') {
-      throw new Error('A lista de alunos retornou vazia. Verifique os cadastros ativos de alunos vinculados à conta.')
+    if (apiProfiles) {
+      setProfiles(apiProfiles)
+      return
     }
-    setProfiles(list)
+
+    if (expectedRole === 'teacher') {
+      throw apiError ?? new Error('Não foi possível carregar os alunos.')
+    }
+
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
+    if (error) throw new Error(`Não foi possível carregar os perfis: ${error.message}`)
+    setProfiles((data ?? []) as Profile[])
   }
 
   const [teacherNotesList, setTeacherNotesList] = useState<TeacherNote[]>([])
