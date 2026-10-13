@@ -199,6 +199,8 @@ export default function TeacherPanel({
   const [editLessonIds, setEditLessonIds] = useState<string[]>([])
   const [editLessonStudentName, setEditLessonStudentName] = useState('')
   const [editStudentsOpen, setEditStudentsOpen] = useState(false)
+  const [editStudentsAbove, setEditStudentsAbove] = useState(false)
+  const editStudentsTriggerRef = useRef<HTMLButtonElement>(null)
   const [editStudentSearch, setEditStudentSearch] = useState('')
   const [editLessonSubject, setEditLessonSubject] = useState('')
   const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
@@ -274,7 +276,7 @@ export default function TeacherPanel({
       `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
     )
   }, [editClassStudents, editStudentSearch])
-  const editCurrentStudentName = profilesById[editLessonStudentId]?.full_name || 'Aluno Atual'
+  const editCurrentStudentName = sortedStudents.find((student) => student.id === editLessonStudentId)?.full_name || profilesById[editLessonStudentId]?.full_name || 'Aluno não localizado'
   const showEditStudentFallback = Boolean(
     editLessonStudentId
     && !sortedStudents.some((student) => student.id === editLessonStudentId)
@@ -579,6 +581,9 @@ export default function TeacherPanel({
 
   // Open Edit Lesson Modal
   const handleOpenEditLesson = (lesson: Lesson, group: Lesson[] = [lesson]) => {
+    if (refreshProfiles) {
+      void refreshProfiles().catch((error) => toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar a lista de alunos.'))
+    }
     setEditingLesson(lesson)
     setEditLessonStudentId(lesson.student_id)
     setEditLessonStudentIds(Array.from(new Set(group.map((item) => item.student_id).filter(Boolean))))
@@ -1580,8 +1585,11 @@ export default function TeacherPanel({
                     <button
                       type="button"
                       className="teacher-student-dropdown__trigger"
+                      ref={editStudentsTriggerRef}
                       onClick={() => {
                         setEditStudentSearch('')
+                        const bounds = editStudentsTriggerRef.current?.getBoundingClientRect()
+                        setEditStudentsAbove(Boolean(bounds && window.innerHeight - bounds.bottom < 230 && bounds.top > window.innerHeight - bounds.bottom))
                         setEditStudentsOpen((open) => !open)
                       }}
                       aria-expanded={editStudentsOpen}
@@ -1589,11 +1597,11 @@ export default function TeacherPanel({
                       <span>{editLessonStudentIds.map((id) =>
                         sortedStudents.find((student) => student.id === id)?.full_name
                         || profilesById[id]?.full_name
-                        || 'Aluno Atual'
+                        || 'Aluno não localizado'
                       ).join(', ') || 'Selecionar alunos'}</span>
                       <ChevronDown size={15} />
                     </button>
-                    {editStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar alunos">
+                    {editStudentsOpen && <div className={`teacher-student-dropdown__menu${editStudentsAbove ? " teacher-student-dropdown__menu--above" : ""}`} role="group" aria-label="Selecionar alunos">
                       <label className="teacher-student-dropdown__search">
                         <Search size={14} aria-hidden="true" />
                         <input
