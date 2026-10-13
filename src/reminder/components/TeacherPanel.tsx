@@ -154,6 +154,22 @@ export default function TeacherPanel({
   const modalLanguage: Language = visualPreviewMode ? 'pt' : language
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
+  // A NFS-e acompanha o ciclo real do mês, independentemente do mês visual
+  // selecionado no calendário de aulas: se a nota ainda está pendente,
+  // trabalhamos com o mês anterior; depois do envio, a referência passa para
+  // o mês atual. Isso evita referências artificiais como 2027 vindas de
+  // selectedMonth, que pertence somente à navegação do calendário.
+  const nfReferenceDate = useMemo(() => {
+    const date = new Date()
+    if (profile.status_nota_fiscal !== 'enviada') date.setMonth(date.getMonth() - 1)
+    return date
+  }, [profile.status_nota_fiscal])
+  const nfReferenceMonthKey = `${nfReferenceDate.getFullYear()}-${String(nfReferenceDate.getMonth() + 1).padStart(2, '0')}`
+  const nfReferenceMonthLabel = new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(nfReferenceDate)
+
   const [isSendingNotes, setIsSendingNotes] = useState(false)
 
   // Worklog Month & Filter states
@@ -745,7 +761,7 @@ export default function TeacherPanel({
         try {
           const fileDataUrl = reader.result as string
 
-          const activeMonthKey = `${new Date().getFullYear()}-${String(Number(selectedMonth) + 1).padStart(2, '0')}`
+          const activeMonthKey = nfReferenceMonthKey
 
           const res = await fetch('/api/me/upload-nf', {
             method: 'POST',
