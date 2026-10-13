@@ -48,8 +48,23 @@ const assertAuthenticated = async (req) => {
   } = await authClient.auth.getUser(token)
 
   if (userError || !user) {
-    console.warn('[reminder:auth] JWT validation failed', { code: userError?.code, status: userError?.status })
-    throw new Error('Sessão inválida ou expirada. Saia da conta e entre novamente.')
+    const errorCode = userError?.code || 'unknown_auth_error'
+    const errorStatus = userError?.status || 0
+    const tokenPayload = (() => {
+      try {
+        return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+      } catch {
+        return {}
+      }
+    })()
+    const expectedIssuer = supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}/auth/v1` : null
+    const issuerMatches = typeof tokenPayload.iss === 'string' && tokenPayload.iss === expectedIssuer
+    const expiresAt = typeof tokenPayload.exp === 'number' ? tokenPayload.exp : null
+    const isExpired = expiresAt !== null && expiresAt <= Math.floor(Date.now() / 1000)
+    console.error('[reminder:auth] JWT verification rejected', { code: errorCode, status: errorStatus, issuerMatches, isExpired })
+    const diagnosis = !issuerMatches ? 'O frontend e a API parecem usar projetos Supabase diferentes.' :
+      isExpired ? 'O token de acesso expirou.' : `Supabase Auth rejeitou a sessão (código: ${errorCode}; status: ${errorStatus}).`
+    throw new Error(`Falha de autenticação: ${diagnosis}`)
   }
   const supabaseAdmin = getSupabaseAdmin()
 
