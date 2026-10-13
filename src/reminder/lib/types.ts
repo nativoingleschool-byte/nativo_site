@@ -77,6 +77,7 @@ export type Profile = {
 }
 
 export type Lesson = {
+  recurrence_series_id?: string | null
   id: string
   subject: string
   class_name: string
