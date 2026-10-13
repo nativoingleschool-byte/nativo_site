@@ -672,7 +672,7 @@ function ReminderAppInner() {
         if (!response.ok) throw new Error(result.error || `Profile request failed (${response.status}).`)
         if (!Array.isArray(result.data)) throw new Error('Profile request returned an invalid response.')
         list = result.data
-        apiLoaded = list.length > 0
+        apiLoaded = true
       } catch (err) {
         apiError = err instanceof Error ? err : new Error('Profile request failed.')
         console.warn('API get_profiles error, falling back to direct query:', apiError)
@@ -691,7 +691,7 @@ function ReminderAppInner() {
       }
     }
 
-    if (list.length === 0 && expectedRole === 'teacher') {
+    if (!list.some((item) => item.role === 'student' && !item.archived) && expectedRole === 'teacher') {
       throw new Error('A lista de alunos retornou vazia. Verifique os cadastros ativos de alunos vinculados à conta.')
     }
     setProfiles(list)
@@ -1539,7 +1539,7 @@ function ReminderAppInner() {
     const { error } = await supabase.from('lessons').update(changes).eq('id', lessonId)
     if (error) {
       setAppError(error.message)
-      return
+      throw error
     }
 
     const statusKey = changes.teacher_lesson_status || changes.student_attendance || changes.student_lesson_status
