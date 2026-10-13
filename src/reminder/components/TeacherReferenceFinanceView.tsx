@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ArrowLeft, ArrowRight, Check, FileUp, Info, ReceiptText, X } from 'lucide-react'
+import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 
 const formatMonth = (date: Date) =>
   new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
@@ -17,6 +19,7 @@ export default function TeacherReferenceFinanceView() {
   const [month, setMonth] = useState(() => new Date())
   const [filter, setFilter] = useState<'all' | 'done' | 'absence'>('all')
   const [modal, setModal] = useState<'invoice' | 'info' | 'details' | null>(null)
+  useBodyScrollLock(modal !== null)
   const selectedMonth = formatMonth(month)
   const filtered = filter === 'absence' ? [] : sessions
 
@@ -55,7 +58,21 @@ export default function TeacherReferenceFinanceView() {
         <div className="reference-meeting-list">{filtered.map((session) => <div className="reference-meeting-row" key={session.id}><span className="reference-check"><Check size={14} /></span><div><strong>{session.title}</strong><span>{session.date} • 20:00 (60 min) • {session.students}</span></div><strong className="reference-amount">{session.amount}</strong><span className="reference-status">Realizada</span><button type="button" onClick={() => setModal('details')}>Detalhes</button></div>)}</div>
       </section>
 
-      {modal && <div className="reference-modal-backdrop" onClick={() => setModal(null)}><section className="reference-modal" onClick={(event) => event.stopPropagation()}><button type="button" className="reference-modal-close" onClick={() => setModal(null)} aria-label="Fechar"><X size={18} /></button><div className="reference-modal-icon">{modal === 'invoice' ? <FileUp size={19} /> : modal === 'details' ? <ReceiptText size={19} /> : <Info size={19} />}</div><span className="reference-kicker">{modal === 'invoice' ? 'DOCUMENTAÇÃO' : modal === 'details' ? 'ENCONTRO REALIZADO' : 'ORIENTAÇÕES MEI'}</span><h2>{modal === 'invoice' ? 'Enviar nota fiscal' : modal === 'details' ? 'Aulas de Inglês · Turma Fluência' : 'Como enviar sua NFS-e'}</h2><p>{modal === 'invoice' ? `Anexe o PDF da NFS-e referente a ${selectedMonth}.` : modal === 'details' ? '26 de Julho · 20:00 · 60 minutos' : 'Emita a nota com a descrição “Serviços pedagógicos de idiomas” e o valor exato do período.'}</p>{modal === 'invoice' && <label className="reference-upload"><FileUp size={20} /><strong>Selecionar arquivo PDF</strong><span>Máximo de 10 MB</span><input type="file" accept="application/pdf" onChange={() => setModal(null)} /></label>}</section></div>}
+      {modal && createPortal(
+        <div className="teacher-reference-preview-portal">
+          <div className="reference-modal-backdrop" onClick={() => setModal(null)}>
+            <section className="reference-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+              <button type="button" className="reference-modal-close" onClick={() => setModal(null)} aria-label="Fechar"><X size={18} /></button>
+              <div className="reference-modal-icon">{modal === 'invoice' ? <FileUp size={19} /> : modal === 'details' ? <ReceiptText size={19} /> : <Info size={19} />}</div>
+              <span className="reference-kicker">{modal === 'invoice' ? 'DOCUMENTAÇÃO' : modal === 'details' ? 'ENCONTRO REALIZADO' : 'ORIENTAÇÕES MEI'}</span>
+              <h2>{modal === 'invoice' ? 'Enviar nota fiscal' : modal === 'details' ? 'Aulas de Inglês · Turma Fluência' : 'Como enviar sua NFS-e'}</h2>
+              <p>{modal === 'invoice' ? `Anexe o PDF da NFS-e referente a ${selectedMonth}.` : modal === 'details' ? '26 de Julho · 20:00 · 60 minutos' : 'Emita a nota com a descrição “Serviços pedagógicos de idiomas” e o valor exato do período.'}</p>
+              {modal === 'invoice' && <label className="reference-upload"><FileUp size={20} /><strong>Selecionar arquivo PDF</strong><span>Máximo de 10 MB</span><input type="file" accept="application/pdf" onChange={() => setModal(null)} /></label>}
+            </section>
+          </div>
+        </div>,
+        document.body,
+      )}
     </main>
   )
 }

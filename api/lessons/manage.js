@@ -386,8 +386,7 @@ const getTeacherNotes = async (supabaseAdmin, profile) => {
 
   const { data, error } = await query
   if (error) {
-    console.warn('getTeacherNotes query error:', error.message)
-    return []
+    throw new Error(`Could not load teacher notes: ${error.message}`)
   }
   return data ?? []
 }

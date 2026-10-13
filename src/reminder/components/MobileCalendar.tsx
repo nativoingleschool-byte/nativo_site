@@ -23,6 +23,7 @@ interface MobileCalendarProps {
   dayStartHour?: number
   dayEndHour?: number
   onSelectEvent: (event: CalendarEventItem) => void
+  onSelectAgendaEvent?: (event: CalendarEventItem) => void
   onSelectSlot: (start: Date) => void
   onEventDrop?: (event: CalendarEventItem, newStart: Date, newEnd: Date) => void
 }
@@ -38,6 +39,7 @@ export default function MobileCalendar({
   events,
   language,
   onSelectEvent,
+  onSelectAgendaEvent,
   onSelectSlot,
 }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -156,7 +158,7 @@ export default function MobileCalendar({
       </section>}
       {view === 'agenda' && <section className="teacher-calendar-list-view" aria-label="Visualização em agenda">
         <div className="teacher-calendar-list-view__heading"><span>Próximos encontros</span><strong>{agendaEvents.length} {agendaEvents.length === 1 ? 'aula cadastrada' : 'aulas cadastradas'}</strong></div>
-        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhum próximo encontro</p> : <div className="teacher-calendar-week-list">{agendaEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
+        {agendaEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhum próximo encontro</p> : <div className="teacher-calendar-week-list">{agendaEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" aria-label={event.type === 'lesson' ? `${event.title}: adicionar ao Google Agenda` : undefined} onClick={() => (onSelectAgendaEvent ?? onSelectEvent)(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}{event.type === 'lesson' ? ' · Adicionar ao Google Agenda' : ''}</span></button>)}</div>}
       </section>}
     </div>
   )

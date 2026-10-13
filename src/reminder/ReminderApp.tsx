@@ -48,13 +48,6 @@ import { registerAppServiceWorker } from './pwa'
 import { Receipt } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
 
-type AccountFormState = {
-  full_name: string
-  email: string
-  password: string
-  confirm_password: string
-}
-
 type PendingLink = {
   lessonId: string | null
   intent: ReminderIntent | null
@@ -123,13 +116,6 @@ const defaultUserForm = (): UserFormState => ({
   taxa_hora_aula: 56.00,
 })
 
-const defaultAccountForm = (profile: Profile | null): AccountFormState => ({
-  full_name: profile?.full_name ?? '',
-  email: profile?.email ?? '',
-  password: '',
-  confirm_password: '',
-})
-
 // Fixture visual isolado: nunca é ativado no domínio oficial ou na main.
 // O formato replica Profile/Lesson/TeacherAvailability para que a troca pelos
 // dados reais seja apenas a remoção do modo preview, sem refatorar componentes.
@@ -137,7 +123,8 @@ const isVisualPreviewMode = () => {
   if (typeof window === 'undefined') return false
   const { hostname, search } = window.location
   const previewDeployment = hostname.endsWith('.vercel.app') && (hostname.startsWith('nativo-site-') || hostname.startsWith('lesslesson-reminder-')) && new URLSearchParams(search).has('preview')
-  return previewDeployment || hostname.startsWith('nativo-site-git-refactor-teach-') || import.meta.env.VITE_VISUAL_PREVIEW === 'true'
+  const localPreview = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname) && import.meta.env.VITE_VISUAL_PREVIEW === 'true'
+  return previewDeployment || localPreview
 }
 
 const previewTeacherId = 'preview-teacher-eric'
@@ -311,7 +298,6 @@ function ReminderAppInner() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [createWithSetupLink, setCreateWithSetupLink] = useState(false)
   const [latestSetupLink, setLatestSetupLink] = useState<string | null>(null)
-  const [accountForm, setAccountForm] = useState<AccountFormState>(() => defaultAccountForm(null))
   const [accountSaving, setAccountSaving] = useState(false)
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -643,8 +629,6 @@ function ReminderAppInner() {
   const [teacherNotesList, setTeacherNotesList] = useState<TeacherNote[]>([])
 
   const refreshTeacherNotes = async () => {
-    let list: TeacherNote[] = []
-
     const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
     if (token) {
       try {
@@ -659,7 +643,8 @@ function ReminderAppInner() {
         if (response.ok) {
           const result = (await response.json()) as { data?: TeacherNote[] }
           if (Array.isArray(result.data)) {
-            list = result.data
+            setTeacherNotesList(result.data)
+            return
           }
         }
       } catch (err) {
@@ -667,80 +652,39 @@ function ReminderAppInner() {
       }
     }
 
-    if (!list || list.length === 0) {
-      try {
-        const { data, error } = await supabase.from('teacher_notes').select('*').order('created_at', { ascending: false })
-        if (!error && data) {
-          list = data as TeacherNote[]
-        }
-      } catch (e) {
-        console.warn('Direct query teacher_notes error:', e)
-      }
-    }
-
-    setTeacherNotesList(list)
+    const { data, error } = await supabase.from('teacher_notes').select('*').order('created_at', { ascending: false })
+    if (error) throw new Error(`Could not load teacher notes: ${error.message}`)
+    setTeacherNotesList((data ?? []) as TeacherNote[])
   }
 
   const createTeacherNote = async (note: string, monthKey?: string) => {
-    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
-    if (token) {
-      try {
-        const response = await fetch('/api/lessons/manage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action: 'create_teacher_note', payload: { note, month_key: monthKey } }),
-        })
-        if (response.ok) {
-          void trackEvent('teacher_note_created', { month_key: monthKey }, { userRole: 'teacher', userId: profile?.id })
-          await refreshTeacherNotes()
-          return
-        }
-      } catch (err) {
-        console.warn('API create_teacher_note error, trying direct insert:', err)
-      }
-    }
+    const cleanNote = note.trim()
+    if (!profile?.id) throw new Error('Your profile could not be verified.')
+    if (!cleanNote) throw new Error('Note content is required.')
 
-    if (profile?.id) {
-      const { error } = await supabase.from('teacher_notes').insert({
-        teacher_id: profile.id,
-        note,
-        month_key: monthKey || null,
-      })
-      if (error) throw error
-      void trackEvent('teacher_note_created', { month_key: monthKey }, { userRole: 'teacher', userId: profile?.id })
-      await refreshTeacherNotes()
-    }
+    const { data, error } = await supabase
+      .from('teacher_notes')
+      .insert({ teacher_id: profile.id, note: cleanNote, month_key: monthKey || null })
+      .select('*')
+      .single()
+    if (error) throw error
+
+    setTeacherNotesList((items) => [data as TeacherNote, ...items])
+    void trackEvent('teacher_note_created', { month_key: monthKey }, { userRole: profile.role, userId: profile.id })
   }
 
   const deleteTeacherNote = async (noteId: string) => {
-    const token = session?.access_token || (await supabase.auth.getSession()).data.session?.access_token
-    if (token) {
-      try {
-        const response = await fetch('/api/lessons/manage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action: 'delete_teacher_note', payload: { id: noteId } }),
-        })
-        if (response.ok) {
-          await refreshTeacherNotes()
-          return
-        }
-      } catch (err) {
-        console.warn('API delete_teacher_note error, trying direct delete:', err)
-      }
-    }
-
-    const { error } = await supabase.from('teacher_notes').delete().eq('id', noteId)
+    const { data, error } = await supabase
+      .from('teacher_notes')
+      .delete()
+      .eq('id', noteId)
+      .select('id')
+      .maybeSingle()
     if (error) throw error
-    await refreshTeacherNotes()
-  }
+    if (!data) throw new Error('This note was not found or cannot be deleted.')
 
+    setTeacherNotesList((items) => items.filter((item) => item.id !== noteId))
+  }
   const [teacherInvoices, setTeacherInvoices] = useState<TeacherInvoice[]>([])
 
   const refreshTeacherInvoices = async () => {
@@ -1026,10 +970,6 @@ function ReminderAppInner() {
   }, [session, visualPreviewMode])
 
   useEffect(() => {
-    setAccountForm(defaultAccountForm(profile))
-  }, [profile?.id])
-
-  useEffect(() => {
     if (visualPreviewMode) return
     if (!session?.user?.id) return
 
@@ -1051,7 +991,10 @@ function ReminderAppInner() {
         void refreshInvoices()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_notes' }, () => {
-        void refreshTeacherNotes()
+        void refreshTeacherNotes().catch((error) => {
+          console.error('Could not refresh teacher notes:', error)
+          setAppError('Teacher notes could not be loaded. Your existing notes have not been changed.')
+        })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_availability' }, () => {
         void refreshAvailabilities()
@@ -1682,6 +1625,7 @@ function ReminderAppInner() {
     teacher_id: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
   }) => {
     setAppError('')
 
@@ -1700,7 +1644,7 @@ function ReminderAppInner() {
           teacher_id: payload.teacher_id,
           starts_at: payload.starts_at,
           duration_minutes: payload.duration_minutes,
-          meeting_url: null,
+          meeting_url: payload.meeting_url ?? null,
           student_attendance: null,
           student_lesson_status: null,
           teacher_lesson_status: null,
@@ -2286,6 +2230,7 @@ function ReminderAppInner() {
           >
             <TeacherPanel
               language={language}
+              visualPreviewMode={visualPreviewMode}
               teacherTab={teacherTab}
               setTeacherTab={setTeacherTab}
               hideShellHeader
@@ -2312,8 +2257,6 @@ function ReminderAppInner() {
               refreshProfile={refreshProfile}
               refreshProfiles={refreshProfiles}
               refreshLessons={refreshLessons}
-              accountForm={accountForm}
-              setAccountForm={setAccountForm}
               accountSaving={accountSaving}
               setAccountSaving={setAccountSaving}
               focusedLessonId={focusedLessonId}

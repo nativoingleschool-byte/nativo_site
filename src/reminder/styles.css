@@ -3241,3 +3241,430 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .reference-student-checkboxes > span { margin-bottom: 1px; }
 .reference-student-checkboxes label { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 9px; border: 1px solid #dce5e9; border-radius: 8px; color: #324d66; background: #fff; font-size: 11px; font-weight: 600; }
 .reference-student-checkboxes input { accent-color: #1f4268; }
+
+.teacher-preview-attendance-backdrop {
+  display: grid !important;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100dvh;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden !important;
+  background: rgba(16, 33, 49, .42) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+.teacher-preview-dialog-backdrop {
+  display: grid !important;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100dvh;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden !important;
+  background: rgba(16, 33, 49, .42) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+.teacher-app-shell .reference-modal-backdrop,
+.teacher-reference-preview-portal .reference-modal-backdrop {
+  inset: 0;
+  z-index: 300;
+  width: 100vw;
+  height: 100dvh;
+  box-sizing: border-box;
+  grid-template-rows: minmax(0, 1fr);
+  background: rgba(16, 33, 49, .42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.teacher-app-shell .reference-modal,
+.teacher-reference-preview-portal .reference-modal {
+  width: min(560px, 100%);
+  box-sizing: border-box;
+  border-radius: 20px;
+}
+.teacher-app-shell .reference-modal h2,
+.teacher-reference-preview-portal .reference-modal h2 {
+  color: #324d66;
+  font-size: 20px;
+  font-weight: 500;
+}
+.teacher-app-shell .reference-modal-close,
+.teacher-reference-preview-portal .reference-modal-close {
+  color: #91a0aa;
+  background: transparent;
+}
+.teacher-app-shell .reference-modal-close:hover,
+.teacher-reference-preview-portal .reference-modal-close:hover { color: #1f4268; }
+.teacher-app-shell .reference-agenda-modal-actions > button,
+.teacher-reference-preview-portal .reference-agenda-modal-actions > button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-app-shell .reference-agenda-modal-actions > button:first-child,
+.teacher-reference-preview-portal .reference-agenda-modal-actions > button:first-child {
+  color: #657684;
+  background: transparent;
+}
+.teacher-app-shell .reference-agenda-modal-actions > .reference-primary-button,
+.teacher-reference-preview-portal .reference-agenda-modal-actions > .reference-primary-button {
+  color: #fff;
+  background: #234a6c;
+}
+
+.reference-month-switcher select {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #dfe6ea;
+  border-radius: 9px;
+  color: #536b7c;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.reference-invoice-heading > .reference-primary-button { position: relative; overflow: hidden; cursor: pointer; }
+.reference-invoice-heading > .reference-primary-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.reference-invoice-file, .reference-invoice-history > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid #edf0f2; color: #536b7c; font-size: 10px; }
+.reference-invoice-file { margin-top: 12px; }
+.reference-invoice-file > div, .reference-invoice-history > div > div { display: flex; gap: 7px; }
+.reference-invoice-file button, .reference-invoice-history button { padding: 6px 9px; border: 1px solid #dfe6ea; border-radius: 7px; color: #526778; background: #fff; font-size: 10px; }
+.reference-invoice-history { display: grid; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #edf0f2; }
+.reference-invoice-history > strong { color: #526778; font-size: 11px; }
+.reference-meeting-copy small { color: #82919d; font-size: 9px; }
+.reference-meeting-actions, .reference-status-actions { display: flex !important; align-items: center; gap: 5px !important; }
+.reference-meeting-actions button, .reference-status-actions button { display: inline-grid; min-width: 28px; min-height: 28px; place-items: center; padding: 4px 7px; border: 1px solid #e2e8eb; border-radius: 6px; color: #657684; background: #fff; font-size: 9px; }
+.reference-status-actions button:first-child { color: #078566; }
+.reference-status-actions button:nth-child(2) { color: #a17a21; }
+.reference-status-actions button:nth-child(3) { color: #a64b4b; }
+.reference-meetings-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; color: #82919d; font-size: 10px; }
+.reference-teacher-notes { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 16px; padding: 22px 20px; border: 1px solid #e0e6ea; border-radius: 18px; background: #fff; box-shadow: 0 8px 25px rgba(31,56,76,.035); }
+.reference-teacher-notes h2 { margin: 5px 0; color: #1f4268; font-size: 19px; }
+.reference-teacher-notes form { display: grid; gap: 8px; }
+.reference-teacher-notes form label { color: #657684; font-size: 10px; font-weight: 700; }
+.reference-teacher-notes textarea { min-height: 92px; resize: vertical; padding: 10px; border: 1px solid #dce5e9; border-radius: 8px; color: #324d66; background: #fff; font: inherit; font-size: 11px; }
+.reference-teacher-notes-history { grid-column: 1 / -1; padding-top: 13px; border-top: 1px solid #edf0f2; }
+.reference-teacher-notes-history h3 { margin: 0 0 8px; color: #526778; font-size: 11px; }
+.reference-teacher-notes-history > p { color: #82919d; font-size: 10px; }
+.reference-teacher-notes-history article { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #edf0f2; }
+.reference-teacher-notes-history article p { margin: 0 0 5px; color: #324d66; font-size: 11px; white-space: pre-wrap; }
+.reference-teacher-notes-history article span { color: #82919d; font-size: 9px; }
+.reference-teacher-notes-history article button { align-self: flex-start; padding: 5px; border: 0; color: #a64b4b; background: transparent; }
+.reference-profile-actions button:disabled, .reference-primary-button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 800px) {
+  .reference-meeting-row { grid-template-columns: 24px minmax(0, 1fr); padding: 10px 0; }
+  .reference-meeting-row .reference-amount, .reference-meeting-actions, .reference-status-actions { grid-column: 2; justify-self: start; }
+  .reference-teacher-notes { grid-template-columns: minmax(0, 1fr); }
+  .reference-teacher-notes-history { grid-column: 1; }
+}
+.teacher-preview-functional-modal {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 430px !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
+  padding: 28px !important;
+  border: 1px solid #e0e6ea !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 20px 60px rgba(26, 54, 75, .2) !important;
+  color: #324d66 !important;
+}
+.teacher-preview-functional-modal .panel-header { margin-bottom: 18px !important; border-color: #edf0f2 !important; padding-bottom: 13px !important; }
+.teacher-preview-functional-modal .panel-header .section-label { display: none !important; }
+.teacher-preview-functional-modal .teacher-preview-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.teacher-preview-dialog-close {
+  position: absolute;
+  top: 23px;
+  right: 23px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: #91a0aa;
+  background: transparent;
+  cursor: pointer;
+}
+.teacher-preview-dialog-close:hover { color: #1f4268; }
+.teacher-preview-functional-modal .teacher-preview-dialog-header h2 { padding-right: 26px; }
+.teacher-preview-dialog-field { display: grid; gap: 6px; }
+.teacher-preview-dialog-field > label,
+.teacher-preview-dialog-date-time > label { margin: 0 !important; color: #526778 !important; font-size: 11px !important; font-weight: 700 !important; }
+.teacher-preview-add-modal .teacher-preview-dialog-field > label,
+.teacher-preview-add-modal .teacher-preview-dialog-date-time > label,
+.teacher-preview-add-modal .teacher-student-field__heading > label {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #526778 !important;
+}
+.teacher-preview-dialog-field input,
+.teacher-preview-dialog-date-time input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px !important;
+  padding: 10px 13px !important;
+  border: 1px solid #d7e0e5 !important;
+  border-radius: 11px !important;
+  color: #405364 !important;
+  background: #fff !important;
+  font-size: 13px;
+}
+.teacher-preview-dialog-field input:focus,
+.teacher-preview-dialog-date-time input:focus { outline: none; border-color: #7798ae !important; box-shadow: 0 0 0 3px rgba(69, 112, 139, .1); }
+.teacher-preview-add-modal { max-width: 560px !important; }
+.teacher-preview-add-modal form { display: grid !important; grid-template-columns: 1fr 1fr; gap: 18px 16px !important; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-subject { grid-column: 1 / -1; order: 1; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-date-time { grid-column: 1 / -1; order: 2; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-link { grid-column: 1 / -1; order: 3; }
+.teacher-preview-add-modal form > .teacher-student-field { grid-column: 1 / -1; order: 4; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-extra { display: none !important; }
+.teacher-preview-add-modal form > .teacher-preview-dialog-actions { grid-column: 1 / -1; order: 5; }
+.teacher-preview-add-modal .teacher-preview-dialog-close { top: 24px; right: 23px; }
+.teacher-preview-add-modal .teacher-student-field__heading label { color: #526778 !important; font-size: 11px !important; font-weight: 700 !important; }
+.teacher-preview-add-modal .teacher-student-field__heading > button { margin-left: auto; }
+.teacher-preview-add-modal .teacher-preview-dialog-date-time { grid-template-rows: auto 44px; }
+.teacher-preview-add-modal .teacher-modal-field-label { font-size: 11px; }
+.teacher-preview-add-modal .teacher-modal-field-label span { color: #9aa8b2; font-weight: 500; }
+.teacher-preview-add-modal .teacher-preview-dialog-actions { justify-content: flex-end !important; }
+.teacher-preview-edit-modal .teacher-preview-dialog-actions > button:first-child { display: none; }
+.teacher-preview-edit-modal .teacher-preview-dialog-actions > div > button:first-child { display: none; }
+.teacher-preview-edit-modal .teacher-preview-dialog-actions > div { margin-left: auto; }
+.teacher-preview-functional-modal .teacher-preview-dialog-actions { justify-content: flex-end !important; }
+.teacher-preview-dialog-date-time {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+.teacher-preview-dialog-time-label { grid-column: 2; grid-row: 1; }
+.teacher-preview-dialog-date-time > input:first-of-type { grid-column: 1; grid-row: 2; }
+.teacher-preview-dialog-date-time > input:last-of-type { grid-column: 2; grid-row: 2; }
+.teacher-preview-dialog-extra { display: none; }
+.teacher-preview-add-modal .panel-header { display: flex; min-height: 48px; margin-bottom: 22px !important; padding-bottom: 18px !important; border-color: #e9eef1 !important; }
+.teacher-preview-add-modal .panel-header h2 { color: #324d66 !important; font-size: 20px !important; font-weight: 500 !important; }
+.teacher-preview-add-modal form { gap: 16px !important; }
+.teacher-preview-add-modal .teacher-student-field__heading > button { font-size: 10px; }
+.teacher-preview-add-modal .teacher-student-dropdown__trigger { min-height: 44px; padding: 10px 13px; border: 1px solid #d7e0e5 !important; border-radius: 11px; color: #405364 !important; background: #fff !important; font-size: 13px; }
+.teacher-preview-add-modal .teacher-preview-dialog-actions {
+  margin-top: 2px !important;
+  padding-top: 18px;
+  border-top: 1px solid #e9eef1;
+}
+.teacher-preview-dialog-actions .secondary-button,
+.teacher-preview-dialog-actions .primary-button {
+  min-width: 96px;
+  min-height: 44px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.teacher-preview-dialog-actions .secondary-button { color: #657684 !important; background: transparent !important; border-color: transparent !important; }
+.teacher-preview-dialog-actions .primary-button { color: #fff !important; background: #234a6c !important; }
+.teacher-preview-functional-modal .section-label,
+.teacher-preview-functional-modal label,
+.teacher-modal-field-label { color: #82919d !important; }
+.teacher-preview-functional-modal label {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+.teacher-preview-functional-modal h2 { color: #1f4268 !important; font-size: 21px !important; }
+.teacher-preview-functional-modal .panel-header h2 { font-size: 20px !important; font-weight: 500 !important; }
+.teacher-preview-functional-modal input,
+.teacher-preview-functional-modal select { min-height: 38px !important; border: 1px solid #dce5e9 !important; border-radius: 8px !important; color: #324d66 !important; background: #fff !important; }
+.teacher-preview-functional-modal .secondary-button { border-color: #dfe6ea !important; color: #657684 !important; background: #fff !important; }
+.teacher-preview-functional-modal .primary-button { color: #fff !important; background: #1f4268 !important; }
+.teacher-preview-functional-modal .button-row { border-color: #edf0f2 !important; }
+.teacher-modal-field-label { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 700; }
+.teacher-student-field { display: grid; gap: 6px; }
+.teacher-student-field__heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.teacher-student-field__heading button { padding: 0; border: 0; color: #1f4268; background: transparent; font-size: 10px; font-weight: 700; text-decoration: underline; }
+.teacher-student-dropdown { position: relative; display: grid; gap: 6px; color: #657684; font-size: 10px; font-weight: 700; }
+.teacher-student-dropdown__trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid #dce5e9; border-radius: 8px; color: #324d66; background: #fff; font-size: 11px; text-align: left; }
+.teacher-student-dropdown__trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teacher-student-dropdown__trigger svg { flex: 0 0 auto; color: #82919d; }
+.teacher-student-dropdown__menu { display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; max-height: 210px; overflow: hidden; padding: 7px; border: 1px solid #dce5e9; border-radius: 9px; background: #fff; box-shadow: 0 8px 20px rgba(31, 56, 76, .08); }
+.teacher-student-dropdown__search { display: flex !important; flex: 0 0 auto; align-items: center; gap: 8px !important; min-height: 36px !important; padding: 0 9px !important; border: 1px solid #e2e9ed; border-radius: 7px; color: #82919d !important; background: #fff !important; }
+.teacher-student-dropdown__search input { width: 100% !important; min-height: 32px !important; padding: 0 !important; border: 0 !important; outline: 0 !important; color: #324d66 !important; background: transparent !important; font-size: 11px !important; box-shadow: none !important; }
+.teacher-student-dropdown__class { flex: 0 0 auto; padding: 4px 2px 0; color: #82919d; font-size: 9px; font-weight: 700; }
+.teacher-student-dropdown__results { display: grid; flex: 1 1 auto; min-height: 0; max-height: 150px; overflow-y: auto; overscroll-behavior: contain; }
+.teacher-student-dropdown__menu label { display: flex !important; align-items: center; gap: 8px; min-height: 32px; padding: 6px 7px; border-radius: 6px; color: #324d66 !important; background: #fff !important; font-size: 11px !important; font-weight: 600 !important; }
+.teacher-student-dropdown__menu label:hover { background: #f1f6f8 !important; }
+.teacher-student-dropdown__menu input { width: 15px !important; min-height: 15px !important; accent-color: #1f4268; }
+.teacher-student-dropdown__menu label small { margin-left: auto; color: #98a5ad; font-size: 9px; font-weight: 500; }
+.teacher-student-dropdown__empty { padding: 12px 8px; color: #82919d; font-size: 10px; text-align: center; }
+.teacher-student-field__empty { color: #82919d; font-size: 10px; }
+.teacher-preview-add-modal { max-width: 560px !important; }
+.teacher-preview-add-modal .panel-header { margin-bottom: 0 !important; }
+.teacher-preview-add-modal .panel-header h2 { font-size: 20px !important; font-weight: 500 !important; }
+.teacher-preview-add-modal form { gap: 16px !important; }
+.teacher-preview-add-modal .button-row { margin-top: 3px !important; padding-top: 16px !important; border-top: 1px solid #edf0f2 !important; }
+.teacher-preview-attendance-modal { position: relative; max-width: 445px !important; }
+.teacher-preview-attendance-modal .panel-header h2 { font-size: 20px !important; font-weight: 500 !important; }
+.teacher-preview-attendance-modal .teacher-preview-dialog-header { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-bottom: 16px !important; padding-bottom: 18px !important; border-color: #e9eef1 !important; }
+.teacher-preview-attendance-modal .teacher-preview-dialog-header h2 { font-size: 20px !important; font-weight: 500 !important; }
+.teacher-preview-attendance-modal > p { color: #72808d !important; font-size: 13px !important; line-height: 1.5; }
+.teacher-preview-attendance-modal label { min-height: 42px; padding: 9px 11px !important; border-radius: 8px !important; }
+.teacher-preview-attendance-modal label input { width: 16px; height: 16px; accent-color: #1f4268; }
+@media (max-width: 520px) {
+  .teacher-preview-functional-modal { max-height: calc(100dvh - 24px) !important; padding: 22px !important; }
+  .teacher-preview-dialog-close { top: 16px; right: 16px; }
+  .teacher-preview-dialog-date-time { gap: 6px 10px; }
+  .teacher-preview-dialog-actions { gap: 8px !important; }
+}
+
+/* Preview dialogs use compact sizing so the content, not the controls, leads. */
+.teacher-app-shell .reference-modal,
+.teacher-reference-preview-portal .reference-modal {
+  box-sizing: border-box;
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 16px;
+  box-shadow: 0 16px 42px rgba(26, 54, 75, .16);
+}
+.teacher-app-shell .reference-modal h2,
+.teacher-reference-preview-portal .reference-modal h2 { font-size: 18px; }
+.teacher-app-shell .reference-modal p,
+.teacher-reference-preview-portal .reference-modal p { font-size: 11px; }
+.teacher-app-shell .reference-modal-close,
+.teacher-reference-preview-portal .reference-modal-close { width: 26px; height: 26px; }
+.teacher-app-shell .reference-modal-backdrop,
+.teacher-reference-preview-portal .reference-modal-backdrop { padding: 12px; overflow: hidden; }
+.teacher-app-shell .reference-agenda-modal,
+.teacher-reference-preview-portal .reference-agenda-modal { max-height: calc(100dvh - 24px); overflow: hidden; }
+.teacher-app-shell .reference-availability-modal,
+.teacher-reference-preview-portal .reference-availability-modal { width: min(460px, 100%); max-height: calc(100dvh - 24px); padding: 16px; }
+.teacher-app-shell .reference-detail-grid,
+.teacher-reference-preview-portal .reference-detail-grid { gap: 8px; margin-top: 16px; }
+.teacher-app-shell .reference-detail-grid span,
+.teacher-reference-preview-portal .reference-detail-grid span { padding: 9px; }
+.teacher-app-shell .reference-agenda-modal-actions,
+.teacher-reference-preview-portal .reference-agenda-modal-actions { flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.teacher-app-shell .reference-agenda-modal-actions > button,
+.teacher-reference-preview-portal .reference-agenda-modal-actions > button {
+  min-height: 36px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.teacher-app-shell .reference-agenda-modal-actions > button:first-child,
+.teacher-reference-preview-portal .reference-agenda-modal-actions > button:first-child { padding: 0 11px; }
+.teacher-app-shell .reference-availability-modal .reference-agenda-modal-actions,
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions {
+  bottom: -16px;
+  margin: 10px -16px -16px;
+  padding: 8px 16px;
+}
+.teacher-app-shell .reference-availability-editor,
+.teacher-reference-preview-portal .reference-availability-editor { padding: 12px; }
+.teacher-app-shell .reference-availability-editor input[type="checkbox"],
+.teacher-reference-preview-portal .reference-availability-editor input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  min-height: 14px;
+  padding: 0;
+}
+.teacher-app-shell .reference-availability-editor > button,
+.teacher-reference-preview-portal .reference-availability-editor > button {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.teacher-preview-functional-modal {
+  box-sizing: border-box;
+  max-width: 460px !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
+  padding: 22px !important;
+  border-radius: 16px !important;
+}
+.teacher-preview-functional-modal .teacher-preview-dialog-header h2 { font-size: 18px !important; }
+.teacher-preview-functional-modal .panel-header { margin-bottom: 13px !important; padding-bottom: 10px !important; }
+.teacher-preview-functional-modal .teacher-preview-dialog-field input,
+.teacher-preview-functional-modal .teacher-preview-dialog-date-time input,
+.teacher-preview-functional-modal .teacher-student-dropdown__trigger { min-height: 38px !important; padding: 8px 10px !important; font-size: 12px; }
+.teacher-preview-add-modal { max-width: 460px !important; }
+.teacher-preview-add-modal form { gap: 12px !important; }
+.teacher-app-shell .reference-student-checkboxes input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  min-height: 14px;
+  padding: 0;
+  flex: 0 0 14px;
+}
+.teacher-preview-dialog-actions .secondary-button,
+.teacher-preview-dialog-actions .primary-button {
+  min-width: 78px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.teacher-preview-attendance-modal { box-sizing: border-box; max-width: 410px !important; max-height: calc(100dvh - 24px) !important; overflow: hidden !important; padding: 22px !important; border-radius: 16px !important; }
+.teacher-preview-attendance-modal .teacher-preview-dialog-header { min-height: 40px; margin-bottom: 12px !important; padding-bottom: 12px !important; }
+.teacher-preview-attendance-modal .teacher-preview-dialog-header h2 { font-size: 18px !important; }
+.teacher-preview-attendance-modal > p { font-size: 12px !important; }
+.teacher-preview-attendance-modal label { min-height: 36px; padding: 7px 9px !important; }
+.teacher-preview-attendance-modal .teacher-preview-attendance-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 6px !important;
+}
+.teacher-preview-attendance-modal .teacher-preview-attendance-list > label {
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+  .teacher-app-shell .reference-modal-backdrop,
+  .teacher-reference-preview-portal .reference-modal-backdrop { padding: 8px; }
+  .teacher-app-shell .reference-modal,
+  .teacher-reference-preview-portal .reference-modal {
+    width: min(100%, 460px);
+    max-height: calc(100dvh - 16px);
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .teacher-app-shell .reference-agenda-modal,
+  .teacher-reference-preview-portal .reference-agenda-modal { max-height: calc(100dvh - 16px); }
+  .teacher-app-shell .reference-availability-modal,
+  .teacher-reference-preview-portal .reference-availability-modal { max-height: calc(100dvh - 16px); padding: 12px; }
+  .teacher-app-shell .reference-availability-modal .reference-agenda-modal-actions,
+  .teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions {
+    bottom: -12px;
+    margin: 8px -12px -12px;
+    padding: 8px 12px;
+  }
+  .teacher-preview-functional-modal,
+  .teacher-preview-attendance-modal { max-height: calc(100dvh - 16px) !important; padding: 16px !important; border-radius: 14px !important; }
+  .teacher-preview-dialog-close { top: 12px; right: 12px; }
+}
+@media (max-height: 700px) {
+  .teacher-app-shell .reference-availability-badge,
+  .teacher-reference-preview-portal .reference-availability-badge { margin-bottom: 6px; }
+  .teacher-app-shell .reference-availability-day,
+  .teacher-reference-preview-portal .reference-availability-day { gap: 4px 8px !important; padding: 7px 9px !important; }
+  .teacher-app-shell .reference-availability-list--full,
+  .teacher-reference-preview-portal .reference-availability-list--full { gap: 5px; }
+  .teacher-app-shell .reference-availability-slot,
+  .teacher-reference-preview-portal .reference-availability-slot { font-size: 9px !important; }
+  .teacher-app-shell .reference-availability-sync,
+  .teacher-reference-preview-portal .reference-availability-sync { margin-top: 7px; }
+  .teacher-preview-functional-modal { padding: 12px !important; }
+  .teacher-preview-add-modal form { gap: 8px !important; }
+  .teacher-preview-add-modal .teacher-student-dropdown__menu { max-height: 110px; }
+  .teacher-preview-add-modal .teacher-student-dropdown__results { max-height: 50px; }
+  .teacher-preview-add-modal .teacher-preview-dialog-field input,
+  .teacher-preview-add-modal .teacher-preview-dialog-date-time input,
+  .teacher-preview-add-modal .teacher-student-dropdown__trigger { min-height: 34px !important; padding: 6px 9px !important; }
+}

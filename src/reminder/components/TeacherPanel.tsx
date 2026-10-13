@@ -1,6 +1,7 @@
-import { FormEvent, useState, useMemo, useRef } from 'react'
+import { FormEvent, useEffect, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Lesson, Profile, AccountFormState, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
+import { ChevronDown, Search, X } from 'lucide-react'
+import { Lesson, Profile, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -8,12 +9,16 @@ import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
 import TeacherReferenceFinanceView from './TeacherReferenceFinanceView'
 import TeacherReferenceProfileView from './TeacherReferenceProfileView'
+import TeacherLiveFinanceView from './TeacherLiveFinanceView'
+import TeacherLiveProfileView, { type TeacherProfileDetails } from './TeacherLiveProfileView'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
 import { trackEvent } from '../../lib/telemetry'
+import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 
 interface TeacherPanelProps {
   language: Language
+  visualPreviewMode: boolean
   teacherTab: 'calendar' | 'worklog' | 'profile'
   setTeacherTab: (tab: 'calendar' | 'worklog' | 'profile') => void
   /** Quando true, a navegação fica sob responsabilidade do TeacherShell. */
@@ -30,6 +35,7 @@ interface TeacherPanelProps {
     teacher_id: string
     starts_at: string
     duration_minutes: number
+    meeting_url?: string | null
   }) => Promise<void>
   updateTeacherLessonGroup: (draft: {
     lesson_ids: string[]
@@ -86,8 +92,6 @@ interface TeacherPanelProps {
   refreshProfile: (userId: string) => Promise<Profile>
   refreshProfiles?: () => Promise<void>
   refreshLessons: () => Promise<void>
-  accountForm: AccountFormState
-  setAccountForm: React.Dispatch<React.SetStateAction<AccountFormState>>
   accountSaving: boolean
   setAccountSaving: (saving: boolean) => void
   focusedLessonId: string | null
@@ -105,6 +109,7 @@ interface TeacherPanelProps {
 
 export default function TeacherPanel({
   language,
+  visualPreviewMode,
   teacherTab,
   setTeacherTab,
   hideShellHeader = false,
@@ -131,8 +136,6 @@ export default function TeacherPanel({
   refreshProfile,
   refreshProfiles,
   refreshLessons,
-  accountForm,
-  setAccountForm,
   accountSaving,
   setAccountSaving,
   focusedLessonId,
@@ -147,8 +150,8 @@ export default function TeacherPanel({
   teacherInvoices = [],
   refreshTeacherInvoices,
 }: TeacherPanelProps) {
-  const visualPreviewMode = typeof window !== 'undefined' && window.location.hostname.startsWith('nativo-site-git-refactor-teach-')
   const { toast } = useToast()
+  const modalLanguage: Language = visualPreviewMode ? 'pt' : language
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
   // A NFS-e acompanha o ciclo real do mês, independentemente do mês visual
@@ -171,8 +174,6 @@ export default function TeacherPanel({
 
   // Worklog Month & Filter states
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'happened' | 'scheduled' | 'issues'>('all')
-
   // Modals for adding and editing classes
   const [showAddLessonModal, setShowAddLessonModal] = useState(false)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
@@ -183,8 +184,11 @@ export default function TeacherPanel({
   const [newLessonStudentIds, setNewLessonStudentIds] = useState<string[]>([])
   const [newLessonStudentName, setNewLessonStudentName] = useState('')
   const [addStudentMode, setAddStudentMode] = useState<'select' | 'custom'>('select')
+  const [newLessonStudentsOpen, setNewLessonStudentsOpen] = useState(false)
+  const [studentSearch, setStudentSearch] = useState('')
   const [newLessonSubject, setNewLessonSubject] = useState('')
   const [newLessonStartsAt, setNewLessonStartsAt] = useState('')
+  const [newLessonMeetingUrl, setNewLessonMeetingUrl] = useState('')
   const [newLessonDuration, setNewLessonDuration] = useState(60)
   const [newLessonStatus, setNewLessonStatus] = useState<TeacherLessonStatus>('happened')
 
@@ -198,6 +202,7 @@ export default function TeacherPanel({
   const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
   const [attendanceLessons, setAttendanceLessons] = useState<Lesson[]>([])
   const [attendanceDraft, setAttendanceDraft] = useState<Record<string, boolean>>({})
+  useBodyScrollLock(showAddLessonModal || Boolean(editingLesson) || attendanceLessons.length > 0)
 
   // Propose Class Form State
   const [proposeStudentId, setProposeStudentId] = useState('')
@@ -236,6 +241,25 @@ export default function TeacherPanel({
       (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
     )
   }, [students, profilesById, lessons])
+
+  const selectedStudents = useMemo(
+    () => sortedStudents.filter((student) => newLessonStudentIds.includes(student.id)),
+    [sortedStudents, newLessonStudentIds]
+  )
+  const selectedClassName = selectedStudents[0]?.class_name?.trim() || ''
+  const classStudents = useMemo(
+    () => selectedStudents.length
+      ? sortedStudents.filter((student) => (student.class_name?.trim() || '') === selectedClassName)
+      : sortedStudents,
+    [selectedClassName, selectedStudents.length, sortedStudents]
+  )
+  const filteredStudents = useMemo(() => {
+    const query = studentSearch.trim().toLocaleLowerCase()
+    if (!query) return classStudents
+    return classStudents.filter((student) =>
+      `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
+    )
+  }, [classStudents, studentSearch])
 
   // Filter lessons for this teacher
   const teacherLessons = useMemo(
@@ -413,28 +437,27 @@ export default function TeacherPanel({
   const hourlyRate = profile.taxa_hora_aula ?? 56.0
   const currency = profile.moeda_taxa ?? 'BRL'
   const totalAmount = totalHours * Number(hourlyRate)
-
-  // Filtered sessions for display
-  const displayedSessions = useMemo(() => {
-    if (statusFilter === 'happened') return completedSessions
-    if (statusFilter === 'scheduled') return scheduledSessions
-    if (statusFilter === 'issues') return issueSessions
-    return monthSessions
-  }, [monthSessions, completedSessions, scheduledSessions, issueSessions, statusFilter])
-
-  const lessonCardClass = (sessionId: string) =>
-    focusedLessonId === sessionId ? 'lesson-card lesson-card-focus' : 'lesson-card'
+  const invoiceReferenceAmount = useMemo(() => {
+    const referenceLessons = teacherLessons.filter((lesson) => lesson.starts_at?.slice(0, 7) === nfReferenceMonthKey)
+    return groupLessonsIntoTeacherSessions(referenceLessons)
+      .filter((session) => session.is_happened || session.is_no_show)
+      .reduce((sum, session) => sum + (session.duration_minutes / 60) * Number(hourlyRate), 0)
+  }, [teacherLessons, nfReferenceMonthKey, hourlyRate])
 
   // Open Add Lesson Modal
   const handleOpenAddLesson = () => {
     if ((!students || students.length === 0) && refreshProfiles) {
       void refreshProfiles()
     }
-    const defaultStudent = sortedStudents[0]?.id || '__NEW__'
+    const defaultStudent = visualPreviewMode ? '' : sortedStudents[0]?.id || '__NEW__'
     setNewLessonStudentId(defaultStudent)
-    setNewLessonStudentIds(defaultStudent === '__NEW__' ? [] : [defaultStudent])
+    setNewLessonStudentIds(defaultStudent && defaultStudent !== '__NEW__' ? [defaultStudent] : [])
+    setStudentSearch('')
     setNewLessonStudentName('')
-    setNewLessonSubject(t(language, 'individual_class'))
+    setNewLessonMeetingUrl('')
+    setAddStudentMode('select')
+    setNewLessonStudentsOpen(false)
+    setNewLessonSubject(visualPreviewMode ? 'Aulas de Inglês · Turma Fluência' : t(language, 'individual_class'))
     setNewLessonDuration(60)
     setNewLessonStatus('happened')
 
@@ -467,7 +490,7 @@ export default function TeacherPanel({
     setIsSubmitting(true)
     try {
       const utcIso = dateTimeLocalToIso(newLessonStartsAt, appTimeZone)
-      const studentProfile = profilesById[newLessonStudentId]
+      const studentProfile = sortedStudents.find((student) => student.id === newLessonStudentId)
       const className = studentProfile?.class_name || ''
 
       if (selectedStudentIds.length > 1) {
@@ -475,9 +498,10 @@ export default function TeacherPanel({
           student_ids: selectedStudentIds,
           teacher_id: profile.id,
           subject: newLessonSubject.trim(),
-          class_name: profilesById[selectedStudentIds[0]]?.class_name || '',
+          class_name: sortedStudents.find((student) => student.id === selectedStudentIds[0])?.class_name || '',
           starts_at: utcIso,
           duration_minutes: newLessonDuration,
+          meeting_url: newLessonMeetingUrl.trim() || null,
         })
       } else if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
@@ -487,6 +511,7 @@ export default function TeacherPanel({
           class_name: className,
           starts_at: utcIso,
           duration_minutes: newLessonDuration,
+          meeting_url: newLessonMeetingUrl.trim() || null,
           teacher_lesson_status: newLessonStatus,
         })
       } else {
@@ -783,25 +808,28 @@ export default function TeacherPanel({
     }
   }
 
-  const handleSaveTeacherData = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSaveTeacherData = async (details: TeacherProfileDetails) => {
     setAccountSaving(true)
-    const targetForm = e.currentTarget as HTMLFormElement
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: accountForm.full_name,
-          email: accountForm.email,
-          chave_pix: (targetForm.elements.namedItem('chavePix') as HTMLInputElement).value,
-          cnpj: (targetForm.elements.namedItem('cnpj') as HTMLInputElement).value,
-        })
-        .eq('id', profile.id)
-      if (error) throw error
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      if (!currentSession?.access_token) throw new Error(t(language, 'unauthenticated_error'))
+      const response = await fetch('/api/me/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentSession.access_token}`,
+        },
+        body: JSON.stringify(details),
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({ error: 'Could not update teacher data.' }))
+        throw new Error(result.error || 'Could not update teacher data.')
+      }
       toast.success(t(language, 'data_updated_success'))
       await refreshProfile(profile.id)
     } catch (err: any) {
       toast.error(err.message)
+      throw err
     } finally {
       setAccountSaving(false)
     }
@@ -862,6 +890,7 @@ export default function TeacherPanel({
             profilesById={profilesById}
             availabilities={availabilities}
             language={language}
+            visualPreview={visualPreviewMode}
             pendingConfirmation={lastUnmarkedClass}
             upcomingLessons={teacherUpcomingLessons}
             completedCount={completedSessions.length}
@@ -869,7 +898,6 @@ export default function TeacherPanel({
             onUpdateLessonStatus={handleUpdateTodayLessonStatus}
             onOpenLesson={handleOpenEditLesson}
             onAddLesson={handleOpenAddLesson}
-            onCreatePreviewLesson={createLessonFromDraft}
             onAddAvailability={() => toast.info(t(language, 'tap_calendar_to_add') || 'Selecione um horário para adicionar disponibilidade.')}
           />
         )}
@@ -1137,663 +1165,51 @@ export default function TeacherPanel({
         {teacherTab === 'worklog' && visualPreviewMode && <TeacherReferenceFinanceView />}
 
         {teacherTab === 'worklog' && !visualPreviewMode && (
-          <div className="split-column animate-fade-in">
-            <section style={{ flex: 1.4 }}>
-              {/* Header with Month Selector & Add Lesson Button */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '1.25rem',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem',
-                }}
-              >
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'classes_taught_month')}</h3>
-                  <p className="muted text-xs">{t(language, 'manage_classes_subtitle')}</p>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <select
-                    value={activeMonthKey}
-                    onChange={(e) => setSelectedMonthKey(e.target.value)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#090d16',
-                      border: '1px solid #334155',
-                      borderRadius: '0.6rem',
-                      color: '#fff',
-                      fontSize: '0.88rem',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {availableMonths.map(([mKey, mLabel]) => (
-                      <option key={mKey} value={mKey}>
-                        {mLabel}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    className="primary-button"
-                    style={{ padding: '0.5rem 1.1rem', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    onClick={handleOpenAddLesson}
-                  >
-                    <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span>
-                    <span>{t(language, 'add_class')}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Monthly KPI Summary Bar */}
-              <div className="kpi-grid-mobile">
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t(language, 'classes_conducted')}
-                  </span>
-                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#fff' }}>
-                    {payableSessions.length} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'normal' }}>/ {monthSessions.length}</span>
-                  </strong>
-                </div>
-
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t(language, 'total_hours_worked')}
-                  </span>
-                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{totalHours.toFixed(1)}h</strong>
-                </div>
-
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t(language, 'calculated_amount')}
-                  </span>
-                  <strong className="kpi-card-value" style={{ fontSize: '1.3rem', color: '#10b981' }}>
-                    {currency === 'BRL' ? 'R$' : currency} {totalAmount.toFixed(2)}
-                  </strong>
-                </div>
-
-                <div className="kpi-card" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '0.85rem', borderRadius: '0.75rem', textAlign: 'center', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
-                  <span className="kpi-card-label" style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t(language, 'payments')}
-                  </span>
-                  <span className={badgeClass(profile.status_pagamento_professor === 'pago' ? 'confirmed' : 'pending')} style={{ marginTop: '4px', display: 'inline-block' }}>
-                    {profile.status_pagamento_professor === 'pago' ? `${t(language, 'paid')} ✓` : t(language, 'pending')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Filter Tabs */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '0.4rem',
-                  marginBottom: '1rem',
-                  flexWrap: 'wrap',
-                  borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
-                  paddingBottom: '0.5rem',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('all')}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    background: statusFilter === 'all' ? '#38bdf8' : 'transparent',
-                    color: statusFilter === 'all' ? '#0f172a' : '#94a3b8',
-                  }}
-                >
-                  {t(language, 'all_filter')} ({monthSessions.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('happened')}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    background: statusFilter === 'happened' ? '#10b981' : 'transparent',
-                    color: statusFilter === 'happened' ? '#0f172a' : '#94a3b8',
-                  }}
-                >
-                  {t(language, 'status_happened')} ({completedSessions.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('scheduled')}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    background: statusFilter === 'scheduled' ? '#818cf8' : 'transparent',
-                    color: statusFilter === 'scheduled' ? '#0f172a' : '#94a3b8',
-                  }}
-                >
-                  {t(language, 'scheduled_badge')} ({scheduledSessions.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('issues')}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    background: statusFilter === 'issues' ? '#f59e0b' : 'transparent',
-                    color: statusFilter === 'issues' ? '#0f172a' : '#94a3b8',
-                  }}
-                >
-                  {t(language, 'issues_filter')} ({issueSessions.length})
-                </button>
-              </div>
-
-              {/* Lessons List with Quick Actions & Modify Button */}
-              <div className="list-stack">
-                {displayedSessions.map((session) => {
-                  const studentNames = session.student_ids
-                    .map((id) => profilesById[id]?.full_name || t(language, 'role_student'))
-                    .join(', ')
-
-                  const isHappened = session.is_happened
-                  const isNoShow = session.is_no_show
-                  const isNotHappened = session.is_cancelled
-                  const isScheduled = session.is_scheduled
-                  const attendanceRecorded = session.lessons.filter((lesson) => lesson.teacher_attendance)
-                  const presentCount = session.lessons.filter((lesson) => lesson.teacher_attendance === 'present').length
-                  const absentCount = session.lessons.filter((lesson) => lesson.teacher_attendance === 'absent').length
-
-                  const isPayable = isHappened || isNoShow
-                  const sessionHours = (session.duration_minutes || 60) / 60
-                  const sessionValue = isPayable ? sessionHours * Number(hourlyRate) : 0
-                  const allLessonIds = session.lessons.map((l) => l.id)
-
-                  return (
-                    <div
-                      key={session.key}
-                      className={lessonCardClass(session.key)}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.75rem',
-                        padding: '1rem',
-                        background: isHappened ? 'rgba(16, 185, 129, 0.05)' : isNoShow ? 'rgba(245, 158, 11, 0.05)' : 'rgba(15, 23, 42, 0.6)',
-                        border: isHappened ? '1px solid rgba(16, 185, 129, 0.2)' : isNoShow ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(148, 163, 184, 0.12)',
-                        borderRadius: '0.85rem',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <strong style={{ fontSize: '1rem', color: '#fff' }}>{session.subject || t(language, 'individual_class')}</strong>
-                            {session.class_name && (
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(51, 65, 85, 0.5)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
-                                {session.class_name}
-                              </span>
-                            )}
-                            {session.student_ids.length > 1 && (
-                              <span className="badge badge-confirmed" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>
-                                👥 Turma ({session.student_ids.length} alunos)
-                              </span>
-                            )}
-                          </div>
-                          <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
-                            {session.student_ids.length > 1 ? (
-                              <span>👥 <strong>{studentNames}</strong> · 📅 {formatShortDateLabel(session.starts_at)} ({session.duration_minutes || 60} min)</span>
-                            ) : (
-                              <span>👤 {t(language, 'student_colon')} <strong style={{ color: '#38bdf8' }}>{studentNames}</strong> · 📅 {formatShortDateLabel(session.starts_at)} ({session.duration_minutes || 60} min)</span>
-                            )}
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <span
-                            className={badgeClass(
-                              isHappened ? 'confirmed' : isNoShow ? 'pending' : isNotHappened ? 'danger' : 'secondary'
-                            )}
-                          >
-                            {isHappened ? `${t(language, 'status_happened')}` : isNoShow ? t(language, 'status_student_noshow') : isNotHappened ? t(language, 'status_not_happened') : t(language, 'scheduled_badge')}
-                          </span>
-
-                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isPayable ? '#10b981' : '#64748b' }}>
-                            {currency === 'BRL' ? 'R$' : currency} {sessionValue.toFixed(2)}
-                          </span>
-                          {attendanceRecorded.length > 0 && (
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                              Presença: {presentCount} presente{presentCount === 1 ? '' : 's'} · {absentCount} falta{absentCount === 1 ? '' : 's'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Actions Toolbar */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          borderTop: '1px solid rgba(148, 163, 184, 0.08)',
-                          paddingTop: '0.6rem',
-                          flexWrap: 'wrap',
-                          gap: '0.5rem',
-                        }}
-                      >
-                        {/* Quick Status Buttons */}
-                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#64748b', marginRight: '0.2rem' }}>{t(language, 'status')}:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickStatusChange(session.lessons, 'happened')}
-                            style={{
-                              padding: '0.25rem 0.55rem',
-                              borderRadius: '0.4rem',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              background: isHappened ? '#10b981' : 'rgba(16, 185, 129, 0.15)',
-                              color: isHappened ? '#0f172a' : '#10b981',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                            }}
-                            title={t(language, 'status_happened')}
-                          >
-                            ✓ {t(language, 'status_happened')}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleQuickStatusChange(session.lessons, 'student_no_show')}
-                            style={{
-                              padding: '0.25rem 0.55rem',
-                              borderRadius: '0.4rem',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              background: isNoShow ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
-                              color: isNoShow ? '#0f172a' : '#fbbf24',
-                              border: '1px solid rgba(245, 158, 11, 0.3)',
-                            }}
-                            title={t(language, 'status_student_noshow')}
-                          >
-                            {t(language, 'status_student_noshow')}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleQuickStatusChange(session.lessons, 'not_happened')}
-                            style={{
-                              padding: '0.25rem 0.55rem',
-                              borderRadius: '0.4rem',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              background: isNotHappened ? '#ef4444' : 'rgba(239, 68, 68, 0.12)',
-                              color: isNotHappened ? '#fff' : '#f87171',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                            }}
-                            title={t(language, 'status_not_happened')}
-                          >
-                            {t(language, 'status_not_happened')}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleQuickStatusChange(session.lessons, null)}
-                            style={{
-                              padding: '0.25rem 0.55rem',
-                              borderRadius: '0.4rem',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              background: isScheduled ? '#6366f1' : 'rgba(99, 102, 241, 0.12)',
-                              color: isScheduled ? '#fff' : '#818cf8',
-                              border: '1px solid rgba(99, 102, 241, 0.3)',
-                            }}
-                            title={t(language, 'scheduled_badge')}
-                          >
-                            {t(language, 'scheduled_badge')}
-                          </button>
-                        </div>
-
-                        {/* Edit and Delete Buttons */}
-                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditLesson(session.lessons[0])}
-                            className="secondary-button"
-                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.78rem' }}
-                          >
-                            ✏️ {t(language, 'edit')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSession(allLessonIds)}
-                            style={{
-                              padding: '0.3rem 0.55rem',
-                              fontSize: '0.78rem',
-                              background: 'transparent',
-                              color: '#ef4444',
-                              border: '1px solid rgba(239, 68, 68, 0.25)',
-                              borderRadius: '0.5rem',
-                            }}
-                            title={t(language, 'delete_class_btn')}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {displayedSessions.length === 0 && (
-                  <div
-                    style={{
-                      padding: '2.5rem 1rem',
-                      textAlign: 'center',
-                      background: 'rgba(15, 23, 42, 0.3)',
-                      borderRadius: '1rem',
-                      border: '1px dashed #334155',
-                    }}
-                  >
-                    <p className="empty-state" style={{ margin: 0, marginBottom: '0.75rem' }}>
-                      {t(language, 'no_classes_month_empty')}
-                    </p>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}
-                      onClick={handleOpenAddLesson}
-                    >
-                      + {t(language, 'add_class')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Justifications to Admin */}
-              <h3 className="mt-8" style={{ marginTop: '2rem' }}>
-                {t(language, 'notes_to_admin_title')}
-              </h3>
-              <div className="form-card">
-                <textarea
-                  placeholder={t(language, 'notes_placeholder')}
-                  value={teacherNotes}
-                  onChange={(e) => setTeacherNotes(e.target.value)}
-                  style={{ width: '100%', height: '100px', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff', padding: '0.75rem' }}
-                />
-                <button
-                  className="secondary-button mt-2"
-                  style={{ marginTop: '0.5rem' }}
-                  disabled={isSendingNotes || !teacherNotes.trim()}
-                  onClick={async () => {
-                    if (!teacherNotes.trim()) return
-                    setIsSendingNotes(true)
-                    try {
-                      if (onCreateTeacherNote) {
-                        await onCreateTeacherNote(teacherNotes.trim(), activeMonthKey)
-                      }
-                      toast.success(t(language, 'notes_sent_success'))
-                      setTeacherNotes('')
-                    } catch (err: any) {
-                      toast.error(err.message || 'Erro ao enviar notas.')
-                    } finally {
-                      setIsSendingNotes(false)
-                    }
-                  }}
-                >
-                  {isSendingNotes ? t(language, 'saving_label') : t(language, 'send_notes_btn')}
-                </button>
-
-                {/* Sent Notes History */}
-                {myNotes.length > 0 && (
-                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid #1e293b', paddingTop: '1rem' }}>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '0.6rem' }}>
-                      {t(language, 'notes_history')} ({myNotes.length})
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {myNotes.map((n) => (
-                        <div
-                          key={n.id}
-                          style={{
-                            background: '#090d16',
-                            border: '1px solid #1e293b',
-                            borderRadius: '0.5rem',
-                            padding: '0.6rem 0.8rem',
-                            fontSize: '0.82rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                            gap: '0.5rem',
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <p style={{ margin: 0, color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>{n.note}</p>
-                            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                              {formatShortDate(n.created_at, language, appTimeZone)} {n.month_key ? `• ${n.month_key}` : ''}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            title="Excluir observação"
-                            onClick={async () => {
-                              if (!window.confirm(t(language, 'delete_note_confirm'))) return
-                              if (onDeleteTeacherNote) {
-                                await onDeleteTeacherNote(n.id)
-                                toast.success(t(language, 'note_deleted_success'))
-                              }
-                            }}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: '#ef4444',
-                              cursor: 'pointer',
-                              padding: '0.1rem 0.3rem',
-                              fontSize: '0.85rem',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* MEI Invoice Upload Section */}
-            <section style={{ flex: 0.8 }}>
-              <h3>{t(language, 'nf_submission_title')}</h3>
-              <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: profile.status_nota_fiscal === 'enviada' ? '#10b981' : '#ef4444',
-                      }}
-                    />
-                    <span className="text-sm">
-                      {t(language, 'nf_previous_month')} <strong>{nfReferenceMonthLabel} · {profile.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : t(language, 'nf_status_pending')}</strong>
-                    </span>
-                  </div>
-
-                  {profile.nota_fiscal_url && (
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="primary-button"
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#0284c7' }}
-                        onClick={() => {
-                          openFileFromDataOrUrl(
-                            profile.nota_fiscal_url!,
-                            `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
-                          )
-                        }}
-                      >
-                        {t(language, 'view_sent_file')}
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                        onClick={() => {
-                          downloadFileFromDataOrUrl(
-                            profile.nota_fiscal_url!,
-                            `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`
-                          )
-                        }}
-                        title="Baixar arquivo da Nota Fiscal"
-                      >
-                        ⬇️ Baixar
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    {profile.status_nota_fiscal === 'enviada' ? t(language, 'replace_resend_nf') : t(language, 'select_nf_file')}
-                  </label>
-                  <input type="file" accept=".pdf,image/*" disabled={uploadingNf} onChange={handleUploadNf} />
-                </div>
-                <p className="muted tiny-copy">{t(language, 'nf_exact_value_notice')}</p>
-
-                {/* Past Invoices for Teacher */}
-                {(() => {
-                  const myInvoices = (() => {
-                    const list = [...(teacherInvoices || []).filter((inv) => inv.teacher_id === profile.id)]
-                    if (
-                      profile.nota_fiscal_url &&
-                      !list.some((i) => i.file_url === profile.nota_fiscal_url)
-                    ) {
-                      list.unshift({
-                        id: `profile-nf-${profile.id}`,
-                        teacher_id: profile.id,
-                        month_key: nfReferenceMonthKey,
-                        file_url: profile.nota_fiscal_url,
-                        file_name: `Nota_Fiscal_${nfReferenceMonthKey}_${profile.full_name.replace(/\s+/g, '_')}.pdf`,
-                        status: profile.status_nota_fiscal || 'enviada',
-                        created_at: new Date().toISOString(),
-                      })
-                    }
-                    return list
-                  })()
-                  if (myInvoices.length === 0) return null
-
-                  return (
-                    <div style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                      <p style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '0.4rem' }}>
-                        📁 {t(language, 'past_nfs_title')} ({myInvoices.length})
-                      </p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '180px', overflowY: 'auto' }}>
-                        {myInvoices.map((inv) => (
-                          <div
-                            key={inv.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              background: '#090d16',
-                              border: '1px solid #334155',
-                              padding: '0.4rem 0.6rem',
-                              borderRadius: '0.5rem',
-                              fontSize: '0.78rem',
-                            }}
-                          >
-                            <span style={{ color: '#a78bfa', fontWeight: 'bold' }}>
-                              📅 {inv.month_key}
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.3rem' }}>
-                              <button
-                                type="button"
-                                className="secondary-button"
-                                style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem' }}
-                                onClick={() => {
-                                  openFileFromDataOrUrl(
-                                    inv.file_url,
-                                    inv.file_name || `Nota_Fiscal_${inv.month_key}.pdf`
-                                  )
-                                }}
-                              >
-                                📄 Ver
-                              </button>
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem' }}
-                                onClick={() => {
-                                  downloadFileFromDataOrUrl(
-                                    inv.file_url,
-                                    inv.file_name || `Nota_Fiscal_${inv.month_key}.pdf`
-                                  )
-                                }}
-                              >
-                                ⬇️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-            </section>
-          </div>
+          <TeacherLiveFinanceView
+            language={language}
+            profile={profile}
+            profilesById={profilesById}
+            monthKey={activeMonthKey}
+            months={availableMonths}
+            onMonthChange={setSelectedMonthKey}
+            monthSessions={monthSessions}
+            completedSessions={completedSessions}
+            scheduledSessions={scheduledSessions}
+            issueSessions={issueSessions}
+            payableCount={payableSessions.length}
+            totalHours={totalHours}
+            totalAmount={totalAmount}
+            hourlyRate={Number(hourlyRate)}
+            currency={currency}
+            notesDraft={teacherNotes}
+            setNotesDraft={setTeacherNotes}
+            notes={myNotes}
+            isSendingNotes={isSendingNotes}
+            setIsSendingNotes={setIsSendingNotes}
+            onCreateNote={onCreateTeacherNote}
+            onDeleteNote={onDeleteTeacherNote}
+            appTimeZone={appTimeZone}
+            invoiceReferenceMonth={nfReferenceMonthKey}
+            invoiceReferenceLabel={nfReferenceMonthLabel}
+            invoiceAmount={invoiceReferenceAmount}
+            invoices={teacherInvoices.filter((invoice) => invoice.teacher_id === profile.id)}
+            uploadingInvoice={uploadingNf}
+            onUploadInvoice={handleUploadNf}
+            onUpdateStatus={handleQuickStatusChange}
+            onEditLesson={handleOpenEditLesson}
+            onDeleteLessons={handleDeleteSession}
+            onAddLesson={handleOpenAddLesson}
+          />
         )}
-
         {teacherTab === 'profile' && visualPreviewMode && <TeacherReferenceProfileView />}
 
         {teacherTab === 'profile' && !visualPreviewMode && (
-          <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
-            <form onSubmit={handleSaveTeacherData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '1rem' }}>
-                <p className="text-amber-400 font-bold text-xs uppercase tracking-widest block mb-1">{t(language, 'teacher_mei_alert_title')}</p>
-                <p className="muted text-xs">
-                  {t(language, 'teacher_mei_alert_desc')}
-                </p>
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'full_name')}</label>
-                <input
-                  required
-                  value={accountForm.full_name}
-                  onChange={(event) => setAccountForm({ ...accountForm, full_name: event.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'email_optional')}</label>
-                <input
-                  required
-                  type="email"
-                  value={accountForm.email}
-                  onChange={(event) => setAccountForm({ ...accountForm, email: event.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cnpj_label')}</label>
-                <input name="cnpj" placeholder="00.000.000/0001-00" defaultValue={profile.cnpj || ''} />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'pix_label')}</label>
-                <input name="chavePix" placeholder="CPF, E-mail..." defaultValue={profile.chave_pix || ''} />
-              </div>
-
-              <button className="primary-button mt-4" disabled={accountSaving} style={{ marginTop: '1rem' }}>
-                {accountSaving ? t(language, 'saving_label') : t(language, 'save_teacher_data_btn')}
-              </button>
-            </form>
-          </div>
+          <TeacherLiveProfileView
+            profile={profile}
+            language={language}
+            saving={accountSaving}
+            onSave={handleSaveTeacherData}
+          />
         )}
       </article>
 
@@ -1801,7 +1217,7 @@ export default function TeacherPanel({
       {showAddLessonModal &&
         createPortal(
           <div
-            className="reminder-app-scope modal-overlay"
+            className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop' : ''}`}
             role="dialog"
             aria-modal="true"
             style={{
@@ -1817,7 +1233,7 @@ export default function TeacherPanel({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              overflowY: 'auto',
+              overflowY: visualPreviewMode ? 'hidden' : 'auto',
             }}
             onClick={(e) => {
               if (addModalRef.current && !addModalRef.current.contains(e.target as Node)) {
@@ -1827,78 +1243,100 @@ export default function TeacherPanel({
           >
             <div
               ref={addModalRef}
-              className="modal-card animate-fade-in"
+              className={`modal-card animate-fade-in${visualPreviewMode ? ' teacher-preview-functional-modal teacher-preview-add-modal' : ''}`}
               style={{
                 maxWidth: '520px',
                 width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
+                maxHeight: visualPreviewMode ? 'calc(100dvh - 24px)' : '90vh',
+                overflowY: visualPreviewMode ? 'hidden' : 'auto',
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: '1.5rem',
                 padding: '2rem',
               }}
             >
-              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
                 <div>
-                  <p className="section-label">{t(language, 'tab_worklog_nf')}</p>
-                  <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'add_class')}</h2>
+                  <p className="section-label">{t(modalLanguage, 'tab_worklog_nf')}</p>
+                  <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Adicionar Nova Aula' : t(language, 'add_class')}</h2>
                 </div>
+                {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setShowAddLessonModal(false)}><X size={19} /></button>}
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">{t(language, 'student_colon')} *</label>
+                <div className="teacher-student-field">
+                  <div className="teacher-student-field__heading">
+                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
+                    {!visualPreviewMode && <button type="button" onClick={() => {
+                      setNewLessonStudentsOpen(false)
+                      setStudentSearch('')
+                      setAddStudentMode(addStudentMode === 'custom' ? 'select' : 'custom')
+                      setNewLessonStudentId(addStudentMode === 'custom' ? (newLessonStudentIds[0] || '') : '__NEW__')
+                    }}>
+                      {addStudentMode === 'custom' ? '← Selecionar da lista' : '+ Digitar nome'}
+                    </button>}
+                  </div>
+
+                  {addStudentMode === 'select' && <div className="teacher-student-dropdown">
                     <button
                       type="button"
+                      className="teacher-student-dropdown__trigger"
                       onClick={() => {
-                        if (newLessonStudentId === '__NEW__') {
-                          setNewLessonStudentId(sortedStudents[0]?.id || '')
-                          setNewLessonStudentName('')
+                        if (newLessonStudentsOpen) {
+                          setNewLessonStudentsOpen(false)
+                          setStudentSearch('')
                         } else {
-                          setNewLessonStudentId('__NEW__')
+                          setStudentSearch('')
+                          setNewLessonStudentsOpen(true)
                         }
                       }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#38bdf8',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                        padding: 0,
-                      }}
+                      aria-expanded={newLessonStudentsOpen}
                     >
-                      {newLessonStudentId === '__NEW__' ? '← Selecionar da lista' : '+ Digitar nome do aluno'}
+                      <span>
+                        {selectedStudents.length === 0
+                          ? 'Selecionar alunos da turma'
+                          : `${selectedStudents.length} aluno${selectedStudents.length === 1 ? '' : 's'} selecionado${selectedStudents.length === 1 ? '' : 's'}`}
+                      </span>
+                      <ChevronDown size={15} />
                     </button>
-                  </div>
-
-                  <div role="group" aria-label="Selecionar alunos" style={{ display: 'grid', gap: '0.45rem', maxHeight: '180px', overflowY: 'auto', padding: '0.65rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem' }}>
-                    {sortedStudents.map((s) => (
-                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem', borderRadius: '0.4rem', background: newLessonStudentIds.includes(s.id) ? 'rgba(56, 189, 248, 0.12)' : 'transparent', color: '#e2e8f0', cursor: 'pointer' }}>
+                    {newLessonStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar alunos">
+                      <label className="teacher-student-dropdown__search">
+                        <Search size={14} aria-hidden="true" />
                         <input
-                          type="checkbox"
-                          checked={newLessonStudentIds.includes(s.id)}
-                          onChange={() => {
-                            setNewLessonStudentIds((current) => {
-                              const next = current.includes(s.id) ? current.filter((id) => id !== s.id) : [...current, s.id]
-                              setNewLessonStudentId(next[0] || '')
-                              return next
-                            })
-                            setNewLessonStudentName('')
-                          }}
+                          type="search"
+                          value={studentSearch}
+                          onChange={(event) => setStudentSearch(event.target.value)}
+                          placeholder="Buscar aluno..."
+                          aria-label="Buscar aluno"
                         />
-                        <span>{s.full_name} {s.class_name ? `(${s.class_name})` : ''}</span>
                       </label>
-                    ))}
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem', color: '#38bdf8', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={newLessonStudentId === '__NEW__'} onChange={(e) => { setNewLessonStudentId(e.target.checked ? '__NEW__' : (newLessonStudentIds[0] || '')); if (!e.target.checked) setNewLessonStudentName('') }} />
-                      <span>+ Digitar outro aluno</span>
-                    </label>
-                  </div>
+                      {selectedClassName && <span className="teacher-student-dropdown__class">Turma: {selectedClassName}</span>}
+                      <div className="teacher-student-dropdown__results">
+                        {filteredStudents.length > 0 ? filteredStudents.map((student) => (
+                          <label key={student.id}>
+                            <input
+                              type="checkbox"
+                              checked={newLessonStudentIds.includes(student.id)}
+                              onChange={() => {
+                                setNewLessonStudentIds((current) => {
+                                  const next = current.includes(student.id)
+                                    ? current.filter((id) => id !== student.id)
+                                    : [...current, student.id]
+                                  setNewLessonStudentId(next[0] || '')
+                                  return next
+                                })
+                                setNewLessonStudentName('')
+                              }}
+                            />
+                            <span>{student.full_name}</span>
+                            {student.class_name && <small>{student.class_name}</small>}
+                          </label>
+                        )) : <p className="teacher-student-dropdown__empty">{classStudents.length ? 'Nenhum aluno encontrado.' : 'Nenhum aluno cadastrado nesta turma.'}</p>}
+                      </div>
+                    </div>}
+                  </div>}
 
-                  {(newLessonStudentId === '__NEW__' || sortedStudents.length === 0) && (
+                  {(addStudentMode === 'custom' || (!visualPreviewMode && sortedStudents.length === 0)) && (
                     <div style={{ marginTop: '0.65rem' }}>
                       <input
                         required
@@ -1914,18 +1352,21 @@ export default function TeacherPanel({
                       </p>
                     </div>
                   )}
+                  {visualPreviewMode && sortedStudents.length === 0 && (
+                    <p className="teacher-student-field__empty">Nenhum aluno cadastrado para selecionar.</p>
+                  )}
                 </div>
 
-                <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'subject_topic')} *</label>
+                <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Título do Encontro / Módulo' : `${t(language, 'subject_topic')} *`}</label>
                   <input
                     required
-                    placeholder={t(language, 'subject_placeholder')}
+                    placeholder={visualPreviewMode ? '' : t(language, 'subject_placeholder')}
                     value={newLessonSubject}
                     onChange={(e) => setNewLessonSubject(e.target.value)}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   />
-                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                  {!visualPreviewMode && <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
                     {['Conversação', 'Inglês Geral', 'Business English', 'Gramática', 'Reforço'].map((preset) => (
                       <button
                         key={preset}
@@ -1943,20 +1384,30 @@ export default function TeacherPanel({
                         {preset}
                       </button>
                     ))}
-                  </div>
+                  </div>}
                 </div>
 
-                <div>
-                  <DateTimePicker
+                <div className={visualPreviewMode ? 'teacher-preview-dialog-date-time' : undefined}>
+                  {visualPreviewMode ? <>
+                    <label className="teacher-modal-field-label">Data</label>
+                    <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                    <label className="teacher-modal-field-label teacher-preview-dialog-time-label">Horário de Início</label>
+                    <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                  </> : <DateTimePicker
                     value={newLessonStartsAt}
                     onChange={(val) => setNewLessonStartsAt(val)}
                     language={language}
                     label={`${t(language, 'date_and_time')} *`}
                     required
-                  />
+                  />}
                 </div>
 
-                <div>
+                {visualPreviewMode && <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
+                  <label className="teacher-modal-field-label">Link da aula <span>(opcional)</span></label>
+                  <input type="url" placeholder="https://meet.google.com/..." value={newLessonMeetingUrl} onChange={(event) => setNewLessonMeetingUrl(event.target.value)} />
+                </div>}
+
+                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1989,7 +1440,7 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div>
+                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
                   <select
                     value={newLessonStatus || 'agendada'}
@@ -2003,17 +1454,17 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                <div className="button-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
                     type="button"
                     className="secondary-button"
                     onClick={() => setShowAddLessonModal(false)}
                     disabled={isSubmitting}
                   >
-                    {t(language, 'cancel')}
+                    {t(modalLanguage, 'cancel')}
                   </button>
                   <button type="submit" className="primary-button" disabled={isSubmitting}>
-                    {isSubmitting ? t(language, 'saving_label') : t(language, 'add_class')}
+                    {isSubmitting ? t(modalLanguage, 'saving_label') : visualPreviewMode ? 'Salvar' : t(language, 'add_class')}
                   </button>
                 </div>
               </form>
@@ -2023,13 +1474,14 @@ export default function TeacherPanel({
         )}
 
       {attendanceLessons.length > 0 && createPortal(
-        <div className="reminder-app-scope modal-overlay" role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div className={`modal-card animate-fade-in ${typeof window !== 'undefined' && window.location.search.includes('preview=') ? 'teacher-preview-attendance-modal' : ''}`} style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <div className="panel-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+        <div className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop teacher-preview-attendance-backdrop' : ''}`} role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div className={`modal-card animate-fade-in ${visualPreviewMode ? 'teacher-preview-attendance-modal' : ''}`} style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}><X size={19} /></button>}
+            <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
               <div><p className="section-label">CHAMADA DA AULA</p><h2 style={{ fontSize: '1.4rem' }}>Quem compareceu?</h2></div>
             </div>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>Marque os alunos presentes. Os desmarcados serão registrados como faltantes.</p>
-            <div style={{ display: 'grid', gap: '0.5rem' }}>
+            <div className="teacher-preview-attendance-list" style={{ display: 'grid', gap: '0.5rem' }}>
               {attendanceLessons.map((lesson) => {
                 const student = profilesById[lesson.student_id] || students.find((item) => item.id === lesson.student_id)
                 return <label key={lesson.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.65rem', color: '#f8fafc', cursor: 'pointer' }}>
@@ -2038,7 +1490,7 @@ export default function TeacherPanel({
                 </label>
               })}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+            <div className="teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
               <button type="button" className="secondary-button" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}>Cancelar</button>
               <button type="button" className="primary-button" onClick={() => void saveAttendance()}>Salvar presença</button>
             </div>
@@ -2051,7 +1503,7 @@ export default function TeacherPanel({
       {editingLesson &&
         createPortal(
           <div
-            className="reminder-app-scope modal-overlay"
+            className={`reminder-app-scope modal-overlay${visualPreviewMode ? ' teacher-preview-dialog-backdrop' : ''}`}
             role="dialog"
             aria-modal="true"
             style={{
@@ -2067,7 +1519,7 @@ export default function TeacherPanel({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              overflowY: 'auto',
+              overflowY: visualPreviewMode ? 'hidden' : 'auto',
             }}
             onClick={(e) => {
               if (editModalRef.current && !editModalRef.current.contains(e.target as Node)) {
@@ -2077,35 +1529,36 @@ export default function TeacherPanel({
           >
             <div
               ref={editModalRef}
-              className="modal-card animate-fade-in"
+              className={`modal-card animate-fade-in${visualPreviewMode ? ' teacher-preview-functional-modal teacher-preview-edit-modal' : ''}`}
               style={{
                 maxWidth: '520px',
                 width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
+                maxHeight: visualPreviewMode ? 'calc(100dvh - 24px)' : '90vh',
+                overflowY: visualPreviewMode ? 'hidden' : 'auto',
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: '1.5rem',
                 padding: '2rem',
               }}
             >
-              <div className="panel-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
                 <div>
-                  <p className="section-label">{t(language, 'adjust_class_label')}</p>
-                  <h2 style={{ fontSize: '1.4rem' }}>{t(language, 'modify_class_details')}</h2>
+                  <p className="section-label">{t(modalLanguage, 'adjust_class_label')}</p>
+                  <h2 style={{ fontSize: '1.4rem' }}>{visualPreviewMode ? 'Detalhes da aula' : t(language, 'modify_class_details')}</h2>
                 </div>
+                {visualPreviewMode && <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setEditingLesson(null)}><X size={19} /></button>}
               </div>
 
               <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_colon')} *</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
                   <select
                     required
                     value={editLessonStudentId}
                     onChange={(e) => setEditLessonStudentId(e.target.value)}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   >
-                    <option value="">{t(language, 'select_student')}...</option>
+                    <option value="">{t(modalLanguage, 'select_student')}...</option>
                     {sortedStudents.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
@@ -2120,7 +1573,7 @@ export default function TeacherPanel({
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'subject_topic')} *</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Título do Encontro / Módulo' : `${t(language, 'subject_topic')} *`}</label>
                   <input
                     required
                     value={editLessonSubject}
@@ -2130,17 +1583,24 @@ export default function TeacherPanel({
                 </div>
 
                 <div>
-                  <DateTimePicker
+                  {visualPreviewMode ? <>
+                    <div className="teacher-preview-dialog-date-time">
+                      <label className="teacher-modal-field-label">Data</label>
+                      <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                      <label className="teacher-modal-field-label teacher-preview-dialog-time-label">Horário de Início</label>
+                      <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                    </div>
+                  </> : <DateTimePicker
                     value={editLessonStartsAt}
                     onChange={(val) => setEditLessonStartsAt(val)}
                     language={language}
                     label={`${t(language, 'date_and_time')} *`}
                     required
-                  />
+                  />}
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (Zoom)</label>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Link da aula (opcional)' : 'Link da aula (Zoom)'}</label>
                   <input
                     type="url"
                     value={editLessonMeetingUrl}
@@ -2150,8 +1610,8 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'duration_minutes_label')} *</label>
+                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -2183,22 +1643,22 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'status')}</label>
+                <div className={visualPreviewMode ? 'teacher-preview-dialog-extra' : undefined}>
+                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={editLessonStatus || 'agendada'}
                     onChange={(e) => setEditLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   >
-                    <option value="happened">✓ {t(language, 'status_happened')}</option>
-                    <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
-                    <option value="not_happened">{t(language, 'status_not_happened')}</option>
-                    <option value="agendada">{t(language, 'scheduled_badge')}</option>
+                    <option value="happened">✓ {t(modalLanguage, 'status_happened')}</option>
+                    <option value="student_no_show">{t(modalLanguage, 'status_student_noshow')}</option>
+                    <option value="not_happened">{t(modalLanguage, 'status_not_happened')}</option>
+                    <option value="agendada">{t(modalLanguage, 'scheduled_badge')}</option>
                   </select>
                 </div>
 
                 <div
-                  className="button-row"
+                  className="button-row teacher-preview-dialog-actions"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -2223,7 +1683,7 @@ export default function TeacherPanel({
                     }}
                     disabled={isSubmitting}
                   >
-                    🗑️ {t(language, 'delete_class_btn')}
+                    🗑️ {t(modalLanguage, 'delete_class_btn')}
                   </button>
 
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -2250,10 +1710,10 @@ export default function TeacherPanel({
                       onClick={() => setEditingLesson(null)}
                       disabled={isSubmitting}
                     >
-                      {t(language, 'cancel')}
+                      {t(modalLanguage, 'cancel')}
                     </button>
                     <button type="submit" className="primary-button" disabled={isSubmitting}>
-                      {isSubmitting ? t(language, 'saving_label') : t(language, 'save_changes_btn')}
+                      {isSubmitting ? t(modalLanguage, 'saving_label') : t(modalLanguage, 'save_changes_btn')}
                     </button>
                   </div>
                 </div>

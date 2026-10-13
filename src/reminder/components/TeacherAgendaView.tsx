@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { addMinutes, format } from 'date-fns'
 import { CalendarPlus, Check, Clock3, Video, X } from 'lucide-react'
 import type { Lesson, Profile, TeacherAvailability, TeacherLessonStatus } from '../lib/types'
 import { buildGoogleCalendarInviteUrl } from '../lib/utils'
+import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 import MobileCalendar, { type CalendarEventItem } from './MobileCalendar'
 
 type TeacherAgendaViewProps = {
@@ -12,6 +14,7 @@ type TeacherAgendaViewProps = {
   profilesById: Record<string, Profile>
   availabilities: TeacherAvailability[]
   language: string
+  visualPreview: boolean
   pendingConfirmation: Lesson | null
   upcomingLessons: Lesson[]
   completedCount: number
@@ -19,7 +22,6 @@ type TeacherAgendaViewProps = {
   onUpdateLessonStatus: (lessonId: string, status: TeacherLessonStatus) => Promise<void>
   onOpenLesson: (lesson: Lesson) => void
   onAddLesson: () => void
-  onCreatePreviewLesson?: (draft: { subject: string; class_name: string; student_ids: string[]; teacher_id: string; starts_at: string; duration_minutes: number }) => Promise<void>
   onAddAvailability: () => void
 }
 
@@ -50,6 +52,7 @@ export default function TeacherAgendaView({
   profilesById,
   availabilities,
   language,
+  visualPreview,
   pendingConfirmation,
   upcomingLessons,
   completedCount,
@@ -57,14 +60,12 @@ export default function TeacherAgendaView({
   onUpdateLessonStatus,
   onOpenLesson,
   onAddLesson,
-  onCreatePreviewLesson,
   onAddAvailability,
 }: TeacherAgendaViewProps) {
-  const visualPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app') && (window.location.hostname.startsWith('nativo-site-') || window.location.hostname.startsWith('lesslesson-reminder-')) && new URLSearchParams(window.location.search).has('preview')
   const previewClassStudents = '4 alunos (Ladiele, Adielson, Jadson, Renan)'
-  const [previewModal, setPreviewModal] = useState<'details' | 'new' | 'availability' | null>(null)
+  const [previewModal, setPreviewModal] = useState<'details' | 'availability' | null>(null)
   const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false)
-  const [previewStudents, setPreviewStudents] = useState(['Ladiele Rodrigues'])
+  useBodyScrollLock(visualPreview && previewModal !== null)
   const calendarEvents: CalendarEventItem[] = [
     ...lessons
       .filter((lesson) => lesson.teacher_id === profile.id)
@@ -99,19 +100,23 @@ export default function TeacherAgendaView({
   const todayLabel = pendingConfirmation
     ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(pendingConfirmation.starts_at))
     : new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date())
-  const nextLessonStudent = nextLesson ? profilesById[nextLesson.student_id] ?? students.find((item) => item.id === nextLesson.student_id) : null
-  const addNextLessonToGoogleCalendar = () => {
-    if (!nextLesson) return
+  const addLessonToGoogleCalendar = (lesson: Lesson) => {
+    const student = profilesById[lesson.student_id] ?? students.find((item) => item.id === lesson.student_id)
     const url = buildGoogleCalendarInviteUrl({
-      title: `${nextLesson.subject} · ${nextLesson.class_name}`,
-      startsAt: nextLesson.starts_at,
-      durationMinutes: nextLesson.duration_minutes || 60,
-      attendees: visualPreview
-        ? ['ericlucas.lucas@gmail.com']
-        : nextLessonStudent?.email ? [nextLessonStudent.email] : [],
-      meetingUrl: nextLesson.meeting_url,
+      title: `${lesson.subject || 'Aulas de Inglês'} · ${lesson.class_name || 'Aula'}`,
+      startsAt: lesson.starts_at,
+      durationMinutes: lesson.duration_minutes || 60,
+      attendees: visualPreview ? ['ericlucas.lucas@gmail.com'] : student?.email ? [student.email] : [],
+      meetingUrl: lesson.meeting_url,
     })
     window.open(url, '_blank', 'noopener,noreferrer')
+  }
+  const addNextLessonToGoogleCalendar = () => {
+    if (!nextLesson) return
+    addLessonToGoogleCalendar(nextLesson)
+  }
+  const handleSelectCalendarEvent = (event: CalendarEventItem) => {
+    if (event.type === 'lesson') onOpenLesson(event.sourceData as Lesson)
   }
 
   return (
@@ -177,24 +182,27 @@ export default function TeacherAgendaView({
             <button type="button" className="teacher-availability-button" onClick={() => visualPreview ? setPreviewModal('availability') : onAddAvailability()}>
               <Clock3 size={14} aria-hidden="true" /> Disponibilidade
             </button>
-            <button type="button" className="teacher-new-lesson-button" onClick={() => visualPreview ? setPreviewModal('new') : onAddLesson()}>
+            <button type="button" className="teacher-new-lesson-button" onClick={onAddLesson}>
               <CalendarPlus size={15} aria-hidden="true" /> Nova aula
             </button>
           </div>
         </div>
         <MobileCalendar
-          events={calendarEvents}
-          language={visualPreview ? 'pt' : language}
-          onSelectEvent={(event) => {
-            if (event.type === 'lesson') onOpenLesson(event.sourceData as Lesson)
-          }}
+            events={calendarEvents}
+            language={visualPreview ? 'pt' : language}
+            onSelectEvent={handleSelectCalendarEvent}
+            onSelectAgendaEvent={(event) => {
+              if (event.type === 'lesson') addLessonToGoogleCalendar(event.sourceData as Lesson)
+              else handleSelectCalendarEvent(event)
+            }}
             onSelectSlot={() => visualPreview ? setPreviewModal('availability') : onAddAvailability()}
           />
       </section>
 
-      {visualPreview && previewModal && (
-        <div className="reference-modal-backdrop" role="presentation" onClick={() => setPreviewModal(null)}>
-          <section className={`reference-modal reference-agenda-modal${previewModal === 'availability' ? ' reference-availability-modal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+      {visualPreview && previewModal && createPortal(
+        <div className="teacher-reference-preview-portal">
+          <div className="reference-modal-backdrop" role="presentation" onClick={() => setPreviewModal(null)}>
+            <section className={`reference-modal reference-agenda-modal${previewModal === 'availability' ? ' reference-availability-modal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="reference-modal-close" aria-label="Fechar" onClick={() => setPreviewModal(null)}><X size={18} /></button>
             {previewModal === 'details' && <>
               <span className="reference-kicker">DETALHES DA AULA</span>
@@ -202,12 +210,6 @@ export default function TeacherAgendaView({
               <p className="reference-agenda-modal-date">Hoje · 20:00 – 21:00</p>
               <div className="reference-detail-grid"><span>Nível<strong>Fluência</strong></span><span>Alunos<strong>Ladiele, Adielson, Jadson e Renan</strong></span><span>Sala virtual<strong>Zoom</strong></span><span>Honorário previsto<strong>R$ 56,00</strong></span></div>
               <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" onClick={addNextLessonToGoogleCalendar}>Adicionar ao Google Agenda</button><button type="button" className="reference-primary-button" onClick={() => nextLesson.meeting_url && window.open(nextLesson.meeting_url, '_blank', 'noopener,noreferrer')} disabled={!nextLesson.meeting_url}><Video size={15} /> Entrar no Zoom</button></div>
-            </>}
-            {previewModal === 'new' && <>
-              <span className="reference-kicker">AGENDA DO PROFESSOR</span>
-              <h2>Adicionar Nova Aula</h2>
-              <div className="reference-modal-form-grid reference-new-lesson-grid"><label className="is-wide">Título do Encontro / Módulo<input defaultValue="Aulas de Inglês · Turma Fluência" /></label><label>Data<input type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label>Horário de Início<input type="time" defaultValue="20:00" /></label><label className="is-wide">Link da aula (Zoom, opcional)<input defaultValue="https://zoom.us/j/00000000000" /></label><div className="is-wide reference-student-checkboxes"><span>Alunos</span>{['Ladiele Rodrigues', 'Adielson Pires', 'Jadson Bibiano', 'Renan Vasconcelos'].map((name) => <label key={name}><input type="checkbox" checked={previewStudents.includes(name)} onChange={(event) => setPreviewStudents((current) => event.target.checked ? [...new Set([...current, name])] : current.filter((item) => item !== name))} />{name}</label>)}</div></div>
-              <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Cancelar</button><button type="button" className="reference-primary-button" onClick={() => { const selectedIds = students.filter((student) => previewStudents.includes(student.full_name)).map((student) => student.id); void onCreatePreviewLesson?.({ subject: 'Aulas de Inglês', class_name: 'Turma Fluência', student_ids: selectedIds.length > 0 ? selectedIds : students.slice(0, 1).map((student) => student.id), teacher_id: profile.id, starts_at: new Date().toISOString(), duration_minutes: 60 }); setPreviewModal(null) }}>Salvar</button></div>
             </>}
             {previewModal === 'availability' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
@@ -231,8 +233,10 @@ export default function TeacherAgendaView({
               <div className="reference-agenda-modal-actions"><button type="button" onClick={() => setPreviewModal(null)}>Fechar</button><button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button></div>
               {availabilityEditorOpen && <div className="reference-availability-editor"><label>Dia da semana<select defaultValue="segunda"><option value="segunda">Segunda-feira</option><option value="terca">Terça-feira</option><option value="quarta">Quarta-feira</option><option value="quinta">Quinta-feira</option><option value="sexta">Sexta-feira</option></select></label><label>Início<input type="time" defaultValue="09:00" /></label><label>Término<input type="time" defaultValue="12:00" /></label><label className="reference-checkbox"><input type="checkbox" defaultChecked /><span>Repetir semanalmente</span></label><button type="button" className="reference-primary-button" onClick={() => setAvailabilityEditorOpen(false)}>Salvar horário</button></div>}
             </>}
-          </section>
-        </div>
+            </section>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
