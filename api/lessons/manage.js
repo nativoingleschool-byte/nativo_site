@@ -76,6 +76,7 @@ const resolveStudentId = async (supabaseAdmin, payload) => {
   const { data: existingProfiles } = await supabaseAdmin
     .from('profiles')
     .select('id, full_name, role')
+    .eq('role', 'student')
     .ilike('full_name', name)
     .limit(1)
 
@@ -100,7 +101,7 @@ const resolveStudentId = async (supabaseAdmin, payload) => {
   }
 
   const studentId = authData.user.id
-  await supabaseAdmin.from('profiles').upsert({
+  const { error: studentProfileError } = await supabaseAdmin.from('profiles').upsert({
     id: studentId,
     email,
     full_name: name,
@@ -108,6 +109,10 @@ const resolveStudentId = async (supabaseAdmin, payload) => {
     class_name: payload.class_name || '',
     push_enabled: false,
   })
+  if (studentProfileError) {
+    await supabaseAdmin.auth.admin.deleteUser(studentId).catch(() => {})
+    throw new Error(`Could not save student profile: ${studentProfileError.message}`)
+  }
 
   return studentId
 }
