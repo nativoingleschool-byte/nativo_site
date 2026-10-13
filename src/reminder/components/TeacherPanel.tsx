@@ -195,6 +195,8 @@ export default function TeacherPanel({
   // Edit Lesson Form State
   const [editLessonStudentId, setEditLessonStudentId] = useState('')
   const [editLessonStudentName, setEditLessonStudentName] = useState('')
+  const [editStudentsOpen, setEditStudentsOpen] = useState(false)
+  const [editStudentSearch, setEditStudentSearch] = useState('')
   const [editLessonSubject, setEditLessonSubject] = useState('')
   const [editLessonStartsAt, setEditLessonStartsAt] = useState('')
   const [editLessonDuration, setEditLessonDuration] = useState(60)
@@ -260,6 +262,25 @@ export default function TeacherPanel({
       `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
     )
   }, [classStudents, studentSearch])
+  const editClassStudents = useMemo(() => {
+    const currentClass = (profilesById[editLessonStudentId]?.class_name || editingLesson?.class_name || '').trim()
+    return sortedStudents.filter((student) =>
+      !currentClass || (student.class_name || '').trim() === currentClass
+    )
+  }, [editLessonStudentId, editingLesson?.class_name, profilesById, sortedStudents])
+  const filteredEditStudents = useMemo(() => {
+    const query = editStudentSearch.trim().toLocaleLowerCase()
+    if (!query) return editClassStudents
+    return editClassStudents.filter((student) =>
+      `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
+    )
+  }, [editClassStudents, editStudentSearch])
+  const editCurrentStudentName = profilesById[editLessonStudentId]?.full_name || 'Aluno Atual'
+  const showEditStudentFallback = Boolean(
+    editLessonStudentId
+    && !sortedStudents.some((student) => student.id === editLessonStudentId)
+    && editCurrentStudentName.toLocaleLowerCase().includes(editStudentSearch.trim().toLocaleLowerCase())
+  )
 
   // Filter lessons for this teacher
   const teacherLessons = useMemo(
@@ -566,6 +587,8 @@ export default function TeacherPanel({
   const handleOpenEditLesson = (lesson: Lesson) => {
     setEditingLesson(lesson)
     setEditLessonStudentId(lesson.student_id)
+    setEditStudentsOpen(false)
+    setEditStudentSearch('')
     setEditLessonSubject(lesson.subject)
     setEditLessonDuration(lesson.duration_minutes || 60)
     setEditLessonMeetingUrl(lesson.meeting_url ?? '')
@@ -1244,7 +1267,7 @@ export default function TeacherPanel({
           >
             <div
               ref={addModalRef}
-              className="modal-card animate-fade-in teacher-preview-functional-modal teacher-preview-add-modal"
+              className="modal-card animate-fade-in teacher-preview-functional-modal teacher-preview-add-modal teacher-lesson-form-modal"
               style={{
                 maxWidth: '520px',
                 width: '100%',
@@ -1400,7 +1423,7 @@ export default function TeacherPanel({
                   <input type="url" placeholder="https://meet.google.com/..." value={newLessonMeetingUrl} onChange={(event) => setNewLessonMeetingUrl(event.target.value)} />
                 </div>
 
-                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className={`teacher-modal-extra-field teacher-lesson-form-duration${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1433,14 +1456,14 @@ export default function TeacherPanel({
                     </div>
                   </div>
 
-                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className={`teacher-modal-extra-field teacher-lesson-form-status${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={newLessonStatus || 'agendada'}
                     onChange={(e) => setNewLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   >
-                    <option value="happened">✓ {t(language, 'status_happened')}</option>
+                    <option value="happened">{t(language, 'status_happened')}</option>
                     <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
                     <option value="not_happened">{t(language, 'status_not_happened')}</option>
                     <option value="agendada">{t(language, 'scheduled_badge')}</option>
@@ -1522,7 +1545,7 @@ export default function TeacherPanel({
           >
             <div
               ref={editModalRef}
-              className={`modal-card animate-fade-in teacher-preview-functional-modal teacher-edit-modal-layout${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
+              className={`modal-card animate-fade-in teacher-preview-functional-modal teacher-edit-modal-layout teacher-lesson-form-modal${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
               style={{
                 maxWidth: '520px',
                 width: '100%',
@@ -1543,29 +1566,67 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
-                  <select
-                    required
-                    value={editLessonStudentId}
-                    onChange={(e) => setEditLessonStudentId(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
-                  >
-                    <option value="">{t(modalLanguage, 'select_student')}...</option>
-                    {sortedStudents.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
-                      </option>
-                    ))}
-                    {editLessonStudentId && !sortedStudents.some((s) => s.id === editLessonStudentId) && (
-                      <option value={editLessonStudentId}>
-                        {profilesById[editLessonStudentId]?.full_name || 'Aluno Atual'}
-                      </option>
-                    )}
-                  </select>
+                <div className="teacher-preview-dialog-student">
+                  <label className="teacher-modal-field-label">{visualPreviewMode ? 'Alunos' : `${t(language, 'student_colon')} *`}</label>
+                  <div className="teacher-student-dropdown">
+                    <button
+                      type="button"
+                      className="teacher-student-dropdown__trigger"
+                      onClick={() => {
+                        setEditStudentSearch('')
+                        setEditStudentsOpen((open) => !open)
+                      }}
+                      aria-expanded={editStudentsOpen}
+                    >
+                      <span>{sortedStudents.find((student) => student.id === editLessonStudentId)?.full_name
+                        || profilesById[editLessonStudentId]?.full_name
+                        || 'Aluno Atual'}</span>
+                      <ChevronDown size={15} />
+                    </button>
+                    {editStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar aluno">
+                      <label className="teacher-student-dropdown__search">
+                        <Search size={14} aria-hidden="true" />
+                        <input
+                          type="search"
+                          value={editStudentSearch}
+                          onChange={(event) => setEditStudentSearch(event.target.value)}
+                          placeholder="Buscar aluno..."
+                          aria-label="Buscar aluno"
+                        />
+                      </label>
+                      <div className="teacher-student-dropdown__results">
+                        {filteredEditStudents.map((student) => (
+                          <label key={student.id}>
+                            <input
+                              type="radio"
+                              name="edit-lesson-student"
+                              checked={editLessonStudentId === student.id}
+                              onChange={() => {
+                                setEditLessonStudentId(student.id)
+                                setEditStudentsOpen(false)
+                                setEditStudentSearch('')
+                              }}
+                            />
+                            <span>{student.full_name}</span>
+                            {student.class_name && <small>{student.class_name}</small>}
+                          </label>
+                        ))}
+                        {showEditStudentFallback && (
+                          <label>
+                            <input type="radio" name="edit-lesson-student" checked disabled />
+                            <span>{editCurrentStudentName}</span>
+                            {editingLesson?.class_name && <small>{editingLesson.class_name}</small>}
+                          </label>
+                        )}
+                        {filteredEditStudents.length === 0 && !showEditStudentFallback && <p className="teacher-student-dropdown__empty">
+                          {editClassStudents.length ? 'Nenhum aluno encontrado.' : 'Nenhum aluno cadastrado nesta turma.'}
+                        </p>}
+                      </div>
+                    </div>}
+                  </div>
                 </div>
 
-                <div>
+                <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Título do Encontro / Módulo' : `${t(language, 'subject_topic')} *`}</label>
                   <input
                     required
@@ -1582,7 +1643,7 @@ export default function TeacherPanel({
                   <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
                 </div>
 
-                <div>
+                <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{visualPreviewMode ? 'Link da aula (opcional)' : 'Link da aula (Zoom)'}</label>
                   <input
                     type="url"
@@ -1593,7 +1654,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className={`teacher-modal-extra-field teacher-lesson-form-duration${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
@@ -1604,36 +1665,16 @@ export default function TeacherPanel({
                       onChange={(e) => setEditLessonDuration(Number(e.target.value))}
                       style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                     />
-                    <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
-                      {[30, 45, 60, 90].map((mins) => (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => setEditLessonDuration(mins)}
-                          style={{
-                            flex: 1,
-                            padding: '0.2rem',
-                            borderRadius: '0.3rem',
-                            fontSize: '0.72rem',
-                            background: editLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
-                            color: editLessonDuration === mins ? '#0f172a' : '#cbd5e1',
-                            fontWeight: editLessonDuration === mins ? 'bold' : 'normal',
-                          }}
-                        >
-                          {mins}m
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
-                <div className={`teacher-modal-extra-field${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
+                <div className={`teacher-modal-extra-field teacher-lesson-form-status${visualPreviewMode ? ' teacher-preview-dialog-extra' : ''}`}>
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
                   <select
                     value={editLessonStatus || 'agendada'}
                     onChange={(e) => setEditLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
                     style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
                   >
-                    <option value="happened">✓ {t(modalLanguage, 'status_happened')}</option>
+                    <option value="happened">{t(modalLanguage, 'status_happened')}</option>
                     <option value="student_no_show">{t(modalLanguage, 'status_student_noshow')}</option>
                     <option value="not_happened">{t(modalLanguage, 'status_not_happened')}</option>
                     <option value="agendada">{t(modalLanguage, 'scheduled_badge')}</option>
