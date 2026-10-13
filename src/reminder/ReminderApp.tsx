@@ -1628,6 +1628,7 @@ function ReminderAppInner() {
     subject: string
     class_name?: string
     student_id: string
+    student_name?: string
     teacher_id?: string
     starts_at: string
     duration_minutes: number
