@@ -64,6 +64,7 @@ interface TeacherPanelProps {
     subject: string
     class_name?: string
     student_id: string
+    student_name?: string
     teacher_id?: string
     starts_at: string
     duration_minutes: number
@@ -523,6 +524,7 @@ export default function TeacherPanel({
       } else if (createTeacherSingleLesson) {
         await createTeacherSingleLesson({
           student_id: studentIdentifier,
+          student_name: isCustom ? newLessonStudentName.trim() : undefined,
           student_name: isCustom ? newLessonStudentName.trim() : undefined,
           teacher_id: profile.id,
           subject: newLessonSubject.trim(),
