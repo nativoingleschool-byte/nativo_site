@@ -4024,3 +4024,42 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   color: #fff !important;
   stroke: currentColor;
 }
+
+/* Keep teacher lesson dialogs fixed-width even with multiple long student names. */
+.reminder-app-scope .teacher-lesson-form-modal,
+.reminder-app-scope .teacher-preview-edit-modal,
+.reminder-app-scope .teacher-preview-add-modal {
+  box-sizing: border-box !important;
+  width: min(520px, calc(100vw - 32px)) !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 32px) !important;
+  overflow-x: clip !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal form,
+.reminder-app-scope .teacher-lesson-form-modal .teacher-preview-dialog-student,
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown,
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__trigger,
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__menu {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__trigger {
+  overflow: hidden !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__trigger span {
+  display: block !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__results label {
+  min-width: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__results label span {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
