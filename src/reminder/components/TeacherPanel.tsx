@@ -255,12 +255,7 @@ export default function TeacherPanel({
     [sortedStudents, newLessonStudentIds]
   )
   const selectedClassName = selectedStudents[0]?.class_name?.trim() || ''
-  const classStudents = useMemo(
-    () => selectedStudents.length
-      ? sortedStudents.filter((student) => (student.class_name?.trim() || '') === selectedClassName)
-      : sortedStudents,
-    [selectedClassName, selectedStudents.length, sortedStudents]
-  )
+  const classStudents = sortedStudents
   const filteredStudents = useMemo(() => {
     const query = studentSearch.trim().toLocaleLowerCase()
     if (!query) return classStudents
