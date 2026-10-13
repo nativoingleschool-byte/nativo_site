@@ -1522,7 +1522,7 @@ export default function TeacherPanel({
           >
             <div
               ref={editModalRef}
-              className={`modal-card animate-fade-in teacher-preview-functional-modal${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
+              className={`modal-card animate-fade-in teacher-preview-functional-modal teacher-edit-modal-layout${visualPreviewMode ? ' teacher-preview-edit-modal' : ''}`}
               style={{
                 maxWidth: '520px',
                 width: '100%',

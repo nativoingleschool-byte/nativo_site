@@ -3462,6 +3462,23 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .teacher-preview-edit-modal .teacher-preview-dialog-actions > div > button:first-child { display: none; }
 .teacher-preview-edit-modal .teacher-preview-dialog-actions > div { margin-left: auto; }
 .teacher-preview-functional-modal .teacher-preview-dialog-actions { justify-content: flex-end !important; }
+.teacher-edit-modal-layout { max-width: 560px !important; }
+.teacher-edit-modal-layout form {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px 14px !important;
+}
+.teacher-edit-modal-layout form > div { min-width: 0; }
+.teacher-edit-modal-layout form > .teacher-preview-dialog-date-time,
+.teacher-edit-modal-layout form > div:nth-child(4),
+.teacher-edit-modal-layout form > .teacher-preview-dialog-actions { grid-column: 1 / -1; }
+.teacher-edit-modal-layout .teacher-preview-dialog-actions {
+  margin-top: 0 !important;
+  border-color: #edf0f2 !important;
+  padding-top: 10px !important;
+}
+.teacher-edit-modal-layout .teacher-modal-extra-field > div button { min-height: 30px; }
 .teacher-preview-dialog-date-time {
   display: grid;
   grid-template-columns: 1fr 1fr;
