@@ -16,88 +16,41 @@ const json = (res, status, body) => {
 
 const getSupabaseAdmin = () => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.')
+    throw new Error('Supabase administrative server credentials are missing.')
   }
-
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+    auth: { autoRefreshToken: false, persistSession: false },
   })
 }
 
 const assertAuthenticated = async (req) => {
   const authHeader = req.headers?.authorization || req.headers?.Authorization || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-  if (!token) {
-    throw new Error('Missing bearer token.')
-  }
+  if (!token) throw new Error('Missing bearer token.')
+  if (!supabaseUrl || !supabaseAuthKey) throw new Error('Supabase Auth configuration is missing.')
 
-  // Validate the user's JWT using the public Auth API key; use the
-  // privileged server client only for authorized database operations.
-  if (!supabaseAuthKey) throw new Error('Server Auth configuration is missing.')
-  const authClient = createClient(supabaseUrl, supabaseAuthKey, {
+  // getUser validates the token, but does NOT pass its identity to PostgREST.
+  // The Authorization header below is essential for RLS-scoped profile reads and writes.
+  const userClient = createClient(supabaseUrl, supabaseAuthKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser(token)
-
+  const { data: { user }, error: userError } = await userClient.auth.getUser(token)
   if (userError || !user) {
-    const errorCode = userError?.code || 'unknown_auth_error'
-    const errorStatus = userError?.status || 0
-    const tokenPayload = (() => {
-      try {
-        return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
-      } catch {
-        return {}
-      }
-    })()
-    const expectedIssuer = supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}/auth/v1` : null
-    const issuerMatches = typeof tokenPayload.iss === 'string' && tokenPayload.iss === expectedIssuer
-    const expiresAt = typeof tokenPayload.exp === 'number' ? tokenPayload.exp : null
-    const isExpired = expiresAt !== null && expiresAt <= Math.floor(Date.now() / 1000)
-    console.error('[reminder:auth] JWT verification rejected', { code: errorCode, status: errorStatus, issuerMatches, isExpired })
-    const diagnosis = !issuerMatches ? 'O frontend e a API parecem usar projetos Supabase diferentes.' :
-      isExpired ? 'O token de acesso expirou.' : `Supabase Auth rejeitou a sessão (código: ${errorCode}; status: ${errorStatus}).`
-    throw new Error(`Falha de autenticação: ${diagnosis}`)
+    console.warn('[reminder:auth] invalid session', { code: userError?.code, status: userError?.status })
+    throw new Error('Sessão inválida ou expirada. Entre novamente.')
   }
-  const supabaseAdmin = getSupabaseAdmin()
 
-  // Read the signed-in user's own profile with their JWT. This follows the
-  // existing profiles SELECT RLS policy and does not depend on service-role
-  // privileges simply to establish the caller's identity.
-  const { data: profile, error: profileError } = await authClient
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const { data: profile, error: profileError } = await userClient.from('profiles').select('*').eq('id', user.id).single()
   if (profileError || !profile) {
-    console.error('[reminder:profiles] own profile lookup failed', {
-      code: profileError?.code || 'no_profile',
-      message: profileError?.message || 'No matching profile',
-    })
-    throw new Error('Não foi possível carregar o perfil autenticado. Verifique o cadastro e as permissões.')
+    console.error('[reminder:auth] profile read', { code: profileError?.code, message: profileError?.message })
+    throw new Error('O perfil não pôde ser carregado com as permissões da sessão.')
   }
+  if (profile.archived) throw new Error('Este cadastro está arquivado.')
 
-  // The privileged client must truly be capable of reading the selected
-  // profile; do not silently use an anon/publishable key for writes.
-  const { data: privilegedProfile, error: adminError } = await supabaseAdmin
-    .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .single()
-  if (adminError || !privilegedProfile) {
-    console.error('[reminder:profiles] administrative profile lookup failed', {
-      code: adminError?.code || 'no_profile',
-      message: adminError?.message || 'No matching profile',
-    })
-    throw new Error('A API não possui acesso administrativo ao cadastro. Verifique SUPABASE_SECRET_KEY da produção.')
-  }
-
-  return { supabaseAdmin, user, profile }
+  // Teachers operate through their own JWT and DB RLS, not through service-role keys.
+  const db = profile.role === 'teacher' ? userClient : getSupabaseAdmin()
+  return { supabaseAdmin: db, profile, user }
 }
 
 const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim())
@@ -312,7 +265,10 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const teacherId = payload.teacher_id || profile.id
   ensureTeacherPermission(profile, teacherId)
 
-  const studentId = await resolveStudentId(supabaseAdmin, payload)
+  if (profile.role === 'teacher' && !isUuid(payload.student_id)) {
+    throw new Error('Selecione um aluno já cadastrado na lista.')
+  }
+  const studentId = profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload)
 
   if (!payload.subject?.trim()) {
     throw new Error('Subject is required.')
@@ -430,21 +386,15 @@ const deleteLesson = async (supabaseAdmin, profile, payload) => {
 }
 
 const getProfiles = async (supabaseAdmin, profile) => {
-  if (profile.role !== 'admin' && profile.role !== 'teacher') {
-    throw new Error('Only admin and teachers can access profile lists.')
+  if (profile.role === 'teacher') {
+    const { data, error } = await supabaseAdmin.rpc('list_active_students_for_teachers')
+    if (error) throw new Error(`Não foi possível carregar nomes dos alunos: ${error.message}`)
+    return [profile, ...(data ?? [])]
   }
-
-  // Query all profiles; filter out archived if marked
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .order('full_name', { ascending: true })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return (data ?? []).filter((p) => p.archived !== true)
+  if (profile.role !== 'admin') throw new Error('Acesso aos perfis não autorizado.')
+  const { data, error } = await supabaseAdmin.from('profiles').select('*').order('full_name')
+  if (error) throw new Error(error.message)
+  return (data ?? []).filter((p) => !p.archived)
 }
 
 const getTeacherNotes = async (supabaseAdmin, profile) => {
