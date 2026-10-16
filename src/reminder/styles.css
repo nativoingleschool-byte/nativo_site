@@ -74,9 +74,11 @@ body:has(.reminder-app-scope) {
 .reminder-app-scope h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1f4268;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: #1f4268;
 }
 
 .reminder-app-scope h2 {
@@ -1485,10 +1487,11 @@ body:has(.reminder-app-scope) {
 }
 
 .summary-card-value {
-  background: linear-gradient(135deg, #f8fafc 30%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1f4268;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: #1f4268;
 }
 
 .summary-card {
@@ -4062,4 +4065,245 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__results label span {
   min-width: 0 !important;
   overflow-wrap: anywhere !important;
+}
+
+
+/* Compact recurring lesson option, aligned with the rest of the teacher modal. */
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px 14px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 2px 0 0 !important;
+  padding: 10px 0 0 !important;
+  border-top: 1px solid #e9eef2;
+  font-size: 12px;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle {
+  display: inline-flex !important;
+  width: auto !important;
+  align-items: center !important;
+  gap: 7px !important;
+  color: #4e6175 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  accent-color: #234a6c;
+  flex: 0 0 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  min-height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__hint {
+  color: #91a0ac !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  color: #617387 !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks input {
+  box-sizing: border-box !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  height: 29px !important;
+  min-height: 29px !important;
+  padding: 3px 5px !important;
+  border: 1px solid #dbe3ea !important;
+  border-radius: 6px !important;
+  color: #334a60 !important;
+  background: #fff !important;
+  font-size: 12px !important;
+  text-align: center;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__note {
+  color: #8293a2;
+  font-size: 11px;
+}
+
+
+/* Compact seven-day availability editor (preview). */
+.reminder-app-scope .reference-availability-modal { width: min(700px, calc(100vw - 32px)) !important; max-width: 700px !important; max-height: min(90dvh, 820px) !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
+.reminder-app-scope .teacher-weekly-availability-days { overflow-y: auto; flex: 1 1 auto; min-height: 0; display: grid; gap: 12px; padding: 12px 2px; }
+.reminder-app-scope .teacher-weekly-availability-day { border: 1px solid #dfe7ee; padding: 14px; border-radius: 14px; min-width: 0; }
+.reminder-app-scope .teacher-weekly-availability-day__header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:9px; }
+.reminder-app-scope .teacher-weekly-availability-day__header strong { color:#27435f; font-size:13px; }
+.reminder-app-scope .teacher-weekly-availability-day__header button { border:1px solid #d8e3ed; background:#fff; color:#486580; border-radius:9px; padding:7px 11px; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot { display:flex; align-items:center; gap:10px; background:#f5f7f9; border-radius:9px; padding:10px; margin:6px 0; color:#28435c; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot button { margin-left:auto; color:#ca4760; background:transparent; font-size:12px; border:0; }
+.reminder-app-scope .teacher-weekly-availability-dot { flex:0 0 9px; width:9px; height:9px; border-radius:50%; background:#14b58a; }
+.reminder-app-scope .teacher-weekly-availability-empty { color:#9aa6af; font-size:12px; font-style:italic; }
+.reminder-app-scope .teacher-weekly-availability-editor { display:flex; align-items:end; flex-wrap:wrap; gap:9px; padding:12px 0 2px; }
+.reminder-app-scope .teacher-weekly-availability-editor label { display:flex; flex-direction:column; gap:5px; font-size:11px; color:#60768c; }
+.reminder-app-scope .teacher-weekly-availability-editor input { max-width:118px; border:1px solid #dae4ec; background:white; border-radius:8px; padding:6px; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button { border:1px solid #dae4ec; border-radius:8px; padding:8px 11px; background:white; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button:nth-last-child(2) { background:#24476c; color:white; }
+.reminder-app-scope .teacher-weekly-availability-caption { color:#9aa7b3; font-size:11px; margin-right:auto; }
+.reminder-app-scope .reference-invoice-card .reference-primary-button { background:#234a6c !important; border-color:#234a6c !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+
+
+/* Preview-only administrator alignment: use the light cards and navy typography of teacher panels. */
+.reminder-app-scope.preview-admin-showcase { background: #f6f8fb !important; color: #243d58 !important; }
+.reminder-app-scope.preview-admin-showcase .main-content { max-width: 1320px; margin-inline: auto; padding: 24px 22px !important; min-width: 0; }
+.reminder-app-scope.preview-admin-showcase .main-content > .panel,
+.reminder-app-scope.preview-admin-showcase .summary-grid > * {
+  background: #fff !important; border: 1px solid #e5ebf1 !important;
+  box-shadow: 0 6px 22px rgba(31,58,86,.045) !important; border-radius: 17px !important;
+  color: #264560 !important;
+}
+.reminder-app-scope.preview-admin-showcase .panel-header h2 { color: #27435f !important; font-weight: 700 !important; }
+.reminder-app-scope.preview-admin-showcase .section-label { color: #8a9cad !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button { background: transparent !important; border-radius: 999px !important; color: #718399 !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button-active { background: #e9ecff !important; color: #6277d3 !important; }
+.reminder-app-scope.preview-admin-showcase .summary-grid { gap: 14px; }
+.reminder-app-scope.preview-admin-showcase .main-content input,
+.reminder-app-scope.preview-admin-showcase .main-content select { max-width: 100%; }
+@media (max-width: 680px) {
+  .reminder-app-scope.preview-admin-showcase .main-content { padding: 15px 12px !important; }
+}
+
+
+/* WEEKLY AVAILABILITY MODAL: portal lives directly in body, outside .reminder-app-scope.
+   Keep selectors rooted at the portal so the design actually applies. */
+.teacher-reference-preview-portal .reference-availability-modal {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(720px, calc(100vw - 28px)) !important;
+  max-width: 720px !important;
+  max-height: min(94dvh, 740px) !important;
+  min-height: 0;
+  overflow: hidden !important;
+  padding: 32px 32px 22px !important;
+  border: 1px solid #e0e6ea !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  color: #27435f !important;
+  box-shadow: 0 20px 60px rgba(31,56,76,.15) !important;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-heading {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding-right: 42px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-heading h2 {
+  margin: 0 !important; color: #1f4268 !important; font-size: 21px !important;
+  font-weight: 600 !important; letter-spacing: -.02em;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-badge {
+  padding: 7px 10px; color: #078566; font-weight: 650; font-size: 11px;
+  background: #f0fbf7; border: 1px solid #bce9d9; border-radius: 5px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-availability-intro {
+  margin: 17px 0 22px !important; padding: 0 0 25px;
+  border-bottom: 1px solid #e8edf2; color: #81909b; font-size: 13px !important;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-days {
+  display: grid !important; flex: 1 1 auto !important; min-height: 0 !important;
+  overflow-x: hidden !important; overflow-y: auto !important;
+  align-content: start; gap: 14px; padding: 0 17px 0 0;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day {
+  box-sizing: border-box; min-width: 0; padding: 15px;
+  border: 1px solid #dfe7ee; border-radius: 16px; background: #fff;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 10px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header strong {
+  color: #29445f; font-size: 13px; font-weight: 700;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header button {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+  border: 1px solid #dce5ec; border-radius: 10px;
+  background: #fff; color: #45617a; padding: 7px 13px; font-size: 12px;
+  cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot {
+  display: flex; align-items: center; gap: 11px; min-height: 48px;
+  padding: 10px 12px; margin-top: 8px; border-radius: 9px; background: #f5f7f9;
+  color: #29435c; font-size: 12px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-dot {
+  width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #14b58a;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions {
+  display: flex; gap: 18px; align-items: center; margin-left: auto;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions button {
+  border: none; background: transparent; color: #617387; font-size: 12px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions button:last-child { color: #ca4760; }
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  min-height: 34px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty {
+  font-size: 12px; font-style: italic; color: #9aa6af; margin: 0;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty-row span {
+  font-size: 11px; color: #94a2ad; background: #f3f6f8;
+  padding: 7px 10px; border-radius: 6px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor {
+  display: flex; align-items: end; flex-wrap: wrap; gap: 9px;
+  padding: 12px 0 0; border-top: 1px solid #edf1f4; margin-top: 12px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor label {
+  display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #60768c;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor input {
+  width: 115px; max-width: 100%; border: 1px solid #dae4ec;
+  border-radius: 8px; padding: 7px; background: #fff; color: #29435c;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor button {
+  min-height: 34px; padding: 7px 11px; background: #fff; color: #45617a;
+  border: 1px solid #dae4ec; border-radius: 8px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor button:nth-last-child(2) {
+  background: #1f4268; color: white; border-color: #1f4268;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions {
+  display: flex !important; flex: 0 0 auto; align-items: center; justify-content: flex-end;
+  gap: 12px; border-top: 1px solid #e8edf2; padding: 22px 0 0;
+  margin: 22px 0 0 !important; background: #fff;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-caption {
+  margin-right: auto; color: #9aa7b3; font-size: 11px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions > .teacher-weekly-availability-close {
+  border: 0 !important; background: transparent !important; color: #617387 !important;
+  padding: 9px 12px !important; font-size: 12px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions > .reference-primary-button {
+  background: #1f4268 !important; border: 1px solid #1f4268 !important;
+  color: #fff !important; -webkit-text-fill-color: #fff !important;
+  font-size: 12px; font-weight: 700; border-radius: 9px; padding: 11px 19px; cursor: pointer;
+}
+@media (max-width: 600px) {
+  .teacher-reference-preview-portal .reference-availability-modal { padding: 22px 16px 15px !important; max-height: 94dvh !important; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-days { padding-right: 6px; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-caption { display: none; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot { flex-wrap: wrap; }
 }

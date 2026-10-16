@@ -1407,20 +1407,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                                <div className="teacher-recurring-field">
+                  <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
-                    Aula recorrente (semanal)
+                    <span>Aula recorrente</span>
+                    <span className="teacher-recurring-field__hint">Semanal</span>
                   </label>
-                  {newRecurring && true && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                      Semanas
-                      <input type="number" min={2} max={52} value={newRecurrenceWeeks} onChange={(event) => setNewRecurrenceWeeks(Number(event.target.value))}
-                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                  {newRecurring && (
+                    <label className="teacher-recurring-field__weeks">
+                      Por <input aria-label="Quantidade de semanas" type="number" min={2} max={52} value={newRecurrenceWeeks} onChange={(event) => setNewRecurrenceWeeks(Number(event.target.value))} /> semanas
                     </label>
                   )}
-                  {newRecurring && <small style={{ color: '#64748b' }}>Uma aula por semana, incluindo a primeira.</small>}
+                  
                 </div>
+
                 <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
                     type="button"
@@ -1644,20 +1644,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                                <div className="teacher-recurring-field">
+                  <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={editRecurring} onChange={(event) => setEditRecurring(event.target.checked)} />
-                    Aula recorrente (semanal)
+                    <span>Aula recorrente</span>
+                    <span className="teacher-recurring-field__hint">Semanal</span>
                   </label>
                   {editRecurring && !editingLesson?.recurrence_series_id && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                      Semanas
-                      <input type="number" min={2} max={52} value={editRecurrenceWeeks} onChange={(event) => setEditRecurrenceWeeks(Number(event.target.value))}
-                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                    <label className="teacher-recurring-field__weeks">
+                      Por <input aria-label="Quantidade de semanas" type="number" min={2} max={52} value={editRecurrenceWeeks} onChange={(event) => setEditRecurrenceWeeks(Number(event.target.value))} /> semanas
                     </label>
                   )}
-                  {editingLesson?.recurrence_series_id && editRecurring && <small style={{ color: '#64748b' }}>As mudanças serão aplicadas a todas as aulas desta série.</small>}
+                  {editingLesson?.recurrence_series_id && editRecurring && <span className="teacher-recurring-field__note">Aplicar a toda a série</span>}
                 </div>
+
                 <div
                   className="button-row teacher-preview-dialog-actions"
                   style={{
