@@ -4063,3 +4063,78 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   min-width: 0 !important;
   overflow-wrap: anywhere !important;
 }
+
+
+/* Compact recurring lesson option, aligned with the rest of the teacher modal. */
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px 14px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 2px 0 0 !important;
+  padding: 10px 0 0 !important;
+  border-top: 1px solid #e9eef2;
+  font-size: 12px;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle {
+  display: inline-flex !important;
+  width: auto !important;
+  align-items: center !important;
+  gap: 7px !important;
+  color: #4e6175 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  accent-color: #234a6c;
+  flex: 0 0 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  min-height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__hint {
+  color: #91a0ac !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  color: #617387 !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks input {
+  box-sizing: border-box !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  height: 29px !important;
+  min-height: 29px !important;
+  padding: 3px 5px !important;
+  border: 1px solid #dbe3ea !important;
+  border-radius: 6px !important;
+  color: #334a60 !important;
+  background: #fff !important;
+  font-size: 12px !important;
+  text-align: center;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__note {
+  color: #8293a2;
+  font-size: 11px;
+}
