@@ -2106,7 +2106,7 @@ function ReminderAppInner() {
 
   if (session && !profile && !appError) {
     return (
-      <div className="reminder-app-scope">
+      <div className={`reminder-app-scope${visualPreviewMode && profile?.role === 'admin' ? ' preview-admin-showcase' : ''}`}>
         <div className="login-shell">
           <section className="login-panel" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
