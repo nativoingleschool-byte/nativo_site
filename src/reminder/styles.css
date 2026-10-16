@@ -4138,3 +4138,23 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   color: #8293a2;
   font-size: 11px;
 }
+
+
+/* Compact seven-day availability editor (preview). */
+.reminder-app-scope .reference-availability-modal { width: min(700px, calc(100vw - 32px)) !important; max-width: 700px !important; max-height: min(90dvh, 820px) !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
+.reminder-app-scope .teacher-weekly-availability-days { overflow-y: auto; flex: 1 1 auto; min-height: 0; display: grid; gap: 12px; padding: 12px 2px; }
+.reminder-app-scope .teacher-weekly-availability-day { border: 1px solid #dfe7ee; padding: 14px; border-radius: 14px; min-width: 0; }
+.reminder-app-scope .teacher-weekly-availability-day__header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:9px; }
+.reminder-app-scope .teacher-weekly-availability-day__header strong { color:#27435f; font-size:13px; }
+.reminder-app-scope .teacher-weekly-availability-day__header button { border:1px solid #d8e3ed; background:#fff; color:#486580; border-radius:9px; padding:7px 11px; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot { display:flex; align-items:center; gap:10px; background:#f5f7f9; border-radius:9px; padding:10px; margin:6px 0; color:#28435c; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot button { margin-left:auto; color:#ca4760; background:transparent; font-size:12px; border:0; }
+.reminder-app-scope .teacher-weekly-availability-dot { flex:0 0 9px; width:9px; height:9px; border-radius:50%; background:#14b58a; }
+.reminder-app-scope .teacher-weekly-availability-empty { color:#9aa6af; font-size:12px; font-style:italic; }
+.reminder-app-scope .teacher-weekly-availability-editor { display:flex; align-items:end; flex-wrap:wrap; gap:9px; padding:12px 0 2px; }
+.reminder-app-scope .teacher-weekly-availability-editor label { display:flex; flex-direction:column; gap:5px; font-size:11px; color:#60768c; }
+.reminder-app-scope .teacher-weekly-availability-editor input { max-width:118px; border:1px solid #dae4ec; background:white; border-radius:8px; padding:6px; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button { border:1px solid #dae4ec; border-radius:8px; padding:8px 11px; background:white; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button:nth-last-child(2) { background:#24476c; color:white; }
+.reminder-app-scope .teacher-weekly-availability-caption { color:#9aa7b3; font-size:11px; margin-right:auto; }
+.reminder-app-scope .reference-invoice-card .reference-primary-button { background:#234a6c !important; border-color:#234a6c !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
