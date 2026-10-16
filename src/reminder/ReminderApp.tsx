@@ -2420,7 +2420,7 @@ function ReminderAppInner() {
           </AdminShell>
         )}
 
-        {isStudent} && (
+        {isStudent && (
           <StudentPanel
             language={language}
             profile={profile}
