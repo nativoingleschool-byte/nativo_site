@@ -46,6 +46,7 @@ import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import TeacherShell from './components/TeacherShell'
+import AdminShell from './components/AdminShell'
 import { registerAppServiceWorker } from './pwa'
 import { Receipt } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
@@ -2191,7 +2192,7 @@ function ReminderAppInner() {
   return (
     <div className="reminder-app-scope">
       <div className={`app-shell final-shell${isTeacher ? ' teacher-app-shell' : ''}`}>
-      <Topbar
+      {!isAdmin && <Topbar
         profile={profile}
         language={language}
         setLanguage={setLanguage}
@@ -2207,14 +2208,14 @@ function ReminderAppInner() {
         handleLogout={handleLogout}
         adminTab={adminTab}
         setAdminTab={setAdminTab}
-      />
+      />}
 
-      <main className={`main-content${isTeacher ? ' teacher-host-main' : ''}`}>
-        <section className="summary-grid">
+      <main className={`main-content${isTeacher ? ' teacher-host-main' : ''}${isAdmin ? ' admin-host-main' : ''}`}>
+        {!isAdmin && <section className="summary-grid">
           {summaryCards.map((card) => (
             <StatCard key={card.label} label={card.label} value={card.value} />
           ))}
-        </section>
+        </section>}
 
         {appError && (
           <section className="panel">
@@ -2223,7 +2224,13 @@ function ReminderAppInner() {
         )}
 
         {isAdmin && (
-          <section className="panel">
+          <AdminShell profile={profile} activeTab={adminTab} onTabChange={setAdminTab}
+            notifications={notifications} onMarkNotificationRead={markNotificationRead}
+            onMarkAllNotificationsRead={markAllNotificationsRead} onLogout={handleLogout}>
+          <section className="summary-grid admin-summary-grid">
+            {summaryCards.map((card) => <StatCard key={card.label} label={card.label} value={card.value} />)}
+          </section>
+          <section className="panel admin-content-panel">
             <div className="panel-header animate-fade-in">
               <div>
                 <p className="section-label">{t(language, 'school_management')}</p>
@@ -2410,9 +2417,10 @@ function ReminderAppInner() {
               />
             )}
           </section>
+          </AdminShell>
         )}
 
-        {isStudent && (
+        {isStudent} && (
           <StudentPanel
             language={language}
             profile={profile}
