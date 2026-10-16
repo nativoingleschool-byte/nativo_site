@@ -4158,3 +4158,24 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .reminder-app-scope .teacher-weekly-availability-editor button:nth-last-child(2) { background:#24476c; color:white; }
 .reminder-app-scope .teacher-weekly-availability-caption { color:#9aa7b3; font-size:11px; margin-right:auto; }
 .reminder-app-scope .reference-invoice-card .reference-primary-button { background:#234a6c !important; border-color:#234a6c !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+
+
+/* Preview-only administrator alignment: use the light cards and navy typography of teacher panels. */
+.reminder-app-scope.preview-admin-showcase { background: #f6f8fb !important; color: #243d58 !important; }
+.reminder-app-scope.preview-admin-showcase .main-content { max-width: 1320px; margin-inline: auto; padding: 24px 22px !important; min-width: 0; }
+.reminder-app-scope.preview-admin-showcase .main-content > .panel,
+.reminder-app-scope.preview-admin-showcase .summary-grid > * {
+  background: #fff !important; border: 1px solid #e5ebf1 !important;
+  box-shadow: 0 6px 22px rgba(31,58,86,.045) !important; border-radius: 17px !important;
+  color: #264560 !important;
+}
+.reminder-app-scope.preview-admin-showcase .panel-header h2 { color: #27435f !important; font-weight: 700 !important; }
+.reminder-app-scope.preview-admin-showcase .section-label { color: #8a9cad !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button { background: transparent !important; border-radius: 999px !important; color: #718399 !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button-active { background: #e9ecff !important; color: #6277d3 !important; }
+.reminder-app-scope.preview-admin-showcase .summary-grid { gap: 14px; }
+.reminder-app-scope.preview-admin-showcase .main-content input,
+.reminder-app-scope.preview-admin-showcase .main-content select { max-width: 100%; }
+@media (max-width: 680px) {
+  .reminder-app-scope.preview-admin-showcase .main-content { padding: 15px 12px !important; }
+}
