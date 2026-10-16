@@ -76,6 +76,7 @@ export default function TeacherAgendaView({
   const [addingWeekday, setAddingWeekday] = useState<number | null>(null)
   const [slotStart, setSlotStart] = useState('08:00')
   const [slotEnd, setSlotEnd] = useState('11:00')
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null)
   useBodyScrollLock(previewModal !== null)
   const displayedAvailabilities = visualPreview ? previewAvailabilities : availabilities
   const openAvailabilityEditor = (start = new Date()) => {
@@ -124,13 +125,14 @@ export default function TeacherAgendaView({
     const starts_at = dateTimeLocalToIso(isoToDateTimeLocal(day.toISOString(), appTimeZone), appTimeZone)
     try {
       if (visualPreview) {
-        setPreviewAvailabilities((items) => [...items, { id: `demo-weekday-${weekday}-${Date.now()}`, teacher_id: profile.id, starts_at, duration_minutes: duration }])
+        setPreviewAvailabilities((items) => [...items.filter(item => item.id !== editingSlotId), { id: editingSlotId || `demo-weekday-${weekday}-${Date.now()}`, teacher_id: profile.id, starts_at, duration_minutes: duration }])
       } else {
         if (!onCreateAvailability) throw new Error('Não foi possível salvar disponibilidade.')
         await onCreateAvailability({ starts_at, duration_minutes: duration, teacher_id: profile.id })
       }
       toast.success('Horário adicionado.')
       setAddingWeekday(null)
+      setEditingSlotId(null)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Falha ao salvar horário.')
     }
@@ -345,9 +347,8 @@ export default function TeacherAgendaView({
               </div>
             </>}
             {previewModal === 'availability' && <>
-              <span className="reference-kicker">AGENDA DO PROFESSOR</span>
-              <h2>Disponibilidade semanal</h2>
-              <p className="reference-availability-intro">Defina e gerencie os horários em que você está livre para aulas.</p>
+              <div className="teacher-weekly-availability-heading"><h2>Disponibilidade semanal</h2><span className="teacher-weekly-availability-badge">Recorrente</span></div>
+              <p className="reference-availability-intro">Defina e gerencie os horários recorrentes em que você está livre para aulas.</p>
               <div className="teacher-weekly-availability-days">
                 {[1,2,3,4,5,6,0].map((weekday) => {
                   const daySlots = displayedAvailabilities
@@ -356,30 +357,31 @@ export default function TeacherAgendaView({
                   return <section className="teacher-weekly-availability-day" key={weekday}>
                     <div className="teacher-weekly-availability-day__header">
                       <strong>{weekdayNames[weekday]}</strong>
-                      <button type="button" onClick={() => setAddingWeekday(addingWeekday === weekday ? null : weekday)}>+ Adicionar horário</button>
+                      <button type="button" onClick={() => { setEditingSlotId(null); setAddingWeekday(addingWeekday === weekday ? null : weekday) }}>+ Adicionar horário</button>
                     </div>
-                    {daySlots.length === 0 && <p className="teacher-weekly-availability-empty">Nenhum horário cadastrado</p>}
+                    {daySlots.length === 0 && <div className="teacher-weekly-availability-empty-row"><p className="teacher-weekly-availability-empty">Nenhum horário cadastrado</p><span>Indisponível</span></div>}
                     {daySlots.map((slot) => {
                       const start = new Date(slot.starts_at)
                       const end = addMinutes(start, slot.duration_minutes)
                       return <div className="teacher-weekly-availability-slot" key={slot.id}>
                         <span className="teacher-weekly-availability-dot" />
                         <strong>{format(start,'HH:mm')} às {format(end,'HH:mm')}</strong>
-                        <button type="button" onClick={() => void removeAvailability(slot)}>Remover</button>
+                        <div className="teacher-weekly-availability-slot__actions"><button type="button" onClick={() => {setEditingSlotId(slot.id);setSlotStart(format(start,'HH:mm'));setSlotEnd(format(end,'HH:mm'));setAddingWeekday(weekday)}}>Editar</button><button type="button" onClick={() => void removeAvailability(slot)}>Remover</button></div>
                       </div>
                     })}
                     {addingWeekday === weekday && <div className="teacher-weekly-availability-editor">
                       <label>Início<input type="time" value={slotStart} onChange={(event) => setSlotStart(event.target.value)}/></label>
                       <label>Término<input type="time" value={slotEnd} onChange={(event) => setSlotEnd(event.target.value)}/></label>
-                      <button type="button" onClick={() => void saveWeeklySlot(weekday)}>Adicionar</button>
-                      <button type="button" onClick={() => setAddingWeekday(null)}>Cancelar</button>
+                      <button type="button" onClick={() => void saveWeeklySlot(weekday)}>{editingSlotId ? 'Salvar horário' : 'Adicionar'}</button>
+                      <button type="button" onClick={() => {setAddingWeekday(null);setEditingSlotId(null)}}>Cancelar</button>
                     </div>}
                   </section>
                 })}
               </div>
               <div className="reference-agenda-modal-actions">
-                <span className="teacher-weekly-availability-caption">Horários organizados por dia da semana</span>
-                <button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Fechar</button>
+                <span className="teacher-weekly-availability-caption">Horários sincronizados com sua grade da coordenação</span>
+                <button type="button" className="teacher-weekly-availability-close" onClick={() => setPreviewModal(null)}>Fechar</button>
+                <button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Salvar</button>
               </div>
             </>}            </section>
           </div>
