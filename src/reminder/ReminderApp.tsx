@@ -46,6 +46,7 @@ import BankReconciliationTab from './components/BankReconciliationTab'
 import StudentPanel from './components/StudentPanel'
 import TeacherPanel from './components/TeacherPanel'
 import TeacherShell from './components/TeacherShell'
+import AdminShell from './components/AdminShell'
 import { registerAppServiceWorker } from './pwa'
 import { Receipt } from 'lucide-react'
 import { trackEvent } from '../lib/telemetry'
@@ -302,6 +303,25 @@ const createPreviewFixture = () => {
 }
 
 const previewFixture = createPreviewFixture()
+const previewAdminMode = () => isVisualPreviewMode() && typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('preview') === 'admin'
+const previewAdmin: Profile = {
+  ...previewFixture.teacher,
+  id: 'preview-admin-demo',
+  email: 'admin-demo@preview.invalid',
+  full_name: 'Administrador (demonstração)',
+  role: 'admin',
+}
+const activePreviewFixture = () => {
+  if (!previewAdminMode()) return previewFixture
+  return {
+    ...previewFixture,
+    teacher: previewAdmin,
+    session: { ...previewFixture.session, user: { id: previewAdmin.id, email: previewAdmin.email } } as Session,
+    profiles: [previewAdmin, ...previewFixture.profiles],
+  }
+}
+
 
 const previewNotifications: AppNotification[] = [
   {
@@ -321,9 +341,10 @@ const previewNotifications: AppNotification[] = [
 function ReminderAppInner() {
   const { toast } = useToast()
   const visualPreviewMode = isVisualPreviewMode()
+  const fixture = activePreviewFixture()
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage() ?? getDeviceLanguage())
   const [appTimeZone, setAppTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
-  const [session, setSession] = useState<Session | null>(() => (visualPreviewMode ? previewFixture.session : null))
+  const [session, setSession] = useState<Session | null>(() => (visualPreviewMode ? fixture.session : null))
   const [loading, setLoading] = useState(!visualPreviewMode)
   const [appError, setAppError] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(() => {
@@ -337,10 +358,10 @@ function ReminderAppInner() {
     password: '',
   }))
   const [loginError, setLoginError] = useState('')
-  const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? previewFixture.teacher : null))
+  const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? fixture.teacher : null))
   const [notifications, setNotifications] = useState<AppNotification[]>(() => (visualPreviewMode ? previewNotifications : []))
-  const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? previewFixture.profiles : []))
-  const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? previewFixture.lessons : []))
+  const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? fixture.profiles : []))
+  const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? fixture.lessons : []))
   const [userForm, setUserForm] = useState<UserFormState>(defaultUserForm())
   const [notificationPermission, setNotificationPermission] = useState<BrowserPermission>(() =>
     'Notification' in window ? Notification.permission : 'unsupported',
@@ -568,6 +589,11 @@ function ReminderAppInner() {
   }, [])
 
   useEffect(() => {
+    // Demo preview uses an isolated in-memory session, never Supabase Auth.
+    if (visualPreviewMode) {
+      setLoading(false)
+      return
+    }
     if (!isSupabaseConfigured) {
       setLoading(false)
       return
@@ -600,7 +626,7 @@ function ReminderAppInner() {
       active = false
       authListener.subscription.unsubscribe()
     }
-  }, [])
+  }, [visualPreviewMode])
 
 
 
@@ -624,8 +650,35 @@ function ReminderAppInner() {
       console.warn('Notifications could not be loaded:', error.message)
       return
     }
-    setNotifications((data ?? []) as AppNotification[])
+    // A reminder is a persistent inbox item until read or lesson status is recorded.
+    // Keep all other notification types intact.
+    const currentLessons = lessons
+    const visible = (data ?? []).filter((item) => {
+      if (item.type !== 'lesson_reminder') return true
+      if (item.read_at) return false
+      const lesson = currentLessons.find((entry) => entry.id === item.entity_id)
+      if (!lesson) return true
+      if (profile?.role === 'teacher' && lesson.teacher_lesson_status !== null) return false
+      if (profile?.role === 'student' && lesson.student_lesson_status !== null) return false
+      return true
+    })
+    setNotifications(visible as AppNotification[])
   }
+
+  // Hide resolved lesson reminders as soon as lesson status updates locally.
+  useEffect(() => {
+    if (!profile || lessons.length === 0) return
+    const indexed = new Map(lessons.map((lesson) => [lesson.id, lesson]))
+    setNotifications((items) => items.filter((item) => {
+      if (item.type !== 'lesson_reminder') return true
+      if (item.read_at) return false
+      const lesson = item.entity_id ? indexed.get(item.entity_id) : undefined
+      if (!lesson) return true
+      return profile.role === 'teacher'
+        ? lesson.teacher_lesson_status === null
+        : profile.role === 'student' ? lesson.student_lesson_status === null : true
+    }))
+  }, [lessons, profile?.id, profile?.role])
 
   const markNotificationRead = async (id: string) => {
     if (visualPreviewMode) {
@@ -837,7 +890,7 @@ function ReminderAppInner() {
     }
   }
 
-  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>(() => (visualPreviewMode ? previewFixture.availabilities : []))
+  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>(() => (visualPreviewMode ? fixture.availabilities : []))
 
   const refreshAvailabilities = async () => {
     let list: TeacherAvailability[] = []
@@ -1004,10 +1057,10 @@ function ReminderAppInner() {
 
   useEffect(() => {
     if (visualPreviewMode) {
-      setProfile(previewFixture.teacher)
-      setProfiles(previewFixture.profiles)
-      setLessons(previewFixture.lessons)
-      setAvailabilities(previewFixture.availabilities)
+      setProfile(fixture.teacher)
+      setProfiles(fixture.profiles)
+      setLessons(fixture.lessons)
+      setAvailabilities(fixture.availabilities)
       setInvoices([])
       setTeacherNotesList([])
       setNotifications(previewNotifications)
@@ -2059,7 +2112,7 @@ function ReminderAppInner() {
 
   if (session && !profile && !appError) {
     return (
-      <div className="reminder-app-scope">
+      <div className={`reminder-app-scope${visualPreviewMode && profile?.role === 'admin' ? ' preview-admin-showcase' : ''}`}>
         <div className="login-shell">
           <section className="login-panel" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
@@ -2139,7 +2192,7 @@ function ReminderAppInner() {
   return (
     <div className="reminder-app-scope">
       <div className={`app-shell final-shell${isTeacher ? ' teacher-app-shell' : ''}`}>
-      <Topbar
+      {!isAdmin && <Topbar
         profile={profile}
         language={language}
         setLanguage={setLanguage}
@@ -2155,14 +2208,14 @@ function ReminderAppInner() {
         handleLogout={handleLogout}
         adminTab={adminTab}
         setAdminTab={setAdminTab}
-      />
+      />}
 
-      <main className={`main-content${isTeacher ? ' teacher-host-main' : ''}`}>
-        <section className="summary-grid">
+      <main className={`main-content${isTeacher ? ' teacher-host-main' : ''}${isAdmin ? ' admin-host-main' : ''}`}>
+        {!isAdmin && <section className="summary-grid">
           {summaryCards.map((card) => (
             <StatCard key={card.label} label={card.label} value={card.value} />
           ))}
-        </section>
+        </section>}
 
         {appError && (
           <section className="panel">
@@ -2171,7 +2224,13 @@ function ReminderAppInner() {
         )}
 
         {isAdmin && (
-          <section className="panel">
+          <AdminShell profile={profile} activeTab={adminTab} onTabChange={setAdminTab}
+            notifications={notifications} onMarkNotificationRead={markNotificationRead}
+            onMarkAllNotificationsRead={markAllNotificationsRead} onLogout={handleLogout}>
+          <section className="summary-grid admin-summary-grid">
+            {summaryCards.map((card) => <StatCard key={card.label} label={card.label} value={card.value} />)}
+          </section>
+          <section className="panel admin-content-panel">
             <div className="panel-header animate-fade-in">
               <div>
                 <p className="section-label">{t(language, 'school_management')}</p>
@@ -2358,6 +2417,7 @@ function ReminderAppInner() {
               />
             )}
           </section>
+          </AdminShell>
         )}
 
         {isStudent && (
