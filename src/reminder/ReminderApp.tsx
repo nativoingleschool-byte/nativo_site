@@ -302,6 +302,25 @@ const createPreviewFixture = () => {
 }
 
 const previewFixture = createPreviewFixture()
+const previewAdminMode = () => isVisualPreviewMode() && typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('preview') === 'admin'
+const previewAdmin: Profile = {
+  ...previewFixture.teacher,
+  id: 'preview-admin-demo',
+  email: 'admin-demo@preview.invalid',
+  full_name: 'Administrador (demonstração)',
+  role: 'admin',
+}
+const activePreviewFixture = () => {
+  if (!previewAdminMode()) return previewFixture
+  return {
+    ...previewFixture,
+    teacher: previewAdmin,
+    session: { ...previewFixture.session, user: { id: previewAdmin.id, email: previewAdmin.email } } as Session,
+    profiles: [previewAdmin, ...previewFixture.profiles],
+  }
+}
+
 
 const previewNotifications: AppNotification[] = [
   {
@@ -321,9 +340,10 @@ const previewNotifications: AppNotification[] = [
 function ReminderAppInner() {
   const { toast } = useToast()
   const visualPreviewMode = isVisualPreviewMode()
+  const fixture = activePreviewFixture()
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage() ?? getDeviceLanguage())
   const [appTimeZone, setAppTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
-  const [session, setSession] = useState<Session | null>(() => (visualPreviewMode ? previewFixture.session : null))
+  const [session, setSession] = useState<Session | null>(() => (visualPreviewMode ? fixture.session : null))
   const [loading, setLoading] = useState(!visualPreviewMode)
   const [appError, setAppError] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(() => {
@@ -337,10 +357,10 @@ function ReminderAppInner() {
     password: '',
   }))
   const [loginError, setLoginError] = useState('')
-  const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? previewFixture.teacher : null))
+  const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? fixture.teacher : null))
   const [notifications, setNotifications] = useState<AppNotification[]>(() => (visualPreviewMode ? previewNotifications : []))
-  const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? previewFixture.profiles : []))
-  const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? previewFixture.lessons : []))
+  const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? fixture.profiles : []))
+  const [lessons, setLessons] = useState<Lesson[]>(() => (visualPreviewMode ? fixture.lessons : []))
   const [userForm, setUserForm] = useState<UserFormState>(defaultUserForm())
   const [notificationPermission, setNotificationPermission] = useState<BrowserPermission>(() =>
     'Notification' in window ? Notification.permission : 'unsupported',
@@ -864,7 +884,7 @@ function ReminderAppInner() {
     }
   }
 
-  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>(() => (visualPreviewMode ? previewFixture.availabilities : []))
+  const [availabilities, setAvailabilities] = useState<TeacherAvailability[]>(() => (visualPreviewMode ? fixture.availabilities : []))
 
   const refreshAvailabilities = async () => {
     let list: TeacherAvailability[] = []
@@ -1031,10 +1051,10 @@ function ReminderAppInner() {
 
   useEffect(() => {
     if (visualPreviewMode) {
-      setProfile(previewFixture.teacher)
-      setProfiles(previewFixture.profiles)
-      setLessons(previewFixture.lessons)
-      setAvailabilities(previewFixture.availabilities)
+      setProfile(fixture.teacher)
+      setProfiles(fixture.profiles)
+      setLessons(fixture.lessons)
+      setAvailabilities(fixture.availabilities)
       setInvoices([])
       setTeacherNotesList([])
       setNotifications(previewNotifications)
