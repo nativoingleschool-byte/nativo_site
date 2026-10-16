@@ -127,6 +127,53 @@ const ensureTeacherPermission = (profile, teacherId) => {
   }
 }
 
+const recurrenceCount = (payload) => {
+  const weeks = Number(payload.recurrence_weeks || 1)
+  if (!Number.isInteger(weeks) || weeks < 1 || weeks > 52) throw new Error('A recorrência deve durar de 1 a 52 semanas.')
+  return weeks
+}
+
+const createWeeklySeries = async (db, profile, payload) => {
+  const studentIds = [...new Set((payload.student_ids || (payload.student_id ? [payload.student_id] : [])).filter(Boolean))]
+  const weeks = recurrenceCount(payload)
+  if (studentIds.length === 0) throw new Error('Selecione pelo menos um aluno.')
+  if (!studentIds.every(isUuid)) throw new Error('Selecione somente alunos cadastrados.')
+  if (!payload.subject?.trim() || !payload.starts_at) throw new Error('Preencha o título e a data.')
+  const teacherId = payload.teacher_id || profile.id
+  ensureTeacherPermission(profile, teacherId)
+  const start = new Date(payload.starts_at)
+  if (!Number.isFinite(start.getTime())) throw new Error('Data inválida.')
+  const seriesId = randomUUID()
+  const rows = []
+  for (let week = 0; week < weeks; week += 1) {
+    const startsAt = new Date(start.getTime() + week * 7 * 86400000).toISOString()
+    for (const studentId of studentIds) {
+      rows.push({
+        recurrence_series_id: seriesId, student_id: studentId, teacher_id: teacherId,
+        starts_at: startsAt, duration_minutes: Number(payload.duration_minutes) || 60,
+        subject: payload.subject.trim(), class_name: payload.class_name || '',
+        meeting_url: payload.meeting_url || null,
+        teacher_lesson_status: payload.teacher_lesson_status || null,
+      })
+    }
+  }
+  const { data, error } = await db.from('lessons').insert(rows).select('*')
+  if (error) throw new Error(error.message)
+  return data || []
+}
+
+const updateWeeklySeries = async (db, profile, payload) => {
+  const weeks = recurrenceCount(payload)
+  if (!payload.lesson_id) throw new Error('Informe a aula de referência.')
+  const selected = [...new Set((payload.student_ids || []).filter(Boolean))]
+  if (!selected.length || !selected.every(isUuid)) throw new Error('Selecione alunos cadastrados.')
+  const { data, error } = await db.rpc('update_teacher_weekly_series', {
+    p: { ...payload, student_ids: selected, recurrence_weeks: weeks },
+  })
+  if (error) throw new Error(error.message)
+  return { success: true, lesson_count: data }
+}
+
 const createGroup = async (supabaseAdmin, profile, payload) => {
   const studentIds = Array.from(new Set((payload.student_ids ?? []).filter(Boolean)))
   const teacherId = payload.teacher_id
@@ -674,6 +721,15 @@ export default async function handler(req, res) {
     if (action === 'delete_availability') {
       const result = await deleteAvailability(supabaseAdmin, profile, payload)
       return json(res, 200, { data: result })
+    }
+
+    if (action === 'create_weekly_series') {
+      const created = await createWeeklySeries(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: created })
+    }
+    if (action === 'update_weekly_series') {
+      const updated = await updateWeeklySeries(supabaseAdmin, profile, payload)
+      return json(res, 200, { data: updated })
     }
 
     if (action === 'create_group') {

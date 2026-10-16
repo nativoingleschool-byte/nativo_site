@@ -60,6 +60,18 @@ interface TeacherPanelProps {
     password: string
     speciality?: string
   }) => Promise<Profile>
+  saveWeeklySeries?: (draft: {
+    lesson_id?: string
+    teacher_id: string
+    student_ids: string[]
+    subject: string
+    class_name: string
+    starts_at: string
+    duration_minutes: number
+    meeting_url?: string | null
+    teacher_lesson_status?: TeacherLessonStatus
+    recurrence_weeks: number
+  }) => Promise<void>
   createTeacherSingleLesson?: (draft: {
     subject: string
     class_name?: string
@@ -126,6 +138,7 @@ export default function TeacherPanel({
   createStudentLoginFromCalendar,
   createTeacherLoginFromCalendar,
   createTeacherSingleLesson,
+  saveWeeklySeries,
   updateTeacherSingleLesson,
   deleteTeacherSingleLesson,
   profilesById,
@@ -193,6 +206,8 @@ export default function TeacherPanel({
   const [newLessonMeetingUrl, setNewLessonMeetingUrl] = useState('')
   const [newLessonDuration, setNewLessonDuration] = useState(60)
   const [newLessonStatus, setNewLessonStatus] = useState<TeacherLessonStatus>('happened')
+  const [newRecurring, setNewRecurring] = useState(false)
+  const [newRecurrenceWeeks, setNewRecurrenceWeeks] = useState(4)
 
   // Edit Lesson Form State
   const [editLessonStudentId, setEditLessonStudentId] = useState('')
@@ -208,6 +223,8 @@ export default function TeacherPanel({
   const [editLessonDuration, setEditLessonDuration] = useState(60)
   const [editLessonMeetingUrl, setEditLessonMeetingUrl] = useState('')
   const [editLessonStatus, setEditLessonStatus] = useState<TeacherLessonStatus>('happened')
+  const [editRecurring, setEditRecurring] = useState(false)
+  const [editRecurrenceWeeks, setEditRecurrenceWeeks] = useState(4)
   const [attendanceLessons, setAttendanceLessons] = useState<Lesson[]>([])
   const [attendanceDraft, setAttendanceDraft] = useState<Record<string, boolean>>({})
   useBodyScrollLock(showAddLessonModal || Boolean(editingLesson) || attendanceLessons.length > 0)
@@ -481,6 +498,8 @@ export default function TeacherPanel({
     setNewLessonSubject(visualPreviewMode ? 'Aulas de Inglês · Turma Fluência' : t(language, 'individual_class'))
     setNewLessonDuration(60)
     setNewLessonStatus('happened')
+    setNewRecurring(false)
+    setNewRecurrenceWeeks(4)
 
     // Set initial date within active month
     const now = new Date()
@@ -489,87 +508,47 @@ export default function TeacherPanel({
   }
 
   // Submit Add Lesson
-  const handleAddLessonSubmit = async (e: FormEvent) => {
+  const handleAddLessonSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const selectedStudentIds = newLessonStudentIds.filter(Boolean)
-    const studentIdentifier = selectedStudentIds[0]
-    if (!studentIdentifier || !newLessonSubject.trim() || !newLessonStartsAt) {
+    if (isSubmitting) return
+    const studentIds = [...new Set(newLessonStudentIds.filter(Boolean))]
+    if (!studentIds.length || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
-
-    setIsSubmitting(true)
-    try {
-      const utcIso = dateTimeLocalToIso(newLessonStartsAt, appTimeZone)
-      const studentProfile = sortedStudents.find((student) => student.id === newLessonStudentId)
-      const className = studentProfile?.class_name || ''
-
-      if (selectedStudentIds.length > 1) {
-        await createLessonFromDraft({
-          student_ids: selectedStudentIds,
-          teacher_id: profile.id,
-          subject: newLessonSubject.trim(),
-          class_name: sortedStudents.find((student) => student.id === selectedStudentIds[0])?.class_name || '',
-          starts_at: utcIso,
-          duration_minutes: newLessonDuration,
-          meeting_url: newLessonMeetingUrl.trim() || null,
-        })
-      } else if (createTeacherSingleLesson) {
-        await createTeacherSingleLesson({
-          student_id: studentIdentifier,
-          teacher_id: profile.id,
-          subject: newLessonSubject.trim(),
-          class_name: className,
-          starts_at: utcIso,
-          duration_minutes: newLessonDuration,
-          meeting_url: newLessonMeetingUrl.trim() || null,
-          teacher_lesson_status: newLessonStatus,
-        })
-      } else {
-        // Direct API fallback
-        const sessionData = await supabase.auth.getSession()
-        const token = sessionData.data.session?.access_token
-        if (!token) throw new Error(t(language, 'unauthenticated_error'))
-
-        const res = await fetch('/api/lessons/manage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            action: 'create_lesson',
-            payload: {
-              student_id: studentIdentifier,
-              teacher_id: profile.id,
-              subject: newLessonSubject.trim(),
-              class_name: className,
-              starts_at: utcIso,
-              duration_minutes: newLessonDuration,
-              meeting_url: newLessonMeetingUrl.trim() || null,
-              teacher_lesson_status: newLessonStatus,
-            },
-          }),
-        })
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: t(language, 'error_adding_lesson') }))
-          throw new Error(err.error || t(language, 'error_adding_lesson'))
-        }
-        await refreshLessons()
-      }
-
-      if (refreshProfiles) {
-        void refreshProfiles()
-      }
-      toast.success(t(language, 'lesson_added_success'))
-      setShowAddLessonModal(false)
-      setNewLessonStudentName('')
-    } catch (err: any) {
-      toast.error(err.message || t(language, 'error_adding_lesson'))
-    } finally {
-      setIsSubmitting(false)
+    if (newRecurring && (!Number.isInteger(newRecurrenceWeeks) || newRecurrenceWeeks < 2 || newRecurrenceWeeks > 52)) {
+      toast.error('Escolha de 2 a 52 semanas para a recorrência.')
+      return
     }
+    const payload = {
+      student_ids: studentIds,
+      teacher_id: profile.id,
+      subject: newLessonSubject.trim(),
+      class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
+      starts_at: dateTimeLocalToIso(newLessonStartsAt, appTimeZone),
+      duration_minutes: newLessonDuration,
+      meeting_url: newLessonMeetingUrl.trim() || null,
+      teacher_lesson_status: newLessonStatus,
+    }
+    setShowAddLessonModal(false)
+    toast.info('Salvando aula em segundo plano…')
+    void (async () => {
+      try {
+        if (newRecurring && saveWeeklySeries) {
+          await saveWeeklySeries({ ...payload, recurrence_weeks: newRecurrenceWeeks })
+        } else if (studentIds.length > 1) {
+          await createLessonFromDraft(payload)
+        } else if (createTeacherSingleLesson) {
+          await createTeacherSingleLesson({ ...payload, student_id: studentIds[0] })
+        } else {
+          throw new Error('Operação de criação indisponível.')
+        }
+        toast.success('Aula salva com sucesso.')
+      } catch (error) {
+        console.error('[reminder:teacher] create failed', error)
+        toast.error(`Não foi possível salvar a aula: ${error instanceof Error ? error.message : 'erro desconhecido'}`)
+      }
+    })()
   }
 
   // Open Edit Lesson Modal
@@ -588,89 +567,57 @@ export default function TeacherPanel({
     setEditLessonMeetingUrl(lesson.meeting_url ?? '')
     setEditLessonStatus(lesson.teacher_lesson_status ?? null)
     setEditLessonStartsAt(isoToDateTimeLocal(lesson.starts_at, appTimeZone))
+    setEditRecurring(Boolean(lesson.recurrence_series_id))
+    setEditRecurrenceWeeks(4)
   }
 
   // Submit Edit Lesson
-  const handleEditLessonSubmit = async (e: FormEvent) => {
+  const handleEditLessonSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!editingLesson) return
-    if (!editLessonStudentIds.length || !editLessonSubject.trim() || !editLessonStartsAt) {
+    if (isSubmitting || !editingLesson) return
+    const studentIds = [...new Set(editLessonStudentIds.filter(Boolean))]
+    if (!studentIds.length || !editLessonSubject.trim() || !editLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
-
-    setIsSubmitting(true)
-    try {
-      const utcIso = dateTimeLocalToIso(editLessonStartsAt, appTimeZone)
-      const studentProfile = profilesById[editLessonStudentIds[0]]
-      const className = studentProfile?.class_name || editingLesson.class_name || ''
-
-      if (editLessonIds.length > 1 || editLessonStudentIds.length > 1) {
-        await updateTeacherLessonGroup({
-          lesson_ids: editLessonIds,
-          student_ids: editLessonStudentIds,
-          subject: editLessonSubject.trim(),
-          class_name: className,
-          teacher_id: profile.id,
-          starts_at: utcIso,
-          duration_minutes: editLessonDuration,
-          meeting_url: editLessonMeetingUrl.trim() || null,
-          teacher_lesson_status: editLessonStatus,
-        })
-      } else if (updateTeacherSingleLesson) {
-        await updateTeacherSingleLesson({
-          lesson_id: editingLesson.id,
-          student_id: editLessonStudentIds[0],
-          teacher_id: profile.id,
-          subject: editLessonSubject.trim(),
-          class_name: className,
-          starts_at: utcIso,
-          duration_minutes: editLessonDuration,
-          meeting_url: editLessonMeetingUrl.trim() || null,
-          teacher_lesson_status: editLessonStatus,
-        })
-      } else {
-        // Direct API fallback
-        const sessionData = await supabase.auth.getSession()
-        const token = sessionData.data.session?.access_token
-        if (!token) throw new Error(t(language, 'unauthenticated_error'))
-
-        const res = await fetch('/api/lessons/manage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            action: 'update_lesson',
-            payload: {
-              lesson_id: editingLesson.id,
-              student_id: editLessonStudentIds[0],
-              teacher_id: profile.id,
-              subject: editLessonSubject.trim(),
-              class_name: className,
-              starts_at: utcIso,
-              duration_minutes: editLessonDuration,
-              meeting_url: editLessonMeetingUrl.trim() || null,
-              teacher_lesson_status: editLessonStatus,
-            },
-          }),
-        })
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: t(language, 'error_updating_lesson') }))
-          throw new Error(err.error || t(language, 'error_updating_lesson'))
-        }
-        await refreshLessons()
-      }
-
-      toast.success(t(language, 'lesson_updated_success'))
-      setEditingLesson(null)
-    } catch (err: any) {
-      toast.error(err.message || t(language, 'error_updating_lesson'))
-    } finally {
-      setIsSubmitting(false)
+    if (editRecurring && !editingLesson.recurrence_series_id &&
+      (!Number.isInteger(editRecurrenceWeeks) || editRecurrenceWeeks < 2 || editRecurrenceWeeks > 52)) {
+      toast.error('Escolha de 2 a 52 semanas para a recorrência.')
+      return
     }
+    const lessonId = editingLesson.id
+    const payload = {
+      lesson_id: lessonId,
+      lesson_ids: [...editLessonIds],
+      student_ids: studentIds,
+      teacher_id: profile.id,
+      subject: editLessonSubject.trim(),
+      class_name: profilesById[studentIds[0]]?.class_name || editingLesson.class_name || '',
+      starts_at: dateTimeLocalToIso(editLessonStartsAt, appTimeZone),
+      duration_minutes: editLessonDuration,
+      meeting_url: editLessonMeetingUrl.trim() || null,
+      teacher_lesson_status: editLessonStatus,
+    }
+    const seriesId = editingLesson.recurrence_series_id
+    setEditingLesson(null)
+    toast.info('Salvando alterações em segundo plano…')
+    void (async () => {
+      try {
+        if (editRecurring && saveWeeklySeries) {
+          await saveWeeklySeries({ ...payload, recurrence_weeks: seriesId ? 1 : editRecurrenceWeeks })
+        } else if (payload.lesson_ids.length > 1 || studentIds.length > 1) {
+          await updateTeacherLessonGroup(payload)
+        } else if (updateTeacherSingleLesson) {
+          await updateTeacherSingleLesson({ ...payload, student_id: studentIds[0] })
+        } else {
+          throw new Error('Operação de edição indisponível.')
+        }
+        toast.success('Alterações salvas.')
+      } catch (error) {
+        console.error('[reminder:teacher] update failed', error)
+        toast.error(`Não foi possível salvar: ${error instanceof Error ? error.message : 'erro desconhecido'}`)
+      }
+    })()
   }
 
   // Quick Status Change directly from list (supports single lesson or session group)
@@ -1460,6 +1407,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
+                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                    <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
+                    Aula recorrente (semanal)
+                  </label>
+                  {newRecurring && true && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
+                      Semanas
+                      <input type="number" min={2} max={52} value={newRecurrenceWeeks} onChange={(event) => setNewRecurrenceWeeks(Number(event.target.value))}
+                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                    </label>
+                  )}
+                  {newRecurring && <small style={{ color: '#64748b' }}>Uma aula por semana, incluindo a primeira.</small>}
+                </div>
                 <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
                     type="button"
@@ -1683,6 +1644,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
+                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                    <input type="checkbox" checked={editRecurring} onChange={(event) => setEditRecurring(event.target.checked)} />
+                    Aula recorrente (semanal)
+                  </label>
+                  {editRecurring && !editingLesson?.recurrence_series_id && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
+                      Semanas
+                      <input type="number" min={2} max={52} value={editRecurrenceWeeks} onChange={(event) => setEditRecurrenceWeeks(Number(event.target.value))}
+                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                    </label>
+                  )}
+                  {editingLesson?.recurrence_series_id && editRecurring && <small style={{ color: '#64748b' }}>As mudanças serão aplicadas a todas as aulas desta série.</small>}
+                </div>
                 <div
                   className="button-row teacher-preview-dialog-actions"
                   style={{
