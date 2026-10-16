@@ -624,12 +624,19 @@ function ReminderAppInner() {
       console.warn('Notifications could not be loaded:', error.message)
       return
     }
-    // Legacy reminders had no expiration and repeated the same old lesson date.
-    // Keep historical rows in Supabase; do not show stale lesson reminders in the inbox.
-    const oldestReminder = Date.now() - 24 * 60 * 60 * 1000
-    setNotifications((data ?? []).filter((item) =>
-      item.type !== 'lesson_reminder' || new Date(item.created_at).getTime() >= oldestReminder
-    ) as AppNotification[])
+    // A reminder is a persistent inbox item until read or lesson status is recorded.
+    // Keep all other notification types intact.
+    const currentLessons = lessons
+    const visible = (data ?? []).filter((item) => {
+      if (item.type !== 'lesson_reminder') return true
+      if (item.read_at) return false
+      const lesson = currentLessons.find((entry) => entry.id === item.entity_id)
+      if (!lesson) return true
+      if (profile?.role === 'teacher' && lesson.teacher_lesson_status !== null) return false
+      if (profile?.role === 'student' && lesson.student_lesson_status !== null) return false
+      return true
+    })
+    setNotifications(visible as AppNotification[])
   }
 
   const markNotificationRead = async (id: string) => {
@@ -1195,7 +1202,7 @@ function ReminderAppInner() {
 
   const dueStudentStartReminders = profile?.role === 'student'
     ? visibleLessons
-        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && now.getTime() < new Date(lesson.starts_at).getTime() + 24 * 60 * 60 * 1000 && lesson.student_lesson_status === null)
+        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && lesson.student_lesson_status === null)
         .sort(sortByDateAsc)
     : []
 
@@ -1210,7 +1217,7 @@ function ReminderAppInner() {
 
   const dueTeacherStartReminders = profile?.role === 'teacher'
     ? visibleLessons
-        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && now.getTime() < new Date(lesson.starts_at).getTime() + 24 * 60 * 60 * 1000 && lesson.teacher_lesson_status === null)
+        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && lesson.teacher_lesson_status === null)
         .sort(sortByDateAsc)
     : []
 
@@ -1365,7 +1372,6 @@ function ReminderAppInner() {
         action_url: `/reminder?lessonId=${encodeURIComponent(item.lessonId)}`,
         action_intent: Object.values(item.intentMap)[0] ?? null,
         dedupe_key: item.key,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       }))
       const { error } = await supabase.from('notifications').upsert(rows, { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
       if (!error) void refreshNotifications(profile.id)
