@@ -639,6 +639,21 @@ function ReminderAppInner() {
     setNotifications(visible as AppNotification[])
   }
 
+  // Hide resolved lesson reminders as soon as lesson status updates locally.
+  useEffect(() => {
+    if (!profile || lessons.length === 0) return
+    const indexed = new Map(lessons.map((lesson) => [lesson.id, lesson]))
+    setNotifications((items) => items.filter((item) => {
+      if (item.type !== 'lesson_reminder') return true
+      if (item.read_at) return false
+      const lesson = item.entity_id ? indexed.get(item.entity_id) : undefined
+      if (!lesson) return true
+      return profile.role === 'teacher'
+        ? lesson.teacher_lesson_status === null
+        : profile.role === 'student' ? lesson.student_lesson_status === null : true
+    }))
+  }, [lessons, profile?.id, profile?.role])
+
   const markNotificationRead = async (id: string) => {
     if (visualPreviewMode) {
       setNotifications((items) => items.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item))
