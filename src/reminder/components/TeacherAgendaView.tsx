@@ -73,6 +73,9 @@ export default function TeacherAgendaView({
   const [previewAvailabilities, setPreviewAvailabilities] = useState(availabilities)
   const [availabilityStartsAt, setAvailabilityStartsAt] = useState('')
   const [availabilityDuration, setAvailabilityDuration] = useState(60)
+  const [addingWeekday, setAddingWeekday] = useState<number | null>(null)
+  const [slotStart, setSlotStart] = useState('08:00')
+  const [slotEnd, setSlotEnd] = useState('11:00')
   useBodyScrollLock(previewModal !== null)
   const displayedAvailabilities = visualPreview ? previewAvailabilities : availabilities
   const openAvailabilityEditor = (start = new Date()) => {
@@ -104,6 +107,35 @@ export default function TeacherAgendaView({
       toast.error(error instanceof Error ? error.message : 'Não foi possível salvar a disponibilidade.')
     }
   }
+  const saveWeeklySlot = async (weekday: number) => {
+    const [sh, sm] = slotStart.split(':').map(Number)
+    const [eh, em] = slotEnd.split(':').map(Number)
+    const duration = eh * 60 + em - sh * 60 - sm
+    if (!Number.isFinite(duration) || duration < 15) {
+      toast.error('O horário final deve ser pelo menos 15 minutos depois do início.')
+      return
+    }
+    // Pick the next occurrence of the chosen weekday; one saved block in preview
+    // and four upcoming occurrences in the real API until weekly availability is standardized.
+    const today = new Date()
+    const dayOffset = (weekday - today.getDay() + 7) % 7
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, sh, sm)
+    if (day <= today) day.setDate(day.getDate() + 7)
+    const starts_at = dateTimeLocalToIso(isoToDateTimeLocal(day.toISOString(), appTimeZone), appTimeZone)
+    try {
+      if (visualPreview) {
+        setPreviewAvailabilities((items) => [...items, { id: `demo-weekday-${weekday}-${Date.now()}`, teacher_id: profile.id, starts_at, duration_minutes: duration }])
+      } else {
+        if (!onCreateAvailability) throw new Error('Não foi possível salvar disponibilidade.')
+        await onCreateAvailability({ starts_at, duration_minutes: duration, teacher_id: profile.id })
+      }
+      toast.success('Horário adicionado.')
+      setAddingWeekday(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Falha ao salvar horário.')
+    }
+  }
+  const weekdayNames = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado']
   const removeAvailability = async (availability: TeacherAvailability) => {
     try {
       if (visualPreview) {
@@ -314,33 +346,42 @@ export default function TeacherAgendaView({
             </>}
             {previewModal === 'availability' && <>
               <span className="reference-kicker">AGENDA DO PROFESSOR</span>
-              <h2>Disponibilidade</h2>
-              <p className="reference-availability-intro">Adicione ou remova horários disponíveis na sua agenda.</p>
-              <div className="reference-availability-list reference-availability-list--full">
-                {displayedAvailabilities.length === 0
-                  ? <p className="reference-availability-empty">Nenhum horário cadastrado.</p>
-                  : [...displayedAvailabilities]
-                      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
-                      .map((availability) => <div className="reference-availability-slot" key={availability.id}>
-                        <i />
-                        <span>{new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
-                          weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                        }).format(new Date(availability.starts_at))} · {availability.duration_minutes} min</span>
-                        <button type="button" onClick={() => void removeAvailability(availability)}>Remover</button>
-                      </div>)}
-              </div>
-              <div className="reference-availability-editor">
-                <label>Data e horário<input type="datetime-local" value={availabilityStartsAt} onChange={(event) => setAvailabilityStartsAt(event.target.value)} /></label>
-                <label>Duração<select value={availabilityDuration} onChange={(event) => setAvailabilityDuration(Number(event.target.value))}>
-                  {[30, 45, 60, 90, 120, 180].map((minutes) => <option key={minutes} value={minutes}>{minutes} min</option>)}
-                </select></label>
+              <h2>Disponibilidade semanal</h2>
+              <p className="reference-availability-intro">Defina e gerencie os horários em que você está livre para aulas.</p>
+              <div className="teacher-weekly-availability-days">
+                {[1,2,3,4,5,6,0].map((weekday) => {
+                  const daySlots = displayedAvailabilities
+                    .filter((slot) => slot.teacher_id === profile.id && new Date(slot.starts_at).getDay() === weekday)
+                    .sort((left,right) => left.starts_at.localeCompare(right.starts_at))
+                  return <section className="teacher-weekly-availability-day" key={weekday}>
+                    <div className="teacher-weekly-availability-day__header">
+                      <strong>{weekdayNames[weekday]}</strong>
+                      <button type="button" onClick={() => setAddingWeekday(addingWeekday === weekday ? null : weekday)}>+ Adicionar horário</button>
+                    </div>
+                    {daySlots.length === 0 && <p className="teacher-weekly-availability-empty">Nenhum horário cadastrado</p>}
+                    {daySlots.map((slot) => {
+                      const start = new Date(slot.starts_at)
+                      const end = addMinutes(start, slot.duration_minutes)
+                      return <div className="teacher-weekly-availability-slot" key={slot.id}>
+                        <span className="teacher-weekly-availability-dot" />
+                        <strong>{format(start,'HH:mm')} às {format(end,'HH:mm')}</strong>
+                        <button type="button" onClick={() => void removeAvailability(slot)}>Remover</button>
+                      </div>
+                    })}
+                    {addingWeekday === weekday && <div className="teacher-weekly-availability-editor">
+                      <label>Início<input type="time" value={slotStart} onChange={(event) => setSlotStart(event.target.value)}/></label>
+                      <label>Término<input type="time" value={slotEnd} onChange={(event) => setSlotEnd(event.target.value)}/></label>
+                      <button type="button" onClick={() => void saveWeeklySlot(weekday)}>Adicionar</button>
+                      <button type="button" onClick={() => setAddingWeekday(null)}>Cancelar</button>
+                    </div>}
+                  </section>
+                })}
               </div>
               <div className="reference-agenda-modal-actions">
-                <button type="button" onClick={() => setPreviewModal(null)}>Fechar</button>
-                <button type="button" className="reference-primary-button" onClick={() => void saveAvailability()}>Salvar disponibilidade</button>
+                <span className="teacher-weekly-availability-caption">Horários organizados por dia da semana</span>
+                <button type="button" className="reference-primary-button" onClick={() => setPreviewModal(null)}>Fechar</button>
               </div>
-            </>}
-            </section>
+            </>}            </section>
           </div>
         </div>,
         document.body,
