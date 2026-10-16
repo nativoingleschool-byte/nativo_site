@@ -588,6 +588,11 @@ function ReminderAppInner() {
   }, [])
 
   useEffect(() => {
+    // Demo preview uses an isolated in-memory session, never Supabase Auth.
+    if (visualPreviewMode) {
+      setLoading(false)
+      return
+    }
     if (!isSupabaseConfigured) {
       setLoading(false)
       return
@@ -620,7 +625,7 @@ function ReminderAppInner() {
       active = false
       authListener.subscription.unsubscribe()
     }
-  }, [])
+  }, [visualPreviewMode])
 
 
 
