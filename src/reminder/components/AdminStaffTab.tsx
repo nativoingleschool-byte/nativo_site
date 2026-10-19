@@ -1104,7 +1104,9 @@ export default function AdminStaffTab({
         document.body
       )}
 
-      <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
+      {/* Payroll Section */}
+      <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
         <button type="button" className="primary-button admin-staff-toolbar__primary"
           onClick={() => setShowAddStaffModal(true)}>
           <Plus size={16} aria-hidden="true" />
@@ -1117,8 +1119,6 @@ export default function AdminStaffTab({
         </button>
       </div>
 
-      {/* Payroll Section */}
-      <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
@@ -1376,20 +1376,19 @@ export default function AdminStaffTab({
                         {currency} {totalActiveAmount.toFixed(2)}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <span></span>
-                        {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago ✓</span>}
+                        {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago</span>}
                       </span>
                     </button>
                   </td>
 
                   <td style={{ padding: '1rem' }}>
-                    <span className={badgeClass(isMonthPaid ? 'confirmed' : 'pending')}>
-                      {isMonthPaid ? 'Pago ✓' : 'Pendente'}
+                    <span className={`admin-staff-payment-status ${badgeClass(isMonthPaid ? 'confirmed' : 'pending')}`}>
+                      {isMonthPaid ? 'Pago' : 'Pendente'}
                     </span>
                   </td>
 
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="admin-payroll-row-actions" style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'nowrap', alignItems: 'center' }}>
                       {!isMonthPaid ? (
                         <button
                           type="button"
