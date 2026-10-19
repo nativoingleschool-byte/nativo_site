@@ -4994,3 +4994,45 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
  .reminder-app-scope .admin-portal-shell .admin-payroll-controls { flex-wrap:wrap !important; justify-content:flex-start !important; }
  .reminder-app-scope .admin-portal-shell .admin-payroll-controls select {max-width:100% !important;}
 }
+
+
+/* Compact Staff payroll controls, consistent with DM Sans and the reminder buttons. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls { gap:8px !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls > div { gap:8px !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls select {
+ max-width: min(345px, 26vw) !important; min-width: 200px !important; font-size:12px !important;
+ min-height:35px !important; padding:5px 9px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls button,
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar--payroll button {
+ min-height:35px !important; padding:7px 10px !important;
+ font-size:11px !important; font-weight:650 !important; line-height:1.2 !important;
+ white-space:nowrap !important; flex-shrink:0;
+ font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls .admin-staff-toolbar--payroll {
+ gap:7px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-amount-button {
+ display:inline-flex !important; flex-direction:row !important; align-items:center !important;
+ min-height:33px !important; padding:5px 10px !important;
+ border-radius:9px !important; background:#f2faff !important;
+ border:1px solid #b7e7fb !important; box-shadow:none !important;
+ font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-amount-button > span {
+ font-family:'DM Sans',sans-serif !important; font-size:13px !important;
+ font-weight:700 !important; line-height:1.2 !important;
+ color:#1f4268 !important; -webkit-text-fill-color:#1f4268 !important; white-space:nowrap;
+}
+.reminder-app-scope .teacher-render-error {
+ padding:18px; border:1px solid #edd5aa; border-radius:14px;
+ background:#fff9ee; color:#234561; font-size:13px;
+}
+.reminder-app-scope .teacher-render-error button {
+ background:#1f4268; color:#fff; border:0; border-radius:8px;
+ font-size:12px; padding:8px 12px;
+}
+@media(max-width:1180px) {
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls select { max-width:100% !important; }
+}
