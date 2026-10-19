@@ -4660,3 +4660,67 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
  .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card { padding: 12px !important; }
  .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions { justify-content: flex-start !important; }
 }
+
+
+/* Shared admin toolbar rhythm: controls stay inside cards, icons are Lucide. */
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar {
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  border:1px solid #e1e8ef; border-radius:14px; background:#fff;
+  padding:12px 14px; margin:0 0 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:36px; border-radius:9px !important; padding:8px 13px !important;
+  font-size:12px !important; font-weight:650 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar__primary {
+  background:#1f4268 !important; color:#fff !important; border-color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar__secondary {
+  background:#fff !important; color:#49647d !important; border:1px solid #dfe7ee !important;
+}
+/* Calendar: layout heading/view selector and all action controls along one baseline. */
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  justify-content:space-between !important; flex-wrap:nowrap !important;
+  gap:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar > div:first-child {
+  flex:0 1 auto; min-width:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar > div:first-child > div {
+  display:flex !important; align-items:center !important; flex-wrap:nowrap !important; gap:10px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar h3 { white-space:nowrap; font-size:14px !important; }
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+  display:flex !important; flex:0 1 auto; min-width:0; justify-content:flex-end !important;
+  align-items:center !important; flex-wrap:wrap !important; gap:7px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions button {
+  white-space:nowrap; min-height:35px; padding:7px 10px !important; font-size:10.5px !important;
+}
+@media (max-width:1240px) {
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+   flex-wrap:wrap !important; align-items:flex-start !important;
+ }
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+   width:100%; justify-content:flex-start !important;
+ }
+}
+/* Input icon sits in an independent slot; never overlaps placeholder or typed text. */
+.reminder-app-scope .admin-portal-shell .admin-bank-search {
+  position:relative !important; display:flex; align-items:center;
+  min-width:220px; width:100%; max-width:420px;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__icon {
+  position:absolute; z-index:1; left:13px; top:50%;
+  transform:translateY(-50%); width:16px; height:16px; color:#748699;
+  pointer-events:none;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__input {
+  box-sizing:border-box; display:block; width:100%; min-width:0; height:40px;
+  padding:9px 12px 9px 42px !important; border:1px solid #dce5e9 !important;
+  border-radius:10px; background:#fff !important; color:#324d66 !important;
+  font-size:12px !important; line-height:20px; text-overflow:ellipsis;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__input::placeholder { color:#8495a6; }
