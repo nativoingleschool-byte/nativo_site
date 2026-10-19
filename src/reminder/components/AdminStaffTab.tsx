@@ -759,7 +759,7 @@ export default function AdminStaffTab({
               </button>
             </div>
 
-            <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '0.5rem' }}>
+            <div className="table-responsive admin-shared-table">
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.8rem' }}>
@@ -1178,7 +1178,7 @@ export default function AdminStaffTab({
         </div>
       </div>
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+      <div className="table-responsive admin-shared-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
