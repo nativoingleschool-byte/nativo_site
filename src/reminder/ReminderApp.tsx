@@ -2353,7 +2353,7 @@ function ReminderAppInner() {
                   onDeleteAvailability={deleteAvailability}
                 />
 
-                <div className="list-stack">
+                <div className="list-stack admin-tracked-lessons">
                   <h3>{t(language, 'tracked_outcomes')}</h3>
                   {trackedLessons.map((lesson) => (
                     <div key={lesson.id} className={lessonCardClass(lesson.id)}>
@@ -2364,7 +2364,7 @@ function ReminderAppInner() {
                         </p>
                         <p className="muted">{formatShortDateLabel(lesson.starts_at)}</p>
                       </div>
-                      <div className="status-stack">
+                      <div className="status-stack admin-tracked-lesson-status">
                         <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
                         <span className={badgeClass(lesson.student_attendance ? `student ${lesson.student_attendance}` : 'pending')}>
                           {t(language, 'student_4h_status')} {lesson.student_attendance ?? t(language, 'pending')}
