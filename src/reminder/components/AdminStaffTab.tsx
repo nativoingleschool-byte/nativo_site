@@ -1375,9 +1375,6 @@ export default function AdminStaffTab({
                       <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? '#10b981' : '#38bdf8' }}>
                         {currency} {totalActiveAmount.toFixed(2)}
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago</span>}
-                      </span>
                     </button>
                   </td>
 
