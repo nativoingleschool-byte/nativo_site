@@ -1159,7 +1159,7 @@ export default function AdminStaffTab({
         <button type="button" className="primary-button admin-staff-toolbar__primary"
           onClick={() => setShowAddStaffModal(true)}>
           <Plus size={16} aria-hidden="true" />
-          <span>{t(language, 'add_staff_title')}</span>
+          <span>Novo Membro da Equipe</span>
         </button>
         <button type="button" className="secondary-button admin-staff-toolbar__secondary"
           onClick={() => setShowStaffListModal(true)}>
@@ -1372,7 +1372,7 @@ export default function AdminStaffTab({
                         gap: '0.15rem',
                         transition: 'all 0.15s ease',
                       }}
-                      title="Clique para abrir o pop-up com as aulas deste mês, chave PIX e botão de pagar"
+                      className="admin-payroll-amount-button" title="Abrir detalhes do pagamento"
                     >
                       <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? '#10b981' : '#38bdf8' }}>
                         {currency} {totalActiveAmount.toFixed(2)}
