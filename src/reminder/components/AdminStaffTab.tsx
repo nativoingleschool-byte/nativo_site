@@ -1114,7 +1114,7 @@ export default function AdminStaffTab({
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="admin-payroll-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Filtro de Mês:</span>
             <select
@@ -1155,7 +1155,6 @@ export default function AdminStaffTab({
               {t(language, 'pending_all')}
             </button>
           </div>
-        </div>
         <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
         <button type="button" className="primary-button admin-staff-toolbar__primary"
           onClick={() => setShowAddStaffModal(true)}>
@@ -1168,6 +1167,8 @@ export default function AdminStaffTab({
           <span>{t(language, 'staff_list_title')}</span>
         </button>
       </div>
+
+        </div>
 
       </div>
 
