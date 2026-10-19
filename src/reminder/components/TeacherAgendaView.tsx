@@ -229,13 +229,13 @@ export default function TeacherAgendaView({
           </div>
           <div className="teacher-confirmation-banner__actions">
             <button type="button" className="teacher-status-button teacher-status-button--done" onClick={() => void onUpdateLessonStatus(pendingConfirmation.lessons, 'happened')}>
-              <Check size={13} aria-hidden="true" /> Realizada
+              Realizada
             </button>
             <button type="button" className="teacher-status-button teacher-status-button--absence"             onClick={() => void onUpdateLessonStatus(pendingConfirmation.lessons, 'student_no_show')}>
               Não compareceu
             </button>
             <button type="button" className="teacher-status-button teacher-status-button--cancel"             onClick={() => void onUpdateLessonStatus(pendingConfirmation.lessons, 'not_happened')}>
-              <X size={13} aria-hidden="true" /> Cancelada
+              Cancelada
             </button>
           </div>
         </section>
