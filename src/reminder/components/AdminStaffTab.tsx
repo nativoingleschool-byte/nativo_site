@@ -357,20 +357,7 @@ export default function AdminStaffTab({
 
   return (
     <>
-      {/* Top Action Buttons: Add Staff Member & Staff Member List */}
-      <div className="admin-staff-toolbar">
-        <button type="button" className="primary-button admin-staff-toolbar__primary"
-          onClick={() => setShowAddStaffModal(true)}>
-          <Plus size={16} aria-hidden="true" />
-          <span>{t(language, 'add_staff_title')}</span>
-        </button>
-        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
-          onClick={() => setShowStaffListModal(true)}>
-          <UsersRound size={16} aria-hidden="true" />
-          <span>{t(language, 'staff_list_title')}</span>
-        </button>
-      </div>
-
+      {/* Staff action toolbar is positioned beside payroll below. */}
       {/* Teacher Notes & Justifications Box */}
       <div
         className="form-card mb-6 animate-slide-up"
@@ -1117,6 +1104,19 @@ export default function AdminStaffTab({
         document.body
       )}
 
+      <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
+        <button type="button" className="primary-button admin-staff-toolbar__primary"
+          onClick={() => setShowAddStaffModal(true)}>
+          <Plus size={16} aria-hidden="true" />
+          <span>{t(language, 'add_staff_title')}</span>
+        </button>
+        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
+          onClick={() => setShowStaffListModal(true)}>
+          <UsersRound size={16} aria-hidden="true" />
+          <span>{t(language, 'staff_list_title')}</span>
+        </button>
+      </div>
+
       {/* Payroll Section */}
       <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
@@ -1376,7 +1376,7 @@ export default function AdminStaffTab({
                         {currency} {totalActiveAmount.toFixed(2)}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <span>🔍 Ver aulas</span>
+                        <span></span>
                         {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago ✓</span>}
                       </span>
                     </button>
@@ -1398,7 +1398,7 @@ export default function AdminStaffTab({
                           onClick={() => void markTeacherMonthPaid(teacher.id, teacherActiveMonth, true)}
                           title={`Marcar o mês de ${monthLabel} como pago e avançar para o próximo mês`}
                         >
-                          ✓ Pagar Mês
+                          Pagar Mês
                         </button>
                       ) : (
                         <button
@@ -1422,7 +1422,7 @@ export default function AdminStaffTab({
                         }}
                         title="Ver registro detalhado de aulas e chave PIX"
                       >
-                        🔍 Detalhes
+                        Detalhes
                       </button>
                     </div>
                   </td>
