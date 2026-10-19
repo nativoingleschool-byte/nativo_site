@@ -700,14 +700,14 @@ export default function BankReconciliationTab({
       <div className="panel p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Search box */}
-          <div className="relative min-w-[220px] flex-1 max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative min-w-[220px] flex-1 max-w-sm admin-bank-search">
+            <Search size={16} className="admin-bank-search__icon" />
             <input
               type="text"
               placeholder="Buscar por descrição, aluno, valor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="admin-bank-search__input"
             />
           </div>
 
