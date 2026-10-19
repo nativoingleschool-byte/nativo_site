@@ -5,6 +5,7 @@ import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
+import { CalendarDays, Clock3, Plus, Search, UsersRound, AlertTriangle } from 'lucide-react'
 
 type LessonDraft = {
   subject: string
@@ -834,8 +835,8 @@ export default function AdminCalendar({
   }
 
   return (
-    <div className="calendar-shell">
-      <div className="calendar-toolbar">
+    <div className="calendar-shell admin-shared-calendar-card">
+      <div className="calendar-toolbar admin-shared-calendar-toolbar">
         <div>
           <p className="section-label">{calendarMode === 'availability' ? t(language, 'availability_title') : t(language, 'calendar')}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -846,10 +847,10 @@ export default function AdminCalendar({
               className="calendar-view-toggle"
               style={{
                 display: 'inline-flex',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: '#f2f5f8',
                 padding: '0.2rem',
                 borderRadius: '0.75rem',
-                border: '1px solid #334155',
+                border: '1px solid #dfe7ee',
               }}
             >
               <button
@@ -863,15 +864,15 @@ export default function AdminCalendar({
                   fontSize: '0.84rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: calendarMode === 'classes' ? '#2563eb' : 'transparent',
-                  color: calendarMode === 'classes' ? '#fff' : '#94a3b8',
+                  background: calendarMode === 'classes' ? '#1f4268' : 'transparent',
+                  color: calendarMode === 'classes' ? '#fff' : '#506982',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.35rem',
                 }}
               >
-                <span>📅</span>
+                <CalendarDays size={15} aria-hidden="true" />
                 <span>{t(language, 'classes_view')}</span>
               </button>
               <button
@@ -885,22 +886,22 @@ export default function AdminCalendar({
                   fontSize: '0.84rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: calendarMode === 'availability' ? '#059669' : 'transparent',
-                  color: calendarMode === 'availability' ? '#fff' : '#94a3b8',
+                  background: calendarMode === 'availability' ? '#1f4268' : 'transparent',
+                  color: calendarMode === 'availability' ? '#fff' : '#506982',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.35rem',
                 }}
               >
-                <span>⏱️</span>
+                <Clock3 size={15} aria-hidden="true" />
                 <span>{t(language, 'availability_view')}</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div className="button-row wrap" style={{ alignItems: 'center' }}>
+        <div className="button-row wrap admin-shared-calendar-actions">
           {calendarMode === 'availability' && role === 'admin' && (
             <select
               value={selectedTeacherId}
@@ -916,11 +917,11 @@ export default function AdminCalendar({
               }}
             >
               <option value="all">
-                {t(language, 'all_teachers_filter') || '👥 Todos os Professores'}
+                {t(language, 'all_teachers_filter') || 'Todos os professores'}
               </option>
               {sortedTeachers.map((tItem) => (
                 <option key={tItem.id} value={tItem.id}>
-                  👨‍🏫 {tItem.full_name}
+                  {tItem.full_name}
                 </option>
               ))}
             </select>
@@ -932,7 +933,7 @@ export default function AdminCalendar({
             style={{ padding: '0.45rem 0.9rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#059669', borderColor: '#10b981' }}
             onClick={() => openCreateAvailability(days[0], 9 * 60)}
           >
-            <span>+</span>
+            <Plus size={15} aria-hidden="true" />
             <span>{t(language, 'add_availability')}</span>
           </button>
 
@@ -963,7 +964,7 @@ export default function AdminCalendar({
             onClick={() => setShowLocateModal(true)}
             title="Localizar e restaurar aulas que possam ter sido deslocadas"
           >
-            <span>🔍</span>
+            <Search size={15} aria-hidden="true" />
             <span>Localizar Aulas {earlyLessonGroups.length > 0 ? `(${earlyLessonGroups.length})` : ''}</span>
           </button>
 
@@ -995,7 +996,7 @@ export default function AdminCalendar({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+            <AlertTriangle size={20} aria-hidden="true" />
             <div>
               <div style={{ fontWeight: 600, color: '#fbbf24', fontSize: '0.92rem' }}>
                 {earlyLessonGroups.length} aula{earlyLessonGroups.length > 1 ? 's' : ''} encontrada{earlyLessonGroups.length > 1 ? 's' : ''} em horário de madrugada (00h–07h)
