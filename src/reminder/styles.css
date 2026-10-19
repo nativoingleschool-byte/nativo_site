@@ -4958,3 +4958,39 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .admin-portal-shell .admin-summary-grid svg {
  color:#1f4268 !important; stroke:#1f4268 !important;
 }
+
+
+/* Intentional color scope: GOLD only for the four global admin KPI names.
+   Bank reconciliation KPI headings keep their original grey-blue. */
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-header span {
+ color:#c28b31 !important; -webkit-text-fill-color:#c28b31 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label {
+ color:#8192a2 !important; -webkit-text-fill-color:#8192a2 !important;
+}
+/* Payroll actions all in one line on desktop; wrap only at narrower widths. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar {
+ display:block !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar > div:first-child {
+ margin-bottom:13px;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls {
+ display:flex !important; flex-flow:row nowrap !important;
+ align-items:center !important; justify-content:space-between !important;
+ width:100%; gap:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls > div:first-child {
+ flex:0 1 auto; min-width:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls select {
+ max-width:min(450px, 28vw) !important; min-width:230px;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls .admin-staff-toolbar--payroll {
+ display:flex !important; flex:0 0 auto !important; order:initial !important;
+ flex-wrap:nowrap !important; white-space:nowrap; gap:9px !important;
+}
+@media(max-width:1280px) {
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls { flex-wrap:wrap !important; justify-content:flex-start !important; }
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls select {max-width:100% !important;}
+}
