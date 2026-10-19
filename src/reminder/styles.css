@@ -4804,3 +4804,13 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner {
   background:#fffaf0 !important; border-color:#f5dda1 !important;
 }
+
+
+/* Portaled dialogs are outside .reminder-app-scope; they must inherit DM Sans too. */
+.teacher-reference-preview-portal,
+.teacher-reference-preview-portal button,
+.teacher-reference-preview-portal input,
+.teacher-reference-preview-portal select,
+.teacher-reference-preview-portal textarea {
+  font-family:'DM Sans',sans-serif !important;
+}
