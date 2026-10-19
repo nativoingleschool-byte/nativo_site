@@ -588,9 +588,9 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           </div>
         </div>
       )}
-      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{t(language, 'invite_student_title')}</h3>
-        <form onSubmit={(e) => handleGenerateInviteLink(e)} className="form-grid" style={{ gap: '0.75rem', display: 'flex', alignItems: 'center' }}>
+      <div className="admin-students-invite-card form-card mb-6 animate-slide-up">
+        <span className="admin-students-eyebrow">MATRÍCULAS E CONVITES</span><h3>{t(language, 'invite_student_title')}</h3>
+        <form onSubmit={(e) => handleGenerateInviteLink(e)} className="form-grid admin-students-invite-form">
           <input
             required
             type="email"
@@ -603,7 +603,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
           </button>
         </form>
-        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-start' }}>
+        <div className="admin-students-invite-footer">
           <button 
             type="button" 
             className="secondary-button" 
@@ -635,7 +635,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       </div>
 
       {/* Bulk Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: 'rgba(30, 41, 59, 0.3)', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b' }}>
+      <div className="admin-students-bulk-bar">
         <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
           {t(language, 'bulk_invoices_selected').replace('{count}', String(selectedStudentIds.length))}
         </div>
@@ -695,7 +695,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
         </div>
       )}
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+      <section className="admin-students-list-card"><div className="admin-students-list-heading"><strong>Listagem de Alunos</strong><span>{students.length} no total</span></div><div className="table-responsive admin-students-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
@@ -1051,7 +1051,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             })}
           </tbody>
         </table>
-      </div>
+      </div></section>
 
       {savingUserId && userForm.role === 'student' && createPortal(
         <div
