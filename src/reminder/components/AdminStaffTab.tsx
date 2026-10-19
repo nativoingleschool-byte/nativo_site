@@ -412,7 +412,7 @@ export default function AdminStaffTab({
         </p>
 
         {(!teacherNotesList || teacherNotesList.length === 0) ? (
-          <div
+          <div className="admin-staff-empty-notes"
             style={{
               padding: '1.5rem',
               borderRadius: '0.75rem',
