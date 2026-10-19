@@ -4584,3 +4584,79 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
    padding: 16px 12px 92px !important;
  }
 }
+
+
+/* Shared admin presentation, aligned with student listing and teacher calendar.
+   The admin modules keep their business logic, only shared components determine styling. */
+.reminder-app-scope .admin-portal-shell {
+ --admin-surface: #fff; --admin-border: #e1e8ef;
+ --admin-navy: #1f4268; --admin-muted: #72808d;
+ --admin-panel-gap: 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-filter-card,
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card {
+ box-sizing: border-box; min-width: 0; width: 100%;
+ background: var(--admin-surface) !important;
+ border: 1px solid var(--admin-border) !important;
+ border-radius: 14px !important; box-shadow: none !important;
+ padding: 18px !important; margin: 0 0 var(--admin-panel-gap) !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table {
+ box-sizing: border-box; padding: 0 !important; margin: 0 !important;
+ background: #fff !important; border: 1px solid var(--admin-border) !important;
+ border-radius: 14px !important; overflow-x: auto; max-width: 100%;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table table {
+ width: 100%; border-collapse: collapse; background: #fff !important; color: #324d66 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table thead tr,
+.reminder-app-scope .admin-portal-shell .admin-shared-table thead th {
+ background: #f7f9fb !important; color: #59728b !important;
+ font-size: 11px !important; border-color: #e1e8ef !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr,
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody td {
+ background: #fff !important; color: #324d66 !important;
+ border-color: #e9eef3 !important; font-size: 12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover,
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover td {
+ background: #f7f9fb !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+ display: flex !important; flex-wrap: wrap; align-items: center;
+ justify-content: space-between; gap: 12px; min-width: 0;
+ margin: 0 0 16px; padding: 0 0 16px; border-bottom: 1px solid #e9eef3;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar h3 {
+ font-size: 16px !important; color: #1f4268 !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+ display: flex !important; align-items: center !important; flex-wrap: wrap !important;
+ gap: 8px !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions button,
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions select {
+ display: inline-flex !important; align-items: center; justify-content: center;
+ gap: 7px; min-height: 34px; padding: 7px 11px !important; font-size: 11px !important;
+ font-weight: 700; border-radius: 9px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions .primary-button {
+ background: #1f4268 !important; color: #fff !important; border-color: #1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions .ghost-button {
+ background: #fff !important; color: #4f6780 !important; border: 1px solid #dfe7ee !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-view-toggle {
+ background: #f2f5f8 !important; border-color: #dfe7ee !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn:not(.active) {
+ color: #506982 !important; background: transparent !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn.active {
+ background: #1f4268 !important; color: white !important;
+}
+@media(max-width:767px) {
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card { padding: 12px !important; }
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions { justify-content: flex-start !important; }
+}
