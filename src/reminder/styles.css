@@ -4409,3 +4409,76 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   .reminder-app-scope .admin-portal-shell .teacher-context-header__subtitle { display:none; }
   .reminder-app-scope .admin-portal-shell .teacher-profile-chip__copy { display:none; }
 }
+
+
+/* Base de Alunos – compact reference composition, preview only. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content { width:min(100%,1190px); padding-top:24px; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid { gap:12px; margin-bottom:18px; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid > * { min-height:62px !important; padding:11px 14px !important; box-shadow:none !important; border-radius:12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-value { font-size:23px !important; line-height:1.1 !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-label { font-size:10px !important; }
+.reminder-app-scope .admin-portal-shell .admin-content-panel { padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card {
+  padding:17px 18px 15px !important; margin:0 0 16px !important;
+  background:#fff !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-eyebrow {
+  display:block; margin-bottom:4px; color:#92a2b4; font-size:9px; font-weight:800; letter-spacing:.08em;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card > h3 {
+  margin:0 0 13px !important; padding-bottom:12px; border-bottom:1px solid #eef2f5;
+  font-size:14px !important; font-weight:750; color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form {
+  display:flex !important; align-items:center !important; gap:10px !important; margin:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form input {
+  flex:1 1 0 !important; min-width:0; height:37px; padding:8px 12px !important;
+  border:1px solid #dce5e9 !important; border-radius:9px !important;
+  font-size:12px !important; color:#324d66 !important; background:#fff !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form .primary-button {
+  flex:0 0 auto; height:37px; padding:8px 16px !important;
+  background:#1f4268 !important; color:#fff !important; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-footer { margin-top:12px; display:flex; justify-content:flex-start; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-footer .secondary-button {
+  padding:7px 11px !important; font-size:10px !important; background:#f3f6f9 !important; border:0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar {
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  margin:0 0 16px; min-height:57px; padding:10px 14px; background:#edf3f8 !important;
+  border:1px solid #dae5ef !important; border-radius:12px;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar > div { color:#405b74 !important; font-size:11px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar .primary-button { padding:10px 15px !important; background:#1f4268 !important; box-shadow:none; }
+.reminder-app-scope .admin-portal-shell .admin-students-list-card {
+  min-width:0; border:1px solid #e1e8ef; border-radius:14px; background:#fff; overflow:hidden;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading {
+  min-height:50px; padding:13px 17px; display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid #eef2f5;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading strong { color:#1f4268; font-size:13px; }
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading span {
+  font-size:10px; background:#ecf3f9; border-radius:999px; color:#49647d; padding:3px 9px;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table { border:0 !important; border-radius:0 !important; padding:0 !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table table { min-width:760px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table thead tr,
+.reminder-app-scope .admin-portal-shell .admin-students-table thead th { background:#f7f9fb !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table th {
+  padding:11px 12px !important; font-size:10px !important; letter-spacing:.035em;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table td {
+  padding:9px 12px !important; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table td button:not(.primary-button):not(.secondary-button) {
+  color:#1f4268 !important; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table tr { border-color:#e9eef3 !important; }
+@media(max-width:700px){
+  .reminder-app-scope .admin-portal-shell .admin-students-invite-form { flex-wrap:wrap; }
+  .reminder-app-scope .admin-portal-shell .admin-students-invite-form .primary-button { width:100%; }
+}
