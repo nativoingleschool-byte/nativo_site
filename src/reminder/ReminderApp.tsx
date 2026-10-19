@@ -1777,7 +1777,11 @@ function ReminderAppInner() {
         let updated: Lesson | undefined
         setLessons((items) => items.map((lesson) => {
           if (lesson.id !== payload.lesson_id) return lesson
-          updated = { ...lesson, ...payload } as Lesson
+          // Partial status edits must never erase starts_at or other existing fields.
+          const definedChanges = Object.fromEntries(
+            Object.entries(payload).filter(([, value]) => value !== undefined)
+          )
+          updated = { ...lesson, ...definedChanges } as Lesson
           return updated
         }))
         return updated
