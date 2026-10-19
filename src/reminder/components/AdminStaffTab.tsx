@@ -1106,18 +1106,6 @@ export default function AdminStaffTab({
 
       {/* Payroll Section */}
       <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
-        <button type="button" className="primary-button admin-staff-toolbar__primary"
-          onClick={() => setShowAddStaffModal(true)}>
-          <Plus size={16} aria-hidden="true" />
-          <span>{t(language, 'add_staff_title')}</span>
-        </button>
-        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
-          onClick={() => setShowStaffListModal(true)}>
-          <UsersRound size={16} aria-hidden="true" />
-          <span>{t(language, 'staff_list_title')}</span>
-        </button>
-      </div>
 
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
@@ -1168,6 +1156,19 @@ export default function AdminStaffTab({
             </button>
           </div>
         </div>
+        <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
+        <button type="button" className="primary-button admin-staff-toolbar__primary"
+          onClick={() => setShowAddStaffModal(true)}>
+          <Plus size={16} aria-hidden="true" />
+          <span>{t(language, 'add_staff_title')}</span>
+        </button>
+        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
+          onClick={() => setShowStaffListModal(true)}>
+          <UsersRound size={16} aria-hidden="true" />
+          <span>{t(language, 'staff_list_title')}</span>
+        </button>
+      </div>
+
       </div>
 
       <div className="table-responsive admin-shared-table">
