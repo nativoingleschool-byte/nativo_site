@@ -4892,3 +4892,69 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
   flex-wrap:wrap;
  }
 }
+
+
+/* Fine tuning by area; shared tokens, not blanket button overrides. */
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status {
+ display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge {
+ display:inline-flex; align-items:center; max-width:100%; min-height:28px;
+ border:1px solid #dce5ec; border-radius:999px; padding:6px 11px;
+ font-size:11px !important; font-weight:650 !important; line-height:1.3;
+ color:#365b79 !important; background:#edf3f8 !important;
+ opacity:1 !important; -webkit-text-fill-color:currentColor !important;
+ white-space:normal;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-success {
+ background:#e8f8f0 !important; color:#087a58 !important; border-color:#c7e9d7 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-danger {
+ background:#fff0f2 !important; color:#ab4055 !important; border-color:#f0ced5 !important;
+}
+/* Staff: the two actions occupy the right side of the SAME payroll card. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar { position:relative; align-items:center !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar .admin-staff-toolbar--payroll {
+ order:3; margin:0 !important; padding:0 !important; border:0 !important;
+ background:transparent !important; flex:0 1 auto; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar .admin-staff-toolbar--payroll button {
+ min-height:36px; padding:8px 12px !important;
+}
+/* Row: one horizontal action line; status tags use the same light palette as student list. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-row-actions {
+ display:flex !important; flex-wrap:nowrap !important; align-items:center; gap:7px !important;
+ white-space:nowrap;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-row-actions button {
+ min-height:34px !important; padding:7px 11px !important; white-space:nowrap; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-payment-status {
+ display:inline-flex; padding:6px 10px !important; min-width:unset;
+ border:1px solid #dce5ed !important; border-radius:999px; font-size:11px !important;
+ line-height:1.2; font-weight:700 !important; color:#365b79 !important;
+ background:#edf3f8 !important; opacity:1 !important; -webkit-text-fill-color:currentColor !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-payment-status.badge-success {
+ color:#087a58 !important; background:#e8f8f0 !important; border-color:#c7e9d7 !important;
+}
+/* Teacher notes: approved blue, including disabled state, with readable white text. */
+.reminder-app-scope .teacher-portal-shell .teacher-notes-submit {
+ background:#1f4268 !important; color:#fff !important; border-color:#1f4268 !important;
+ -webkit-text-fill-color:#fff !important; opacity:1 !important;
+}
+.reminder-app-scope .teacher-portal-shell .teacher-notes-submit:disabled {
+ background:#1f4268 !important; color:#fff !important; opacity:.76 !important;
+ cursor:not-allowed;
+}
+/* Bank heading and KPI titles in the approved two-tone brand, without changing the other headings. */
+.reminder-app-scope .admin-portal-shell .admin-bank-heading-icon {
+ color:#1f4268 !important; stroke:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label,
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-label {
+ color:#c28b31 !important; -webkit-text-fill-color:#c28b31 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-summary-grid svg {
+ color:#1f4268 !important; stroke:#1f4268 !important;
+}
