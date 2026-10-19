@@ -316,7 +316,12 @@ export default function TeacherPanel({
     const todaysLessons = teacherLessons
       .filter((l) => {
         if (!l.starts_at) return false
-        const lessonDate = formatter.format(new Date(l.starts_at))
+        const startDate = new Date(l.starts_at)
+        if (!Number.isFinite(startDate.getTime())) {
+          console.warn('[reminder:teacher] skipping lesson with invalid starts_at', { lessonId: l.id, starts_at: l.starts_at })
+          return false
+        }
+        const lessonDate = formatter.format(startDate)
         return lessonDate === todayZoned
       })
     return groupLessonsIntoTeacherSessions(todaysLessons)
