@@ -4789,3 +4789,18 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
  .reminder-app-scope .admin-portal-shell .admin-bank-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .reminder-app-scope .admin-portal-shell .admin-payroll-toolbar { padding:14px !important; }
 }
+
+
+/* Teacher agenda color treatment: subtle pastel statuses from approved model. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card {
+  background:#f8fafd !important; border-color:#e0e8f2 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal {
+  background:#f1faf7 !important; border-color:#d4eee5 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber {
+  background:#fffaf1 !important; border-color:#f4e6c7 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner {
+  background:#fffaf0 !important; border-color:#f5dda1 !important;
+}
