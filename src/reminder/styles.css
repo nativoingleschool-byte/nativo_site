@@ -4533,3 +4533,54 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 @media (max-width: 767px) {
  .reminder-app-scope .admin-portal-shell .admin-portal-content { padding: 16px 12px 32px !important; }
 }
+
+
+/* Shared layout contract: ONE owner for page gutters, never nested page padding.
+   Teacher finance/profile were receiving both portal-content and reference-content gutters. */
+.reminder-app-scope {
+  --reminder-canvas: #f0f3f8;
+  --reminder-page-gutter: 24px;
+  --reminder-section-gap: 16px;
+}
+.reminder-app-scope .teacher-portal-shell,
+.reminder-app-scope .teacher-portal-main { background: var(--reminder-canvas) !important; }
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 20px var(--reminder-page-gutter) 36px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  min-width: 0 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-content {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-panel-content-only,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-finance,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-profile,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  gap: var(--reminder-section-gap) !important;
+}
+/* Legacy agenda per-section margins duplicated the page gutter. */
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-next-lesson-card,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-grid,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-calendar-card {
+  margin-inline: 0 !important;
+}
+@media(max-width:767px) {
+ .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+   padding: 16px 12px 92px !important;
+ }
+}
