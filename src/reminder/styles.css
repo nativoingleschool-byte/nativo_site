@@ -5036,3 +5036,10 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 @media(max-width:1180px) {
  .reminder-app-scope .admin-portal-shell .admin-payroll-controls select { max-width:100% !important; }
 }
+
+
+/* Admin calendar: remove only the duplicate lower availability action.
+   Keep the upper Aulas / Disponibilidade switcher fully functional. */
+.reminder-app-scope .admin-portal-shell .calendar-availability-button {
+  display: none !important;
+}
