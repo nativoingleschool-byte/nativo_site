@@ -1,5 +1,6 @@
 import { FormEvent, useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { Plus, UsersRound, ClipboardPenLine } from 'lucide-react'
 import { Lesson, Profile, UserFormState, TeacherNote, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
@@ -357,24 +358,15 @@ export default function AdminStaffTab({
   return (
     <>
       {/* Top Action Buttons: Add Staff Member & Staff Member List */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <button
-          type="button"
-          className="primary-button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, background: '#0284c7' }}
-          onClick={() => setShowAddStaffModal(true)}
-        >
-          <span>➕</span>
+      <div className="admin-staff-toolbar">
+        <button type="button" className="primary-button admin-staff-toolbar__primary"
+          onClick={() => setShowAddStaffModal(true)}>
+          <Plus size={16} aria-hidden="true" />
           <span>{t(language, 'add_staff_title')}</span>
         </button>
-
-        <button
-          type="button"
-          className="secondary-button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, borderColor: '#38bdf8', color: '#38bdf8' }}
-          onClick={() => setShowStaffListModal(true)}
-        >
-          <span>👥</span>
+        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
+          onClick={() => setShowStaffListModal(true)}>
+          <UsersRound size={16} aria-hidden="true" />
           <span>{t(language, 'staff_list_title')}</span>
         </button>
       </div>
@@ -393,7 +385,7 @@ export default function AdminStaffTab({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>📝</span>
+            <ClipboardPenLine size={20} color="#1f4268" aria-hidden="true" />
             <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
               {t(language, 'teacher_notes_admin_title')}
             </h3>
