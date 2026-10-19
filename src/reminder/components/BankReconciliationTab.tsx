@@ -553,7 +553,7 @@ export default function BankReconciliationTab({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <FileSpreadsheet className="text-indigo-400" size={24} />
+              <FileSpreadsheet className="admin-bank-heading-icon" size={24} />
               {t(language, 'bank_reconciliation')}
             </h3>
             <p className="text-sm text-slate-400 mt-1">
