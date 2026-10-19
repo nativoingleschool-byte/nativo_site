@@ -628,7 +628,7 @@ export default function BankReconciliationTab({
       </div>
 
       {/* 2. Metrics Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="admin-bank-metrics">
         <div className="stat-card">
           <p className="section-label">Total Transações</p>
           <p className="text-2xl font-bold text-slate-100">{totalCount}</p>
