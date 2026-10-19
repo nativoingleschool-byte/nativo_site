@@ -4724,3 +4724,68 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
   font-size:12px !important; line-height:20px; text-overflow:ellipsis;
 }
 .reminder-app-scope .admin-portal-shell .admin-bank-search__input::placeholder { color:#8495a6; }
+
+
+/* Shared Nativo visual tokens: teacher/admin use the same typography and surfaces. */
+.reminder-app-scope,
+.reminder-app-scope .teacher-portal-shell,
+.reminder-app-scope .admin-portal-shell,
+.reminder-app-scope button,
+.reminder-app-scope input,
+.reminder-app-scope textarea,
+.reminder-app-scope select {
+  font-family: 'DM Sans', sans-serif !important;
+}
+.reminder-app-scope .teacher-sidebar__brand-copy .teacher-brand-english {
+  color: #d69c38 !important; font-style: normal !important; font-weight: inherit;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar {
+  display:flex !important; flex-wrap:wrap !important; align-items:center !important;
+  justify-content:space-between !important; gap:14px !important;
+  padding:18px 20px !important; margin:0 0 12px !important;
+  background:#fff !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar h3 {
+  color:#1f4268 !important; font-size:17px !important; line-height:1.3;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar p,
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar span {
+  color:#71859b !important; font-size:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar select {
+  background:#fff !important; color:#324d66 !important;
+  border:1px solid #dce5e9 !important; border-radius:9px !important;
+  min-height:38px; max-width:100%;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-empty-notes {
+  background:#f5f8fb !important; border:1px solid #e1e8ef !important;
+  border-radius:10px !important; color:#637a90 !important;
+  padding:18px !important; font-size:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics {
+  display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px !important; margin:0 0 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics > .stat-card {
+  min-width:0 !important; padding:16px !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important; background:#fff !important;
+  box-shadow:none !important; color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label {
+  font-size:10px !important; font-weight:750 !important; color:#8192a2 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .text-2xl {
+  font-size:23px !important; line-height:1.4; font-weight:750;
+  -webkit-text-fill-color:currentColor !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .text-xs {
+  font-size:11px !important; color:#8192a2 !important;
+}
+@media(max-width:1080px) {
+ .reminder-app-scope .admin-portal-shell .admin-bank-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:650px) {
+ .reminder-app-scope .admin-portal-shell .admin-bank-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .reminder-app-scope .admin-portal-shell .admin-payroll-toolbar { padding:14px !important; }
+}
