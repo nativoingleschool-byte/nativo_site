@@ -4496,3 +4496,40 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
   background-color: #f0f3f8 !important;
 }
+
+
+/* Correct the preview based on annotated screenshots, keep production untouched. */
+/* Admin: do not center a 1190px column inside a wider content area. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content {
+  width: 100% !important; max-width: none !important; box-sizing: border-box;
+  padding: 20px 24px 36px !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .teacher-portal-main { min-width: 0; }
+/* Status tags: correct unreadable pale text/background inherited from legacy dark theme. */
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 5px 9px !important; font-size: 10px !important; line-height: 1.3;
+  font-weight: 650; opacity: 1 !important; -webkit-text-fill-color: currentColor !important;
+  background: #edf3f8 !important; color: #365b79 !important;
+  border: 1px solid #dae5ed !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge-success {
+  color: #078566 !important; background: #eaf9f2 !important; border-color: #c6ead9 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge-danger {
+  color: #b43f54 !important; background: #fff0f2 !important; border-color: #f3ced6 !important;
+}
+/* Teacher: match darker admin canvas ONLY in the spaces between white surfaces. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell),
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-panel-content-only,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  background-color: #f0f3f8 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-calendar-card .calendar-availability-button {
+  display: none !important;
+}
+@media (max-width: 767px) {
+ .reminder-app-scope .admin-portal-shell .admin-portal-content { padding: 16px 12px 32px !important; }
+}
