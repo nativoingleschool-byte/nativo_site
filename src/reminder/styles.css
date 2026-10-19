@@ -4482,3 +4482,17 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   .reminder-app-scope .admin-portal-shell .admin-students-invite-form { flex-wrap:wrap; }
   .reminder-app-scope .admin-portal-shell .admin-students-invite-form .primary-button { width:100%; }
 }
+
+
+/* Match the teacher's compact spacing in the admin, without altering card sizes. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content { padding-top: 20px !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid { gap: 10px !important; margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card { margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar { margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-content-panel { gap: 12px !important; }
+/* ONLY the teacher canvas/background visible between cards uses the admin's darker grey. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell),
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+  background-color: #f0f3f8 !important;
+}
