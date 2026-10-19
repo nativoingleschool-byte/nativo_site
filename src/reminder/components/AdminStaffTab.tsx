@@ -423,7 +423,7 @@ export default function AdminStaffTab({
               fontSize: '0.88rem',
             }}
           >
-            ✓ {t(language, 'no_teacher_notes')}
+            {t(language, 'no_teacher_notes')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -1118,7 +1118,7 @@ export default function AdminStaffTab({
       )}
 
       {/* Payroll Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
