@@ -7,6 +7,7 @@ import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, gr
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
+import TeacherRenderGuard from './TeacherRenderGuard'
 import TeacherReferenceProfileView from './TeacherReferenceProfileView'
 import TeacherLiveFinanceView from './TeacherLiveFinanceView'
 import TeacherLiveProfileView, { type TeacherProfileDetails } from './TeacherLiveProfileView'
@@ -625,6 +626,7 @@ export default function TeacherPanel({
     try {
       const targetLessons = Array.isArray(target) ? target : [target]
       const lessonIds = targetLessons.map((l) => l.id)
+      console.info('[reminder:teacher:status] requested', { lessonIds, newStatus, visualPreviewMode })
 
       if (newStatus === 'happened') {
         setAttendanceLessons(targetLessons)
@@ -637,6 +639,7 @@ export default function TeacherPanel({
         for (const lesson of targetLessons) {
           await updateTeacherSingleLesson({ lesson_id: lesson.id, teacher_lesson_status: newStatus })
         }
+        console.info('[reminder:teacher:status] preview updated', { lessonIds, newStatus })
         toast.success(t(language, 'lesson_status_updated'))
         return
       }
@@ -672,6 +675,7 @@ export default function TeacherPanel({
       }
       toast.success(t(language, 'lesson_status_updated'))
     } catch (err: any) {
+      console.error('[reminder:teacher:status] failed', { newStatus, message: err instanceof Error ? err.message : String(err) }, err)
       toast.error(err.message || t(language, 'error_updating_status'))
     }
   }
@@ -887,6 +891,7 @@ export default function TeacherPanel({
         </div>}
 
         {teacherTab === 'calendar' && hideShellHeader && (
+          <TeacherRenderGuard>
           <TeacherAgendaView
             profile={profile}
             lessons={lessons}
@@ -906,7 +911,8 @@ export default function TeacherPanel({
             onCreateAvailability={onCreateAvailability}
             onDeleteAvailability={onDeleteAvailability}
           />
-        )}
+
+          </TeacherRenderGuard>        )}
 
         {teacherTab === 'calendar' && !hideShellHeader && (
           <div className="space-y-6 animate-fade-in">
