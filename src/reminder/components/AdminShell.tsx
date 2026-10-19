@@ -40,7 +40,7 @@ export default function AdminShell({ profile, activeTab, onTabChange, children, 
     <aside className="teacher-sidebar" aria-label="Portal do Administrador">
       <div className="teacher-sidebar__brand">
         <div className="teacher-sidebar__monogram"><img src="/hero/logo-white.png" alt=""/></div>
-        <div className="teacher-sidebar__brand-copy"><strong>NATIVO ENGLISH</strong><span>Portal Administrativo</span></div>
+        <div className="teacher-sidebar__brand-copy"><strong>NATIVO <em className="teacher-brand-english">ENGLISH</em></strong><span>Portal Administrativo</span></div>
       </div>
       {nav()}
       <div className="teacher-sidebar__footer"><span className="teacher-sidebar__version">Nativo English · Administração</span></div>
