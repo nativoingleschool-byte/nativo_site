@@ -553,7 +553,7 @@ export default function BankReconciliationTab({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <FileSpreadsheet className="text-indigo-400" size={24} />
+              <FileSpreadsheet className="admin-bank-heading-icon" size={24} />
               {t(language, 'bank_reconciliation')}
             </h3>
             <p className="text-sm text-slate-400 mt-1">
@@ -628,7 +628,7 @@ export default function BankReconciliationTab({
       </div>
 
       {/* 2. Metrics Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="admin-bank-metrics">
         <div className="stat-card">
           <p className="section-label">Total Transações</p>
           <p className="text-2xl font-bold text-slate-100">{totalCount}</p>
@@ -700,14 +700,14 @@ export default function BankReconciliationTab({
       <div className="panel p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Search box */}
-          <div className="relative min-w-[220px] flex-1 max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative min-w-[220px] flex-1 max-w-sm admin-bank-search">
+            <Search size={16} className="admin-bank-search__icon" />
             <input
               type="text"
               placeholder="Buscar por descrição, aluno, valor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="admin-bank-search__input"
             />
           </div>
 

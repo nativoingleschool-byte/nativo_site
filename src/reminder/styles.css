@@ -74,9 +74,11 @@ body:has(.reminder-app-scope) {
 .reminder-app-scope h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1f4268;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: #1f4268;
 }
 
 .reminder-app-scope h2 {
@@ -1485,10 +1487,11 @@ body:has(.reminder-app-scope) {
 }
 
 .summary-card-value {
-  background: linear-gradient(135deg, #f8fafc 30%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1f4268;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: #1f4268;
 }
 
 .summary-card {
@@ -4062,4 +4065,981 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
 .reminder-app-scope .teacher-lesson-form-modal .teacher-student-dropdown__results label span {
   min-width: 0 !important;
   overflow-wrap: anywhere !important;
+}
+
+
+/* Compact recurring lesson option, aligned with the rest of the teacher modal. */
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px 14px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 2px 0 0 !important;
+  padding: 10px 0 0 !important;
+  border-top: 1px solid #e9eef2;
+  font-size: 12px;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle {
+  display: inline-flex !important;
+  width: auto !important;
+  align-items: center !important;
+  gap: 7px !important;
+  color: #4e6175 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__toggle input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  accent-color: #234a6c;
+  flex: 0 0 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  min-height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__hint {
+  color: #91a0ac !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  color: #617387 !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__weeks input {
+  box-sizing: border-box !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  height: 29px !important;
+  min-height: 29px !important;
+  padding: 3px 5px !important;
+  border: 1px solid #dbe3ea !important;
+  border-radius: 6px !important;
+  color: #334a60 !important;
+  background: #fff !important;
+  font-size: 12px !important;
+  text-align: center;
+}
+.reminder-app-scope .teacher-lesson-form-modal .teacher-recurring-field__note {
+  color: #8293a2;
+  font-size: 11px;
+}
+
+
+/* Compact seven-day availability editor (preview). */
+.reminder-app-scope .reference-availability-modal { width: min(700px, calc(100vw - 32px)) !important; max-width: 700px !important; max-height: min(90dvh, 820px) !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
+.reminder-app-scope .teacher-weekly-availability-days { overflow-y: auto; flex: 1 1 auto; min-height: 0; display: grid; gap: 12px; padding: 12px 2px; }
+.reminder-app-scope .teacher-weekly-availability-day { border: 1px solid #dfe7ee; padding: 14px; border-radius: 14px; min-width: 0; }
+.reminder-app-scope .teacher-weekly-availability-day__header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:9px; }
+.reminder-app-scope .teacher-weekly-availability-day__header strong { color:#27435f; font-size:13px; }
+.reminder-app-scope .teacher-weekly-availability-day__header button { border:1px solid #d8e3ed; background:#fff; color:#486580; border-radius:9px; padding:7px 11px; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot { display:flex; align-items:center; gap:10px; background:#f5f7f9; border-radius:9px; padding:10px; margin:6px 0; color:#28435c; font-size:12px; }
+.reminder-app-scope .teacher-weekly-availability-slot button { margin-left:auto; color:#ca4760; background:transparent; font-size:12px; border:0; }
+.reminder-app-scope .teacher-weekly-availability-dot { flex:0 0 9px; width:9px; height:9px; border-radius:50%; background:#14b58a; }
+.reminder-app-scope .teacher-weekly-availability-empty { color:#9aa6af; font-size:12px; font-style:italic; }
+.reminder-app-scope .teacher-weekly-availability-editor { display:flex; align-items:end; flex-wrap:wrap; gap:9px; padding:12px 0 2px; }
+.reminder-app-scope .teacher-weekly-availability-editor label { display:flex; flex-direction:column; gap:5px; font-size:11px; color:#60768c; }
+.reminder-app-scope .teacher-weekly-availability-editor input { max-width:118px; border:1px solid #dae4ec; background:white; border-radius:8px; padding:6px; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button { border:1px solid #dae4ec; border-radius:8px; padding:8px 11px; background:white; color:#29435c; }
+.reminder-app-scope .teacher-weekly-availability-editor button:nth-last-child(2) { background:#24476c; color:white; }
+.reminder-app-scope .teacher-weekly-availability-caption { color:#9aa7b3; font-size:11px; margin-right:auto; }
+.reminder-app-scope .reference-invoice-card .reference-primary-button { background:#234a6c !important; border-color:#234a6c !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+
+
+/* Preview-only administrator alignment: use the light cards and navy typography of teacher panels. */
+.reminder-app-scope.preview-admin-showcase { background: #f6f8fb !important; color: #243d58 !important; }
+.reminder-app-scope.preview-admin-showcase .main-content { max-width: 1320px; margin-inline: auto; padding: 24px 22px !important; min-width: 0; }
+.reminder-app-scope.preview-admin-showcase .main-content > .panel,
+.reminder-app-scope.preview-admin-showcase .summary-grid > * {
+  background: #fff !important; border: 1px solid #e5ebf1 !important;
+  box-shadow: 0 6px 22px rgba(31,58,86,.045) !important; border-radius: 17px !important;
+  color: #264560 !important;
+}
+.reminder-app-scope.preview-admin-showcase .panel-header h2 { color: #27435f !important; font-weight: 700 !important; }
+.reminder-app-scope.preview-admin-showcase .section-label { color: #8a9cad !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button { background: transparent !important; border-radius: 999px !important; color: #718399 !important; }
+.reminder-app-scope.preview-admin-showcase .tab-button-active { background: #e9ecff !important; color: #6277d3 !important; }
+.reminder-app-scope.preview-admin-showcase .summary-grid { gap: 14px; }
+.reminder-app-scope.preview-admin-showcase .main-content input,
+.reminder-app-scope.preview-admin-showcase .main-content select { max-width: 100%; }
+@media (max-width: 680px) {
+  .reminder-app-scope.preview-admin-showcase .main-content { padding: 15px 12px !important; }
+}
+
+
+/* WEEKLY AVAILABILITY MODAL: portal lives directly in body, outside .reminder-app-scope.
+   Keep selectors rooted at the portal so the design actually applies. */
+.teacher-reference-preview-portal .reference-availability-modal {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(720px, calc(100vw - 28px)) !important;
+  max-width: 720px !important;
+  max-height: min(94dvh, 740px) !important;
+  min-height: 0;
+  overflow: hidden !important;
+  padding: 32px 32px 22px !important;
+  border: 1px solid #e0e6ea !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  color: #27435f !important;
+  box-shadow: 0 20px 60px rgba(31,56,76,.15) !important;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-heading {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding-right: 42px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-heading h2 {
+  margin: 0 !important; color: #1f4268 !important; font-size: 21px !important;
+  font-weight: 600 !important; letter-spacing: -.02em;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-badge {
+  padding: 7px 10px; color: #078566; font-weight: 650; font-size: 11px;
+  background: #f0fbf7; border: 1px solid #bce9d9; border-radius: 5px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-availability-intro {
+  margin: 17px 0 22px !important; padding: 0 0 25px;
+  border-bottom: 1px solid #e8edf2; color: #81909b; font-size: 13px !important;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-days {
+  display: grid !important; flex: 1 1 auto !important; min-height: 0 !important;
+  overflow-x: hidden !important; overflow-y: auto !important;
+  align-content: start; gap: 14px; padding: 0 17px 0 0;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day {
+  box-sizing: border-box; min-width: 0; padding: 15px;
+  border: 1px solid #dfe7ee; border-radius: 16px; background: #fff;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 10px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header strong {
+  color: #29445f; font-size: 13px; font-weight: 700;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day__header button {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+  border: 1px solid #dce5ec; border-radius: 10px;
+  background: #fff; color: #45617a; padding: 7px 13px; font-size: 12px;
+  cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot {
+  display: flex; align-items: center; gap: 11px; min-height: 48px;
+  padding: 10px 12px; margin-top: 8px; border-radius: 9px; background: #f5f7f9;
+  color: #29435c; font-size: 12px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-dot {
+  width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #14b58a;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions {
+  display: flex; gap: 18px; align-items: center; margin-left: auto;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions button {
+  border: none; background: transparent; color: #617387; font-size: 12px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot__actions button:last-child { color: #ca4760; }
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  min-height: 34px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty {
+  font-size: 12px; font-style: italic; color: #9aa6af; margin: 0;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-empty-row span {
+  font-size: 11px; color: #94a2ad; background: #f3f6f8;
+  padding: 7px 10px; border-radius: 6px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor {
+  display: flex; align-items: end; flex-wrap: wrap; gap: 9px;
+  padding: 12px 0 0; border-top: 1px solid #edf1f4; margin-top: 12px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor label {
+  display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #60768c;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor input {
+  width: 115px; max-width: 100%; border: 1px solid #dae4ec;
+  border-radius: 8px; padding: 7px; background: #fff; color: #29435c;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor button {
+  min-height: 34px; padding: 7px 11px; background: #fff; color: #45617a;
+  border: 1px solid #dae4ec; border-radius: 8px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-editor button:nth-last-child(2) {
+  background: #1f4268; color: white; border-color: #1f4268;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions {
+  display: flex !important; flex: 0 0 auto; align-items: center; justify-content: flex-end;
+  gap: 12px; border-top: 1px solid #e8edf2; padding: 22px 0 0;
+  margin: 22px 0 0 !important; background: #fff;
+}
+.teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-caption {
+  margin-right: auto; color: #9aa7b3; font-size: 11px;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions > .teacher-weekly-availability-close {
+  border: 0 !important; background: transparent !important; color: #617387 !important;
+  padding: 9px 12px !important; font-size: 12px; cursor: pointer;
+}
+.teacher-reference-preview-portal .reference-availability-modal .reference-agenda-modal-actions > .reference-primary-button {
+  background: #1f4268 !important; border: 1px solid #1f4268 !important;
+  color: #fff !important; -webkit-text-fill-color: #fff !important;
+  font-size: 12px; font-weight: 700; border-radius: 9px; padding: 11px 19px; cursor: pointer;
+}
+@media (max-width: 600px) {
+  .teacher-reference-preview-portal .reference-availability-modal { padding: 22px 16px 15px !important; max-height: 94dvh !important; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-days { padding-right: 6px; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-caption { display: none; }
+  .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-slot { flex-wrap: wrap; }
+}
+
+
+/* ADMIN PREVIEW - reuse teacher design system, without changing student/teacher UI. */
+.reminder-app-scope .admin-host-main {
+  display: block !important; width: 100% !important; max-width: none !important;
+  padding: 0 !important; margin: 0 !important; min-width: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell { font-family: 'Outfit','Inter',system-ui,sans-serif; }
+.reminder-app-scope .admin-portal-shell .admin-portal-content { min-width: 0; width: min(100%,1290px); }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px;
+  margin-bottom: 18px;
+}
+.reminder-app-scope .admin-portal-shell .admin-summary-grid > * {
+  min-width: 0; min-height: 82px;
+  border: 1px solid #e1e8ef !important; border-radius: 14px !important;
+  background: #fff !important; box-shadow: 0 8px 24px rgba(35,60,86,.045) !important;
+  color: #1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-summary-grid h1,
+.reminder-app-scope .admin-portal-shell .admin-summary-grid h2,
+.reminder-app-scope .admin-portal-shell .admin-summary-grid strong,
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-value {
+  color:#1f4268 !important; background:none !important;
+  background-clip: initial !important; -webkit-background-clip: initial !important;
+  -webkit-text-fill-color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-content-panel {
+  min-width: 0; max-width: 100%; padding: 22px !important;
+  border: 1px solid #e1e8ef !important; border-radius: 17px !important;
+  background: #fff !important; box-shadow: 0 8px 24px rgba(35,60,86,.045) !important;
+  color: #263e58 !important;
+}
+/* The admin sidebar owns navigation; remove the duplicate legacy tab bar. */
+.reminder-app-scope .admin-portal-shell .admin-content-panel > .panel-header { display: none !important; }
+.reminder-app-scope .admin-portal-shell .form-card,
+.reminder-app-scope .admin-portal-shell .credential-card {
+  background: #fff !important; color: #324d66 !important;
+  border: 1px solid #e1e8ef !important; border-radius: 14px !important;
+  box-shadow: 0 4px 15px rgba(35,60,86,.035) !important;
+}
+.reminder-app-scope .admin-portal-shell .table-responsive {
+  min-width: 0; max-width: 100%; overflow-x: auto;
+  border: 1px solid #e1e8ef; border-radius: 12px;
+  background: #fff !important;
+}
+.reminder-app-scope .admin-portal-shell table { border-collapse: collapse; width:100%; color:#324d66 !important; background:#fff !important; }
+.reminder-app-scope .admin-portal-shell thead, .reminder-app-scope .admin-portal-shell th {
+  color: #657b8e !important; background: #f5f8fa !important;
+  border-bottom: 1px solid #e1e8ef !important;
+  font-size: 11px !important; font-weight: 750 !important;
+}
+.reminder-app-scope .admin-portal-shell tbody,
+.reminder-app-scope .admin-portal-shell tbody tr,
+.reminder-app-scope .admin-portal-shell tbody td {
+  background: #fff !important; color: #324d66 !important;
+  border-color: #e9eef3 !important; opacity: 1 !important;
+}
+.reminder-app-scope .admin-portal-shell tbody tr:hover,
+.reminder-app-scope .admin-portal-shell tbody tr:hover td { background:#f6f9fb !important; }
+.reminder-app-scope .admin-portal-shell h1,
+.reminder-app-scope .admin-portal-shell h2,
+.reminder-app-scope .admin-portal-shell h3 { color: #1f4268 !important; background: none !important; -webkit-text-fill-color:#1f4268 !important; }
+.reminder-app-scope .admin-portal-shell .primary-button,
+.reminder-app-scope .admin-portal-shell button.reference-primary-button {
+  background: #1f4268 !important; border:1px solid #1f4268 !important;
+  color: #fff !important; -webkit-text-fill-color:#fff !important;
+  border-radius: 9px !important; font-size:12px !important; font-weight:700 !important;
+}
+.reminder-app-scope .admin-portal-shell .secondary-button {
+  background: #fff !important; color: #506982 !important;
+  border:1px solid #dfe7ee !important; border-radius:9px !important;
+  font-size:12px !important;
+}
+.reminder-app-scope .admin-portal-shell input,
+.reminder-app-scope .admin-portal-shell select,
+.reminder-app-scope .admin-portal-shell textarea {
+  box-sizing:border-box; min-width:0; max-width:100%;
+  color:#324d66 !important; background:#fff !important;
+  border-color:#dce5e9 !important; -webkit-text-fill-color:#324d66 !important;
+}
+.reminder-app-scope .admin-portal-shell .muted { color: #72808d !important; }
+.reminder-app-scope .admin-portal-shell .section-label { color: #82919d !important; }
+.reminder-app-scope .admin-portal-shell .admin-menu-toggle { display:none; }
+.reminder-app-scope .admin-portal-shell .admin-mobile-menu { display:none; }
+@media (max-width: 1024px) {
+  .reminder-app-scope .admin-portal-shell .admin-summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 767px) {
+  .reminder-app-scope .admin-portal-shell .teacher-sidebar { display:none; }
+  .reminder-app-scope .admin-portal-shell .teacher-portal-main { width:100%; margin-left:0; }
+  .reminder-app-scope .admin-portal-shell .admin-menu-toggle { display:grid; place-items:center; border:1px solid #e1e8ef; border-radius:50%; width:34px; height:34px; background:#fff; color:#1f4268; }
+  .reminder-app-scope .admin-portal-shell .admin-mobile-menu { position:relative; z-index:20; display:block; background:#fff; border-bottom:1px solid #e1e8ef; padding:10px 14px; }
+  .reminder-app-scope .admin-portal-shell .admin-mobile-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+  .reminder-app-scope .admin-portal-shell .admin-mobile-nav__item { display:flex; align-items:center; gap:8px; text-align:left; border:0; border-radius:9px; padding:10px; background:#f5f8fa; color:#5d7180; font-size:12px; }
+  .reminder-app-scope .admin-portal-shell .admin-mobile-nav__item.is-active { color:#1f4268; background:#eaf2f8; }
+  .reminder-app-scope .admin-portal-shell .admin-portal-content { padding:16px 12px 32px; }
+  .reminder-app-scope .admin-portal-shell .admin-content-panel { padding:14px !important; }
+  .reminder-app-scope .admin-portal-shell .teacher-context-header { padding:12px 15px; }
+  .reminder-app-scope .admin-portal-shell .teacher-context-header__subtitle { display:none; }
+  .reminder-app-scope .admin-portal-shell .teacher-profile-chip__copy { display:none; }
+}
+
+
+/* Base de Alunos – compact reference composition, preview only. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content { width:min(100%,1190px); padding-top:24px; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid { gap:12px; margin-bottom:18px; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid > * { min-height:62px !important; padding:11px 14px !important; box-shadow:none !important; border-radius:12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-value { font-size:23px !important; line-height:1.1 !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-label { font-size:10px !important; }
+.reminder-app-scope .admin-portal-shell .admin-content-panel { padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card {
+  padding:17px 18px 15px !important; margin:0 0 16px !important;
+  background:#fff !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-eyebrow {
+  display:block; margin-bottom:4px; color:#92a2b4; font-size:9px; font-weight:800; letter-spacing:.08em;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card > h3 {
+  margin:0 0 13px !important; padding-bottom:12px; border-bottom:1px solid #eef2f5;
+  font-size:14px !important; font-weight:750; color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form {
+  display:flex !important; align-items:center !important; gap:10px !important; margin:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form input {
+  flex:1 1 0 !important; min-width:0; height:37px; padding:8px 12px !important;
+  border:1px solid #dce5e9 !important; border-radius:9px !important;
+  font-size:12px !important; color:#324d66 !important; background:#fff !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-form .primary-button {
+  flex:0 0 auto; height:37px; padding:8px 16px !important;
+  background:#1f4268 !important; color:#fff !important; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-invite-footer { margin-top:12px; display:flex; justify-content:flex-start; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-footer .secondary-button {
+  padding:7px 11px !important; font-size:10px !important; background:#f3f6f9 !important; border:0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar {
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  margin:0 0 16px; min-height:57px; padding:10px 14px; background:#edf3f8 !important;
+  border:1px solid #dae5ef !important; border-radius:12px;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar > div { color:#405b74 !important; font-size:11px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar .primary-button { padding:10px 15px !important; background:#1f4268 !important; box-shadow:none; }
+.reminder-app-scope .admin-portal-shell .admin-students-list-card {
+  min-width:0; border:1px solid #e1e8ef; border-radius:14px; background:#fff; overflow:hidden;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading {
+  min-height:50px; padding:13px 17px; display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid #eef2f5;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading strong { color:#1f4268; font-size:13px; }
+.reminder-app-scope .admin-portal-shell .admin-students-list-heading span {
+  font-size:10px; background:#ecf3f9; border-radius:999px; color:#49647d; padding:3px 9px;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table { border:0 !important; border-radius:0 !important; padding:0 !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table table { min-width:760px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table thead tr,
+.reminder-app-scope .admin-portal-shell .admin-students-table thead th { background:#f7f9fb !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-table th {
+  padding:11px 12px !important; font-size:10px !important; letter-spacing:.035em;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table td {
+  padding:9px 12px !important; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table td button:not(.primary-button):not(.secondary-button) {
+  color:#1f4268 !important; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table tr { border-color:#e9eef3 !important; }
+@media(max-width:700px){
+  .reminder-app-scope .admin-portal-shell .admin-students-invite-form { flex-wrap:wrap; }
+  .reminder-app-scope .admin-portal-shell .admin-students-invite-form .primary-button { width:100%; }
+}
+
+
+/* Match the teacher's compact spacing in the admin, without altering card sizes. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content { padding-top: 20px !important; }
+.reminder-app-scope .admin-portal-shell .admin-summary-grid { gap: 10px !important; margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-invite-card { margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-students-bulk-bar { margin-bottom: 12px !important; }
+.reminder-app-scope .admin-portal-shell .admin-content-panel { gap: 12px !important; }
+/* ONLY the teacher canvas/background visible between cards uses the admin's darker grey. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell),
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+  background-color: #f0f3f8 !important;
+}
+
+
+/* Correct the preview based on annotated screenshots, keep production untouched. */
+/* Admin: do not center a 1190px column inside a wider content area. */
+.reminder-app-scope .admin-portal-shell .admin-portal-content {
+  width: 100% !important; max-width: none !important; box-sizing: border-box;
+  padding: 20px 24px 36px !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .teacher-portal-main { min-width: 0; }
+/* Status tags: correct unreadable pale text/background inherited from legacy dark theme. */
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 5px 9px !important; font-size: 10px !important; line-height: 1.3;
+  font-weight: 650; opacity: 1 !important; -webkit-text-fill-color: currentColor !important;
+  background: #edf3f8 !important; color: #365b79 !important;
+  border: 1px solid #dae5ed !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge-success {
+  color: #078566 !important; background: #eaf9f2 !important; border-color: #c6ead9 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-students-table .badge-danger {
+  color: #b43f54 !important; background: #fff0f2 !important; border-color: #f3ced6 !important;
+}
+/* Teacher: match darker admin canvas ONLY in the spaces between white surfaces. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell),
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-panel-content-only,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  background-color: #f0f3f8 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-calendar-card .calendar-availability-button {
+  display: none !important;
+}
+@media (max-width: 767px) {
+ .reminder-app-scope .admin-portal-shell .admin-portal-content { padding: 16px 12px 32px !important; }
+}
+
+
+/* Shared layout contract: ONE owner for page gutters, never nested page padding.
+   Teacher finance/profile were receiving both portal-content and reference-content gutters. */
+.reminder-app-scope {
+  --reminder-canvas: #f0f3f8;
+  --reminder-page-gutter: 24px;
+  --reminder-section-gap: 16px;
+}
+.reminder-app-scope .teacher-portal-shell,
+.reminder-app-scope .teacher-portal-main { background: var(--reminder-canvas) !important; }
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 20px var(--reminder-page-gutter) 36px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  min-width: 0 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-content {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-panel-content-only,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-finance,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-reference-profile,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+  gap: var(--reminder-section-gap) !important;
+}
+/* Legacy agenda per-section margins duplicated the page gutter. */
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-next-lesson-card,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-grid,
+body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-calendar-card {
+  margin-inline: 0 !important;
+}
+@media(max-width:767px) {
+ .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content {
+   padding: 16px 12px 92px !important;
+ }
+}
+
+
+/* Shared admin presentation, aligned with student listing and teacher calendar.
+   The admin modules keep their business logic, only shared components determine styling. */
+.reminder-app-scope .admin-portal-shell {
+ --admin-surface: #fff; --admin-border: #e1e8ef;
+ --admin-navy: #1f4268; --admin-muted: #72808d;
+ --admin-panel-gap: 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-filter-card,
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card {
+ box-sizing: border-box; min-width: 0; width: 100%;
+ background: var(--admin-surface) !important;
+ border: 1px solid var(--admin-border) !important;
+ border-radius: 14px !important; box-shadow: none !important;
+ padding: 18px !important; margin: 0 0 var(--admin-panel-gap) !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table {
+ box-sizing: border-box; padding: 0 !important; margin: 0 !important;
+ background: #fff !important; border: 1px solid var(--admin-border) !important;
+ border-radius: 14px !important; overflow-x: auto; max-width: 100%;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table table {
+ width: 100%; border-collapse: collapse; background: #fff !important; color: #324d66 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table thead tr,
+.reminder-app-scope .admin-portal-shell .admin-shared-table thead th {
+ background: #f7f9fb !important; color: #59728b !important;
+ font-size: 11px !important; border-color: #e1e8ef !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr,
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody td {
+ background: #fff !important; color: #324d66 !important;
+ border-color: #e9eef3 !important; font-size: 12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover,
+.reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover td {
+ background: #f7f9fb !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+ display: flex !important; flex-wrap: wrap; align-items: center;
+ justify-content: space-between; gap: 12px; min-width: 0;
+ margin: 0 0 16px; padding: 0 0 16px; border-bottom: 1px solid #e9eef3;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar h3 {
+ font-size: 16px !important; color: #1f4268 !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+ display: flex !important; align-items: center !important; flex-wrap: wrap !important;
+ gap: 8px !important; margin: 0 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions button,
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions select {
+ display: inline-flex !important; align-items: center; justify-content: center;
+ gap: 7px; min-height: 34px; padding: 7px 11px !important; font-size: 11px !important;
+ font-weight: 700; border-radius: 9px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions .primary-button {
+ background: #1f4268 !important; color: #fff !important; border-color: #1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions .ghost-button {
+ background: #fff !important; color: #4f6780 !important; border: 1px solid #dfe7ee !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-view-toggle {
+ background: #f2f5f8 !important; border-color: #dfe7ee !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn:not(.active) {
+ color: #506982 !important; background: transparent !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn.active {
+ background: #1f4268 !important; color: white !important;
+}
+@media(max-width:767px) {
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card { padding: 12px !important; }
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions { justify-content: flex-start !important; }
+}
+
+
+/* Shared admin toolbar rhythm: controls stay inside cards, icons are Lucide. */
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar {
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  border:1px solid #e1e8ef; border-radius:14px; background:#fff;
+  padding:12px 14px; margin:0 0 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:36px; border-radius:9px !important; padding:8px 13px !important;
+  font-size:12px !important; font-weight:650 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar__primary {
+  background:#1f4268 !important; color:#fff !important; border-color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar__secondary {
+  background:#fff !important; color:#49647d !important; border:1px solid #dfe7ee !important;
+}
+/* Calendar: layout heading/view selector and all action controls along one baseline. */
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  justify-content:space-between !important; flex-wrap:nowrap !important;
+  gap:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar > div:first-child {
+  flex:0 1 auto; min-width:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar > div:first-child > div {
+  display:flex !important; align-items:center !important; flex-wrap:nowrap !important; gap:10px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar h3 { white-space:nowrap; font-size:14px !important; }
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+  display:flex !important; flex:0 1 auto; min-width:0; justify-content:flex-end !important;
+  align-items:center !important; flex-wrap:wrap !important; gap:7px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions button {
+  white-space:nowrap; min-height:35px; padding:7px 10px !important; font-size:10.5px !important;
+}
+@media (max-width:1240px) {
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar {
+   flex-wrap:wrap !important; align-items:flex-start !important;
+ }
+ .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions {
+   width:100%; justify-content:flex-start !important;
+ }
+}
+/* Input icon sits in an independent slot; never overlaps placeholder or typed text. */
+.reminder-app-scope .admin-portal-shell .admin-bank-search {
+  position:relative !important; display:flex; align-items:center;
+  min-width:220px; width:100%; max-width:420px;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__icon {
+  position:absolute; z-index:1; left:13px; top:50%;
+  transform:translateY(-50%); width:16px; height:16px; color:#748699;
+  pointer-events:none;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__input {
+  box-sizing:border-box; display:block; width:100%; min-width:0; height:40px;
+  padding:9px 12px 9px 42px !important; border:1px solid #dce5e9 !important;
+  border-radius:10px; background:#fff !important; color:#324d66 !important;
+  font-size:12px !important; line-height:20px; text-overflow:ellipsis;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-search__input::placeholder { color:#8495a6; }
+
+
+/* Shared Nativo visual tokens: teacher/admin use the same typography and surfaces. */
+.reminder-app-scope,
+.reminder-app-scope .teacher-portal-shell,
+.reminder-app-scope .admin-portal-shell,
+.reminder-app-scope button,
+.reminder-app-scope input,
+.reminder-app-scope textarea,
+.reminder-app-scope select {
+  font-family: 'DM Sans', sans-serif !important;
+}
+.reminder-app-scope .teacher-sidebar__brand-copy .teacher-brand-english {
+  color: #d69c38 !important; font-style: normal !important; font-weight: inherit;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar {
+  display:flex !important; flex-wrap:wrap !important; align-items:center !important;
+  justify-content:space-between !important; gap:14px !important;
+  padding:18px 20px !important; margin:0 0 12px !important;
+  background:#fff !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar h3 {
+  color:#1f4268 !important; font-size:17px !important; line-height:1.3;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar p,
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar span {
+  color:#71859b !important; font-size:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar select {
+  background:#fff !important; color:#324d66 !important;
+  border:1px solid #dce5e9 !important; border-radius:9px !important;
+  min-height:38px; max-width:100%;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-empty-notes {
+  background:#f5f8fb !important; border:1px solid #e1e8ef !important;
+  border-radius:10px !important; color:#637a90 !important;
+  padding:18px !important; font-size:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics {
+  display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px !important; margin:0 0 16px;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics > .stat-card {
+  min-width:0 !important; padding:16px !important; border:1px solid #e1e8ef !important;
+  border-radius:14px !important; background:#fff !important;
+  box-shadow:none !important; color:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label {
+  font-size:10px !important; font-weight:750 !important; color:#8192a2 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .text-2xl {
+  font-size:23px !important; line-height:1.4; font-weight:750;
+  -webkit-text-fill-color:currentColor !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .text-xs {
+  font-size:11px !important; color:#8192a2 !important;
+}
+@media(max-width:1080px) {
+ .reminder-app-scope .admin-portal-shell .admin-bank-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:650px) {
+ .reminder-app-scope .admin-portal-shell .admin-bank-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .reminder-app-scope .admin-portal-shell .admin-payroll-toolbar { padding:14px !important; }
+}
+
+
+/* Teacher agenda color treatment: subtle pastel statuses from approved model. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card {
+  background:#f8fafd !important; border-color:#e0e8f2 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal {
+  background:#f1faf7 !important; border-color:#d4eee5 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber {
+  background:#fffaf1 !important; border-color:#f4e6c7 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner {
+  background:#fffaf0 !important; border-color:#f5dda1 !important;
+}
+
+
+/* Portaled dialogs are outside .reminder-app-scope; they must inherit DM Sans too. */
+.teacher-reference-preview-portal,
+.teacher-reference-preview-portal button,
+.teacher-reference-preview-portal input,
+.teacher-reference-preview-portal select,
+.teacher-reference-preview-portal textarea {
+  font-family:'DM Sans',sans-serif !important;
+}
+
+
+/* Teacher agenda fidelity: one canvas, one white KPI tray and compact action buttons.
+   Scoped to the teacher portal, never to admin or card content. */
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) {
+ --teacher-canvas:#f0f3f8;
+ background:var(--teacher-canvas) !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main {
+ background:var(--teacher-canvas) !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-content,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-panel-content-only,
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-agenda-view {
+ background:transparent !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-grid {
+ box-sizing:border-box;
+ display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:14px !important;
+ margin-block:0 !important;
+ padding:14px 18px !important;
+ border:1px solid #dfe6ee !important; border-radius:20px !important;
+ background:#fff !important;
+ box-shadow:0 5px 22px rgba(31,56,76,.04);
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card {
+ box-sizing:border-box; min-width:0; min-height:64px; padding:12px 14px !important;
+ border-radius:13px !important; background:#f8fafd !important; border:1px solid #dce7f7 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal {
+ background:#f5fcf9 !important; border-color:#d4eee5 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber {
+ background:#fffcf6 !important; border-color:#f4e6c7 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card > div {
+ display:flex !important; flex-direction:row !important; align-items:baseline !important;
+ flex-wrap:nowrap !important; gap:9px !important; min-width:0;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card strong {
+ flex:0 0 auto; white-space:nowrap; font-size:15px !important; line-height:1.3 !important;
+ color:#21405f !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal strong {color:#078566 !important;}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber strong {color:#a67a15 !important;}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card span:not(.teacher-summary-card__dot) {
+ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11px !important; color:#8191a3 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner__actions {
+ gap:10px !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-status-button {
+ display:inline-flex !important; align-items:center; gap:6px; justify-content:center;
+ min-height:36px !important; padding:7px 17px !important; border-radius:11px !important;
+ font-size:12px !important; font-weight:700 !important; white-space:nowrap !important;
+ box-shadow:none !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-status-button--done {
+ background:#069a7e !important; border:1px solid #069a7e !important;
+ color:#fff !important; -webkit-text-fill-color:#fff !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-status-button--absence {
+ background:#fff !important; border:1px solid #efc459 !important;
+ color:#956914 !important; -webkit-text-fill-color:#956914 !important;
+}
+.reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-status-button--cancel {
+ background:#fff !important; border:1px solid #dce4ec !important;
+ color:#3b5067 !important; -webkit-text-fill-color:#3b5067 !important;
+}
+@media(max-width:800px) {
+ .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-grid {
+  grid-template-columns:1fr !important; padding:12px !important;
+ }
+ .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner {
+  flex-wrap:wrap;
+ }
+}
+
+
+/* Fine tuning by area; shared tokens, not blanket button overrides. */
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status {
+ display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge {
+ display:inline-flex; align-items:center; max-width:100%; min-height:28px;
+ border:1px solid #dce5ec; border-radius:999px; padding:6px 11px;
+ font-size:11px !important; font-weight:650 !important; line-height:1.3;
+ color:#365b79 !important; background:#edf3f8 !important;
+ opacity:1 !important; -webkit-text-fill-color:currentColor !important;
+ white-space:normal;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-success {
+ background:#e8f8f0 !important; color:#087a58 !important; border-color:#c7e9d7 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-danger {
+ background:#fff0f2 !important; color:#ab4055 !important; border-color:#f0ced5 !important;
+}
+/* Staff: the two actions occupy the right side of the SAME payroll card. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar { position:relative; align-items:center !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar .admin-staff-toolbar--payroll {
+ order:3; margin:0 !important; padding:0 !important; border:0 !important;
+ background:transparent !important; flex:0 1 auto; box-shadow:none !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar .admin-staff-toolbar--payroll button {
+ min-height:36px; padding:8px 12px !important;
+}
+/* Row: one horizontal action line; status tags use the same light palette as student list. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-row-actions {
+ display:flex !important; flex-wrap:nowrap !important; align-items:center; gap:7px !important;
+ white-space:nowrap;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-row-actions button {
+ min-height:34px !important; padding:7px 11px !important; white-space:nowrap; font-size:11px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-payment-status {
+ display:inline-flex; padding:6px 10px !important; min-width:unset;
+ border:1px solid #dce5ed !important; border-radius:999px; font-size:11px !important;
+ line-height:1.2; font-weight:700 !important; color:#365b79 !important;
+ background:#edf3f8 !important; opacity:1 !important; -webkit-text-fill-color:currentColor !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-staff-payment-status.badge-success {
+ color:#087a58 !important; background:#e8f8f0 !important; border-color:#c7e9d7 !important;
+}
+/* Teacher notes: approved blue, including disabled state, with readable white text. */
+.reminder-app-scope .teacher-portal-shell .teacher-notes-submit {
+ background:#1f4268 !important; color:#fff !important; border-color:#1f4268 !important;
+ -webkit-text-fill-color:#fff !important; opacity:1 !important;
+}
+.reminder-app-scope .teacher-portal-shell .teacher-notes-submit:disabled {
+ background:#1f4268 !important; color:#fff !important; opacity:.76 !important;
+ cursor:not-allowed;
+}
+/* Bank heading and KPI titles in the approved two-tone brand, without changing the other headings. */
+.reminder-app-scope .admin-portal-shell .admin-bank-heading-icon {
+ color:#1f4268 !important; stroke:#1f4268 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label,
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-label {
+ color:#c28b31 !important; -webkit-text-fill-color:#c28b31 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-summary-grid svg {
+ color:#1f4268 !important; stroke:#1f4268 !important;
+}
+
+
+/* Intentional color scope: GOLD only for the four global admin KPI names.
+   Bank reconciliation KPI headings keep their original grey-blue. */
+.reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-header span {
+ color:#c28b31 !important; -webkit-text-fill-color:#c28b31 !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-bank-metrics .section-label {
+ color:#8192a2 !important; -webkit-text-fill-color:#8192a2 !important;
+}
+/* Payroll actions all in one line on desktop; wrap only at narrower widths. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar {
+ display:block !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-toolbar > div:first-child {
+ margin-bottom:13px;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls {
+ display:flex !important; flex-flow:row nowrap !important;
+ align-items:center !important; justify-content:space-between !important;
+ width:100%; gap:12px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls > div:first-child {
+ flex:0 1 auto; min-width:0;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls select {
+ max-width:min(450px, 28vw) !important; min-width:230px;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls .admin-staff-toolbar--payroll {
+ display:flex !important; flex:0 0 auto !important; order:initial !important;
+ flex-wrap:nowrap !important; white-space:nowrap; gap:9px !important;
+}
+@media(max-width:1280px) {
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls { flex-wrap:wrap !important; justify-content:flex-start !important; }
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls select {max-width:100% !important;}
+}
+
+
+/* Compact Staff payroll controls, consistent with DM Sans and the reminder buttons. */
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls { gap:8px !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls > div { gap:8px !important; }
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls select {
+ max-width: min(345px, 26vw) !important; min-width: 200px !important; font-size:12px !important;
+ min-height:35px !important; padding:5px 9px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls button,
+.reminder-app-scope .admin-portal-shell .admin-staff-toolbar--payroll button {
+ min-height:35px !important; padding:7px 10px !important;
+ font-size:11px !important; font-weight:650 !important; line-height:1.2 !important;
+ white-space:nowrap !important; flex-shrink:0;
+ font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-controls .admin-staff-toolbar--payroll {
+ gap:7px !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-amount-button {
+ display:inline-flex !important; flex-direction:row !important; align-items:center !important;
+ min-height:33px !important; padding:5px 10px !important;
+ border-radius:9px !important; background:#f2faff !important;
+ border:1px solid #b7e7fb !important; box-shadow:none !important;
+ font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-portal-shell .admin-payroll-amount-button > span {
+ font-family:'DM Sans',sans-serif !important; font-size:13px !important;
+ font-weight:700 !important; line-height:1.2 !important;
+ color:#1f4268 !important; -webkit-text-fill-color:#1f4268 !important; white-space:nowrap;
+}
+.reminder-app-scope .teacher-render-error {
+ padding:18px; border:1px solid #edd5aa; border-radius:14px;
+ background:#fff9ee; color:#234561; font-size:13px;
+}
+.reminder-app-scope .teacher-render-error button {
+ background:#1f4268; color:#fff; border:0; border-radius:8px;
+ font-size:12px; padding:8px 12px;
+}
+@media(max-width:1180px) {
+ .reminder-app-scope .admin-portal-shell .admin-payroll-controls select { max-width:100% !important; }
+}
+
+
+/* Admin calendar: remove only the duplicate lower availability action.
+   Keep the upper Aulas / Disponibilidade switcher fully functional. */
+.reminder-app-scope .admin-portal-shell .calendar-availability-button {
+  display: none !important;
 }

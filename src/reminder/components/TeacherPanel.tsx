@@ -7,6 +7,7 @@ import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, gr
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
+import TeacherRenderGuard from './TeacherRenderGuard'
 import TeacherReferenceProfileView from './TeacherReferenceProfileView'
 import TeacherLiveFinanceView from './TeacherLiveFinanceView'
 import TeacherLiveProfileView, { type TeacherProfileDetails } from './TeacherLiveProfileView'
@@ -315,7 +316,12 @@ export default function TeacherPanel({
     const todaysLessons = teacherLessons
       .filter((l) => {
         if (!l.starts_at) return false
-        const lessonDate = formatter.format(new Date(l.starts_at))
+        const startDate = new Date(l.starts_at)
+        if (!Number.isFinite(startDate.getTime())) {
+          console.warn('[reminder:teacher] skipping lesson with invalid starts_at', { lessonId: l.id, starts_at: l.starts_at })
+          return false
+        }
+        const lessonDate = formatter.format(startDate)
         return lessonDate === todayZoned
       })
     return groupLessonsIntoTeacherSessions(todaysLessons)
@@ -625,6 +631,7 @@ export default function TeacherPanel({
     try {
       const targetLessons = Array.isArray(target) ? target : [target]
       const lessonIds = targetLessons.map((l) => l.id)
+      console.info('[reminder:teacher:status] requested', { lessonIds, newStatus, visualPreviewMode })
 
       if (newStatus === 'happened') {
         setAttendanceLessons(targetLessons)
@@ -637,6 +644,7 @@ export default function TeacherPanel({
         for (const lesson of targetLessons) {
           await updateTeacherSingleLesson({ lesson_id: lesson.id, teacher_lesson_status: newStatus })
         }
+        console.info('[reminder:teacher:status] preview updated', { lessonIds, newStatus })
         toast.success(t(language, 'lesson_status_updated'))
         return
       }
@@ -672,6 +680,7 @@ export default function TeacherPanel({
       }
       toast.success(t(language, 'lesson_status_updated'))
     } catch (err: any) {
+      console.error('[reminder:teacher:status] failed', { newStatus, message: err instanceof Error ? err.message : String(err) }, err)
       toast.error(err.message || t(language, 'error_updating_status'))
     }
   }
@@ -887,6 +896,7 @@ export default function TeacherPanel({
         </div>}
 
         {teacherTab === 'calendar' && hideShellHeader && (
+          <TeacherRenderGuard>
           <TeacherAgendaView
             profile={profile}
             lessons={lessons}
@@ -906,7 +916,8 @@ export default function TeacherPanel({
             onCreateAvailability={onCreateAvailability}
             onDeleteAvailability={onDeleteAvailability}
           />
-        )}
+
+          </TeacherRenderGuard>        )}
 
         {teacherTab === 'calendar' && !hideShellHeader && (
           <div className="space-y-6 animate-fade-in">
@@ -1407,20 +1418,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                                <div className="teacher-recurring-field">
+                  <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
-                    Aula recorrente (semanal)
+                    <span>Aula recorrente</span>
+                    <span className="teacher-recurring-field__hint">Semanal</span>
                   </label>
-                  {newRecurring && true && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                      Semanas
-                      <input type="number" min={2} max={52} value={newRecurrenceWeeks} onChange={(event) => setNewRecurrenceWeeks(Number(event.target.value))}
-                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                  {newRecurring && (
+                    <label className="teacher-recurring-field__weeks">
+                      Por <input aria-label="Quantidade de semanas" type="number" min={2} max={52} value={newRecurrenceWeeks} onChange={(event) => setNewRecurrenceWeeks(Number(event.target.value))} /> semanas
                     </label>
                   )}
-                  {newRecurring && <small style={{ color: '#64748b' }}>Uma aula por semana, incluindo a primeira.</small>}
+                  
                 </div>
+
                 <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
                     type="button"
@@ -1644,20 +1655,20 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                <div className="teacher-recurring-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', maxWidth: '100%' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 600 }}>
+                                <div className="teacher-recurring-field">
+                  <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={editRecurring} onChange={(event) => setEditRecurring(event.target.checked)} />
-                    Aula recorrente (semanal)
+                    <span>Aula recorrente</span>
+                    <span className="teacher-recurring-field__hint">Semanal</span>
                   </label>
                   {editRecurring && !editingLesson?.recurrence_series_id && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                      Semanas
-                      <input type="number" min={2} max={52} value={editRecurrenceWeeks} onChange={(event) => setEditRecurrenceWeeks(Number(event.target.value))}
-                        style={{ width: '72px', padding: '6px', color: '#334155', background: '#fff' }} />
+                    <label className="teacher-recurring-field__weeks">
+                      Por <input aria-label="Quantidade de semanas" type="number" min={2} max={52} value={editRecurrenceWeeks} onChange={(event) => setEditRecurrenceWeeks(Number(event.target.value))} /> semanas
                     </label>
                   )}
-                  {editingLesson?.recurrence_series_id && editRecurring && <small style={{ color: '#64748b' }}>As mudanças serão aplicadas a todas as aulas desta série.</small>}
+                  {editingLesson?.recurrence_series_id && editRecurring && <span className="teacher-recurring-field__note">Aplicar a toda a série</span>}
                 </div>
+
                 <div
                   className="button-row teacher-preview-dialog-actions"
                   style={{

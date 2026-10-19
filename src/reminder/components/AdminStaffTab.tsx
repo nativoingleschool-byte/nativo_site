@@ -1,5 +1,6 @@
 import { FormEvent, useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { Plus, UsersRound, ClipboardPenLine } from 'lucide-react'
 import { Lesson, Profile, UserFormState, TeacherNote, TeacherInvoice } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { badgeClass, groupLessonsIntoTeacherSessions, TeacherLessonSession, formatShortDate, openFileFromDataOrUrl, downloadFileFromDataOrUrl } from '../lib/utils'
@@ -356,29 +357,7 @@ export default function AdminStaffTab({
 
   return (
     <>
-      {/* Top Action Buttons: Add Staff Member & Staff Member List */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <button
-          type="button"
-          className="primary-button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, background: '#0284c7' }}
-          onClick={() => setShowAddStaffModal(true)}
-        >
-          <span>➕</span>
-          <span>{t(language, 'add_staff_title')}</span>
-        </button>
-
-        <button
-          type="button"
-          className="secondary-button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600, borderColor: '#38bdf8', color: '#38bdf8' }}
-          onClick={() => setShowStaffListModal(true)}
-        >
-          <span>👥</span>
-          <span>{t(language, 'staff_list_title')}</span>
-        </button>
-      </div>
-
+      {/* Staff action toolbar is positioned beside payroll below. */}
       {/* Teacher Notes & Justifications Box */}
       <div
         className="form-card mb-6 animate-slide-up"
@@ -393,7 +372,7 @@ export default function AdminStaffTab({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>📝</span>
+            <ClipboardPenLine size={20} color="#1f4268" aria-hidden="true" />
             <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
               {t(language, 'teacher_notes_admin_title')}
             </h3>
@@ -420,7 +399,7 @@ export default function AdminStaffTab({
         </p>
 
         {(!teacherNotesList || teacherNotesList.length === 0) ? (
-          <div
+          <div className="admin-staff-empty-notes"
             style={{
               padding: '1.5rem',
               borderRadius: '0.75rem',
@@ -431,7 +410,7 @@ export default function AdminStaffTab({
               fontSize: '0.88rem',
             }}
           >
-            ✓ {t(language, 'no_teacher_notes')}
+            {t(language, 'no_teacher_notes')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -759,7 +738,7 @@ export default function AdminStaffTab({
               </button>
             </div>
 
-            <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '0.5rem' }}>
+            <div className="table-responsive admin-shared-table">
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.8rem' }}>
@@ -1126,7 +1105,8 @@ export default function AdminStaffTab({
       )}
 
       {/* Payroll Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
@@ -1134,7 +1114,7 @@ export default function AdminStaffTab({
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="admin-payroll-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Filtro de Mês:</span>
             <select
@@ -1175,10 +1155,24 @@ export default function AdminStaffTab({
               {t(language, 'pending_all')}
             </button>
           </div>
-        </div>
+        <div className="admin-staff-toolbar admin-staff-toolbar--payroll">
+        <button type="button" className="primary-button admin-staff-toolbar__primary"
+          onClick={() => setShowAddStaffModal(true)}>
+          <Plus size={16} aria-hidden="true" />
+          <span>Novo Membro da Equipe</span>
+        </button>
+        <button type="button" className="secondary-button admin-staff-toolbar__secondary"
+          onClick={() => setShowStaffListModal(true)}>
+          <UsersRound size={16} aria-hidden="true" />
+          <span>{t(language, 'staff_list_title')}</span>
+        </button>
       </div>
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+        </div>
+
+      </div>
+
+      <div className="table-responsive admin-shared-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
@@ -1378,26 +1372,22 @@ export default function AdminStaffTab({
                         gap: '0.15rem',
                         transition: 'all 0.15s ease',
                       }}
-                      title="Clique para abrir o pop-up com as aulas deste mês, chave PIX e botão de pagar"
+                      className="admin-payroll-amount-button" title="Abrir detalhes do pagamento"
                     >
                       <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? '#10b981' : '#38bdf8' }}>
                         {currency} {totalActiveAmount.toFixed(2)}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <span>🔍 Ver aulas</span>
-                        {isMonthPaid && <span style={{ color: '#10b981' }}>· Pago ✓</span>}
                       </span>
                     </button>
                   </td>
 
                   <td style={{ padding: '1rem' }}>
-                    <span className={badgeClass(isMonthPaid ? 'confirmed' : 'pending')}>
-                      {isMonthPaid ? 'Pago ✓' : 'Pendente'}
+                    <span className={`admin-staff-payment-status ${badgeClass(isMonthPaid ? 'confirmed' : 'pending')}`}>
+                      {isMonthPaid ? 'Pago' : 'Pendente'}
                     </span>
                   </td>
 
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="admin-payroll-row-actions" style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'nowrap', alignItems: 'center' }}>
                       {!isMonthPaid ? (
                         <button
                           type="button"
@@ -1406,7 +1396,7 @@ export default function AdminStaffTab({
                           onClick={() => void markTeacherMonthPaid(teacher.id, teacherActiveMonth, true)}
                           title={`Marcar o mês de ${monthLabel} como pago e avançar para o próximo mês`}
                         >
-                          ✓ Pagar Mês
+                          Pagar Mês
                         </button>
                       ) : (
                         <button
@@ -1430,7 +1420,7 @@ export default function AdminStaffTab({
                         }}
                         title="Ver registro detalhado de aulas e chave PIX"
                       >
-                        🔍 Detalhes
+                        Detalhes
                       </button>
                     </div>
                   </td>

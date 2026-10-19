@@ -264,7 +264,7 @@ export default function TeacherLiveFinanceView({
         <form onSubmit={(event) => void submitNote(event)}>
           <label htmlFor="teacher-note-draft">{t(language, 'notes_placeholder')}</label>
           <textarea id="teacher-note-draft" value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} />
-          <button type="submit" className="reference-primary-button" disabled={isSendingNotes || !notesDraft.trim() || !onCreateNote}>{isSendingNotes ? t(language, 'saving_label') : t(language, 'send_notes_btn')}</button>
+          <button type="submit" className="reference-primary-button teacher-notes-submit" disabled={isSendingNotes || !notesDraft.trim() || !onCreateNote}>{isSendingNotes ? t(language, 'saving_label') : t(language, 'send_notes_btn')}</button>
         </form>
         <div className="reference-teacher-notes-history">
           <h3>{t(language, 'notes_history')} ({notes.length})</h3>

@@ -137,7 +137,7 @@ export default function TeacherShell({
             <img src="/hero/logo-white.png" alt="" />
           </div>
           <div className="teacher-sidebar__brand-copy">
-            <strong>NATIVO ENGLISH</strong>
+            <strong>NATIVO <em className="teacher-brand-english">ENGLISH</em></strong>
             <span>Portal do Professor</span>
           </div>
         </div>
