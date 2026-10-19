@@ -307,7 +307,7 @@ export default function AdminPaymentsTab({
 
   return (
     <>
-      <div className="form-card mb-6 animate-slide-up" style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '1.5rem' }}>
+      <div className="form-card mb-6 animate-slide-up admin-shared-filter-card">
         <div className="form-grid" style={{ display: 'flex', gap: '1rem' }}>
           <input
             placeholder={t(language, 'search_student_placeholder')}
@@ -374,7 +374,7 @@ export default function AdminPaymentsTab({
         </div>
       )}
 
-      <div className="table-responsive" style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '1.5rem', border: '1px solid #1e293b', padding: '1rem' }}>
+      <div className="table-responsive admin-shared-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
