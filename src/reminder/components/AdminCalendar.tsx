@@ -193,6 +193,9 @@ export default function AdminCalendar({
   const [saving, setSaving] = useState(false)
   const [repeatWeekly, setRepeatWeekly] = useState(false)
   const [repeatCount, setRepeatCount] = useState(4)
+  const [studentSelectorOpen, setStudentSelectorOpen] = useState(false)
+  const [studentQuery, setStudentQuery] = useState('')
+  const studentSelectorRef = useRef<HTMLDivElement>(null)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(students[0] ? [students[0].id] : [])
   const [initialDraftState, setInitialDraftState] = useState<string>('')
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
@@ -209,6 +212,15 @@ export default function AdminCalendar({
     teacher_id: currentTeacherId ?? teachers[0]?.id ?? '',
     class_name: '',
   })
+
+  useEffect(() => {
+    if (!studentSelectorOpen) return
+    const onOutside = (event: PointerEvent) => {
+      if (studentSelectorRef.current && !studentSelectorRef.current.contains(event.target as Node)) setStudentSelectorOpen(false)
+    }
+    document.addEventListener('pointerdown', onOutside)
+    return () => document.removeEventListener('pointerdown', onOutside)
+  }, [studentSelectorOpen])
 
   const gridRef = useRef<HTMLDivElement>(null)
   const [activeMobileRange, setActiveMobileRange] = useState<number>(0)
@@ -1109,6 +1121,7 @@ export default function AdminCalendar({
                 onChange={(val) => setDraft({ ...draft, starts_at: val })}
                 language={language}
                 className="admin-lesson-date-picker"
+                hideQuickPresets
                 label="Data e horário de início"
                 required
               />
@@ -1150,20 +1163,21 @@ export default function AdminCalendar({
 
               <div className="calendar-form-section">
                 <h3>Alunos participantes ({selectedStudentIds.length})</h3>
-                <select
-                  value=""
-                  onChange={(event) => {
-                    addStudent(event.target.value)
-                    event.target.value = ''
-                  }}
-                >
-                  <option value="">{t(language, 'select_student_add')}</option>
-                  {sortedStudents.map((student) => (
-                    <option key={student.id} value={student.id} disabled={selectedStudentIds.includes(student.id)}>
-                      {student.full_name} {selectedStudentIds.includes(student.id) ? t(language, 'added_label') : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="admin-lesson-student-selector" ref={studentSelectorRef}>
+                  <button type="button" className="admin-lesson-student-trigger" aria-expanded={studentSelectorOpen} onClick={() => setStudentSelectorOpen((open) => !open)}>
+                    {selectedStudentIds.length ? `${selectedStudentIds.length} aluno(s) selecionado(s)` : 'Selecionar alunos cadastrados'} <span aria-hidden="true">⌄</span>
+                  </button>
+                  {studentSelectorOpen && <div className="admin-lesson-student-menu">
+                    <input aria-label="Buscar aluno cadastrado" placeholder="Buscar aluno..." value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} />
+                    <div className="admin-lesson-student-options">
+                      {sortedStudents.filter(student => (student.full_name || '').toLocaleLowerCase('pt-BR').includes(studentQuery.toLocaleLowerCase('pt-BR'))).map(student => (
+                        <button type="button" key={student.id} className="admin-lesson-student-option" disabled={selectedStudentIds.includes(student.id)} onClick={() => { addStudent(student.id); setStudentQuery('') }}>
+                          <span>{student.full_name}</span><span>{selectedStudentIds.includes(student.id) ? 'Adicionado' : '+'}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>}
+                </div>
 
                 {selectedStudentIds.length > 0 && (
                   <div className="selected-students-list">
@@ -1340,7 +1354,7 @@ export default function AdminCalendar({
                     disabled={saving}
                     onClick={handleDeleteAppointment}
                   >
-                    🗑️ {t(language, 'delete_class_btn') || 'Excluir Aula'}
+                    {t(language, 'delete_class_btn') || 'Excluir Aula'}
                   </button>
                 )}
                 <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
