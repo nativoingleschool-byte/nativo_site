@@ -197,6 +197,7 @@ export default function AdminCalendar({
   const [initialDraftState, setInitialDraftState] = useState<string>('')
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const calendarCardRef = useRef<HTMLDivElement>(null)
+  const modalPointerStartedOutside = useRef(false)
   const [createStudent, setCreateStudent] = useState(false)
   const [createTeacher, setCreateTeacher] = useState(false)
   const [studentDraft, setStudentDraft] = useState<NewUserDraft>({ full_name: '', email: '', password: '', class_name: '' })
@@ -1072,47 +1073,45 @@ export default function AdminCalendar({
       {/* CLASSES CREATE / EDIT MODAL */}
       {showModal && createPortal(
         <div
-          className="reminder-app-scope modal-overlay"
+          className="reminder-app-scope modal-overlay admin-lesson-modal-backdrop"
           role="dialog"
           aria-modal="true"
+          onPointerDown={(event) => { modalPointerStartedOutside.current = event.target === event.currentTarget }}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
           onClick={(e) => {
-            if (calendarCardRef.current && !calendarCardRef.current.contains(e.target as Node)) {
-              const currentSt = JSON.stringify({ draft, selectedStudentIds })
-              const isDirty = initialDraftState && currentSt !== initialDraftState
-              if (isDirty) {
-                setShowUnsavedWarning(true)
-                const btn = calendarCardRef.current.querySelector('.button-row') || calendarCardRef.current.querySelector('.primary-button')
-                btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-              } else {
-                closeModal()
-              }
-            }
+            const validBackdropClick = modalPointerStartedOutside.current && e.target === e.currentTarget
+            modalPointerStartedOutside.current = false
+            if (!validBackdropClick) return
+            const currentSt = JSON.stringify({ draft, selectedStudentIds })
+            if (initialDraftState && currentSt !== initialDraftState) setShowUnsavedWarning(true)
+            else closeModal()
           }}
         >
-          <div ref={calendarCardRef} className="modal-card" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+          <div ref={calendarCardRef} className="modal-card admin-lesson-editor" style={{ maxHeight: 'min(90dvh, 790px)', overflowY: 'auto' }}>
             <div className="panel-header">
               <div>
                 <p className="section-label">{editingGroup ? t(language, 'edit_class') : t(language, 'new_class')}</p>
-                <h2>{editingGroup ? t(language, 'update_class') : t(language, 'create_class')}</h2>
+                <h2>{editingGroup ? 'Atualizar aula' : 'Adicionar Nova Aula'}</h2>
               </div>
             </div>
 
             <form className="form-card" onSubmit={submitCreate}>
+              <label className="admin-lesson-field-label">Título do Encontro / Módulo</label>
               <input required placeholder={t(language, 'subject_placeholder')} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
 
               <DateTimePicker
                 value={draft.starts_at}
                 onChange={(val) => setDraft({ ...draft, starts_at: val })}
                 language={language}
-                label={t(language, 'start_time_label') || 'Data e Horário de Início'}
+                className="admin-lesson-date-picker"
+                label="Data e horário de início"
                 required
               />
 
               <div className="form-grid">
                 <div>
                   <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
-                    {t(language, 'duration_minutes') || 'Duração (minutos)'}
+                    Duração da aula
                   </label>
                   <select
                     value={draft.duration_minutes}
@@ -1145,7 +1144,7 @@ export default function AdminCalendar({
               )}
 
               <div className="calendar-form-section">
-                <h3>{t(language, 'students_participating').replace('{count}', String(selectedStudentIds.length))}</h3>
+                <h3>Alunos participantes ({selectedStudentIds.length})</h3>
                 <select
                   value=""
                   onChange={(event) => {
@@ -1172,8 +1171,8 @@ export default function AdminCalendar({
                         const lesson = lessons.find(
                           (item) => editingGroup.lessonIds.includes(item.id) && item.student_id === studentId,
                         )
-                        if (lesson?.student_attendance === 'attend') attendanceStatus = 'attend'
-                        else if (lesson?.student_attendance === 'cancel') attendanceStatus = 'cancel'
+                        if (lesson?.student_attendance === 'attend' || lesson?.student_attendance === 'present') attendanceStatus = 'attend'
+                        else if (lesson?.student_attendance === 'cancel' || lesson?.student_attendance === 'absent' || lesson?.student_lesson_status === 'not_happened') attendanceStatus = 'cancel'
                       }
 
                       const dotColorClass =
@@ -1185,15 +1184,16 @@ export default function AdminCalendar({
 
                       const statusTitle =
                         attendanceStatus === 'attend'
-                          ? t(language, 'confirmed_badge')
+                          ? 'Compareceu'
                           : attendanceStatus === 'cancel'
-                          ? t(language, 'status_not_happened')
+                          ? 'Faltou'
                           : t(language, 'pending')
 
                       return (
                         <div key={studentId} className="selected-student-chip">
                           <span className={`calendar-status-dot ${dotColorClass}`} title={statusTitle} />
                           <span className="selected-student-name">{studentName}</span>
+                          {editingGroup && <span className={`admin-attendance-label admin-attendance-label--${attendanceStatus}`}>{attendanceStatus === 'attend' ? 'Compareceu' : attendanceStatus === 'cancel' ? 'Faltou' : 'Não informado'}</span>}
                           <button
                             type="button"
                             className="chip-remove-button"
@@ -1209,6 +1209,8 @@ export default function AdminCalendar({
                   </div>
                 )}
               </div>
+
+              {editingGroup && <p className="admin-attendance-note">Presença e falta são exibidas somente quando registradas para cada aluno. O status geral da aula não substitui o registro individual.</p>}
 
               {allowCreateUsers && (
                 <div className="calendar-form-section">
