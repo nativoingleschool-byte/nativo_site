@@ -13,6 +13,8 @@ import TeacherLiveFinanceView from './TeacherLiveFinanceView'
 import TeacherLiveProfileView, { type TeacherProfileDetails } from './TeacherLiveProfileView'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
+import PeopleSelect from './PeopleSelect'
+import LessonDateTimeFields from './LessonDateTimeFields'
 import { trackEvent } from '../../lib/telemetry'
 import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 
@@ -1284,64 +1286,7 @@ export default function TeacherPanel({
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
 
-                  <div className="teacher-student-dropdown">
-                    <button
-                      type="button"
-                      className="teacher-student-dropdown__trigger"
-                      onClick={() => {
-                        if (newLessonStudentsOpen) {
-                          setNewLessonStudentsOpen(false)
-                          setStudentSearch('')
-                        } else {
-                          setStudentSearch('')
-                          setNewLessonStudentsOpen(true)
-                        }
-                      }}
-                      aria-expanded={newLessonStudentsOpen}
-                    >
-                      <span>
-                        {selectedStudents.length === 0
-                          ? 'Selecionar alunos da turma'
-                          : `${selectedStudents.length} aluno${selectedStudents.length === 1 ? '' : 's'} selecionado${selectedStudents.length === 1 ? '' : 's'}`}
-                      </span>
-                      <ChevronDown size={15} />
-                    </button>
-                    {newLessonStudentsOpen && <div className="teacher-student-dropdown__menu" role="group" aria-label="Selecionar alunos">
-                      <label className="teacher-student-dropdown__search">
-                        <Search size={14} aria-hidden="true" />
-                        <input
-                          type="search"
-                          value={studentSearch}
-                          onChange={(event) => setStudentSearch(event.target.value)}
-                          placeholder="Buscar aluno..."
-                          aria-label="Buscar aluno"
-                        />
-                      </label>
-                      {selectedClassName && <span className="teacher-student-dropdown__class">Turma: {selectedClassName}</span>}
-                      <div className="teacher-student-dropdown__results">
-                        {filteredStudents.length > 0 ? filteredStudents.map((student) => (
-                          <label key={student.id}>
-                            <input
-                              type="checkbox"
-                              checked={newLessonStudentIds.includes(student.id)}
-                              onChange={() => {
-                                setNewLessonStudentIds((current) => {
-                                  const next = current.includes(student.id)
-                                    ? current.filter((id) => id !== student.id)
-                                    : [...current, student.id]
-                                  setNewLessonStudentId(next[0] || '')
-                                  return next
-                                })
-                                setNewLessonStudentName('')
-                              }}
-                            />
-                            <span>{student.full_name}</span>
-                            {student.class_name && <small>{student.class_name}</small>}
-                          </label>
-                        )) : <p className="teacher-student-dropdown__empty">{classStudents.length ? 'Nenhum aluno encontrado.' : 'Nenhum aluno cadastrado nesta turma.'}</p>}
-                      </div>
-                    </div>}
-                  </div>
+                  <PeopleSelect multiple options={classStudents} value={newLessonStudentIds} onChange={(ids) => { setNewLessonStudentIds(ids); setNewLessonStudentId(ids[0] || ''); setNewLessonStudentName('') }} placeholder="Selecionar alunos da turma" />
 
                   {visualPreviewMode && sortedStudents.length === 0 && (
                     <p className="teacher-student-field__empty">Nenhum aluno cadastrado para selecionar.</p>
@@ -1359,12 +1304,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                </div>
+                <LessonDateTimeFields value={newLessonStartsAt} onChange={setNewLessonStartsAt} language={language} />
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="teacher-modal-field-label">Link da aula <span>(opcional)</span></label>
@@ -1610,12 +1550,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                </div>
+                <LessonDateTimeFields value={editLessonStartsAt} onChange={setEditLessonStartsAt} language={language} />
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (opcional)</label>
