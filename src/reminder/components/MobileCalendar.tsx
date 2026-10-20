@@ -155,7 +155,7 @@ export default function MobileCalendar({
           })}
         </div>
       </div>}
-      {expandedDay && <div className="teacher-calendar-day-detail-backdrop" onClick={() => setExpandedDay(null)}>
+      {expandedDay && createPortal(<div className="teacher-calendar-day-detail-backdrop" onClick={() => setExpandedDay(null)}>
         <section className="teacher-calendar-day-detail" role="dialog" aria-modal="true" aria-label="Todas as aulas do dia" onClick={(e) => e.stopPropagation()}>
           <header><strong>Aulas de {format(new Date(expandedDay + 'T12:00:00'), 'dd/MM/yyyy')}</strong><button type="button" onClick={() => setExpandedDay(null)} aria-label="Fechar">×</button></header>
           <div className="teacher-calendar-day-detail-list">
