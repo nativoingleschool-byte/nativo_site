@@ -1172,7 +1172,7 @@ export default function AdminCalendar({
                           (item) => editingGroup.lessonIds.includes(item.id) && item.student_id === studentId,
                         )
                         if (lesson?.student_attendance === 'attend') attendanceStatus = 'attend'
-                        else if (lesson?.student_attendance === 'cancel' || lesson?.student_lesson_status === 'not_happened') attendanceStatus = 'cancel'
+                        else if (lesson?.student_attendance === 'cancel') attendanceStatus = 'cancel'
                       }
 
                       const dotColorClass =
@@ -1193,7 +1193,7 @@ export default function AdminCalendar({
                         <div key={studentId} className="selected-student-chip">
                           <span className={`calendar-status-dot ${dotColorClass}`} title={statusTitle} />
                           <span className="selected-student-name">{studentName}</span>
-                          {editingGroup && <span className={`admin-attendance-label admin-attendance-label--${attendanceStatus}`}>{attendanceStatus === 'attend' ? 'Compareceu' : attendanceStatus === 'cancel' ? 'Faltou' : 'Não informado'}</span>}
+                          {editingGroup && <span className={`admin-attendance-label admin-attendance-label--${attendanceStatus}`}>{attendanceStatus === 'attend' ? 'Confirmou presença' : attendanceStatus === 'cancel' ? 'Informou ausência' : 'Não informado'}</span>}
                           <button
                             type="button"
                             className="chip-remove-button"
@@ -1210,7 +1210,7 @@ export default function AdminCalendar({
                 )}
               </div>
 
-              {editingGroup && <p className="admin-attendance-note">Presença e falta são exibidas somente quando registradas para cada aluno. O status geral da aula não substitui o registro individual.</p>}
+              {editingGroup && <p className="admin-attendance-note">Estes indicadores mostram a confirmação de presença feita pelo aluno, não comprovam o comparecimento efetivo. Para identificar quem compareceu ou faltou de fato, será necessário um registro de chamada por aluno.</p>}
 
               {allowCreateUsers && (
                 <div className="calendar-form-section">
