@@ -14,9 +14,8 @@ export default function LessonDateTimeFields({ value, onChange, language = 'pt' 
    document.addEventListener('pointerdown',close)
    return () => document.removeEventListener('pointerdown',close)
  },[open])
- const times = Array.from({length:48},(_,i) => `${String(Math.floor(i/2)).padStart(2,'0')}:${i%2?'30':'00'}`)
- if (!times.includes(time)) times.push(time)
- times.sort()
+ const [hour, minute] = time.split(':')
+ const updateTime = (nextHour: string, nextMinute: string) => onChange(`${date}T${nextHour}:${nextMinute}`)
  return <div className="reminder-shared-datetime">
    <div className="reminder-shared-datetime__date">
      <label>Data</label>
@@ -24,11 +23,14 @@ export default function LessonDateTimeFields({ value, onChange, language = 'pt' 
    </div>
    <div className="reminder-shared-datetime__time" ref={root}>
      <label>Horário de início</label>
-     <button type="button" className="reminder-time-trigger" aria-expanded={open} onClick={() => setOpen(v=>!v)}>
-        <span>{time}</span><Clock3 size={17} aria-hidden="true"/><ChevronDown size={15} aria-hidden="true"/>
-     </button>
-     {open && <div className="reminder-time-menu" role="listbox" aria-label="Selecionar horário">
-       {times.map(t => <button type="button" role="option" aria-selected={t===time} key={t} className={t===time?'is-selected':''} onClick={() => { onChange(`${date}T${t}`);setOpen(false) }}>{t}</button>)}
+     <div className="reminder-time-entry">
+       <input type="time" aria-label="Digite o horário" value={time} onChange={e => onChange(`${date}T${e.target.value}`)} required />
+       <button type="button" aria-label="Escolher horas e minutos" aria-expanded={open} onClick={() => setOpen(v=>!v)}><Clock3 size={17}/><ChevronDown size={15}/></button>
+     </div>
+     {open && <div className="reminder-time-wheel" aria-label="Selecionar horas e minutos">
+       <div><strong>Horas</strong><div className="reminder-time-wheel__column" role="listbox" aria-label="Horas">{Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><button type="button" key={h} className={h===hour?'is-selected':''} onClick={()=>updateTime(h,minute)}>{h}</button>)}</div></div>
+       <div><strong>Minutos</strong><div className="reminder-time-wheel__column" role="listbox" aria-label="Minutos">{Array.from({length:60},(_,i)=>String(i).padStart(2,'0')).map(m=><button type="button" key={m} className={m===minute?'is-selected':''} onClick={()=>updateTime(hour,m)}>{m}</button>)}</div></div>
+       <button type="button" className="reminder-time-wheel__done" onClick={()=>setOpen(false)}>Concluído</button>
      </div>}
    </div>
  </div>
