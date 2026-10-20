@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import React, { useMemo, useState } from 'react'
 import { addMonths, addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
@@ -165,7 +166,7 @@ export default function MobileCalendar({
             </button>)}
           </div>
         </section>
-      </div>}
+      </div>, document.body)}
       {view === 'week' && <section className="teacher-calendar-list-view" aria-label="Visualização semanal">
         <div className="teacher-calendar-list-view__heading"><span>Semana de {weekLabel}</span><strong>{weekEvents.length} {weekEvents.length === 1 ? 'aula nesta semana' : 'aulas nesta semana'}</strong></div>
         {weekEvents.length === 0 ? <p className="teacher-calendar-empty">Nenhuma aula cadastrada nesta semana</p> : <div className="teacher-calendar-week-list">{weekEvents.map((event) => <button type="button" key={event.id} className="teacher-calendar-list-event" onClick={() => onSelectEvent(event)}><strong>{format(event.start, "EEEE, d 'de' MMMM", { locale })}</strong><span>{format(event.start, 'HH:mm')} • {event.title}</span></button>)}</div>}
