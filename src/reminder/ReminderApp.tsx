@@ -2359,29 +2359,34 @@ function ReminderAppInner() {
 
                 <div className="list-stack admin-tracked-lessons">
                   <h3>{t(language, 'tracked_outcomes')}</h3>
-                  {trackedLessons.map((lesson) => (
-                    <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                      <div>
-                        <h3>{lesson.subject}</h3>
-                        <p className="muted">
-                          {profilesById[lesson.student_id]?.full_name} {t(language, 'with_teacher_label')} {profilesById[lesson.teacher_id]?.full_name}
-                        </p>
-                        <p className="muted">{formatShortDateLabel(lesson.starts_at)}</p>
+                  {Array.from(trackedLessons.reduce((groups, lesson) => {
+                    const key = [lesson.teacher_id, lesson.starts_at, lesson.subject, lesson.class_name || ''].join('|')
+                    const group = groups.get(key) || []
+                    group.push(lesson)
+                    groups.set(key, group)
+                    return groups
+                  }, new Map<string, typeof trackedLessons>()).values()).map((group) => {
+                    const primary = group[0]
+                    const confirmed = group.filter(lesson => lesson.student_attendance === 'attend')
+                    const absent = group.filter(lesson => lesson.student_attendance === 'cancel')
+                    const pending = group.filter(lesson => !lesson.student_attendance)
+                    return <div key={primary.id} className="lesson-card admin-tracking-group-card">
+                      <div className="admin-tracking-group-heading">
+                        <div>
+                          <h3>{primary.class_name || primary.subject || 'Aula'}</h3>
+                          <p className="muted">{primary.subject} · {profilesById[primary.teacher_id]?.full_name || 'Professor'}</p>
+                          <p className="muted">{formatShortDateLabel(primary.starts_at)} · {group.length} {group.length === 1 ? 'aluno' : 'alunos'}</p>
+                        </div>
+                        <span className={badgeClass(primary.teacher_lesson_status || 'pending')}>{primary.teacher_lesson_status === 'happened' ? 'Realizada' : primary.teacher_lesson_status === 'student_no_show' ? 'Não compareceu' : 'Status pendente'}</span>
                       </div>
-                      <div className="status-stack admin-tracked-lesson-status">
-                        <span className={badgeClass(statusLabel(lesson))}>{statusLabel(lesson)}</span>
-                        <span className={badgeClass(lesson.student_attendance ? `student ${lesson.student_attendance}` : 'pending')}>
-                          {t(language, 'student_4h_status')} {lesson.student_attendance ?? t(language, 'pending')}
-                        </span>
-                        <span className={badgeClass(lesson.student_lesson_status ? `student ${lesson.student_lesson_status}` : 'pending')}>
-                          {t(language, 'student_start_status')} {lesson.student_lesson_status ?? t(language, 'pending')}
-                        </span>
-                        <span className={badgeClass(lesson.teacher_lesson_status ?? 'pending')}>
-                          {t(language, 'teacher_start_status')} {lesson.teacher_lesson_status ?? t(language, 'pending')}
-                        </span>
+                      <div className="admin-tracking-attendance">
+                        <section><strong>Confirmaram presença ({confirmed.length})</strong>{confirmed.length ? confirmed.map(lesson => <span key={lesson.id}>{profilesById[lesson.student_id]?.full_name || 'Aluno'}</span>) : <span className="muted">Nenhum registro</span>}</section>
+                        <section><strong>Informaram ausência ({absent.length})</strong>{absent.length ? absent.map(lesson => <span key={lesson.id}>{profilesById[lesson.student_id]?.full_name || 'Aluno'}</span>) : <span className="muted">Nenhum registro</span>}</section>
+                        <section><strong>Não informaram ({pending.length})</strong>{pending.length ? pending.map(lesson => <span key={lesson.id}>{profilesById[lesson.student_id]?.full_name || 'Aluno'}</span>) : <span className="muted">Nenhum registro</span>}</section>
                       </div>
                     </div>
-                  ))}
+                  })}
+                  <p className="muted admin-tracking-disclaimer">As informações acima representam confirmações antecipadas dos alunos. Uma chamada individual após a aula é necessária para registrar comparecimento ou falta efetiva.</p>
                 </div>
               </>
             )}
