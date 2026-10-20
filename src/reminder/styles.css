@@ -5043,3 +5043,133 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .admin-portal-shell .calendar-availability-button {
   display: none !important;
 }
+
+
+/* Admin lesson editor: same clean modal vocabulary as the teacher, scoped to the portaled editor. */
+.reminder-app-scope.modal-overlay.admin-lesson-modal-backdrop {
+  padding: 16px !important; background: rgba(23,39,58,.43) !important;
+  backdrop-filter: blur(5px) !important; overscroll-behavior:contain;
+}
+.reminder-app-scope .admin-lesson-editor {
+  box-sizing: border-box; display:block; width:min(680px,100%) !important; max-width:680px !important;
+  padding:26px 30px !important; background:#fff !important; color:#284763 !important;
+  border:1px solid #dfe7ee !important; border-radius:19px !important;
+  box-shadow:0 24px 55px rgba(31,56,76,.16) !important;
+  font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-lesson-editor .panel-header {
+  padding:0 0 16px !important; margin:0 0 20px !important;
+  border-bottom:1px solid #e7edf2 !important;
+}
+.reminder-app-scope .admin-lesson-editor .panel-header h2 {
+  font:700 22px/1.35 'DM Sans',sans-serif !important;
+  color:#1f4268 !important; margin:0 !important;
+}
+.reminder-app-scope .admin-lesson-editor .panel-header .section-label { display:none !important; }
+.reminder-app-scope .admin-lesson-editor form.form-card {
+  display:flex !important; flex-direction:column; gap:14px !important;
+  margin:0 !important; padding:0 !important; box-shadow:none !important;
+  background:#fff !important; border:0 !important;
+}
+.reminder-app-scope .admin-lesson-editor form input,
+.reminder-app-scope .admin-lesson-editor form select,
+.reminder-app-scope .admin-lesson-editor form textarea {
+  color:#334e69 !important; -webkit-text-fill-color:#334e69 !important;
+  background:#fff !important; border:1px solid #dce5ec !important;
+  border-radius:11px !important; font:500 13px 'DM Sans',sans-serif !important;
+  min-height:42px; max-width:100%; box-sizing:border-box;
+}
+.reminder-app-scope .admin-lesson-editor form input[type=checkbox] {
+  min-height:0 !important; width:16px; height:16px; accent-color:#1f4268;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-field-label,
+.reminder-app-scope .admin-lesson-editor form label,
+.reminder-app-scope .admin-lesson-editor .calendar-form-section h3 {
+  color:#51677d !important; font:700 12px/1.4 'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-lesson-editor .calendar-form-section {
+  padding:12px 0 0 !important; margin:0 !important;
+  border-top:1px solid #edf1f4 !important;
+}
+.reminder-app-scope .admin-lesson-editor .calendar-form-section h3 {font-size:15px !important;color:#1f4268 !important;}
+.reminder-app-scope .admin-lesson-editor .selected-students-list {
+  display:grid; gap:7px; margin-top:9px;
+}
+.reminder-app-scope .admin-lesson-editor .selected-student-chip {
+  display:flex !important; align-items:center; gap:9px; min-width:0; padding:9px 12px;
+  background:#f7f9fb !important; border:1px solid #e5ebf0 !important;
+  border-radius:10px !important; color:#324d66 !important;
+}
+.reminder-app-scope .admin-lesson-editor .selected-student-name {flex:1;min-width:0;overflow-wrap:anywhere;}
+.reminder-app-scope .admin-lesson-editor .admin-attendance-label {
+  flex:none; border-radius:999px; padding:4px 7px;
+  color:#51677d; background:#eaf0f5; font:650 10px 'DM Sans',sans-serif;
+}
+.reminder-app-scope .admin-lesson-editor .admin-attendance-label--attend {background:#e7f7ef;color:#087e60;}
+.reminder-app-scope .admin-lesson-editor .admin-attendance-label--cancel {background:#fff0f2;color:#ad4055;}
+.reminder-app-scope .admin-lesson-editor .admin-attendance-note {
+  margin:0; color:#8293a3; font:400 11px/1.5 'DM Sans',sans-serif;
+}
+.reminder-app-scope .admin-lesson-editor .button-row {
+  border-top:1px solid #e7edf2; padding-top:17px; margin-top:4px !important;
+}
+.reminder-app-scope .admin-lesson-editor .button-row .primary-button {
+  background:#1f4268 !important; border-color:#1f4268 !important; color:#fff !important;
+  -webkit-text-fill-color:#fff !important; box-shadow:none !important;
+}
+.reminder-app-scope .admin-lesson-editor .button-row button {
+  min-height:38px; border-radius:9px; font:700 12px 'DM Sans',sans-serif !important;
+}
+/* Existing DateTimePicker keeps its calendar logic; replace its dark Windows-style chrome. */
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker > div:nth-of-type(1) > button,
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker > div:nth-of-type(1) > div {
+  background:#fff !important; border:1px solid #dce5ec !important;
+  color:#324d66 !important; border-radius:10px !important; box-shadow:none !important;
+  min-height:46px;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker select {
+  color:#324d66 !important; background:#f7f9fb !important;
+  border:1px solid #dce5ec !important; font:600 13px 'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker > div:nth-of-type(1) > div > button {
+  background:#eaf5fa !important; color:#1f4268 !important;
+  border:1px solid #c8e0ec !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker > div:nth-of-type(1) > div > button span {
+  color:#1f4268 !important; -webkit-text-fill-color:#1f4268 !important;
+}
+/* Clicking +N mais in the shared month calendar opens an accessible day list. */
+.reminder-app-scope .teacher-calendar-more-button {
+  border:0; background:transparent; cursor:pointer; text-align:left;
+  font:650 11px 'DM Sans',sans-serif !important; padding:5px !important;
+  color:#1f4268 !important;
+}
+.reminder-app-scope .teacher-calendar-day-detail-backdrop {
+  position:fixed; inset:0; z-index:100010; background:rgba(23,39,58,.4);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.reminder-app-scope .teacher-calendar-day-detail {
+  box-sizing:border-box; width:min(450px,100%); max-height:78dvh;
+  display:flex; flex-direction:column; border-radius:16px;
+  border:1px solid #dfe7ee; background:#fff; box-shadow:0 18px 48px #1f42682b;
+}
+.reminder-app-scope .teacher-calendar-day-detail header {
+  display:flex; justify-content:space-between; align-items:center; padding:16px 18px;
+  border-bottom:1px solid #edf1f4; color:#1f4268;
+}
+.reminder-app-scope .teacher-calendar-day-detail header button {
+  background:#f4f7fb; color:#405d75; border:0; border-radius:8px; width:30px; height:30px;
+  font-size:20px; cursor:pointer;
+}
+.reminder-app-scope .teacher-calendar-day-detail-list {
+  display:grid; align-content:start; gap:6px; padding:12px; overflow-y:auto;
+}
+.reminder-app-scope .teacher-calendar-day-detail-list button {
+  display:flex; flex-direction:column; gap:4px; text-align:left; padding:11px 13px;
+  background:#f5f8fb; color:#1f4268; border:1px solid #e4ebf1; border-radius:9px;
+  font:500 12px 'DM Sans',sans-serif; cursor:pointer;
+}
+.reminder-app-scope .teacher-calendar-day-detail-list button span {color:#72869a;}
+@media(max-width:650px) {
+  .reminder-app-scope .admin-lesson-editor {padding:18px 15px !important;max-height:94dvh !important;}
+}
