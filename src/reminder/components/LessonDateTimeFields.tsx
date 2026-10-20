@@ -24,7 +24,7 @@ export default function LessonDateTimeFields({ value, onChange, language = 'pt' 
    <div className="reminder-shared-datetime__time" ref={root}>
      <label>Horário de início</label>
      <div className="reminder-time-entry">
-       <input type="time" aria-label="Digite o horário" value={time} onChange={e => onChange(`${date}T${e.target.value}`)} required />
+       <input type="time" className="reminder-time-input" aria-label="Digite o horário" value={time} onChange={e => onChange(`${date}T${e.target.value}`)} required />
        <button type="button" aria-label="Escolher horas e minutos" aria-expanded={open} onClick={() => setOpen(v=>!v)}><Clock3 size={17}/><ChevronDown size={15}/></button>
      </div>
      {open && <div className="reminder-time-wheel" aria-label="Selecionar horas e minutos">
