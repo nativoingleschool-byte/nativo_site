@@ -5356,3 +5356,21 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .modal-card,.reminder-app-scope .teacher-lesson-form-modal,.reminder-app-scope .admin-lesson-editor,.reminder-app-scope .reminder-time-menu,.reminder-app-scope .reminder-people-select__options{scrollbar-width:none !important;-ms-overflow-style:none}
 .reminder-app-scope .modal-card::-webkit-scrollbar,.reminder-app-scope .teacher-lesson-form-modal::-webkit-scrollbar,.reminder-app-scope .admin-lesson-editor::-webkit-scrollbar,.reminder-app-scope .reminder-time-menu::-webkit-scrollbar,.reminder-app-scope .reminder-people-select__options::-webkit-scrollbar{display:none}
 @media(max-width:610px){.reminder-app-scope .reminder-shared-datetime{grid-template-columns:1fr;gap:14px}}
+
+
+/* Editable HH:mm plus independently scrollable hours and minutes. */
+.reminder-app-scope .reminder-time-entry{display:flex;align-items:center;min-height:53px;border:1px solid #d8e3ec;border-radius:13px;background:#fff;overflow:hidden}
+.reminder-app-scope .reminder-time-entry input[type=time]{flex:1;width:100%;min-width:0;min-height:51px;padding:9px 12px;border:0 !important;background:#fff !important;color:#315270 !important;font:600 14px 'DM Sans',sans-serif !important;color-scheme:light}
+.reminder-app-scope .reminder-time-entry>button{display:flex;align-items:center;gap:5px;border:0;border-left:1px solid #e4ebf1;background:#f7fafc;color:#315270;padding:0 12px;height:51px;cursor:pointer}
+.reminder-app-scope .reminder-time-wheel{position:absolute;z-index:130;top:calc(100% + 5px);left:0;right:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:11px;background:white;border:1px solid #dce5ec;border-radius:13px;box-shadow:0 14px 30px #1f426829}
+.reminder-app-scope .reminder-time-wheel>div{min-width:0}
+.reminder-app-scope .reminder-time-wheel strong{display:block;text-align:center;color:#35536e;font:700 12px 'DM Sans',sans-serif;margin:0 0 7px}
+.reminder-app-scope .reminder-time-wheel__column{height:168px;overflow:auto;scrollbar-width:thin;scrollbar-color:#cad8e4 transparent;display:flex;flex-direction:column;gap:2px;scroll-snap-type:y proximity}
+.reminder-app-scope .reminder-time-wheel__column button{scroll-snap-align:center;min-height:34px;flex:none;border:0;border-radius:8px;color:#36546f;background:#fff;font:600 13px 'DM Sans',sans-serif;cursor:pointer}
+.reminder-app-scope .reminder-time-wheel__column button.is-selected{background:#1f4268;color:#fff}
+.reminder-app-scope .reminder-time-wheel__column button:hover:not(.is-selected){background:#edf4f9}
+.reminder-app-scope .reminder-time-wheel__done{grid-column:1/-1;background:#1f4268;color:white;border:0;border-radius:8px;padding:9px;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+/* Portaled overflow modal must center in viewport, not scroll along with calendar content. */
+.teacher-calendar-day-detail-backdrop{position:fixed !important;inset:0 !important;z-index:2147480000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;background:#17273a6b !important}
+.teacher-calendar-day-detail-backdrop .teacher-calendar-day-detail{width:min(520px,100%) !important;max-height:min(75dvh,700px);overflow:hidden;border-radius:17px;background:#fff;display:flex;flex-direction:column;box-shadow:0 20px 58px #17273a38}
+.teacher-calendar-day-detail-backdrop .teacher-calendar-day-detail-list{overflow-y:auto;min-height:0}
