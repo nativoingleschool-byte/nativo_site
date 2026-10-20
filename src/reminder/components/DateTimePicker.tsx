@@ -14,6 +14,7 @@ interface DateTimePickerProps {
   minDate?: string
   maxDate?: string
   hideQuickPresets?: boolean
+  dateOnly?: boolean
 }
 
 const pad2 = (n: number) => n.toString().padStart(2, '0')
@@ -27,6 +28,7 @@ export default function DateTimePicker({
   className = '',
   style,
   hideQuickPresets = false,
+  dateOnly = false,
 }: DateTimePickerProps) {
   const [showCalendar, setShowCalendar] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -256,7 +258,7 @@ export default function DateTimePicker({
         </label>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="datetime-main-controls" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Date Selector Button */}
         <button
           type="button"
@@ -289,7 +291,7 @@ export default function DateTimePicker({
         </button>
 
         {/* Time Selector Controls */}
-        <div
+        {!dateOnly && <div
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -373,11 +375,11 @@ export default function DateTimePicker({
           >
             <span style={{display:'inline-flex',alignItems:'center',gap:5}}>{parsed.period === 'AM' ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}{parsed.period}</span>
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Quick Time Presets Strip */}
-      {!hideQuickPresets && <div className="datetime-quick-presets"
+      {!hideQuickPresets && !dateOnly && <div className="datetime-quick-presets"
         style={{
           display: 'flex',
           alignItems: 'center',
