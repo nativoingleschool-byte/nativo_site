@@ -5173,3 +5173,44 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 @media(max-width:650px) {
   .reminder-app-scope .admin-lesson-editor {padding:18px 15px !important;max-height:94dvh !important;}
 }
+
+
+/* Admin datepicker calendar: consistent light popover (never legacy dark chrome). */
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-quick-presets {
+  margin-top:7px !important; gap:5px !important; padding:4px 0 !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-quick-presets button {
+  padding:5px 8px !important; font:600 10px 'DM Sans',sans-serif !important;
+  background:#f3f7fa !important; border:1px solid #dce6ee !important;
+  color:#45627c !important; border-radius:7px !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-popover {
+  box-sizing:border-box; width:min(340px, calc(100vw - 64px)) !important;
+  background:#fff !important; border:1px solid #dce5ec !important;
+  border-radius:13px !important;
+  box-shadow:0 16px 38px rgba(31,56,76,.17) !important;
+  backdrop-filter:none !important; padding:13px !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-popover strong,
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-popover span {
+  color:#35546f !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-header button,
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-footer button {
+  color:#365874 !important; background:#f3f7fa !important;
+  border:1px solid #dce5ec !important; border-radius:8px !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-days button.datetime-calendar-day {
+  color:#36546e !important; background:transparent !important;
+  border:1px solid transparent !important; border-radius:8px !important;
+  font-family:'DM Sans',sans-serif !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-days button.datetime-calendar-day.is-outside {
+  color:#a4b1bd !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-days button.datetime-calendar-day.is-selected {
+  background:#1f4268 !important; color:#fff !important;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-days button.datetime-calendar-day:hover:not(.is-selected) {
+  background:#edf4f9 !important;
+}
