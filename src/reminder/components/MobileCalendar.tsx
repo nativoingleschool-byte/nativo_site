@@ -44,6 +44,7 @@ export default function MobileCalendar({
 }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'agenda'>('month')
+  const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const locale = locales[language] || enUS
   const today = new Date()
 
@@ -147,12 +148,23 @@ export default function MobileCalendar({
                       {event.subtitle && <span>{event.subtitle}</span>}
                     </button>
                   ))}
-                  {dayEvents.length > 3 && <span className="teacher-calendar-more">+{dayEvents.length - 3} mais</span>}
+                  {dayEvents.length > 3 && <button type="button" className="teacher-calendar-more teacher-calendar-more-button" onClick={(clickEvent) => { clickEvent.stopPropagation(); setExpandedDay(key) }} aria-label={`Ver mais ${dayEvents.length - 3} aulas de ${format(day, "dd/MM/yyyy")}`}>+{dayEvents.length - 3} mais</button>}
                 </div>
               </div>
             )
           })}
         </div>
+      </div>}
+      {expandedDay && <div className="teacher-calendar-day-detail-backdrop" onClick={() => setExpandedDay(null)}>
+        <section className="teacher-calendar-day-detail" role="dialog" aria-modal="true" aria-label="Todas as aulas do dia" onClick={(e) => e.stopPropagation()}>
+          <header><strong>Aulas de {format(new Date(expandedDay + 'T12:00:00'), 'dd/MM/yyyy')}</strong><button type="button" onClick={() => setExpandedDay(null)} aria-label="Fechar">×</button></header>
+          <div className="teacher-calendar-day-detail-list">
+            {(eventsByDay.get(expandedDay) || []).map((event) => <button key={event.id} type="button" onClick={() => { setExpandedDay(null); onSelectEvent(event) }}>
+              <strong>{format(event.start, 'HH:mm')} · {event.title}</strong>
+              {event.subtitle && <span>{event.subtitle}</span>}
+            </button>)}
+          </div>
+        </section>
       </div>}
       {view === 'week' && <section className="teacher-calendar-list-view" aria-label="Visualização semanal">
         <div className="teacher-calendar-list-view__heading"><span>Semana de {weekLabel}</span><strong>{weekEvents.length} {weekEvents.length === 1 ? 'aula nesta semana' : 'aulas nesta semana'}</strong></div>
