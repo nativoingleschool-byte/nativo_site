@@ -13,6 +13,7 @@ interface DateTimePickerProps {
   style?: React.CSSProperties
   minDate?: string
   maxDate?: string
+  hideQuickPresets?: boolean
 }
 
 const pad2 = (n: number) => n.toString().padStart(2, '0')
@@ -25,6 +26,7 @@ export default function DateTimePicker({
   required,
   className = '',
   style,
+  hideQuickPresets = false,
 }: DateTimePickerProps) {
   const [showCalendar, setShowCalendar] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -375,7 +377,7 @@ export default function DateTimePicker({
       </div>
 
       {/* Quick Time Presets Strip */}
-      <div className="datetime-quick-presets"
+      {!hideQuickPresets && <div className="datetime-quick-presets"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -412,7 +414,7 @@ export default function DateTimePicker({
             </button>
           )
         })}
-      </div>
+      </div>}
 
       {/* Calendar Popover Dialog */}
       {showCalendar && (
