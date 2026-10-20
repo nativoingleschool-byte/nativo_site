@@ -5227,3 +5227,55 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .admin-lesson-editor .admin-lesson-editor-close:hover {
  background:#f2f6f9 !important; color:#1f4268 !important;
 }
+
+
+/* Reference teacher modal: compact admin date/time line, no obsolete preset strip. */
+.reminder-app-scope .admin-lesson-editor {padding:24px 28px !important;}
+.reminder-app-scope .admin-lesson-editor .datetime-picker-wrapper .datetime-quick-presets {display:none !important;}
+.reminder-app-scope .admin-lesson-editor .selected-student-chip {
+  color:#334e69 !important; -webkit-text-fill-color:#334e69 !important;
+  background:#f7f9fb !important; border-color:#e2eaf0 !important;
+}
+.reminder-app-scope .admin-lesson-editor .selected-student-name {
+  color:#334e69 !important; -webkit-text-fill-color:#334e69 !important;
+  font-size:12px !important; font-weight:600;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-selector {position:relative;min-width:0;}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-trigger {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;min-height:48px;padding:11px 14px;border:1px solid #dce5ec;
+  border-radius:11px;background:#fff;color:#35536e;
+  font:600 13px 'DM Sans',sans-serif;text-align:left;cursor:pointer;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-menu {
+  position:relative;z-index:10;margin-top:5px; padding:9px;border:1px solid #dce5ec;
+  border-radius:12px;background:#fff;box-shadow:0 10px 24px rgba(31,56,76,.09);
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-menu input {width:100%;min-height:39px;}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-options {
+  overflow:auto;max-height:180px;display:grid;gap:3px;margin-top:6px;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-option {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;padding:9px 11px;border:0;border-radius:8px;background:#fff;
+  color:#35536e;font:500 12px 'DM Sans',sans-serif;text-align:left;cursor:pointer;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-option:hover {background:#f2f6fa;}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-student-option:disabled {opacity:.55;cursor:default;}
+.reminder-app-scope .admin-portal-shell .admin-tracking-group-card {
+  flex-direction:column !important;align-items:stretch !important;gap:12px !important;
+  background:#fff !important;border:1px solid #e0e8ef !important;border-radius:14px !important;
+  padding:16px 18px !important;
+}
+.reminder-app-scope .admin-tracking-group-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:15px;}
+.reminder-app-scope .admin-tracking-group-heading h3 {font-size:15px !important;color:#1f4268 !important;margin:0 0 5px;}
+.reminder-app-scope .admin-tracking-group-heading p {font-size:12px !important;margin:2px 0;}
+.reminder-app-scope .admin-tracking-attendance {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.reminder-app-scope .admin-tracking-attendance section {
+  display:flex;flex-direction:column;gap:6px;min-width:0;
+  padding:12px;background:#f6f9fb;border:1px solid #e6edf2;border-radius:10px;
+}
+.reminder-app-scope .admin-tracking-attendance section strong {font-size:11px;color:#365a76;}
+.reminder-app-scope .admin-tracking-attendance section span {font-size:12px;color:#435f78;overflow-wrap:anywhere;}
+.reminder-app-scope .admin-tracking-disclaimer {font-size:11px;margin:8px 0;color:#8192a3;}
+@media(max-width:750px){.reminder-app-scope .admin-tracking-attendance {grid-template-columns:1fr;}}
