@@ -5,6 +5,7 @@ import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
 import { useToast } from '../lib/toast'
 import { CalendarDays, Clock3, Plus, Search, UsersRound, AlertTriangle } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import PeopleSelect from './PeopleSelect'
 import LessonDateTimeFields from './LessonDateTimeFields'
 
@@ -194,6 +195,7 @@ export default function AdminCalendar({
   const [saving, setSaving] = useState(false)
   const [repeatWeekly, setRepeatWeekly] = useState(false)
   const [repeatCount, setRepeatCount] = useState(4)
+  const [durationOpen, setDurationOpen] = useState(false)
   const [studentSelectorOpen, setStudentSelectorOpen] = useState(false)
   const [studentQuery, setStudentQuery] = useState('')
   const studentSelectorRef = useRef<HTMLDivElement>(null)
@@ -1124,16 +1126,17 @@ export default function AdminCalendar({
                   <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
                     Duração da aula
                   </label>
-                  <select
-                    value={draft.duration_minutes}
-                    onChange={(event) => setDraft({ ...draft, duration_minutes: Number(event.target.value) })}
-                  >
-                    <option value={30}>30 min</option>
-                    <option value={45}>45 min</option>
-                    <option value={60}>60 min (1h)</option>
-                    <option value={90}>90 min (1h30)</option>
-                    <option value={120}>120 min (2h)</option>
-                  </select>
+                  <div className="admin-lesson-duration-picker">
+                    <button type="button" className="admin-lesson-duration-trigger" aria-expanded={durationOpen} onClick={() => setDurationOpen(open => !open)}>
+                      {({30:'30 min',45:'45 min',60:'60 min (1h)',90:'90 min (1h30)',120:'120 min (2h)'} as Record<number,string>)[draft.duration_minutes] || `${draft.duration_minutes} min`}
+                      <ChevronDown size={16} aria-hidden="true" />
+                    </button>
+                    {durationOpen && <div className="admin-lesson-duration-options">
+                      {([30,45,60,90,120] as const).map(minutes => <button type="button" key={minutes} className={draft.duration_minutes === minutes ? 'is-selected' : ''} onClick={() => { setDraft({...draft,duration_minutes:minutes}); setDurationOpen(false) }}>
+                        {({30:'30 min',45:'45 min',60:'60 min (1h)',90:'90 min (1h30)',120:'120 min (2h)'} as Record<number,string>)[minutes]}
+                      </button>)}
+                    </div>}
+                  </div>
                 </div>
               </div>
 
