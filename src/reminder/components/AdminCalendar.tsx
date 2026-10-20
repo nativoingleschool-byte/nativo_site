@@ -1171,8 +1171,8 @@ export default function AdminCalendar({
                         const lesson = lessons.find(
                           (item) => editingGroup.lessonIds.includes(item.id) && item.student_id === studentId,
                         )
-                        if (lesson?.student_attendance === 'attend' || lesson?.student_attendance === 'present') attendanceStatus = 'attend'
-                        else if (lesson?.student_attendance === 'cancel' || lesson?.student_attendance === 'absent' || lesson?.student_lesson_status === 'not_happened') attendanceStatus = 'cancel'
+                        if (lesson?.student_attendance === 'attend') attendanceStatus = 'attend'
+                        else if (lesson?.student_attendance === 'cancel' || lesson?.student_lesson_status === 'not_happened') attendanceStatus = 'cancel'
                       }
 
                       const dotColorClass =
