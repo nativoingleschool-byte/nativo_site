@@ -1093,6 +1093,11 @@ export default function AdminCalendar({
                 <p className="section-label">{editingGroup ? t(language, 'edit_class') : t(language, 'new_class')}</p>
                 <h2>{editingGroup ? 'Atualizar aula' : 'Adicionar Nova Aula'}</h2>
               </div>
+              <button type="button" className="admin-lesson-editor-close" aria-label="Fechar edição" onClick={() => {
+                const currentSt = JSON.stringify({ draft, selectedStudentIds })
+                if (initialDraftState && currentSt !== initialDraftState) setShowUnsavedWarning(true)
+                else closeModal()
+              }}>×</button>
             </div>
 
             <form className="form-card" onSubmit={submitCreate}>
