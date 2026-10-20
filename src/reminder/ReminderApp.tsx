@@ -291,6 +291,20 @@ const createPreviewFixture = () => {
       )
     }),
   ]
+  // Preview-only: six distinct classes on the same day so the calendar shows
+  // a real +N mais overflow and each hidden class can be opened independently.
+  lessons.push(...Array.from({ length: 6 }, (_, index): Lesson => ({
+    id: `preview-overflow-${index + 1}`,
+    subject: ['Conversação', 'Gramática', 'Inglês B1', 'Revisão', 'Business English', 'Prática oral'][index],
+    class_name: `Aula demonstrativa ${index + 1}`,
+    student_id: [student, ...additionalStudents][index % 4].id,
+    teacher_id: previewTeacherId,
+    starts_at: at(1, 8 + index * 2),
+    duration_minutes: 60,
+    student_attendance: null,
+    student_lesson_status: null,
+    teacher_lesson_status: null,
+  })))
   const availabilities: TeacherAvailability[] = [
     { id: 'preview-availability-1', teacher_id: previewTeacherId, starts_at: at(1, 9), duration_minutes: 180 },
   ]
