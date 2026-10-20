@@ -5,6 +5,8 @@ import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
 import { useToast } from '../lib/toast'
 import { CalendarDays, Clock3, Plus, Search, UsersRound, AlertTriangle } from 'lucide-react'
+import PeopleSelect from './PeopleSelect'
+import LessonDateTimeFields from './LessonDateTimeFields'
 
 type LessonDraft = {
   subject: string
@@ -1115,14 +1117,7 @@ export default function AdminCalendar({
               <label className="admin-lesson-field-label">Título do Encontro / Módulo</label>
               <input required placeholder={t(language, 'subject_placeholder')} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
 
-              <div className="admin-lesson-native-datetime">
-                <label>Data
-                  <input type="date" required value={draft.starts_at.slice(0, 10)} onChange={(event) => setDraft({ ...draft, starts_at: `${event.target.value}T${draft.starts_at.slice(11, 16) || '20:00'}` })} />
-                </label>
-                <label>Horário de início
-                  <input type="time" required value={draft.starts_at.slice(11, 16) || '20:00'} onChange={(event) => setDraft({ ...draft, starts_at: `${draft.starts_at.slice(0, 10)}T${event.target.value}` })} />
-                </label>
-              </div>
+              <LessonDateTimeFields value={draft.starts_at} language={language} onChange={(starts_at) => setDraft({ ...draft, starts_at })} />
 
               <div className="form-grid">
                 <div>
@@ -1161,21 +1156,7 @@ export default function AdminCalendar({
 
               <div className="calendar-form-section">
                 <h3>Alunos participantes ({selectedStudentIds.length})</h3>
-                <div className="admin-lesson-student-selector" ref={studentSelectorRef}>
-                  <button type="button" className="admin-lesson-student-trigger" aria-expanded={studentSelectorOpen} onClick={() => setStudentSelectorOpen((open) => !open)}>
-                    {selectedStudentIds.length ? `${selectedStudentIds.length} aluno(s) selecionado(s)` : 'Selecionar alunos cadastrados'} <span aria-hidden="true">⌄</span>
-                  </button>
-                  {studentSelectorOpen && <div className="admin-lesson-student-menu">
-                    <input aria-label="Buscar aluno cadastrado" placeholder="Buscar aluno..." value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} />
-                    <div className="admin-lesson-student-options">
-                      {sortedStudents.filter(student => (student.full_name || '').toLocaleLowerCase('pt-BR').includes(studentQuery.toLocaleLowerCase('pt-BR'))).map(student => (
-                        <button type="button" key={student.id} className="admin-lesson-student-option" disabled={selectedStudentIds.includes(student.id)} onClick={() => { addStudent(student.id); setStudentQuery('') }}>
-                          <span>{student.full_name}</span><span>{selectedStudentIds.includes(student.id) ? 'Adicionado' : '+'}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>}
-                </div>
+                <PeopleSelect options={sortedStudents} value={selectedStudentIds} onChange={setSelectedStudentIds} multiple placeholder="Selecionar alunos cadastrados" />
 
                 {selectedStudentIds.length > 0 && (
                   <div className="selected-students-list">
@@ -1276,13 +1257,7 @@ export default function AdminCalendar({
                 )}
 
                 {allowTeacherChange && !createTeacher ? (
-                  <select value={draft.teacher_id} onChange={(event) => setDraft({ ...draft, teacher_id: event.target.value })}>
-                    {sortedTeachers.map((teacher) => (
-                      <option key={teacher.id} value={teacher.id}>
-                        {teacher.full_name}
-                      </option>
-                    ))}
-                  </select>
+                  <PeopleSelect options={sortedTeachers} value={draft.teacher_id ? [draft.teacher_id] : []} onChange={(ids) => setDraft({ ...draft, teacher_id: ids[0] || '' })} placeholder="Selecionar professor" />
                 ) : (
                   <div className="field-note">
                     <p className="muted">{profilesById[currentTeacherId ?? draft.teacher_id]?.full_name ?? t(language, 'current_teacher')}</p>
