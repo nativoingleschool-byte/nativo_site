@@ -4,7 +4,6 @@ import type { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
 import { useToast } from '../lib/toast'
-import DateTimePicker from './DateTimePicker'
 import { CalendarDays, Clock3, Plus, Search, UsersRound, AlertTriangle } from 'lucide-react'
 
 type LessonDraft = {
@@ -1116,15 +1115,14 @@ export default function AdminCalendar({
               <label className="admin-lesson-field-label">Título do Encontro / Módulo</label>
               <input required placeholder={t(language, 'subject_placeholder')} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} />
 
-              <DateTimePicker
-                value={draft.starts_at}
-                onChange={(val) => setDraft({ ...draft, starts_at: val })}
-                language={language}
-                className="admin-lesson-date-picker"
-                hideQuickPresets
-                label="Data e horário de início"
-                required
-              />
+              <div className="admin-lesson-native-datetime">
+                <label>Data
+                  <input type="date" required value={draft.starts_at.slice(0, 10)} onChange={(event) => setDraft({ ...draft, starts_at: `${event.target.value}T${draft.starts_at.slice(11, 16) || '20:00'}` })} />
+                </label>
+                <label>Horário de início
+                  <input type="time" required value={draft.starts_at.slice(11, 16) || '20:00'} onChange={(event) => setDraft({ ...draft, starts_at: `${draft.starts_at.slice(0, 10)}T${event.target.value}` })} />
+                </label>
+              </div>
 
               <div className="form-grid">
                 <div>
