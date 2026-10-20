@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Language, t } from '../lib/i18n'
 import { localeByLanguage } from '../lib/utils'
+import { CalendarDays, Sun, Moon } from 'lucide-react'
 
 interface DateTimePickerProps {
   value: string // Format: YYYY-MM-DDTHH:mm
@@ -279,7 +280,7 @@ export default function DateTimePicker({
           title={t(language, 'select_date')}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1.1rem' }}>📅</span>
+            <CalendarDays size={17} aria-hidden="true" />
             <span>{formattedDateLabel}</span>
           </span>
           <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{showCalendar ? '▲' : '▼'}</span>
@@ -368,13 +369,13 @@ export default function DateTimePicker({
             }}
             title="Click to toggle AM / PM"
           >
-            <span>{parsed.period === 'AM' ? '☀️ AM' : '🌙 PM'}</span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}>{parsed.period === 'AM' ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}{parsed.period}</span>
           </button>
         </div>
       </div>
 
       {/* Quick Time Presets Strip */}
-      <div
+      <div className="datetime-quick-presets"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -415,7 +416,7 @@ export default function DateTimePicker({
 
       {/* Calendar Popover Dialog */}
       {showCalendar && (
-        <div
+        <div className="datetime-calendar-popover"
           style={{
             position: 'absolute',
             top: 'calc(100% + 4px)',
@@ -431,7 +432,7 @@ export default function DateTimePicker({
           }}
         >
           {/* Month Header Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+          <div className="datetime-calendar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
             <button
               type="button"
               onClick={prevMonth}
@@ -483,7 +484,7 @@ export default function DateTimePicker({
           </div>
 
           {/* Days Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+          <div className="datetime-calendar-days" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
             {calendarCells.map((cell, idx) => {
               const isSelected = cell.year === parsed.year && cell.month === parsed.month && cell.day === parsed.day
               const isToday = cell.year === today.year && cell.month === today.month && cell.day === today.day
@@ -492,6 +493,7 @@ export default function DateTimePicker({
                 <button
                   key={idx}
                   type="button"
+                  className={`datetime-calendar-day${isSelected ? ' is-selected' : ''}${!cell.isCurrentMonth ? ' is-outside' : ''}`}
                   onClick={() => handleSelectDate(cell.year, cell.month, cell.day)}
                   style={{
                     height: '34px',
@@ -525,7 +527,7 @@ export default function DateTimePicker({
           </div>
 
           {/* Bottom Quick Controls */}
-          <div
+          <div className="datetime-calendar-footer"
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -552,7 +554,7 @@ export default function DateTimePicker({
                 padding: '0.2rem 0.4rem',
               }}
             >
-              📍 {t(language, 'today_btn') || 'Hoje'}
+              {t(language, 'today_btn') || 'Hoje'}
             </button>
 
             <button
