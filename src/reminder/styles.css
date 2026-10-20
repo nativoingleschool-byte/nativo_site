@@ -5214,3 +5214,16 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .admin-lesson-editor .admin-lesson-date-picker .datetime-calendar-days button.datetime-calendar-day:hover:not(.is-selected) {
   background:#edf4f9 !important;
 }
+
+
+.reminder-app-scope .admin-lesson-editor .panel-header {
+ display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-editor-close {
+ flex:none; display:grid; place-items:center; width:33px; height:33px;
+ background:#fff !important; color:#8292a1 !important; border:0 !important;
+ border-radius:8px; font:400 25px/1 'DM Sans',sans-serif !important; cursor:pointer;
+}
+.reminder-app-scope .admin-lesson-editor .admin-lesson-editor-close:hover {
+ background:#f2f6f9 !important; color:#1f4268 !important;
+}
