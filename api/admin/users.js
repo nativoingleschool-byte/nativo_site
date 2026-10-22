@@ -1,8 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '../../services/supabase-admin.js'
 import crypto from 'crypto'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -10,18 +8,6 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body))
 }
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.')
-  }
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
-}
 
 const slugify = (value) =>
   String(value || '')
@@ -55,7 +41,7 @@ const assertAdmin = async (req) => {
     throw new Error('Missing bearer token.')
   }
 
-  const adminClient = getSupabaseAdmin()
+  const adminClient = getSupabaseAdmin(token)
   const {
     data: { user },
     error: userError,

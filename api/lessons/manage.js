@@ -1,12 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseAuthKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SECRET_KEY ||
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+import { getSupabaseAdmin, getSupabaseConfig } from '../../services/supabase-admin.js'
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -14,19 +8,12 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body))
 }
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase administrative server credentials are missing.')
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-}
-
 const assertAuthenticated = async (req) => {
   const authHeader = req.headers?.authorization || req.headers?.Authorization || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) throw new Error('Missing bearer token.')
+
+  const { url: supabaseUrl, anonKey: supabaseAuthKey } = getSupabaseConfig()
   if (!supabaseUrl || !supabaseAuthKey) throw new Error('Supabase Auth configuration is missing.')
 
   // getUser validates the token, but does NOT pass its identity to PostgREST.
@@ -49,7 +36,7 @@ const assertAuthenticated = async (req) => {
   if (profile.archived) throw new Error('Este cadastro está arquivado.')
 
   // Teachers operate through their own JWT and DB RLS, not through service-role keys.
-  const db = profile.role === 'teacher' ? userClient : getSupabaseAdmin()
+  const db = profile.role === 'teacher' ? userClient : getSupabaseAdmin(token)
   return { supabaseAdmin: db, profile, user }
 }
 

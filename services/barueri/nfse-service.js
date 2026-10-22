@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../supabase-admin.js';
 import { XMLParser } from 'fast-xml-parser';
 import axios from 'axios';
 import {
@@ -10,8 +10,6 @@ import {
 } from './utils.js';
 import { sendBarueriSoapRequest, sendBarueriStatusRequest, sendBarueriBaixarRequest } from './soap.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SCHOOL_IM = process.env.BARUERI_INSCRICAO_MUNICIPAL || '1234567';
 const SCHOOL_CNPJ = process.env.BARUERI_CNPJ_PRESTADOR || '00.000.000/0001-00';
@@ -20,14 +18,6 @@ const CODIGO_SERVICO = process.env.BARUERI_CODIGO_SERVICO || '080201220';
 const ALIQUOTA_ISS = process.env.BARUERI_ALIQUOTA_ISS || '0200'; // 2.00% → 4-digit positional (pos 479-482)
 const DISCRIMINACAO = process.env.BARUERI_DISCRIMINACAO || 'PRESTACAO DE SERVICOS PEDAGOGICOS - NATIVO LANGUAGES BRAZIL LTDA';
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
 
 const STATE_PREFIXES = {
   RO: '11', AC: '12', AM: '13', RR: '14', PA: '15', AP: '16', TO: '17',
@@ -45,6 +35,9 @@ const STATE_DEFAULT_IBGE = {
   GO: '5208707', DF: '5300108'
 };
 
+// In-memory cache for resolved IBGE codes across batch runs
+const ibgeCache = new Map();
+
 /**
  * Helper to fetch city IBGE code dynamically, prioritizing ViaCEP and state-consistent fallbacks.
  */
@@ -53,10 +46,24 @@ async function getIbgeCode(cidade, uf, cep) {
   const cleanCep = String(cep || '').replace(/\D/g, '');
   const cleanCity = (cidade || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
+  const cacheKey = `${cleanCep || 'nocep'}:${cleanUf}:${cleanCity}`;
+  if (ibgeCache.has(cacheKey)) {
+    return ibgeCache.get(cacheKey);
+  }
+
   // Instant local mappings to avoid API overhead for typical locations
-  if (cleanCity === 'barueri' && cleanUf === 'sp') return '3505708';
-  if (cleanCity === 'sao paulo' && cleanUf === 'sp') return '3550308';
-  if (cleanCity === 'itaberai' && cleanUf === 'go') return '5210406';
+  if (cleanCity === 'barueri' && cleanUf === 'sp') {
+    ibgeCache.set(cacheKey, '3505708');
+    return '3505708';
+  }
+  if (cleanCity === 'sao paulo' && cleanUf === 'sp') {
+    ibgeCache.set(cacheKey, '3550308');
+    return '3550308';
+  }
+  if (cleanCity === 'itaberai' && cleanUf === 'go') {
+    ibgeCache.set(cacheKey, '5210406');
+    return '5210406';
+  }
 
   // 1. Fast lookup via ViaCEP if CEP is available (typically resolves in <100ms)
   if (cleanCep.length === 8) {
@@ -66,6 +73,7 @@ async function getIbgeCode(cidade, uf, cep) {
         const ibge = String(viaCepRes.data.ibge).trim();
         const expectedPrefix = STATE_PREFIXES[cleanUf];
         if (!expectedPrefix || ibge.startsWith(expectedPrefix)) {
+          ibgeCache.set(cacheKey, ibge);
           return ibge;
         }
       }
@@ -84,7 +92,9 @@ async function getIbgeCode(cidade, uf, cep) {
         return nameNorm === cleanCity;
       });
       if (municipio) {
-        return String(municipio.id);
+        const resolved = String(municipio.id);
+        ibgeCache.set(cacheKey, resolved);
+        return resolved;
       }
     } catch (error) {
       console.warn(`IBGE API lookup failed for ${cidade}-${uf}:`, error.message);
@@ -93,7 +103,9 @@ async function getIbgeCode(cidade, uf, cep) {
 
   // 3. Safe fallback per state to prevent cross-state mismatches (Error 244)
   if (cleanUf && STATE_DEFAULT_IBGE[cleanUf]) {
-    return STATE_DEFAULT_IBGE[cleanUf];
+    const fallback = STATE_DEFAULT_IBGE[cleanUf];
+    ibgeCache.set(cacheKey, fallback);
+    return fallback;
   }
 
   return '3505708'; // Default fallback (Barueri / SP)
@@ -107,7 +119,7 @@ async function getIbgeCode(cidade, uf, cep) {
  * @param {number|string} rpsNumber - Pre-generated unique sequential RPS identifier.
  * @returns {Promise<string>} The received reception protocol or mock link.
  */
-export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
+export async function issueBarueriNFSe(studentData, amount, rpsNumber, customClient) {
   // 0. Upfront student data validation to prevent municipal API rejections due to malformed sizes
   const cleanedCpf = String(studentData.cpf || '').replace(/\D/g, '');
   if (!cleanedCpf || (cleanedCpf.length !== 11 && cleanedCpf.length !== 14)) {
@@ -118,7 +130,7 @@ export async function issueBarueriNFSe(studentData, amount, rpsNumber) {
     throw new Error(`CEP do estudante inválido ou ausente: "${studentData.cep || ''}" (deve conter exatamente 8 dígitos numéricos)`);
   }
 
-  const supabaseAdmin = getSupabaseAdmin();
+  const supabaseAdmin = customClient || getSupabaseAdmin();
 
   // 1. Fetch daily batch remessa ID via Supabase RPC
   const { data: remessaId, error: rpcError } = await supabaseAdmin

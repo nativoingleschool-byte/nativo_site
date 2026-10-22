@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../../services/supabase-admin.js';
 import { processStatementAndUpsert } from '../../services/bank/statement-service.js';
 
 const getQueryParam = (req, key) => {
@@ -23,21 +23,6 @@ const sendResponse = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-const getSupabaseAdmin = () => {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL is missing from environment variables (SUPABASE_URL or VITE_SUPABASE_URL).');
-  }
-  if (!supabaseServiceRoleKey) {
-    throw new Error('Supabase Service Role Key is missing from environment variables (SUPABASE_SERVICE_ROLE_KEY).');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabasePublicKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { getSupabaseConfig, getSupabaseAdmin } from '../../services/supabase-admin.js';
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -10,10 +8,11 @@ const json = (res, status, body) => {
 };
 
 const getUserClient = (token) => {
-  if (!supabaseUrl || !supabasePublicKey) {
+  const { url, anonKey } = getSupabaseConfig();
+  if (!url || !anonKey) {
     throw new Error('Supabase server authentication configuration is missing.');
   }
-  return createClient(supabaseUrl, supabasePublicKey, {
+  return createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -77,19 +76,24 @@ export default async function handler(req, res) {
           teacher_id: user.id,
           month_key: activeMonth,
           file_url: nota_fiscal_url,
-          file_name: file_name || 'Nota_Fiscal.pdf',
+          file_name: file_name || `NF_${activeMonth}_${user.id}.pdf`,
           amount: amount ? Number(amount) : null,
-          status: 'enviada',
+          status: 'enviada'
         });
-        if (invoiceError) throw invoiceError;
-      } catch (invErr) {
-        console.error('teacher_invoices insert failed:', invErr);
-        return json(res, 500, { error: `Não foi possível salvar a nota no histórico: ${invErr.message || 'erro inesperado'}` });
+        if (invoiceError) {
+          console.warn('[upload-nf] teacher_invoices insert warning:', invoiceError.message);
+        }
+      } catch (err) {
+        console.warn('[upload-nf] failed to insert to teacher_invoices:', err.message);
       }
     }
 
-    return json(res, 200, { success: true });
+    return json(res, 200, {
+      success: true,
+      message: 'Nota fiscal enviada com sucesso.',
+      status_nota_fiscal: updatePayload.status_nota_fiscal
+    });
   } catch (error) {
-    return json(res, 500, { error: error instanceof Error ? error.message : 'Unexpected server error.' });
+    return json(res, 500, { error: error.message || 'Erro interno ao salvar nota fiscal.' });
   }
 }

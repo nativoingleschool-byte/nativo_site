@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAnonClient } from '../../services/supabase-admin.js';
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -7,9 +7,7 @@ const json = (res, status, body) => {
 };
 
 export default async function handler(req, res) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
+  
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed.' });
   }
@@ -30,13 +28,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase environment variables are missing on the server.');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false }
-    });
+    const supabase = getSupabaseAnonClient();
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),

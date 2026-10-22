@@ -1,9 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../../services/supabase-admin.js';
 import { issueBarueriNFSe, consultarBarueriNFSe } from '../../services/barueri/nfse-service.js';
 import { generateDanfsePdf } from '../../services/barueri/generate-danfse-pdf.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -11,21 +9,13 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-};
 
 const assertAdmin = async (req) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing bearer token.');
 
-  const adminClient = getSupabaseAdmin();
+  const adminClient = getSupabaseAdmin(token);
   const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
   if (userError || !user) throw new Error('Session could not be verified.');
 
@@ -47,7 +37,7 @@ const assertUserOrAdmin = async (req) => {
   const token = authHeader.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing bearer token.');
 
-  const adminClient = getSupabaseAdmin();
+  const adminClient = getSupabaseAdmin(token);
   const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
   if (userError || !user) throw new Error('Session could not be verified.');
 
@@ -201,7 +191,7 @@ async function handleIssueNfse(req, res, body) {
     }
   }
 
-  const result = await issueBarueriNFSe(student, tuitionFee, finalRpsNumber);
+  const result = await issueBarueriNFSe(student, tuitionFee, finalRpsNumber, supabaseAdmin);
   const isMockLink = typeof result === 'string' && result.startsWith('http');
 
   let invoice;
