@@ -230,6 +230,7 @@ export async function verifyUserFromToken(token, customClient) {
     err2 = e?.message || String(e);
   }
 
-  verifyUserFromToken.lastDiagnostics = `Step1: ${err1 || 'none'} | Step2 (sub=${decodedSub}): ${err2 || 'none'}`;
+  const { serviceRoleKey, anonKey, url } = getSupabaseConfig();
+  verifyUserFromToken.lastDiagnostics = `url=${url} | keyPrefix=${serviceRoleKey?.slice(0, 10)}...${serviceRoleKey?.slice(-4)} (len=${serviceRoleKey?.length}) | Step1: ${err1 || 'none'} | Step2 (sub=${decodedSub}): ${err2 || 'none'}`;
   return null;
 }
