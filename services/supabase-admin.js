@@ -10,14 +10,54 @@ try {
   // Ignore in environments where filesystem is restricted
 }
 
-const isClean = (v) => Boolean(v && typeof v === 'string' && v.trim() && v.trim() !== '[SENSITIVE]');
+const KNOWN_PROJECT_REF = 'olgfgsbrnrpbatjgdjfj';
+const KNOWN_URL = 'https://olgfgsbrnrpbatjgdjfj.supabase.co';
+const KNOWN_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sZ2Znc2JybnJwYmF0amdkamZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTQ5MTMsImV4cCI6MjA5NzQzMDkxM30.RA3TG_HjReuKQqLAEWBDH36esRb1vI6sXTkX8x5bj6c';
+
+function parseJwtPayload(str) {
+  if (!str || typeof str !== 'string') return null;
+  const clean = str.trim().replace(/^["']|["']$/g, '');
+  if (!clean.startsWith('eyJ') || clean.length < 50) return null;
+  const parts = clean.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+export function isSupabaseServiceKey(str) {
+  const payload = parseJwtPayload(str);
+  return Boolean(
+    payload &&
+    payload.iss === 'supabase' &&
+    payload.ref === KNOWN_PROJECT_REF &&
+    payload.role === 'service_role'
+  );
+}
+
+export function isSupabaseAnonKey(str) {
+  const payload = parseJwtPayload(str);
+  return Boolean(
+    payload &&
+    payload.iss === 'supabase' &&
+    payload.ref === KNOWN_PROJECT_REF &&
+    payload.role === 'anon'
+  );
+}
 
 export function getSupabaseConfig() {
+  const isCleanUrl = (u) => Boolean(
+    u && typeof u === 'string' && u.includes(KNOWN_PROJECT_REF) && u.startsWith('http')
+  );
+
   const urlCandidates = [
     process.env.VITE_SUPABASE_URL,
     process.env.SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    'https://olgfgsbrnrpbatjgdjfj.supabase.co'
+    KNOWN_URL,
   ];
 
   const serviceKeyCandidates = [
@@ -31,12 +71,12 @@ export function getSupabaseConfig() {
     process.env.VITE_SUPABASE_ANON_KEY,
     process.env.SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sZ2Znc2JybnJwYmF0amdkamZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTQ5MTMsImV4cCI6MjA5NzQzMDkxM30.RA3TG_HjReuKQqLAEWBDH36esRb1vI6sXTkX8x5bj6c'
+    KNOWN_ANON_KEY,
   ];
 
-  const url = urlCandidates.find(isClean)?.trim() || '';
-  const serviceRoleKey = serviceKeyCandidates.find(isClean)?.trim() || '';
-  const anonKey = anonKeyCandidates.find(isClean)?.trim() || '';
+  const url = (urlCandidates.find(isCleanUrl) || KNOWN_URL).trim();
+  const serviceRoleKey = (serviceKeyCandidates.find(isSupabaseServiceKey) || '').trim();
+  const anonKey = (anonKeyCandidates.find(isSupabaseAnonKey) || KNOWN_ANON_KEY).trim();
 
   return { url, serviceRoleKey, anonKey };
 }
@@ -45,15 +85,15 @@ let cachedAdmin = null;
 
 /**
  * Returns a Supabase client.
- * 1. Uses serviceRoleKey if available (full admin bypass).
- * 2. If serviceRoleKey is missing, falls back to using the user's bearer token + anonKey.
+ * 1. Uses serviceRoleKey if it is a verified, valid service_role key for this project.
+ * 2. Otherwise falls back to the verified project anonKey + user's Bearer token.
  *    Since admin users satisfy is_admin() in Supabase RLS, this allows full administrative access.
  */
 export function getSupabaseAdmin(reqOrToken) {
   const { url, serviceRoleKey, anonKey } = getSupabaseConfig();
 
-  // 1. If serviceRoleKey is configured, return the privileged service client
-  if (url && serviceRoleKey) {
+  // 1. If a verified, valid serviceRoleKey for this project is present, use it
+  if (serviceRoleKey) {
     if (cachedAdmin && cachedAdmin.__url === url && cachedAdmin.__key === serviceRoleKey) {
       return cachedAdmin;
     }
@@ -79,10 +119,9 @@ export function getSupabaseAdmin(reqOrToken) {
         .replace(/^Bearer\s+/i, '')
         .trim();
 
-  // 3. Fallback: Authenticate with anonKey + admin's Bearer token
-  if (url && (anonKey || serviceRoleKey) && token) {
-    const key = anonKey || serviceRoleKey;
-    return createClient(url, key, {
+  // 3. Fallback: Authenticate with the verified project anonKey + admin's Bearer token
+  if (token) {
+    return createClient(url, anonKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -95,32 +134,19 @@ export function getSupabaseAdmin(reqOrToken) {
     });
   }
 
-  // 4. Fallback: if only anonKey is available (for read operations permitted by RLS)
-  if (url && anonKey) {
-    return createClient(url, anonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-  }
-
-  if (!url) {
-    throw new Error('Supabase URL is missing on the server. Please check VITE_SUPABASE_URL or SUPABASE_URL.');
-  }
-
-  throw new Error('Supabase server environment variables are missing: SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY.');
+  // 4. Fallback client using verified project anonKey
+  return createClient(url, anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
 
 export function getSupabaseAnonClient() {
-  const { url, anonKey, serviceRoleKey } = getSupabaseConfig();
-  const key = anonKey || serviceRoleKey;
+  const { url, anonKey } = getSupabaseConfig();
 
-  if (!url || !key) {
-    throw new Error('Supabase environment variables are missing on the server: VITE_SUPABASE_ANON_KEY.');
-  }
-
-  return createClient(url, key, {
+  return createClient(url, anonKey, {
     auth: {
       persistSession: false,
     },
