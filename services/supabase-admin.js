@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -175,35 +176,60 @@ export function getSupabaseAnonClient() {
  *    adminClient.auth.admin.getUserById(sub).
  */
 export async function verifyUserFromToken(token, customClient) {
-  if (!token || typeof token !== 'string') return null;
-  const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
-  if (!cleanToken) return null;
+  verifyUserFromToken.lastDiagnostics = null;
+  if (!token || typeof token !== 'string') {
+    verifyUserFromToken.lastDiagnostics = 'Missing or invalid token type';
+    return null;
+  }
+  const cleanToken = token.replace(/^Bearer\s+/i, '').trim().replace(/^["']|["']$/g, '');
+  if (!cleanToken || cleanToken === 'undefined' || cleanToken === 'null') {
+    verifyUserFromToken.lastDiagnostics = 'Empty or literal undefined token';
+    return null;
+  }
 
   const adminClient = customClient || getSupabaseAdmin();
 
   // 1. Primary: verify via standard Supabase Auth API
+  let err1 = null;
   try {
     const { data: { user }, error } = await adminClient.auth.getUser(cleanToken);
     if (!error && user) return user;
-  } catch {
-    // Proceed to fallback
+    if (error) err1 = error.message || String(error);
+  } catch (e) {
+    err1 = e?.message || String(e);
   }
 
   // 2. Fallback: decode JWT sub and verify existence directly via admin API
+  let err2 = null;
+  let decodedSub = null;
   try {
     const parts = cleanToken.split('.');
     if (parts.length === 3) {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-      if (payload && payload.sub) {
-        const { data: { user }, error: adminErr } = await adminClient.auth.admin.getUserById(payload.sub);
+      let jsonStr = '';
+      try {
+        jsonStr = Buffer.from(parts[1], 'base64url').toString('utf8');
+      } catch {
+        const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        jsonStr = atob(b64);
+      }
+      const payload = JSON.parse(jsonStr);
+      decodedSub = payload?.sub;
+      if (decodedSub) {
+        const { data: { user }, error: adminErr } = await adminClient.auth.admin.getUserById(decodedSub);
         if (!adminErr && user) {
           return user;
         }
+        if (adminErr) err2 = adminErr.message || String(adminErr);
+      } else {
+        err2 = 'No sub claim in JWT payload';
       }
+    } else {
+      err2 = `Token has ${parts.length} parts instead of 3`;
     }
-  } catch {
-    // Return null
+  } catch (e) {
+    err2 = e?.message || String(e);
   }
 
+  verifyUserFromToken.lastDiagnostics = `Step1: ${err1 || 'none'} | Step2 (sub=${decodedSub}): ${err2 || 'none'}`;
   return null;
 }

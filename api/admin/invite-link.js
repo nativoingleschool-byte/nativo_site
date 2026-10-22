@@ -20,7 +20,8 @@ const assertAdmin = async (req) => {
   const adminClient = getSupabaseAdmin(token)
   const user = await verifyUserFromToken(token, adminClient)
   if (!user) {
-    throw new Error('Session could not be verified. Please log out and log back in.')
+    const diag = verifyUserFromToken.lastDiagnostics ? ` [${verifyUserFromToken.lastDiagnostics}]` : ''
+    throw new Error(`Session could not be verified${diag}. Please log out and log back in.`)
   }
 
   const { data: profile, error: profileError } = await adminClient

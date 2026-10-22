@@ -2031,7 +2031,13 @@ function ReminderAppInner() {
     setInviteLoading(true)
     setGeneratedInviteLink('')
     try {
-      const token = await getFreshSessionToken()
+      let token = await getFreshSessionToken()
+      if (!token && session?.access_token) {
+        token = session.access_token
+      }
+      if (!token) {
+        throw new Error('Sua sessão expirou ou você não está logado. Por favor, saia e entre novamente.')
+      }
       const res = await fetch('/api/admin/invite-link', {
         method: 'POST',
         headers: {
