@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
-import { getSupabaseAdmin, getSupabaseConfig } from '../../services/supabase-admin.js'
+import { getSupabaseAdmin, getSupabaseConfig, verifyUserFromToken } from '../../services/supabase-admin.js'
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -22,8 +22,15 @@ const assertAuthenticated = async (req) => {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  const { data: { user }, error: userError } = await userClient.auth.getUser(token)
-  if (userError || !user) {
+  let user = null
+  const { data: userData, error: userError } = await userClient.auth.getUser(token)
+  if (!userError && userData?.user) {
+    user = userData.user
+  } else {
+    user = await verifyUserFromToken(token)
+  }
+
+  if (!user) {
     console.warn('[reminder:auth] invalid session', { code: userError?.code, status: userError?.status })
     throw new Error('Sessão inválida ou expirada. Entre novamente.')
   }

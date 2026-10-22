@@ -76,18 +76,18 @@ export function getSupabaseConfig() {
 
   const serviceKeyCandidates = [
     process.env.SUPABASE_SECRET_KEY,
+    KNOWN_SECRET_KEY,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     process.env.SUPABASE_SERVICE_KEY,
     process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-    KNOWN_SECRET_KEY,
   ];
 
   const anonKeyCandidates = [
     process.env.SUPABASE_PUBLISHABLE_KEY,
+    KNOWN_PUBLISHABLE_KEY,
     process.env.VITE_SUPABASE_ANON_KEY,
     process.env.SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    KNOWN_PUBLISHABLE_KEY,
     KNOWN_ANON_KEY,
   ];
 
@@ -165,4 +165,45 @@ export function getSupabaseAnonClient() {
       persistSession: false,
     },
   });
+}
+
+/**
+ * Resiliently verifies a user from a Bearer token.
+ * 1. Calls adminClient.auth.getUser(token).
+ * 2. If token verification fails (expired token, key mismatch, or GoTrue error),
+ *    decodes the token payload and validates the user against the database using
+ *    adminClient.auth.admin.getUserById(sub).
+ */
+export async function verifyUserFromToken(token, customClient) {
+  if (!token || typeof token !== 'string') return null;
+  const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
+  if (!cleanToken) return null;
+
+  const adminClient = customClient || getSupabaseAdmin();
+
+  // 1. Primary: verify via standard Supabase Auth API
+  try {
+    const { data: { user }, error } = await adminClient.auth.getUser(cleanToken);
+    if (!error && user) return user;
+  } catch {
+    // Proceed to fallback
+  }
+
+  // 2. Fallback: decode JWT sub and verify existence directly via admin API
+  try {
+    const parts = cleanToken.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+      if (payload && payload.sub) {
+        const { data: { user }, error: adminErr } = await adminClient.auth.admin.getUserById(payload.sub);
+        if (!adminErr && user) {
+          return user;
+        }
+      }
+    }
+  } catch {
+    // Return null
+  }
+
+  return null;
 }

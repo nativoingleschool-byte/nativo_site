@@ -1,22 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { getSupabaseAdmin, verifyUserFromToken } from '../../services/supabase-admin.js';
 
 const json = (res, status, body) => {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(body));
-};
-
-const getSupabaseAdmin = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Supabase server environment variables are missing.');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
 };
 
 export default async function handler(req, res) {
@@ -38,8 +25,8 @@ export default async function handler(req, res) {
     if (!token) return json(res, 401, { error: 'Missing bearer token.' });
 
     const supabaseAdmin = getSupabaseAdmin();
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) return json(res, 401, { error: 'Invalid session.' });
+    const user = await verifyUserFromToken(token, supabaseAdmin);
+    if (!user) return json(res, 401, { error: 'Invalid session. Please log out and log back in.' });
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')

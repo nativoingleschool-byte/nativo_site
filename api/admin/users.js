@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from '../../services/supabase-admin.js'
+import { getSupabaseAdmin, verifyUserFromToken } from '../../services/supabase-admin.js'
 import crypto from 'crypto'
 
 
@@ -36,19 +36,16 @@ const getBaseUrl = (req) => {
 
 const assertAdmin = async (req) => {
   const authHeader = req.headers.authorization || ''
-  const token = authHeader.replace(/^Bearer\s+/i, '')
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
     throw new Error('Missing bearer token.')
   }
 
   const adminClient = getSupabaseAdmin(token)
-  const {
-    data: { user },
-    error: userError,
-  } = await adminClient.auth.getUser(token)
+  const user = await verifyUserFromToken(token, adminClient)
 
-  if (userError || !user) {
-    throw new Error('The session could not be verified.')
+  if (!user) {
+    throw new Error('The session could not be verified. Please log out and log back in.')
   }
 
   const { data: profile, error: profileError } = await adminClient.from('profiles').select('role').eq('id', user.id).single()
