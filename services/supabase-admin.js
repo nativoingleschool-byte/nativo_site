@@ -76,16 +76,16 @@ export function getSupabaseConfig() {
   ];
 
   const serviceKeyCandidates = [
-    process.env.SUPABASE_SECRET_KEY,
     KNOWN_SECRET_KEY,
+    process.env.SUPABASE_SECRET_KEY,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     process.env.SUPABASE_SERVICE_KEY,
     process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   ];
 
   const anonKeyCandidates = [
-    process.env.SUPABASE_PUBLISHABLE_KEY,
     KNOWN_PUBLISHABLE_KEY,
+    process.env.SUPABASE_PUBLISHABLE_KEY,
     process.env.VITE_SUPABASE_ANON_KEY,
     process.env.SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -230,7 +230,6 @@ export async function verifyUserFromToken(token, customClient) {
     err2 = e?.message || String(e);
   }
 
-  const { serviceRoleKey, anonKey, url } = getSupabaseConfig();
-  verifyUserFromToken.lastDiagnostics = `url=${url} | keyPrefix=${serviceRoleKey?.slice(0, 10)}...${serviceRoleKey?.slice(-4)} (len=${serviceRoleKey?.length}) | Step1: ${err1 || 'none'} | Step2 (sub=${decodedSub}): ${err2 || 'none'}`;
+  verifyUserFromToken.lastDiagnostics = `Step1: ${err1 || 'none'} | Step2 (sub=${decodedSub}): ${err2 || 'none'}`;
   return null;
 }
