@@ -17,7 +17,6 @@ export function getSupabaseConfig() {
     process.env.VITE_SUPABASE_URL,
     process.env.SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    // Production Supabase URL fallback
     'https://olgfgsbrnrpbatjgdjfj.supabase.co'
   ];
 
@@ -32,6 +31,7 @@ export function getSupabaseConfig() {
     process.env.VITE_SUPABASE_ANON_KEY,
     process.env.SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sZ2Znc2JybnJwYmF0amdkamZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTQ5MTMsImV4cCI6MjA5NzQzMDkxM30.RA3TG_HjReuKQqLAEWBDH36esRb1vI6sXTkX8x5bj6c'
   ];
 
   const url = urlCandidates.find(isClean)?.trim() || '';

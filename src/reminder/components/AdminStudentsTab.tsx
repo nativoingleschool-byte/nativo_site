@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass } from '../lib/utils'
-import { supabase } from '../lib/supabase'
+import { supabase, getFreshSessionToken } from '../lib/supabase'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { MoreVertical } from 'lucide-react'
 import { useToast } from '../lib/toast'
@@ -58,8 +58,7 @@ export default function AdminStudentsTab({
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
     setDownloadingPdfId(invoiceId)
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error('Nao autenticado.')
 
       const res = await fetch(`/api/admin/nfse-pdf?invoice_id=${invoiceId}`, {
@@ -92,8 +91,7 @@ export default function AdminStudentsTab({
     }
 
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const response = await fetch('/api/admin/users', {
@@ -127,8 +125,7 @@ export default function AdminStudentsTab({
     }
 
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error(t(language, 'unauthenticated_error'))
 
       const response = await fetch('/api/admin/users', {
@@ -240,8 +237,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
   const handleCheckStatus = async (invoiceId: string) => {
     setCheckingStatusId(invoiceId)
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error('Não autenticado.')
 
       const data = await checkNfseStatus(invoiceId, token, 1)
@@ -314,8 +310,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       return next
     })
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error('Não autenticado.')
 
       const { currentPeriod } = getBillingPeriods()
@@ -379,8 +374,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
     })
 
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error('Não autenticado.')
 
       await fetch('/api/admin/check-nfse-status', {
@@ -443,8 +437,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
     setLastIssuedPdf(null)
 
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       if (!token) throw new Error('Não autenticado.')
 
       let i = 0

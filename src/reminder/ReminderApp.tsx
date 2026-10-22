@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Session } from '@supabase/supabase-js'
-import { supabase, isSupabaseConfigured } from './lib/supabase'
+import { supabase, isSupabaseConfigured, getFreshSessionToken } from './lib/supabase'
 import AdminCalendar from './components/AdminCalendar'
 import './styles.css'
 import { ToastProvider, useToast } from './lib/toast'
@@ -2031,8 +2031,7 @@ function ReminderAppInner() {
     setInviteLoading(true)
     setGeneratedInviteLink('')
     try {
-      const sessionData = await supabase.auth.getSession()
-      const token = sessionData.data.session?.access_token
+      const token = await getFreshSessionToken()
       const res = await fetch('/api/admin/invite-link', {
         method: 'POST',
         headers: {
