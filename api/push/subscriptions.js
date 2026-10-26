@@ -26,6 +26,11 @@ export default async function handler(req,res) {
     if(!process.env.VAPID_PUBLIC_KEY) return respond(res,503,{error:'Push has not been configured'})
     const sub=body.subscription
     if(!sub||!/^https:\/\//.test(sub.endpoint||'')||sub.endpoint.length>2048||!sub.keys?.p256dh||!sub.keys?.auth) return respond(res,400,{error:'Invalid push subscription'})
+    const hostname = new URL(sub.endpoint).hostname.toLowerCase()
+    const allowedHosts = ['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com','push.services.mozilla.com','wns2-by3p.notify.windows.com']
+    if (!allowedHosts.includes(hostname) && !hostname.endsWith('.notify.windows.com') && !hostname.endsWith('.push.apple.com'))
+      return respond(res,400,{error:'Unsupported push service'})
+
     if(sub.keys.p256dh.length>512||sub.keys.auth.length>512) return respond(res,400,{error:'Invalid push keys'})
     const {error:saveError}=await db.from('push_subscriptions').upsert({user_id:user.id,endpoint:sub.endpoint,p256dh:sub.keys.p256dh,auth_secret:sub.keys.auth,updated_at:new Date().toISOString()},{onConflict:'endpoint'})
     if(saveError) throw saveError
