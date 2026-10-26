@@ -524,6 +524,7 @@ export default function TeacherPanel({
       toast.error(t(language, 'fill_required_fields'))
       return
     }
+    if (isSubstitutionLesson && newRecurring) { toast.error('Aulas de substituição são avulsas.'); return }
     if (newRecurring && (!Number.isInteger(newRecurrenceWeeks) || newRecurrenceWeeks < 2 || newRecurrenceWeeks > 52)) {
       toast.error('Escolha de 2 a 52 semanas para a recorrência.')
       return
@@ -533,7 +534,7 @@ export default function TeacherPanel({
       lesson_kind: isSubstitutionLesson ? 'substitution' : 'standard',
       teacher_id: profile.id,
       subject: newLessonSubject.trim(),
-      class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
+      class_name: isSubstitutionLesson ? 'Substituição' : (sortedStudents.find((item) => item.id === studentIds[0])?.class_name || ''),
       starts_at: dateTimeLocalToIso(newLessonStartsAt, appTimeZone),
       duration_minutes: newLessonDuration,
       meeting_url: newLessonMeetingUrl.trim() || null,
