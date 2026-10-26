@@ -198,6 +198,7 @@ export default function TeacherPanel({
   // Add Lesson Form State
   const [newLessonStudentId, setNewLessonStudentId] = useState('')
   const [newLessonStudentIds, setNewLessonStudentIds] = useState<string[]>([])
+  const [isSubstitutionLesson, setIsSubstitutionLesson] = useState(false)
   const [newLessonStudentName, setNewLessonStudentName] = useState('')
   const [addStudentMode, setAddStudentMode] = useState<'select' | 'custom'>('select')
   const [newLessonStudentsOpen, setNewLessonStudentsOpen] = useState(false)
@@ -496,6 +497,7 @@ export default function TeacherPanel({
     }
     setNewLessonStudentId('')
     setNewLessonStudentIds([])
+    setIsSubstitutionLesson(false)
     setStudentSearch('')
     setNewLessonStudentName('')
     setNewLessonMeetingUrl('')
@@ -518,7 +520,7 @@ export default function TeacherPanel({
     e.preventDefault()
     if (isSubmitting) return
     const studentIds = [...new Set(newLessonStudentIds.filter(Boolean))]
-    if (!studentIds.length || !newLessonSubject.trim() || !newLessonStartsAt) {
+    if ((!isSubstitutionLesson && !studentIds.length) || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
@@ -528,6 +530,7 @@ export default function TeacherPanel({
     }
     const payload = {
       student_ids: studentIds,
+      lesson_kind: isSubstitutionLesson ? 'substitution' : 'standard',
       teacher_id: profile.id,
       subject: newLessonSubject.trim(),
       class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
@@ -540,7 +543,9 @@ export default function TeacherPanel({
     toast.info('Salvando aula em segundo plano…')
     void (async () => {
       try {
-        if (newRecurring && saveWeeklySeries) {
+        if (isSubstitutionLesson && createTeacherSingleLesson) {
+          await createTeacherSingleLesson({ ...payload, student_id: null, lesson_kind: 'substitution' })
+        } else if (newRecurring && saveWeeklySeries) {
           await saveWeeklySeries({ ...payload, recurrence_weeks: newRecurrenceWeeks })
         } else if (studentIds.length > 1) {
           await createLessonFromDraft(payload)
@@ -1279,7 +1284,8 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div className="teacher-student-field">
+                <label className="teacher-substitution-option"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if(event.target.checked) setNewRecurring(false) }} /> Aula de substituição (sem aluno vinculado)</label>
+                {!isSubstitutionLesson && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
@@ -1346,7 +1352,8 @@ export default function TeacherPanel({
                   {visualPreviewMode && sortedStudents.length === 0 && (
                     <p className="teacher-student-field__empty">Nenhum aluno cadastrado para selecionar.</p>
                   )}
-                </div>
+                </div>}
+
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
