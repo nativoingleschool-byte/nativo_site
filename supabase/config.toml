@@ -1,0 +1,4 @@
+# Auth for this machine-to-machine endpoint is checked inside the handler using
+# the independent PUSH_DISPATCH_SECRET. JWT verification is disabled only here.
+[functions.push-reminders]
+verify_jwt = false
