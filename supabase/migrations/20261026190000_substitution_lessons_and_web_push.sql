@@ -34,3 +34,20 @@ create table if not exists public.push_delivery_log (
 );
 alter table public.push_delivery_log enable row level security;
 revoke all on public.push_delivery_log from anon, authenticated;
+
+-- Preserve existing teacher-only ownership and active-student checks.
+-- The only exception is explicitly declared studentless substitution appointments.
+drop policy if exists lessons_insert_teacher_own on public.lessons;
+create policy lessons_insert_teacher_own on public.lessons for insert to authenticated
+with check (
+  teacher_id = (select auth.uid())
+  and exists (
+    select 1 from public.profiles actor
+    where actor.id = (select auth.uid()) and actor.role = 'teacher'
+      and coalesce(actor.archived, false) = false
+  )
+  and (
+    (lesson_kind = 'substitution' and student_id is null)
+    or (lesson_kind = 'standard' and public.is_active_registered_student(student_id))
+  )
+);
