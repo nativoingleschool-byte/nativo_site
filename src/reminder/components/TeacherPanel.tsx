@@ -76,7 +76,8 @@ interface TeacherPanelProps {
   createTeacherSingleLesson?: (draft: {
     subject: string
     class_name?: string
-    student_id: string
+    student_id: string | null
+    lesson_kind?: 'standard' | 'substitution'
     student_name?: string
     teacher_id?: string
     starts_at: string
