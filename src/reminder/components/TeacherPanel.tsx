@@ -1286,7 +1286,7 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <label className="teacher-substitution-option"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if(event.target.checked) setNewRecurring(false) }} /> Aula de substituição (sem aluno vinculado)</label>
+                <label className="teacher-substitution-option"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if(event.target.checked) { setNewRecurring(false); setNewLessonStatus(null) } }} /> Aula de substituição (sem aluno vinculado)</label>
                 {!isSubstitutionLesson && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
