@@ -306,10 +306,11 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const teacherId = payload.teacher_id || profile.id
   ensureTeacherPermission(profile, teacherId)
 
-  if (profile.role === 'teacher' && !isUuid(payload.student_id)) {
+  const substitution = payload.lesson_kind === 'substitution'
+  if (!substitution && profile.role === 'teacher' && !isUuid(payload.student_id)) {
     throw new Error('Selecione um aluno já cadastrado na lista.')
   }
-  const studentId = profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload)
+  const studentId = substitution ? null : (profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload))
 
   if (!payload.subject?.trim()) {
     throw new Error('Subject is required.')
@@ -327,6 +328,7 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
     subject: payload.subject.trim(),
     class_name: payload.class_name ?? '',
     student_id: studentId,
+    lesson_kind: substitution ? 'substitution' : 'standard',
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
