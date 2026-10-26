@@ -1712,7 +1712,8 @@ function ReminderAppInner() {
   const createTeacherSingleLesson = async (draft: {
     subject: string
     class_name?: string
-    student_id: string
+    student_id: string | null
+    lesson_kind?: 'standard' | 'substitution'
     student_name?: string
     teacher_id?: string
     starts_at: string
@@ -1732,7 +1733,7 @@ function ReminderAppInner() {
           id: `preview-lesson-${Date.now()}`,
           subject: payload.subject,
           class_name: payload.class_name ?? '',
-          student_id: payload.student_id,
+          student_id: payload.student_id as string,
           teacher_id: payload.teacher_id ?? previewTeacherId,
           starts_at: payload.starts_at,
           duration_minutes: payload.duration_minutes,
