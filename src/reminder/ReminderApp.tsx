@@ -1543,8 +1543,9 @@ function ReminderAppInner() {
               return refreshProfiles()
             }
           })
-          .then(() => {
-            toast.success(t(language, 'push_activated_success'))
+          .then(async () => {
+            try { await registerPushDevice(); toast.success('Notificações do dispositivo ativadas.') }
+            catch (error) { toast.info(error instanceof Error ? error.message : 'Notificações locais ativadas; push remoto indisponível.') }
           })
           .catch((err) => {
             toast.error("Erro ao salvar preferência de push: " + err.message)
@@ -1567,6 +1568,23 @@ function ReminderAppInner() {
     }
 
     return Promise.resolve()
+  }
+
+  const registerPushDevice = async () => {
+    if (!session?.access_token || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      throw new Error('Este navegador não oferece Web Push.')
+    }
+    const headers = { Authorization: `Bearer ${session.access_token}` }
+    const configResponse = await fetch('/api/push/subscriptions', { headers })
+    if (!configResponse.ok) throw new Error('Não foi possível verificar a configuração de push.')
+    const config = await configResponse.json()
+    if (!config.publicKey) throw new Error('Push remoto ainda não configurado no servidor.')
+    const base64 = config.publicKey.replace(/-/g,'+').replace(/_/g,'/')
+    const bytes = Uint8Array.from(atob(base64.padEnd(Math.ceil(base64.length/4)*4,'=')), ch=>ch.charCodeAt(0))
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes })
+    const response = await fetch('/api/push/subscriptions', { method:'POST', headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({subscription:subscription.toJSON()}) })
+    if (!response.ok) throw new Error('Não foi possível registrar o dispositivo para notificações.')
   }
 
   const disablePush = async () => {
