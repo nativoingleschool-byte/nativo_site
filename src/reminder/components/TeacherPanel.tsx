@@ -1358,7 +1358,7 @@ export default function TeacherPanel({
                   {visualPreviewMode && sortedStudents.length === 0 && (
                     <p className="teacher-student-field__empty">Nenhum aluno cadastrado para selecionar.</p>
                   )}
-                </div>
+                </div>}
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
@@ -1430,7 +1430,7 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                                <div className="teacher-recurring-field">
+                                {!newSubstitution && <div className="teacher-recurring-field">
                   <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
                     <span>Aula recorrente</span>
