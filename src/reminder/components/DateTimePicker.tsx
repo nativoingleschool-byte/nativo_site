@@ -85,7 +85,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>
       </div>
       {calendarOpen && createPortal(
-        <div ref={popup} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(425px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 19, padding: '15px 17px 12px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 10000 }}>
+        <div ref={popup} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(425px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 19, padding: '15px 17px 12px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <button type="button" aria-label="Mês anterior" style={buttonStyle} onClick={() => goMonth(-1)}><ChevronLeft size={22}/></button>
             <strong style={{ fontSize: 19, textTransform: 'capitalize' }}>{title}</strong>
