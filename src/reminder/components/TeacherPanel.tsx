@@ -1298,7 +1298,7 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <label className="teacher-substitution-option"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if(event.target.checked) { setNewRecurring(false); setNewLessonStatus(null) } }} /> Aula de substituição (sem aluno vinculado)</label>
+                <div className="teacher-recurring-field"><label className="teacher-recurring-field__toggle"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if (event.target.checked) { setNewRecurring(false); setNewLessonStatus(null); setNewLessonSubject("Aula de substituição") } }} /><span>Aula de substituição</span><span className="teacher-recurring-field__hint">Sem aluno</span></label></div>
                 {!isSubstitutionLesson && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
@@ -1439,7 +1439,7 @@ export default function TeacherPanel({
                   </select>
                 </div>
 
-                                <div className="teacher-recurring-field">
+                                {!isSubstitutionLesson && <div className="teacher-recurring-field">
                   <label className="teacher-recurring-field__toggle">
                     <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
                     <span>Aula recorrente</span>
@@ -1451,7 +1451,7 @@ export default function TeacherPanel({
                     </label>
                   )}
                   
-                </div>
+                </div>}
 
                 <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
