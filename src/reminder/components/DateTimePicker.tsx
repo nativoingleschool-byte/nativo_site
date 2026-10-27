@@ -74,11 +74,13 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
       {label && <label style={{ display: 'block', marginBottom: 8, fontSize: 13, color: '#536b81', fontWeight: 600 }}>{label}{required ? ' *' : ''}</label>}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12 }}>
         <div style={{ position: 'relative', minWidth: 0 }}>
+          <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
           <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 425, 415); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
             <span>{dayLabel}</span><CalendarDays size={18} />
           </button>
         </div>
         <div style={{ position: 'relative', minWidth: 0 }}>
+          <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
           <button ref={timeButton} type="button" aria-label="Selecionar horário" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 234, 300); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
             <span>{time}</span><Clock3 size={19} />
           </button>
