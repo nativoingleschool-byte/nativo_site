@@ -1288,7 +1288,7 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div className="teacher-recurring-field"><label className="teacher-recurring-field__toggle"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if (event.target.checked) { setNewRecurring(false); setNewLessonStatus(null) } }} /><span>Aula de substituição</span><span className="teacher-recurring-field__hint">Sem aluno vinculado</span></label></div>
+                <div className="teacher-recurring-field"><button type="button" role="checkbox" aria-checked={isSubstitutionLesson} aria-label="Aula de substituição (sem aluno vinculado)" onClick={() => { const next = !isSubstitutionLesson; setIsSubstitutionLesson(next); if (next) { setNewRecurring(false); setNewLessonStatus(null) } }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: 'auto', minHeight: 24, background: 'transparent', padding: 0, border: 0, boxShadow: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}><span aria-hidden="true" style={{ width: 16, height: 16, flex: '0 0 16px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, border: '1px solid #94a3b8', background: isSubstitutionLesson ? '#21446c' : 'transparent', color: '#fff', fontSize: 12 }}>{isSubstitutionLesson ? '✓' : ''}</span><span>Aula de substituição</span><span className="teacher-recurring-field__hint">Sem aluno vinculado</span></button></div>
                 {!isSubstitutionLesson && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
@@ -1370,7 +1370,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time"><DateTimePicker value={newLessonStartsAt} onChange={setNewLessonStartsAt} language={modalLanguage} required /></div>
+                <div className="teacher-preview-dialog-field" style={{ minHeight: 0 }}><DateTimePicker value={newLessonStartsAt} onChange={setNewLessonStartsAt} language={modalLanguage} required /></div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="teacher-modal-field-label">Link da aula <span>(opcional)</span></label>
@@ -1616,7 +1616,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time"><DateTimePicker value={editLessonStartsAt} onChange={setEditLessonStartsAt} language={modalLanguage} required /></div>
+                <div className="teacher-preview-dialog-field" style={{ minHeight: 0 }}><DateTimePicker value={editLessonStartsAt} onChange={setEditLessonStartsAt} language={modalLanguage} required /></div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (opcional)</label>
