@@ -580,7 +580,7 @@ export default function TeacherPanel({
       void refreshProfiles().catch((error) => toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar a lista de alunos.'))
     }
     setEditingLesson(lesson)
-    setEditLessonStudentId(lesson.student_id)
+    setEditLessonStudentId(lesson.student_id || '')
     setEditLessonStudentIds(Array.from(new Set(group.map((item) => item.student_id).filter(Boolean))))
     setEditLessonIds(group.map((item) => item.id))
     setEditStudentsOpen(false)
@@ -963,7 +963,7 @@ export default function TeacherPanel({
                   {(() => {
                     const session = lastUnmarkedClass
                     const l = session.lessons[0]
-                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || (session.lessons.some((lesson) => lesson.lesson_kind === 'substitution') ? 'Aula de substituição' : `${session.student_ids.length} alunos`)
                     const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
@@ -1084,7 +1084,7 @@ export default function TeacherPanel({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {teacherTodayLessons.map((session) => {
                     const l = session.lessons[0]
-                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || (session.lessons.some((lesson) => lesson.lesson_kind === 'substitution') ? 'Aula de substituição' : `${session.student_ids.length} alunos`)
                     const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
