@@ -706,6 +706,7 @@ function ReminderAppInner() {
   }
 
   const refreshProfiles = async (expectedRole = profile?.role) => {
+    if (visualPreviewMode) return // Preview fixtures are in memory; never request authenticated student directory.
     const token = (await supabase.auth.getSession()).data.session?.access_token
     let apiProfiles: Profile[] | null = null
     let apiError: Error | null = null
