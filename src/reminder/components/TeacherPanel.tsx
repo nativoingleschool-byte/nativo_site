@@ -348,6 +348,10 @@ export default function TeacherPanel({
     if (status === 'happened') {
       const target = lessons.find((lesson) => lesson.id === lessonId)
       if (!target) return
+      if (target.lesson_kind === 'substitution') {
+        await handleQuickStatusChange(target, 'happened')
+        return
+      }
       const promptLessons = groupLessonsIntoTeacherSessions(teacherLessons)
         .find((session) => session.lessons.some((lesson) => lesson.id === target.id))?.lessons ?? [target]
       setAttendanceLessons(promptLessons)
