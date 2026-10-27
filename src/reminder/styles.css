@@ -5083,3 +5083,15 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-link {
   margin-top: 0 !important;
 }
+
+/* One visible outline for the time field: the shared field shell owns the border. */
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-clock-time-input,
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-clock-time-input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
