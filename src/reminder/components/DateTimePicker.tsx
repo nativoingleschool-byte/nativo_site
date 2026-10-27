@@ -24,9 +24,21 @@ const TIME_VIEW_HEIGHT = 120
 
 function CircularTimeColumn({ name, count, value, onSelect }: { name: string; count: number; value: number; onSelect: (value: number) => void }) {
   const ref = useRef<HTMLDivElement>(null)
+  const initialized = useRef(false)
   useEffect(() => {
     const node = ref.current
-    if (node) node.scrollTop = (count * 2 + value) * TIME_ITEM_HEIGHT - (TIME_VIEW_HEIGHT - TIME_ITEM_HEIGHT) / 2
+    if (!node) return
+    const centerOffset = (TIME_VIEW_HEIGHT - TIME_ITEM_HEIGHT) / 2
+    const target = (count * 2 + value) * TIME_ITEM_HEIGHT - centerOffset
+    if (!initialized.current) {
+      node.scrollTop = target
+      initialized.current = true
+      return
+    }
+    const currentRow = Math.round((node.scrollTop + centerOffset) / TIME_ITEM_HEIGHT)
+    const cycle = Math.round((currentRow - value) / count)
+    const nearestRow = value + cycle * count
+    node.scrollTo({ top: nearestRow * TIME_ITEM_HEIGHT - centerOffset, behavior: 'smooth' })
   }, [count, value])
   const onScroll = () => {
     const node = ref.current
