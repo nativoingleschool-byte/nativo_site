@@ -75,7 +75,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12 }}>
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
-          <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 425, 415); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
+          <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
             <span>{dayLabel}</span><CalendarDays size={18} />
           </button>
         </div>
@@ -87,10 +87,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>
       </div>
       {calendarOpen && createPortal(
-        <div ref={popup} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(425px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 19, padding: '15px 17px 12px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div ref={popup} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(350px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 19, padding: '12px 14px 10px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <button type="button" aria-label="Mês anterior" style={buttonStyle} onClick={() => goMonth(-1)}><ChevronLeft size={22}/></button>
-            <strong style={{ fontSize: 19, textTransform: 'capitalize' }}>{title}</strong>
+            <strong style={{ fontSize: 16, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{title}</strong>
             <button type="button" aria-label="Próximo mês" style={buttonStyle} onClick={() => goMonth(1)}><ChevronRight size={22}/></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', textAlign: 'center', gap: 3 }}>
@@ -98,10 +98,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
             {cells.map((cell) => {
               const active = cell.date === selectedDate
               const allowed = withinBounds(cell.date)
-              return <button key={cell.date} type="button" disabled={!allowed} onClick={() => { setDate(cell.date); setCalendarOpen(false) }} style={{ height: 44, border: 0, borderRadius: 10, cursor: allowed ? 'pointer' : 'not-allowed', fontSize: 15, fontWeight: active ? 700 : 500, background: active ? colors.active : 'transparent', color: active ? '#fff' : cell.current ? colors.ink : colors.muted, opacity: allowed ? 1 : .4 }}>{cell.day}</button>
+              return <button key={cell.date} type="button" disabled={!allowed} onClick={() => { setDate(cell.date); setCalendarOpen(false) }} style={{ height: 37, border: 0, borderRadius: 10, cursor: allowed ? 'pointer' : 'not-allowed', fontSize: 15, fontWeight: active ? 700 : 500, background: active ? colors.active : 'transparent', color: active ? '#fff' : cell.current ? colors.ink : colors.muted, opacity: allowed ? 1 : .4 }}>{cell.day}</button>
             })}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `1px solid ${colors.ink}`, marginTop: 12, paddingTop: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `1px solid ${colors.ink}`, marginTop: 8, paddingTop: 10 }}>
             <button type="button" style={buttonStyle} disabled={!withinBounds(todayDate)} onClick={() => { if (withinBounds(todayDate)) { setDate(todayDate); setView({ year: today.getFullYear(), month: today.getMonth() + 1 }); setCalendarOpen(false) } }}>Hoje</button>
             <button type="button" style={{ ...buttonStyle, padding: '0 14px' }} onClick={() => setCalendarOpen(false)}>Fechar</button>
           </div>
