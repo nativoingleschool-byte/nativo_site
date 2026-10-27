@@ -5095,3 +5095,15 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
   min-height: 0 !important;
   padding: 0 !important;
 }
+
+/* Date text input has no inner outline; the calendar field shell owns its border. */
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-calendar-date-input,
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-calendar-date-input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
