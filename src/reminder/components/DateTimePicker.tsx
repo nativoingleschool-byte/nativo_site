@@ -28,7 +28,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
   const positionPopup = (button: HTMLElement | null, width: number, estimatedHeight: number) => {
     if (!button) return
     const rect = button.getBoundingClientRect()
-    const left = Math.max(12, Math.min(rect.left, window.innerWidth - Math.min(width, window.innerWidth - 24) - 12))
+    const modal = button.closest('.modal-card')?.getBoundingClientRect()
+    const leftBoundary = modal ? Math.max(12, modal.left + 12) : 12
+    const rightBoundary = modal ? Math.min(window.innerWidth - 12, modal.right - 12) : window.innerWidth - 12
+    const left = Math.max(leftBoundary, Math.min(rect.left, rightBoundary - width))
     const below = window.innerHeight - rect.bottom
     const top = below >= estimatedHeight + 12 ? rect.bottom + 7 : Math.max(12, Math.min(rect.top - estimatedHeight - 7, window.innerHeight - estimatedHeight - 12))
     setPopupPosition({ top, left })
@@ -79,7 +82,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
           <div style={{ ...buttonStyle, width: '100%', minWidth: 0, boxSizing: 'border-box', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', gap: 4 }}>
             <input className="reminder-calendar-date-input" aria-label="Digitar data" type="text" inputMode="numeric" value={dateDraft ?? `${pad(day)}/${pad(month)}/${year}`} onFocus={() => setDateDraft(`${pad(day)}/${pad(month)}/${year}`)} onChange={(event) => { if (/^[0-9/]{0,10}$/.test(event.target.value)) setDateDraft(event.target.value) }} onBlur={() => { const candidate = dateDraft; if (candidate && /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(candidate)) { const [dd, mm, yyyy] = candidate.split('/').map(Number); const check = new Date(yyyy, mm - 1, dd); if (check.getFullYear() === yyyy && check.getMonth() === mm - 1 && check.getDate() === dd) { const iso = `${yyyy}-${pad(mm)}-${pad(dd)}`; if (withinBounds(iso)) setDate(iso) } } setDateDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', width: '100%', minWidth: 0, padding: 0, height: 34, color: colors.ink, background: 'transparent', font: 'inherit', fontSize: 15, boxShadow: 'none' }} />
-            <button ref={calendarButton} type="button" aria-label="Abrir calendário" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, padding: 0, display: 'flex', flexShrink: 0, cursor: 'pointer' }}><CalendarDays size={18}/></button>
+            <button ref={calendarButton} type="button" aria-label="Abrir calendário" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 294, 294); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, padding: 0, display: 'flex', flexShrink: 0, cursor: 'pointer' }}><CalendarDays size={18}/></button>
           </div>
         </div>
         <div style={{ position: 'relative', minWidth: 0 }}>
@@ -91,23 +94,23 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>
       </div>
       {calendarOpen && createPortal(
-        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(350px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 19, padding: '12px 14px 10px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <button type="button" aria-label="Mês anterior" style={buttonStyle} onClick={() => goMonth(-1)}><ChevronLeft size={22}/></button>
-            <strong style={{ fontSize: 16, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{title}</strong>
-            <button type="button" aria-label="Próximo mês" style={buttonStyle} onClick={() => goMonth(1)}><ChevronRight size={22}/></button>
+        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(294px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 16, padding: '9px 11px 8px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+            <button type="button" aria-label="Mês anterior" style={{ ...buttonStyle, width: 32, minWidth: 32, height: 32 }} onClick={() => goMonth(-1)}><ChevronLeft size={22}/></button>
+            <strong style={{ fontSize: 14, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{title}</strong>
+            <button type="button" aria-label="Próximo mês" style={{ ...buttonStyle, width: 32, minWidth: 32, height: 32 }} onClick={() => goMonth(1)}><ChevronRight size={22}/></button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', textAlign: 'center', gap: 3 }}>
-            {labels.map((d, i) => <strong key={i} style={{ fontSize: 13, padding: '8px 0' }}>{d}</strong>)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', textAlign: 'center', gap: 1 }}>
+            {labels.map((d, i) => <strong key={i} style={{ fontSize: 12, padding: '5px 0' }}>{d}</strong>)}
             {cells.map((cell) => {
               const active = cell.date === selectedDate
               const allowed = withinBounds(cell.date)
-              return <button key={cell.date} type="button" disabled={!allowed} onClick={() => { setDate(cell.date); setCalendarOpen(false) }} style={{ height: 37, border: 0, borderRadius: 10, cursor: allowed ? 'pointer' : 'not-allowed', fontSize: 15, fontWeight: active ? 700 : 500, background: active ? colors.active : 'transparent', color: active ? '#fff' : cell.current ? colors.ink : colors.muted, opacity: allowed ? 1 : .4 }}>{cell.day}</button>
+              return <button key={cell.date} type="button" disabled={!allowed} onClick={() => { setDate(cell.date); setCalendarOpen(false) }} style={{ height: 31, border: 0, borderRadius: 8, cursor: allowed ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: active ? 700 : 500, background: active ? colors.active : 'transparent', color: active ? '#fff' : cell.current ? colors.ink : colors.muted, opacity: allowed ? 1 : .4 }}>{cell.day}</button>
             })}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `1px solid ${colors.ink}`, marginTop: 8, paddingTop: 10 }}>
-            <button type="button" style={buttonStyle} disabled={!withinBounds(todayDate)} onClick={() => { if (withinBounds(todayDate)) { setDate(todayDate); setView({ year: today.getFullYear(), month: today.getMonth() + 1 }); setCalendarOpen(false) } }}>Hoje</button>
-            <button type="button" style={{ ...buttonStyle, padding: '0 14px' }} onClick={() => setCalendarOpen(false)}>Fechar</button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `1px solid ${colors.ink}`, marginTop: 6, paddingTop: 7 }}>
+            <button type="button" style={{ ...buttonStyle, minWidth: 44, height: 30, fontSize: 12, padding: '0 7px' }} disabled={!withinBounds(todayDate)} onClick={() => { if (withinBounds(todayDate)) { setDate(todayDate); setView({ year: today.getFullYear(), month: today.getMonth() + 1 }); setCalendarOpen(false) } }}>Hoje</button>
+            <button type="button" style={{ ...buttonStyle, minWidth: 52, height: 30, fontSize: 12, padding: '0 9px' }} onClick={() => setCalendarOpen(false)}>Fechar</button>
           </div>
         </div>, document.body
       )}
