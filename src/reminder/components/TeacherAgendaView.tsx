@@ -29,8 +29,10 @@ type TeacherAgendaViewProps = {
 }
 
 const getStudentNames = (lesson: Lesson, profilesById: Record<string, Profile>, students: Profile[]) => {
-  const student = profilesById[lesson.student_id] ?? students.find((item) => item.id === lesson.student_id)
-  return student?.full_name ?? lesson.class_name ?? 'Aluno'
+  if (lesson.lesson_kind === 'substitution') return 'Aula de substituição'
+  const student = lesson.student_id ? profilesById[lesson.student_id] : undefined
+  const resolvedStudent = student ?? students.find((item) => item.id === lesson.student_id)
+  return resolvedStudent?.full_name ?? lesson.class_name ?? 'Aluno'
 }
 
 const formatTime = (value: string) =>
@@ -164,7 +166,7 @@ export default function TeacherAgendaView({
         start: new Date(session.starts_at),
         end: new Date(session.ends_at || addMinutes(new Date(session.starts_at), session.duration_minutes).toISOString()),
         title: session.subject || 'Aulas de Inglês',
-        subtitle: session.student_ids.map((id) => profilesById[id]?.full_name ?? students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`,
+        subtitle: session.student_ids.map((id) => profilesById[id]?.full_name ?? students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || (session.lessons[0].lesson_kind === 'substitution' ? 'Aula de substituição' : `${session.student_ids.length} alunos`),
         color: session.is_happened ? ('green' as const) : ('blue' as const),
         sourceData: { ...session.lessons[0], lessonIds: session.lessons.map((lesson) => lesson.id), lessons: session.lessons },
       })),
