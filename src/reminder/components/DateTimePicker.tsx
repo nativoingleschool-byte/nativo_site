@@ -72,10 +72,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
   return (
     <div ref={root} className={className} style={{ width: '100%', position: 'relative', ...style }}>
       {label && <label style={{ display: 'block', marginBottom: 8, fontSize: 13, color: '#536b81', fontWeight: 600 }}>{label}{required ? ' *' : ''}</label>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
-          <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
+          <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', minWidth: 0, boxSizing: 'border-box', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
             <span>{dayLabel}</span><CalendarDays size={18} />
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>, document.body
       )}
       {timeOpen && createPortal(
-        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Selecionar hora e minuto" style={{ position: 'fixed', left: popupPosition.left, top: popupPosition.top, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', zIndex: 10000, width: 234, maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 14, boxShadow: '0 18px 40px rgba(34,56,80,.18)' }}>
+        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Selecionar hora e minuto" style={{ position: 'fixed', left: popupPosition.left, top: popupPosition.top, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', zIndex: 100001, width: 234, maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 14, boxShadow: '0 18px 40px rgba(34,56,80,.18)' }}>
           <strong style={{ display: 'block', textAlign: 'center', marginBottom: 12 }}>Horário</strong>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[{ name: 'Horas', count: 24, value: h, update: (v: number) => setTime(v, m) }, { name: 'Minutos', count: 60, value: m, update: (v: number) => setTime(h, v) }].map((part) => (
