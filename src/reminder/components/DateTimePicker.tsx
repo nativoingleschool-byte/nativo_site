@@ -35,6 +35,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
   }
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
+  const [timeDraft, setTimeDraft] = useState<string | null>(null)
   const date = /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : new Date().toLocaleDateString('en-CA')
   const time = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? value.slice(11, 16) : '09:00'
   const [year, month, day] = date.split('-').map(Number)
@@ -82,7 +83,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
           <div ref={timeButton} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', boxSizing: 'border-box', gap: 5 }}>
-            <input aria-label="Digitar horário de início" inputMode="numeric" type="text" maxLength={5} value={time} onChange={(event) => { const text = event.target.value; if (/^\\d{0,2}:?\\d{0,2}$/.test(text) && /^\\d{2}:\\d{2}$/.test(text)) { const [hh, mm] = text.split(':').map(Number); if (hh < 24 && mm < 60) setTime(hh, mm) } }} style={{ border: 'none', outline: 'none', padding: 0, width: '100%', minWidth: 0, height: 34, font: 'inherit', fontSize: 16, color: colors.ink, background: 'transparent', boxShadow: 'none' }} />
+            <input aria-label="Digitar horário de início" inputMode="numeric" type="text" maxLength={5} value={timeDraft ?? time} onFocus={() => setTimeDraft(time)} onChange={(event) => { if (/^[0-9:]{0,5}$/.test(event.target.value)) setTimeDraft(event.target.value) }} onBlur={() => { const candidate = timeDraft ?? time; if (/^[0-9]{2}:[0-9]{2}$/.test(candidate)) { const [hh, mm] = candidate.split(':').map(Number); if (hh < 24 && mm < 60) setTime(hh, mm) } setTimeDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', padding: 0, width: '100%', minWidth: 0, height: 34, font: 'inherit', fontSize: 16, color: colors.ink, background: 'transparent', boxShadow: 'none' }} />
             <button type="button" aria-label="Abrir rolagem de horas e minutos" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 234, 300); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><Clock3 size={19}/></button>
           </div>
         </div>
