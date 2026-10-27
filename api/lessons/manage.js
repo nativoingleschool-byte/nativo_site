@@ -192,6 +192,7 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     subject: payload.subject.trim(),
     class_name: payload.class_name ?? '',
     student_id: studentId,
+    is_substitution: isSubstitution,
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
@@ -306,10 +307,16 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const teacherId = payload.teacher_id || profile.id
   ensureTeacherPermission(profile, teacherId)
 
-  if (profile.role === 'teacher' && !isUuid(payload.student_id)) {
+  const isSubstitution = payload.is_substitution === true
+  if (isSubstitution && (payload.student_id || (payload.student_ids || []).length)) {
+    throw new Error('Aula de substituição sem alunos não pode incluir aluno vinculado.')
+  }
+  if (profile.role === 'teacher' && !isSubstitution && !isUuid(payload.student_id)) {
     throw new Error('Selecione um aluno já cadastrado na lista.')
   }
-  const studentId = profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload)
+  const studentId = isSubstitution
+    ? null
+    : (profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload))
 
   if (!payload.subject?.trim()) {
     throw new Error('Subject is required.')
