@@ -22,10 +22,10 @@ const buttonStyle: React.CSSProperties = { color: colors.ink, border: `1px solid
 export default function DateTimePicker({ value, onChange, language = 'pt', label, required, className = '', style, minDate, maxDate }: DateTimePickerProps) {
   const root = useRef<HTMLDivElement>(null)
   const calendarButton = useRef<HTMLButtonElement>(null)
-  const timeButton = useRef<HTMLButtonElement>(null)
+  const timeButton = useRef<HTMLDivElement>(null)
   const popup = useRef<HTMLDivElement>(null)
   const [popupPosition, setPopupPosition] = useState({ top: 12, left: 12 })
-  const positionPopup = (button: HTMLButtonElement | null, width: number, estimatedHeight: number) => {
+  const positionPopup = (button: HTMLElement | null, width: number, estimatedHeight: number) => {
     if (!button) return
     const rect = button.getBoundingClientRect()
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - Math.min(width, window.innerWidth - 24) - 12))
@@ -81,9 +81,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
-          <button ref={timeButton} type="button" aria-label="Selecionar horário" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 234, 300); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
-            <span>{time}</span><Clock3 size={19} />
-          </button>
+          <div ref={timeButton} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', boxSizing: 'border-box', gap: 5 }}>
+            <input aria-label="Digitar horário de início" inputMode="numeric" type="text" maxLength={5} value={time} onChange={(event) => { const text = event.target.value; if (/^\\d{0,2}:?\\d{0,2}$/.test(text) && /^\\d{2}:\\d{2}$/.test(text)) { const [hh, mm] = text.split(':').map(Number); if (hh < 24 && mm < 60) setTime(hh, mm) } }} style={{ border: 'none', outline: 'none', padding: 0, width: '100%', minWidth: 0, height: 34, font: 'inherit', fontSize: 16, color: colors.ink, background: 'transparent', boxShadow: 'none' }} />
+            <button type="button" aria-label="Abrir rolagem de horas e minutos" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 234, 300); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><Clock3 size={19}/></button>
+          </div>
         </div>
       </div>
       {calendarOpen && createPortal(
