@@ -5107,3 +5107,6 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
   min-height: 0 !important;
   padding: 0 !important;
 }
+
+/* Clock wheel only: hide native scrollbar while retaining wheel/touch scrolling. */
+.reminder-time-circular-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
