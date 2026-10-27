@@ -1442,7 +1442,7 @@ export default function TeacherPanel({
                     </label>
                   )}
                   
-                </div>
+                </div>}
 
                 <div className="button-row teacher-preview-dialog-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
