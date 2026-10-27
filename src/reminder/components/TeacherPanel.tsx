@@ -1380,11 +1380,8 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                <div className="teacher-preview-dialog-field">
+                  <DateTimePicker value={newLessonStartsAt} onChange={setNewLessonStartsAt} language={modalLanguage} label={t(modalLanguage, 'date_and_time')} required />
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
@@ -1631,11 +1628,8 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                <div className="teacher-preview-dialog-field">
+                  <DateTimePicker value={editLessonStartsAt} onChange={setEditLessonStartsAt} language={modalLanguage} label={t(modalLanguage, 'date_and_time')} required />
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
