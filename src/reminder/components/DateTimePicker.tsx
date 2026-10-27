@@ -30,7 +30,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
     const rect = button.getBoundingClientRect()
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - Math.min(width, window.innerWidth - 24) - 12))
     const below = window.innerHeight - rect.bottom
-    const top = below >= estimatedHeight + 12 ? rect.bottom + 7 : Math.max(12, rect.top - estimatedHeight - 7)
+    const top = below >= estimatedHeight + 12 ? rect.bottom + 7 : Math.max(12, Math.min(rect.top - estimatedHeight - 7, window.innerHeight - estimatedHeight - 12))
     setPopupPosition({ top, left })
   }
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -86,7 +86,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
           <div ref={timeButton} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', boxSizing: 'border-box', gap: 5 }}>
             <input aria-label="Digitar horário de início" inputMode="numeric" type="text" maxLength={5} value={timeDraft ?? time} onFocus={() => setTimeDraft(time)} onChange={(event) => { if (/^[0-9:]{0,5}$/.test(event.target.value)) setTimeDraft(event.target.value) }} onBlur={() => { const candidate = timeDraft ?? time; if (/^[0-9]{2}:[0-9]{2}$/.test(candidate)) { const [hh, mm] = candidate.split(':').map(Number); if (hh < 24 && mm < 60) setTime(hh, mm) } setTimeDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', padding: 0, width: '100%', minWidth: 0, height: 34, font: 'inherit', fontSize: 16, color: colors.ink, background: 'transparent', boxShadow: 'none' }} />
-            <button type="button" aria-label="Abrir rolagem de horas e minutos" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 234, 300); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><Clock3 size={19}/></button>
+            <button type="button" aria-label="Abrir rolagem de horas e minutos" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 214, 244); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><Clock3 size={19}/></button>
           </div>
         </div>
       </div>
@@ -112,19 +112,19 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
         </div>, document.body
       )}
       {timeOpen && createPortal(
-        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Selecionar hora e minuto" style={{ position: 'fixed', left: popupPosition.left, top: popupPosition.top, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', zIndex: 100001, width: 234, maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 14, boxShadow: '0 18px 40px rgba(34,56,80,.18)' }}>
-          <strong style={{ display: 'block', textAlign: 'center', marginBottom: 12 }}>Horário</strong>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Selecionar hora e minuto" style={{ position: 'fixed', left: popupPosition.left, top: popupPosition.top, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', zIndex: 100001, width: 214, maxWidth: 'calc(100vw - 24px)', boxSizing: 'border-box', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 10, boxShadow: '0 18px 40px rgba(34,56,80,.18)' }}>
+          <strong style={{ display: 'block', textAlign: 'center', marginBottom: 7 }}>Horário</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
             {[{ name: 'Horas', count: 24, value: h, update: (v: number) => setTime(v, m) }, { name: 'Minutos', count: 60, value: m, update: (v: number) => setTime(h, v) }].map((part) => (
               <div key={part.name} style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', textAlign: 'center', fontSize: 12, marginBottom: 7 }}>{part.name}</span>
-                <div role="listbox" aria-label={part.name} style={{ height: 188, overflowY: 'auto', overscrollBehavior: 'contain', borderRadius: 9, border: `1px solid ${colors.border}`, background: colors.surface, scrollbarWidth: 'thin' }}>
-                  {Array.from({ length: part.count }, (_, i) => <button type="button" role="option" aria-selected={part.value === i} key={i} onClick={() => part.update(i)} style={{ display: 'block', width: '100%', minHeight: 37, fontSize: 16, border: 0, borderRadius: 7, background: part.value === i ? colors.active : 'transparent', color: part.value === i ? '#fff' : colors.ink, fontWeight: part.value === i ? 700 : 400, cursor: 'pointer' }}>{pad(i)}</button>)}
+                <span style={{ display: 'block', textAlign: 'center', fontSize: 12, marginBottom: 5 }}>{part.name}</span>
+                <div role="listbox" aria-label={part.name} style={{ height: 120, overflowY: 'auto', overscrollBehavior: 'contain', borderRadius: 9, border: `1px solid ${colors.border}`, background: colors.surface, scrollbarWidth: 'thin' }}>
+                  {Array.from({ length: part.count }, (_, i) => <button type="button" role="option" aria-selected={part.value === i} key={i} onClick={() => part.update(i)} style={{ display: 'block', width: '100%', minHeight: 30, fontSize: 14, border: 0, borderRadius: 7, background: part.value === i ? colors.active : 'transparent', color: part.value === i ? '#fff' : colors.ink, fontWeight: part.value === i ? 700 : 400, cursor: 'pointer' }}>{pad(i)}</button>)}
                 </div>
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => setTimeOpen(false)} style={{ ...buttonStyle, width: '100%', marginTop: 12 }}>Fechar</button>
+          <button type="button" onClick={() => setTimeOpen(false)} style={{ ...buttonStyle, width: '100%', marginTop: 8, height: 32 }}>Fechar</button>
         </div>, document.body
       )}
     </div>
