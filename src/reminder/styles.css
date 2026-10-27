@@ -5062,3 +5062,24 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-actions { grid-column: 1 / -1 !important; order: 8 !important; }
 .reminder-app-scope form.substitution-safe-lesson-form > .teacher-modal-extra-field { order: 6 !important; }
 .reminder-app-scope form.substitution-safe-lesson-form .teacher-preview-dialog-date-time > div { min-width: 0 !important; }
+
+
+/* The shared DateTimePicker owns its two columns. The legacy modal grid must
+   not lay out the entire component as though it were a native date input. */
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-date-time {
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-date-time > div {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: block !important;
+}
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-link {
+  margin-top: 0 !important;
+}
