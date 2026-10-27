@@ -77,6 +77,7 @@ interface TeacherPanelProps {
     subject: string
     class_name?: string
     student_id: string
+    is_substitution?: boolean
     student_name?: string
     teacher_id?: string
     starts_at: string
@@ -207,6 +208,7 @@ export default function TeacherPanel({
   const [newLessonMeetingUrl, setNewLessonMeetingUrl] = useState('')
   const [newLessonDuration, setNewLessonDuration] = useState(60)
   const [newLessonStatus, setNewLessonStatus] = useState<TeacherLessonStatus>('happened')
+  const [newSubstitution, setNewSubstitution] = useState(false)
   const [newRecurring, setNewRecurring] = useState(false)
   const [newRecurrenceWeeks, setNewRecurrenceWeeks] = useState(4)
 
@@ -505,6 +507,7 @@ export default function TeacherPanel({
     setNewLessonDuration(60)
     setNewLessonStatus('happened')
     setNewRecurring(false)
+    setNewSubstitution(false)
     setNewRecurrenceWeeks(4)
 
     // Set initial date within active month
@@ -518,8 +521,12 @@ export default function TeacherPanel({
     e.preventDefault()
     if (isSubmitting) return
     const studentIds = [...new Set(newLessonStudentIds.filter(Boolean))]
-    if (!studentIds.length || !newLessonSubject.trim() || !newLessonStartsAt) {
+    if ((!newSubstitution && !studentIds.length) || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
+      return
+    }
+    if (newSubstitution && newRecurring) {
+      toast.error('Aula de substituição sem alunos deve ser cadastrada como aula avulsa.')
       return
     }
     if (newRecurring && (!Number.isInteger(newRecurrenceWeeks) || newRecurrenceWeeks < 2 || newRecurrenceWeeks > 52)) {
@@ -527,7 +534,8 @@ export default function TeacherPanel({
       return
     }
     const payload = {
-      student_ids: studentIds,
+      student_ids: newSubstitution ? [] : studentIds,
+      is_substitution: newSubstitution,
       teacher_id: profile.id,
       subject: newLessonSubject.trim(),
       class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
@@ -540,7 +548,9 @@ export default function TeacherPanel({
     toast.info('Salvando aula em segundo plano…')
     void (async () => {
       try {
-        if (newRecurring && saveWeeklySeries) {
+        if (newSubstitution && createTeacherSingleLesson) {
+          await createTeacherSingleLesson({ ...payload, student_id: '', is_substitution: true })
+        } else if (newRecurring && saveWeeklySeries) {
           await saveWeeklySeries({ ...payload, recurrence_weeks: newRecurrenceWeeks })
         } else if (studentIds.length > 1) {
           await createLessonFromDraft(payload)
@@ -1279,7 +1289,9 @@ export default function TeacherPanel({
               </div>
 
               <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div className="teacher-student-field">
+                <label className="teacher-substitution-toggle"><input type="checkbox" checked={newSubstitution} onChange={(event) => {setNewSubstitution(event.target.checked);setNewRecurring(false);if(event.target.checked){setNewLessonStudentIds([]);setNewLessonStudentId('');setNewLessonStudentsOpen(false)}}} /><span>Aula de substituição (sem alunos vinculados)</span></label>
+                {newSubstitution && <p className="teacher-substitution-help">Registre uma substituição avulsa apenas com título, data, horário e duração. Será incluída na agenda e no financeiro do professor.</p>}
+                {!newSubstitution && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
