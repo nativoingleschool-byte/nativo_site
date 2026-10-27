@@ -5043,3 +5043,70 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .admin-portal-shell .calendar-availability-button {
   display: none !important;
 }
+
+
+/* Studentless substitution: preserve the original lesson modal field order.
+   Earlier add/edit dialog rules use CSS Grid with explicit order values. */
+.reminder-app-scope .teacher-lesson-form-modal form.substitution-safe-lesson-form,
+.reminder-app-scope .teacher-preview-add-modal form.substitution-safe-lesson-form,
+.reminder-app-scope .teacher-preview-edit-modal form.substitution-safe-lesson-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-recurring-field { grid-column: 1 / -1 !important; order: 0 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-subject { grid-column: 1 / -1 !important; order: 1 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-date-time { grid-column: 1 / -1 !important; order: 2 !important; min-width: 0 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-link { grid-column: 1 / -1 !important; order: 3 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-student-field { grid-column: 1 / -1 !important; order: 4 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-actions { grid-column: 1 / -1 !important; order: 8 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-modal-extra-field { order: 6 !important; }
+.reminder-app-scope form.substitution-safe-lesson-form .teacher-preview-dialog-date-time > div { min-width: 0 !important; }
+
+
+/* The shared DateTimePicker owns its two columns. The legacy modal grid must
+   not lay out the entire component as though it were a native date input. */
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-date-time {
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-date-time > div {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: block !important;
+}
+.reminder-app-scope form.substitution-safe-lesson-form > .teacher-preview-dialog-link {
+  margin-top: 0 !important;
+}
+
+/* One visible outline for the time field: the shared field shell owns the border. */
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-clock-time-input,
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-clock-time-input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+/* Date text input has no inner outline; the calendar field shell owns its border. */
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-calendar-date-input,
+.reminder-app-scope .teacher-preview-dialog-date-time input.reminder-calendar-date-input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+/* Clock wheel only: hide native scrollbar while retaining wheel/touch scrolling. */
+.reminder-time-circular-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
