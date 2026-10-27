@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { Language, t } from '../lib/i18n'
-import { localeByLanguage } from '../lib/utils'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Language } from '../lib/i18n'
 
 interface DateTimePickerProps {
-  value: string // Format: YYYY-MM-DDTHH:mm
+  value: string
   onChange: (value: string) => void
   language?: Language
   label?: string
@@ -14,564 +15,157 @@ interface DateTimePickerProps {
   maxDate?: string
 }
 
-const pad2 = (n: number) => n.toString().padStart(2, '0')
+const pad = (n: number) => String(n).padStart(2, '0')
+const colors = { ink: '#365574', border: '#d8e4ec', surface: '#f3f7fa', muted: '#9fb0c0', active: '#21446c' }
+const buttonStyle: React.CSSProperties = { color: colors.ink, border: `1px solid ${colors.border}`, background: colors.surface, borderRadius: 10, height: 40, minWidth: 40, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }
 
-export default function DateTimePicker({
-  value,
-  onChange,
-  language = 'pt',
-  label,
-  required,
-  className = '',
-  style,
-}: DateTimePickerProps) {
-  const [showCalendar, setShowCalendar] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+const TIME_ITEM_HEIGHT = 30
+const TIME_VIEW_HEIGHT = 120
 
-  // Parse current value
-  const parsed = useMemo(() => {
-    const defaultDate = new Date()
-    let datePart = `${defaultDate.getFullYear()}-${pad2(defaultDate.getMonth() + 1)}-${pad2(defaultDate.getDate())}`
-    let hour24 = 9
-    let minute = 0
-
-    if (value && value.includes('T')) {
-      const [d, time] = value.split('T')
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-        datePart = d
-      }
-      if (time) {
-        const [h, m] = time.split(':').map(Number)
-        if (!isNaN(h) && h >= 0 && h <= 23) hour24 = h
-        if (!isNaN(m) && m >= 0 && m <= 59) minute = m
-      }
-    }
-
-    const [year, month, day] = datePart.split('-').map(Number)
-    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24
-    const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM'
-
-    return {
-      dateStr: datePart,
-      year: isNaN(year) ? defaultDate.getFullYear() : year,
-      month: isNaN(month) ? defaultDate.getMonth() + 1 : month,
-      day: isNaN(day) ? defaultDate.getDate() : day,
-      hour24,
-      hour12,
-      minute,
-      period,
-    }
-  }, [value])
-
-  // Calendar navigation state
-  const [navYear, setNavYear] = useState(parsed.year)
-  const [navMonth, setNavMonth] = useState(parsed.month) // 1-12
-
-  // Keep nav in sync when parsed value changes externally
+function CircularTimeColumn({ name, count, value, onSelect }: { name: string; count: number; value: number; onSelect: (value: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const initialized = useRef(false)
   useEffect(() => {
-    setNavYear(parsed.year)
-    setNavMonth(parsed.month)
-  }, [parsed.year, parsed.month])
+    const node = ref.current
+    if (!node) return
+    const centerOffset = (TIME_VIEW_HEIGHT - TIME_ITEM_HEIGHT) / 2
+    const target = (count * 2 + value) * TIME_ITEM_HEIGHT - centerOffset
+    if (!initialized.current) {
+      node.scrollTop = target
+      initialized.current = true
+      return
+    }
+    const currentRow = Math.round((node.scrollTop + centerOffset) / TIME_ITEM_HEIGHT)
+    const cycle = Math.round((currentRow - value) / count)
+    const nearestRow = value + cycle * count
+    node.scrollTo({ top: nearestRow * TIME_ITEM_HEIGHT - centerOffset, behavior: 'smooth' })
+  }, [count, value])
+  const onScroll = () => {
+    const node = ref.current
+    if (!node) return
+    const row = Math.round((node.scrollTop + (TIME_VIEW_HEIGHT - TIME_ITEM_HEIGHT) / 2) / TIME_ITEM_HEIGHT)
+    if (row < count || row >= count * 4) {
+      node.scrollTop += (row < count ? count * 2 : -count * 2) * TIME_ITEM_HEIGHT
+    }
+  }
+  return <div ref={ref} role="listbox" aria-label={name} onScroll={onScroll} className="reminder-time-circular-scroll" style={{ height: TIME_VIEW_HEIGHT, overflowY: 'auto', overscrollBehavior: 'contain', borderRadius: 9, border: `1px solid ${colors.border}`, background: colors.surface, scrollbarWidth: 'none', msOverflowStyle: 'none', scrollSnapType: 'y proximity' }}>
+    {Array.from({ length: count * 5 }, (_, i) => {
+      const n = i % count
+      return <button key={i} type="button" role="option" aria-selected={n === value} onClick={() => onSelect(n)} style={{ display: 'block', width: '100%', height: TIME_ITEM_HEIGHT, minHeight: TIME_ITEM_HEIGHT, fontSize: 14, border: 0, borderRadius: 7, background: n === value ? colors.active : 'transparent', color: n === value ? '#fff' : colors.ink, fontWeight: n === value ? 700 : 400, cursor: 'pointer', scrollSnapAlign: 'center' }}>{pad(n)}</button>
+    })}
+  </div>
+}
 
-  // Close calendar popover when clicking outside
+export default function DateTimePicker({ value, onChange, language = 'pt', label, required, className = '', style, minDate, maxDate }: DateTimePickerProps) {
+  const root = useRef<HTMLDivElement>(null)
+  const calendarButton = useRef<HTMLButtonElement>(null)
+  const timeButton = useRef<HTMLDivElement>(null)
+  const popup = useRef<HTMLDivElement>(null)
+  const [popupPosition, setPopupPosition] = useState({ top: 12, left: 12 })
+  const positionPopup = (button: HTMLElement | null, width: number, estimatedHeight: number) => {
+    if (!button) return
+    const rect = button.getBoundingClientRect()
+    const modal = button.closest('.modal-card')?.getBoundingClientRect()
+    const leftBoundary = modal ? Math.max(12, modal.left + 12) : 12
+    const rightBoundary = modal ? Math.min(window.innerWidth - 12, modal.right - 12) : window.innerWidth - 12
+    const isClock = button === timeButton.current
+    const desiredLeft = isClock ? rect.right - width : rect.left
+    const left = Math.max(leftBoundary, Math.min(desiredLeft, rightBoundary - width))
+    const below = window.innerHeight - rect.bottom
+    const top = below >= estimatedHeight + 12 ? rect.bottom + 7 : Math.max(12, Math.min(rect.top - estimatedHeight - 7, window.innerHeight - estimatedHeight - 12))
+    setPopupPosition({ top, left })
+  }
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [timeDraft, setTimeDraft] = useState<string | null>(null)
+  const [dateDraft, setDateDraft] = useState<string | null>(null)
+  const date = /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : new Date().toLocaleDateString('en-CA')
+  const time = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? value.slice(11, 16) : '09:00'
+  const [year, month, day] = date.split('-').map(Number)
+  const [h, m] = time.split(':').map(Number)
+  const [view, setView] = useState({ year, month })
+  const locale = language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US'
+  const today = new Date()
+  const todayDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+  const selectedDate = date
+  const setDate = (nextDate: string) => onChange(`${nextDate}T${time}`)
+  const setTime = (hour: number, minute: number) => onChange(`${date}T${pad(hour)}:${pad(minute)}`)
+  const withinBounds = (d: string) => (!minDate || d >= minDate) && (!maxDate || d <= maxDate)
+  useEffect(() => { setView({ year, month }) }, [year, month])
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowCalendar(false)
-      }
-    }
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showCalendar])
-
-  // Update helper
-  const updateDateTime = (newDateStr: string, newHour12: number, newMin: number, newPeriod: 'AM' | 'PM') => {
-    const h24 = newPeriod === 'AM' ? (newHour12 === 12 ? 0 : newHour12) : newHour12 === 12 ? 12 : newHour12 + 12
-    const formattedTime = `${pad2(h24)}:${pad2(newMin)}`
-    onChange(`${newDateStr}T${formattedTime}`)
-  }
-
-  // Toggle AM / PM
-  const handleTogglePeriod = () => {
-    const nextPeriod = parsed.period === 'AM' ? 'PM' : 'AM'
-    updateDateTime(parsed.dateStr, parsed.hour12, parsed.minute, nextPeriod)
-  }
-
-  // Change Hour
-  const handleHourChange = (newHour12: number) => {
-    updateDateTime(parsed.dateStr, newHour12, parsed.minute, parsed.period)
-  }
-
-  // Change Minute
-  const handleMinuteChange = (newMin: number) => {
-    updateDateTime(parsed.dateStr, parsed.hour12, newMin, parsed.period)
-  }
-
-  // Select Date from Calendar Grid
-  const handleSelectDate = (year: number, month: number, day: number) => {
-    const newDateStr = `${year}-${pad2(month)}-${pad2(day)}`
-    updateDateTime(newDateStr, parsed.hour12, parsed.minute, parsed.period)
-    setShowCalendar(false)
-  }
-
-  // Quick preset selection
-  const handleSelectPresetTime = (h12: number, min: number, period: 'AM' | 'PM') => {
-    updateDateTime(parsed.dateStr, h12, min, period)
-  }
-
-  // Format date display label
-  const formattedDateLabel = useMemo(() => {
-    const locale = localeByLanguage[language] || 'pt-BR'
-    const dateObj = new Date(parsed.year, parsed.month - 1, parsed.day, 12, 0, 0)
-    return dateObj.toLocaleDateString(locale, {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }, [parsed.year, parsed.month, parsed.day, language])
-
-  // Calendar month navigation
-  const prevMonth = () => {
-    if (navMonth === 1) {
-      setNavMonth(12)
-      setNavYear((y) => y - 1)
-    } else {
-      setNavMonth((m) => m - 1)
-    }
-  }
-
-  const nextMonth = () => {
-    if (navMonth === 12) {
-      setNavMonth(1)
-      setNavYear((y) => y + 1)
-    } else {
-      setNavMonth((m) => m + 1)
-    }
-  }
-
-  // Month & Year display label
-  const monthTitle = useMemo(() => {
-    const locale = localeByLanguage[language] || 'pt-BR'
-    const dateObj = new Date(navYear, navMonth - 1, 1)
-    const label = dateObj.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
-    return label.charAt(0).toUpperCase() + label.slice(1)
-  }, [navYear, navMonth, language])
-
-  // Days of week short headers
-  const weekDayHeaders = useMemo(() => {
-    const locale = localeByLanguage[language] || 'pt-BR'
-    const headers: string[] = []
-    const baseSunday = new Date(2026, 7, 2) // Sunday Aug 2 2026
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(baseSunday)
-      d.setDate(baseSunday.getDate() + i)
-      headers.push(d.toLocaleDateString(locale, { weekday: 'narrow' }).toUpperCase())
-    }
-    return headers
-  }, [language])
-
-  // Calendar grid calculation
-  const calendarCells = useMemo(() => {
-    const firstDayIndex = new Date(navYear, navMonth - 1, 1).getDay() // 0 = Sun
-    const daysInMonth = new Date(navYear, navMonth, 0).getDate()
-    const daysInPrevMonth = new Date(navYear, navMonth - 1, 0).getDate()
-
-    const cells: { day: number; month: number; year: number; isCurrentMonth: boolean }[] = []
-
-    // Previous month days
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      const prevM = navMonth === 1 ? 12 : navMonth - 1
-      const prevY = navMonth === 1 ? navYear - 1 : navYear
-      cells.push({
-        day: daysInPrevMonth - i,
-        month: prevM,
-        year: prevY,
-        isCurrentMonth: false,
-      })
-    }
-
-    // Current month days
-    for (let d = 1; d <= daysInMonth; d++) {
-      cells.push({
-        day: d,
-        month: navMonth,
-        year: navYear,
-        isCurrentMonth: true,
-      })
-    }
-
-    // Next month filling
-    const totalSlots = Math.ceil(cells.length / 7) * 7
-    const remaining = totalSlots - cells.length
-    for (let d = 1; d <= remaining; d++) {
-      const nextM = navMonth === 12 ? 1 : navMonth + 1
-      const nextY = navMonth === 12 ? navYear + 1 : navYear
-      cells.push({
-        day: d,
-        month: nextM,
-        year: nextY,
-        isCurrentMonth: false,
-      })
-    }
-
-    return cells
-  }, [navYear, navMonth])
-
-  const today = useMemo(() => {
-    const now = new Date()
-    return {
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      day: now.getDate(),
-    }
+    const close = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node) && !popup.current?.contains(e.target as Node)) { setCalendarOpen(false); setTimeOpen(false) } }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
   }, [])
-
-  const commonPresets = [
-    { label: '08:00 AM', h: 8, m: 0, p: 'AM' as const },
-    { label: '09:00 AM', h: 9, m: 0, p: 'AM' as const },
-    { label: '10:00 AM', h: 10, m: 0, p: 'AM' as const },
-    { label: '11:00 AM', h: 11, m: 0, p: 'AM' as const },
-    { label: '01:00 PM', h: 1, m: 0, p: 'PM' as const },
-    { label: '02:00 PM', h: 2, m: 0, p: 'PM' as const },
-    { label: '03:00 PM', h: 3, m: 0, p: 'PM' as const },
-    { label: '04:00 PM', h: 4, m: 0, p: 'PM' as const },
-    { label: '05:00 PM', h: 5, m: 0, p: 'PM' as const },
-    { label: '06:00 PM', h: 6, m: 0, p: 'PM' as const },
-    { label: '07:00 PM', h: 7, m: 0, p: 'PM' as const },
-  ]
-
+  const cells = useMemo(() => {
+    const offset = new Date(view.year, view.month - 1, 1).getDay()
+    const length = new Date(view.year, view.month, 0).getDate()
+    const count = Math.ceil((offset + length) / 7) * 7
+    return Array.from({ length: count }, (_, i) => {
+      const d = new Date(view.year, view.month - 1, i - offset + 1)
+      return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, day: d.getDate(), current: d.getMonth() === view.month - 1 }
+    })
+  }, [view])
+  const goMonth = (delta: number) => {
+    const d = new Date(view.year, view.month - 1 + delta, 1)
+    setView({ year: d.getFullYear(), month: d.getMonth() + 1 })
+  }
+  const title = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(view.year, view.month - 1, 1))
+  const dayLabel = new Intl.DateTimeFormat(locale).format(new Date(year, month - 1, day))
+  const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
   return (
-    <div ref={containerRef} className={`datetime-picker-wrapper ${className}`} style={{ width: '100%', position: 'relative', ...style }}>
-      {label && (
-        <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
-          {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
-        </label>
-      )}
-
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Date Selector Button */}
-        <button
-          type="button"
-          onClick={() => setShowCalendar((prev) => !prev)}
-          style={{
-            flex: '1.4',
-            minWidth: '180px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.65rem 0.85rem',
-            background: '#0f172a',
-            border: `1px solid ${showCalendar ? '#6366f1' : '#334155'}`,
-            borderRadius: '0.75rem',
-            color: '#f8fafc',
-            fontSize: '0.88rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            outline: 'none',
-            boxShadow: showCalendar ? '0 0 0 2px rgba(99, 102, 241, 0.25)' : 'none',
-            transition: 'all 0.15s ease',
-          }}
-          title={t(language, 'select_date')}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1.1rem' }}>📅</span>
-            <span>{formattedDateLabel}</span>
-          </span>
-          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{showCalendar ? '▲' : '▼'}</span>
-        </button>
-
-        {/* Time Selector Controls */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            background: '#0f172a',
-            padding: '0.3rem 0.5rem',
-            borderRadius: '0.75rem',
-            border: '1px solid #334155',
-          }}
-        >
-          {/* Hour Dropdown */}
-          <select
-            value={parsed.hour12}
-            onChange={(e) => handleHourChange(Number(e.target.value))}
-            style={{
-              padding: '0.35rem 0.45rem',
-              background: '#1e293b',
-              border: '1px solid #475569',
-              borderRadius: '0.5rem',
-              color: '#fff',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-            title={t(language, 'select_time')}
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-              <option key={h} value={h}>
-                {pad2(h)}
-              </option>
-            ))}
-          </select>
-
-          <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>:</span>
-
-          {/* Minute Dropdown */}
-          <select
-            value={parsed.minute}
-            onChange={(e) => handleMinuteChange(Number(e.target.value))}
-            style={{
-              padding: '0.35rem 0.45rem',
-              background: '#1e293b',
-              border: '1px solid #475569',
-              borderRadius: '0.5rem',
-              color: '#fff',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-            title={t(language, 'select_time')}
-          >
-            {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((m) => (
-              <option key={m} value={m}>
-                {pad2(m)}
-              </option>
-            ))}
-          </select>
-
-          {/* AM / PM Toggle Button */}
-          <button
-            type="button"
-            onClick={handleTogglePeriod}
-            style={{
-              padding: '0.38rem 0.75rem',
-              borderRadius: '0.55rem',
-              border: parsed.period === 'AM' ? '1px solid #38bdf8' : '1px solid #818cf8',
-              background: parsed.period === 'AM' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(99, 102, 241, 0.25)',
-              color: parsed.period === 'AM' ? '#38bdf8' : '#a5b4fc',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.2rem',
-              transition: 'all 0.15s ease',
-              userSelect: 'none',
-            }}
-            title="Click to toggle AM / PM"
-          >
-            <span>{parsed.period === 'AM' ? '☀️ AM' : '🌙 PM'}</span>
-          </button>
+    <div ref={root} className={className} style={{ width: '100%', position: 'relative', ...style }}>
+      {label && <label style={{ display: 'block', marginBottom: 8, fontSize: 13, color: '#536b81', fontWeight: 600 }}>{label}{required ? ' *' : ''}</label>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
+        <div style={{ position: 'relative', minWidth: 0 }}>
+          <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
+          <div style={{ ...buttonStyle, width: '100%', minWidth: 0, boxSizing: 'border-box', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', gap: 4 }}>
+            <input className="reminder-calendar-date-input" aria-label="Digitar data" type="text" inputMode="numeric" value={dateDraft ?? `${pad(day)}/${pad(month)}/${year}`} onFocus={() => setDateDraft(`${pad(day)}/${pad(month)}/${year}`)} onChange={(event) => { if (/^[0-9/]{0,10}$/.test(event.target.value)) setDateDraft(event.target.value) }} onBlur={() => { const candidate = dateDraft; if (candidate && /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(candidate)) { const [dd, mm, yyyy] = candidate.split('/').map(Number); const check = new Date(yyyy, mm - 1, dd); if (check.getFullYear() === yyyy && check.getMonth() === mm - 1 && check.getDate() === dd) { const iso = `${yyyy}-${pad(mm)}-${pad(dd)}`; if (withinBounds(iso)) setDate(iso) } } setDateDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', width: '100%', minWidth: 0, padding: 0, height: 34, color: colors.ink, background: 'transparent', font: 'inherit', fontSize: 15, boxShadow: 'none' }} />
+            <button ref={calendarButton} type="button" aria-label="Abrir calendário" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current?.parentElement ?? null, 294, 294); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, padding: 0, display: 'flex', flexShrink: 0, cursor: 'pointer' }}><CalendarDays size={18}/></button>
+          </div>
+        </div>
+        <div style={{ position: 'relative', minWidth: 0 }}>
+          <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
+          <div ref={timeButton} style={{ ...buttonStyle, width: '100%', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', boxSizing: 'border-box', gap: 5 }}>
+            <input className="reminder-clock-time-input" aria-label="Digitar horário de início" inputMode="numeric" type="text" maxLength={5} value={timeDraft ?? time} onFocus={() => setTimeDraft(time)} onChange={(event) => { if (/^[0-9:]{0,5}$/.test(event.target.value)) setTimeDraft(event.target.value) }} onBlur={() => { const candidate = timeDraft ?? time; if (/^[0-9]{2}:[0-9]{2}$/.test(candidate)) { const [hh, mm] = candidate.split(':').map(Number); if (hh < 24 && mm < 60) setTime(hh, mm) } setTimeDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', padding: 0, width: '100%', minWidth: 0, height: 34, font: 'inherit', fontSize: 16, color: colors.ink, background: 'transparent', boxShadow: 'none' }} />
+            <button type="button" aria-label="Abrir rolagem de horas e minutos" aria-expanded={timeOpen} onClick={() => { positionPopup(timeButton.current, 192, 244); setTimeOpen(!timeOpen); setCalendarOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><Clock3 size={19}/></button>
+          </div>
         </div>
       </div>
-
-      {/* Quick Time Presets Strip */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          marginTop: '0.45rem',
-          overflowX: 'auto',
-          paddingBottom: '0.2rem',
-        }}
-      >
-        <span style={{ fontSize: '0.72rem', color: '#64748b', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {t(language, 'quick_presets') || 'Presets'}:
-        </span>
-        {commonPresets.map((preset) => {
-          const isSelected = parsed.hour12 === preset.h && parsed.minute === preset.m && parsed.period === preset.p
-          return (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => handleSelectPresetTime(preset.h, preset.m, preset.p)}
-              style={{
-                padding: '0.2rem 0.5rem',
-                borderRadius: '0.4rem',
-                border: isSelected ? '1px solid #10b981' : '1px solid #334155',
-                background: isSelected ? 'rgba(16, 185, 129, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                color: isSelected ? '#34d399' : '#94a3b8',
-                fontSize: '0.74rem',
-                fontWeight: isSelected ? 700 : 500,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.1s ease',
-              }}
-            >
-              {preset.label}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Calendar Popover Dialog */}
-      {showCalendar && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            zIndex: 999999,
-            background: '#090d16',
-            border: '1px solid #334155',
-            borderRadius: '1rem',
-            padding: '1rem',
-            width: '310px',
-            boxShadow: '0 20px 35px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(99, 102, 241, 0.15)',
-            backdropFilter: 'blur(16px)',
-          }}
-        >
-          {/* Month Header Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-            <button
-              type="button"
-              onClick={prevMonth}
-              style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '0.5rem',
-                color: '#f8fafc',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-              }}
-            >
-              ◀
-            </button>
-            <strong style={{ fontSize: '0.92rem', color: '#f8fafc' }}>{monthTitle}</strong>
-            <button
-              type="button"
-              onClick={nextMonth}
-              style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '0.5rem',
-                color: '#f8fafc',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-              }}
-            >
-              ▶
-            </button>
+      {calendarOpen && createPortal(
+        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Calendário" style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left, width: 'min(294px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', boxSizing: 'border-box', maxWidth: '100%', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 16, padding: '9px 11px 8px', boxShadow: '0 18px 40px rgba(34,56,80,.18)', zIndex: 100001 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+            <button type="button" aria-label="Mês anterior" style={{ ...buttonStyle, width: 32, minWidth: 32, height: 32 }} onClick={() => goMonth(-1)}><ChevronLeft size={22}/></button>
+            <strong style={{ fontSize: 14, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{title}</strong>
+            <button type="button" aria-label="Próximo mês" style={{ ...buttonStyle, width: 32, minWidth: 32, height: 32 }} onClick={() => goMonth(1)}><ChevronRight size={22}/></button>
           </div>
-
-          {/* Weekday Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', textAlign: 'center', marginBottom: '0.4rem' }}>
-            {weekDayHeaders.map((w, idx) => (
-              <span key={idx} style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', padding: '0.2rem 0' }}>
-                {w}
-              </span>
-            ))}
-          </div>
-
-          {/* Days Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-            {calendarCells.map((cell, idx) => {
-              const isSelected = cell.year === parsed.year && cell.month === parsed.month && cell.day === parsed.day
-              const isToday = cell.year === today.year && cell.month === today.month && cell.day === today.day
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectDate(cell.year, cell.month, cell.day)}
-                  style={{
-                    height: '34px',
-                    borderRadius: '0.5rem',
-                    border: isToday ? '1px solid #6366f1' : 'none',
-                    background: isSelected ? '#4f46e5' : isToday ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                    color: isSelected ? '#fff' : cell.isCurrentMonth ? '#e2e8f0' : '#475569',
-                    fontSize: '0.82rem',
-                    fontWeight: isSelected || isToday ? 700 : cell.isCurrentMonth ? 500 : 400,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.1s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = '#1e293b'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = isToday ? 'rgba(99, 102, 241, 0.2)' : 'transparent'
-                    }
-                  }}
-                >
-                  {cell.day}
-                </button>
-              )
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', textAlign: 'center', gap: 1 }}>
+            {labels.map((d, i) => <strong key={i} style={{ fontSize: 12, padding: '5px 0' }}>{d}</strong>)}
+            {cells.map((cell) => {
+              const active = cell.date === selectedDate
+              const allowed = withinBounds(cell.date)
+              return <button key={cell.date} type="button" disabled={!allowed} onClick={() => { setDate(cell.date); setCalendarOpen(false) }} style={{ height: 31, border: 0, borderRadius: 8, cursor: allowed ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: active ? 700 : 500, background: active ? colors.active : 'transparent', color: active ? '#fff' : cell.current ? colors.ink : colors.muted, opacity: allowed ? 1 : .4 }}>{cell.day}</button>
             })}
           </div>
-
-          {/* Bottom Quick Controls */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: '0.85rem',
-              paddingTop: '0.65rem',
-              borderTop: '1px solid #1e293b',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setNavYear(today.year)
-                setNavMonth(today.month)
-                handleSelectDate(today.year, today.month, today.day)
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#818cf8',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                padding: '0.2rem 0.4rem',
-              }}
-            >
-              📍 {t(language, 'today_btn') || 'Hoje'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowCalendar(false)}
-              style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '0.45rem',
-                color: '#cbd5e1',
-                fontSize: '0.78rem',
-                padding: '0.3rem 0.7rem',
-                cursor: 'pointer',
-              }}
-            >
-              {t(language, 'close') || 'Fechar'}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `1px solid ${colors.ink}`, marginTop: 6, paddingTop: 7 }}>
+            <button type="button" style={{ ...buttonStyle, minWidth: 44, height: 30, fontSize: 12, padding: '0 7px' }} disabled={!withinBounds(todayDate)} onClick={() => { if (withinBounds(todayDate)) { setDate(todayDate); setView({ year: today.getFullYear(), month: today.getMonth() + 1 }); setCalendarOpen(false) } }}>Hoje</button>
+            <button type="button" style={{ ...buttonStyle, minWidth: 52, height: 30, fontSize: 12, padding: '0 9px' }} onClick={() => setCalendarOpen(false)}>Fechar</button>
           </div>
-        </div>
+        </div>, document.body
+      )}
+      {timeOpen && createPortal(
+        <div ref={popup} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Selecionar hora e minuto" style={{ position: 'fixed', left: popupPosition.left, top: popupPosition.top, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', zIndex: 100001, width: 192, maxWidth: 'calc(100vw - 24px)', boxSizing: 'border-box', background: '#fff', color: colors.ink, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 10, boxShadow: '0 18px 40px rgba(34,56,80,.18)' }}>
+          <strong style={{ display: 'block', textAlign: 'center', marginBottom: 7 }}>Horário</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+            {[{ name: 'Horas', count: 24, value: h, update: (v: number) => setTime(v, m) }, { name: 'Minutos', count: 60, value: m, update: (v: number) => setTime(h, v) }].map((part) => (
+              <div key={part.name} style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', textAlign: 'center', fontSize: 12, marginBottom: 5 }}>{part.name}</span>
+                <CircularTimeColumn name={part.name} count={part.count} value={part.value} onSelect={part.update} />
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={() => setTimeOpen(false)} style={{ ...buttonStyle, width: '100%', marginTop: 8, height: 32 }}>Fechar</button>
+        </div>, document.body
       )}
     </div>
   )

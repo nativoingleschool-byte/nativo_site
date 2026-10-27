@@ -81,7 +81,8 @@ export type Lesson = {
   id: string
   subject: string
   class_name: string
-  student_id: string
+  student_id: string | null
+  lesson_kind?: 'standard' | 'substitution'
   teacher_id: string
   starts_at: string
   duration_minutes: number

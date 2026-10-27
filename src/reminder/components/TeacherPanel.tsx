@@ -76,7 +76,8 @@ interface TeacherPanelProps {
   createTeacherSingleLesson?: (draft: {
     subject: string
     class_name?: string
-    student_id: string
+    student_id: string | null
+    lesson_kind?: 'standard' | 'substitution'
     student_name?: string
     teacher_id?: string
     starts_at: string
@@ -198,6 +199,7 @@ export default function TeacherPanel({
   // Add Lesson Form State
   const [newLessonStudentId, setNewLessonStudentId] = useState('')
   const [newLessonStudentIds, setNewLessonStudentIds] = useState<string[]>([])
+  const [isSubstitutionLesson, setIsSubstitutionLesson] = useState(false)
   const [newLessonStudentName, setNewLessonStudentName] = useState('')
   const [addStudentMode, setAddStudentMode] = useState<'select' | 'custom'>('select')
   const [newLessonStudentsOpen, setNewLessonStudentsOpen] = useState(false)
@@ -346,6 +348,10 @@ export default function TeacherPanel({
     if (status === 'happened') {
       const target = lessons.find((lesson) => lesson.id === lessonId)
       if (!target) return
+      if (target.lesson_kind === 'substitution') {
+        await handleQuickStatusChange(target, 'happened')
+        return
+      }
       const promptLessons = groupLessonsIntoTeacherSessions(teacherLessons)
         .find((session) => session.lessons.some((lesson) => lesson.id === target.id))?.lessons ?? [target]
       setAttendanceLessons(promptLessons)
@@ -496,6 +502,7 @@ export default function TeacherPanel({
     }
     setNewLessonStudentId('')
     setNewLessonStudentIds([])
+    setIsSubstitutionLesson(false)
     setStudentSearch('')
     setNewLessonStudentName('')
     setNewLessonMeetingUrl('')
@@ -518,19 +525,21 @@ export default function TeacherPanel({
     e.preventDefault()
     if (isSubmitting) return
     const studentIds = [...new Set(newLessonStudentIds.filter(Boolean))]
-    if (!studentIds.length || !newLessonSubject.trim() || !newLessonStartsAt) {
+    if ((!isSubstitutionLesson && !studentIds.length) || !newLessonSubject.trim() || !newLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
+    if (isSubstitutionLesson && newRecurring) { toast.error('Aulas de substituição são avulsas.'); return }
     if (newRecurring && (!Number.isInteger(newRecurrenceWeeks) || newRecurrenceWeeks < 2 || newRecurrenceWeeks > 52)) {
       toast.error('Escolha de 2 a 52 semanas para a recorrência.')
       return
     }
     const payload = {
       student_ids: studentIds,
+      lesson_kind: isSubstitutionLesson ? 'substitution' : 'standard',
       teacher_id: profile.id,
       subject: newLessonSubject.trim(),
-      class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
+      class_name: isSubstitutionLesson ? 'Substituição' : (sortedStudents.find((item) => item.id === studentIds[0])?.class_name || ''),
       starts_at: dateTimeLocalToIso(newLessonStartsAt, appTimeZone),
       duration_minutes: newLessonDuration,
       meeting_url: newLessonMeetingUrl.trim() || null,
@@ -540,7 +549,9 @@ export default function TeacherPanel({
     toast.info('Salvando aula em segundo plano…')
     void (async () => {
       try {
-        if (newRecurring && saveWeeklySeries) {
+        if (isSubstitutionLesson && createTeacherSingleLesson) {
+          await createTeacherSingleLesson({ ...payload, student_id: null, lesson_kind: 'substitution' })
+        } else if (newRecurring && saveWeeklySeries) {
           await saveWeeklySeries({ ...payload, recurrence_weeks: newRecurrenceWeeks })
         } else if (studentIds.length > 1) {
           await createLessonFromDraft(payload)
@@ -559,11 +570,11 @@ export default function TeacherPanel({
 
   // Open Edit Lesson Modal
   const handleOpenEditLesson = (lesson: Lesson, group: Lesson[] = [lesson]) => {
-    if (refreshProfiles) {
+    if (lesson.lesson_kind !== 'substitution' && refreshProfiles) {
       void refreshProfiles().catch((error) => toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar a lista de alunos.'))
     }
     setEditingLesson(lesson)
-    setEditLessonStudentId(lesson.student_id)
+    setEditLessonStudentId(lesson.student_id || '')
     setEditLessonStudentIds(Array.from(new Set(group.map((item) => item.student_id).filter(Boolean))))
     setEditLessonIds(group.map((item) => item.id))
     setEditStudentsOpen(false)
@@ -582,7 +593,7 @@ export default function TeacherPanel({
     e.preventDefault()
     if (isSubmitting || !editingLesson) return
     const studentIds = [...new Set(editLessonStudentIds.filter(Boolean))]
-    if (!studentIds.length || !editLessonSubject.trim() || !editLessonStartsAt) {
+    if ((editingLesson.lesson_kind !== 'substitution' && !studentIds.length) || !editLessonSubject.trim() || !editLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
@@ -598,7 +609,7 @@ export default function TeacherPanel({
       student_ids: studentIds,
       teacher_id: profile.id,
       subject: editLessonSubject.trim(),
-      class_name: profilesById[studentIds[0]]?.class_name || editingLesson.class_name || '',
+      class_name: editingLesson.lesson_kind === 'substitution' ? 'Substituição' : (profilesById[studentIds[0]]?.class_name || editingLesson.class_name || ''),
       starts_at: dateTimeLocalToIso(editLessonStartsAt, appTimeZone),
       duration_minutes: editLessonDuration,
       meeting_url: editLessonMeetingUrl.trim() || null,
@@ -609,7 +620,9 @@ export default function TeacherPanel({
     toast.info('Salvando alterações em segundo plano…')
     void (async () => {
       try {
-        if (editRecurring && saveWeeklySeries) {
+        if (editingLesson.lesson_kind === 'substitution' && updateTeacherSingleLesson) {
+          await updateTeacherSingleLesson({ lesson_id: lessonId, subject: payload.subject, class_name: payload.class_name, starts_at: payload.starts_at, duration_minutes: payload.duration_minutes, meeting_url: payload.meeting_url, teacher_lesson_status: payload.teacher_lesson_status })
+        } else if (editRecurring && saveWeeklySeries) {
           await saveWeeklySeries({ ...payload, recurrence_weeks: seriesId ? 1 : editRecurrenceWeeks })
         } else if (payload.lesson_ids.length > 1 || studentIds.length > 1) {
           await updateTeacherLessonGroup(payload)
@@ -633,7 +646,7 @@ export default function TeacherPanel({
       const lessonIds = targetLessons.map((l) => l.id)
       console.info('[reminder:teacher:status] requested', { lessonIds, newStatus, visualPreviewMode })
 
-      if (newStatus === 'happened') {
+      if (newStatus === 'happened' && !targetLessons.every((lesson) => lesson.lesson_kind === 'substitution')) {
         setAttendanceLessons(targetLessons)
         setAttendanceDraft(Object.fromEntries(targetLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
         return
@@ -1278,8 +1291,9 @@ export default function TeacherPanel({
                 <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setShowAddLessonModal(false)}><X size={19} /></button>
               </div>
 
-              <form onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div className="teacher-student-field">
+              <form className="substitution-safe-lesson-form" onSubmit={handleAddLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="teacher-recurring-field"><label className="teacher-recurring-field__toggle"><input type="checkbox" checked={isSubstitutionLesson} onChange={(event) => { setIsSubstitutionLesson(event.target.checked); if (event.target.checked) { setNewRecurring(false); setNewLessonStatus(null) } }} /><span>Aula de substituição</span><span className="teacher-recurring-field__hint">Sem aluno vinculado</span></label></div>
+                {!isSubstitutionLesson && <div className="teacher-student-field">
                   <div className="teacher-student-field__heading">
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
@@ -1346,7 +1360,8 @@ export default function TeacherPanel({
                   {visualPreviewMode && sortedStudents.length === 0 && (
                     <p className="teacher-student-field__empty">Nenhum aluno cadastrado para selecionar.</p>
                   )}
-                </div>
+                </div>}
+
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
@@ -1359,12 +1374,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                </div>
+                <div className="teacher-preview-dialog-date-time"><DateTimePicker value={newLessonStartsAt} onChange={setNewLessonStartsAt} language={modalLanguage} required /></div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="teacher-modal-field-label">Link da aula <span>(opcional)</span></label>
@@ -1527,7 +1537,7 @@ export default function TeacherPanel({
                 <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => setEditingLesson(null)}><X size={19} /></button>
               </div>
 
-              <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <form className="substitution-safe-lesson-form" onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="teacher-preview-dialog-student">
                   <label className="teacher-modal-field-label">Alunos</label>
                   <div className="teacher-student-dropdown">
@@ -1610,12 +1620,7 @@ export default function TeacherPanel({
                   />
                 </div>
 
-                <div className="teacher-preview-dialog-date-time">
-                  <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
-                  <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
-                </div>
+                <div className="teacher-preview-dialog-date-time"><DateTimePicker value={editLessonStartsAt} onChange={setEditLessonStartsAt} language={modalLanguage} required /></div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
                   <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (opcional)</label>
