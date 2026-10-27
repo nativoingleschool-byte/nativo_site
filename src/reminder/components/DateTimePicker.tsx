@@ -36,6 +36,7 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
   const [timeDraft, setTimeDraft] = useState<string | null>(null)
+  const [dateDraft, setDateDraft] = useState<string | null>(null)
   const date = /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : new Date().toLocaleDateString('en-CA')
   const time = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? value.slice(11, 16) : '09:00'
   const [year, month, day] = date.split('-').map(Number)
@@ -76,9 +77,10 @@ export default function DateTimePicker({ value, onChange, language = 'pt', label
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Data' : language === 'es' ? 'Fecha' : 'Date'}</span>
-          <button ref={calendarButton} type="button" aria-label="Selecionar data" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ ...buttonStyle, width: '100%', minWidth: 0, boxSizing: 'border-box', height: 52, padding: '0 14px', justifyContent: 'space-between', background: '#fff' }}>
-            <span>{dayLabel}</span><CalendarDays size={18} />
-          </button>
+          <div style={{ ...buttonStyle, width: '100%', minWidth: 0, boxSizing: 'border-box', height: 52, padding: '0 12px', justifyContent: 'space-between', background: '#fff', gap: 4 }}>
+            <input aria-label="Digitar data" type="text" inputMode="numeric" value={dateDraft ?? `${pad(day)}/${pad(month)}/${year}`} onFocus={() => setDateDraft(`${pad(day)}/${pad(month)}/${year}`)} onChange={(event) => { if (/^[0-9/]{0,10}$/.test(event.target.value)) setDateDraft(event.target.value) }} onBlur={() => { const candidate = dateDraft; if (candidate && /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(candidate)) { const [dd, mm, yyyy] = candidate.split('/').map(Number); const check = new Date(yyyy, mm - 1, dd); if (check.getFullYear() === yyyy && check.getMonth() === mm - 1 && check.getDate() === dd) { const iso = `${yyyy}-${pad(mm)}-${pad(dd)}`; if (withinBounds(iso)) setDate(iso) } } setDateDraft(null) }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} style={{ border: 'none', outline: 'none', width: '100%', minWidth: 0, padding: 0, height: 34, color: colors.ink, background: 'transparent', font: 'inherit', fontSize: 15, boxShadow: 'none' }} />
+            <button ref={calendarButton} type="button" aria-label="Abrir calendário" aria-expanded={calendarOpen} onClick={() => { positionPopup(calendarButton.current, 350, 385); setCalendarOpen(!calendarOpen); setTimeOpen(false) }} style={{ border: 0, background: 'transparent', color: colors.ink, padding: 0, display: 'flex', flexShrink: 0, cursor: 'pointer' }}><CalendarDays size={18}/></button>
+          </div>
         </div>
         <div style={{ position: 'relative', minWidth: 0 }}>
           <span style={{ display: 'block', marginBottom: 9, fontSize: 13, fontWeight: 600, color: '#536b81' }}>{language === 'pt' ? 'Horário de início' : language === 'es' ? 'Hora de inicio' : 'Start time'}</span>
