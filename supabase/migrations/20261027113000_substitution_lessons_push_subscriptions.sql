@@ -37,3 +37,16 @@ create policy "push_subscription_owner_select" on public.push_subscriptions for 
 create policy "push_subscription_owner_insert" on public.push_subscriptions for insert to authenticated with check (user_id = (select auth.uid()));
 create policy "push_subscription_owner_update" on public.push_subscriptions for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "push_subscription_owner_delete" on public.push_subscriptions for delete to authenticated using (user_id = (select auth.uid()));
+
+-- Delivery idempotency is tracked per device, lesson and reminder phase.
+-- These rows are server-managed, never exposed to client roles.
+create table if not exists public.push_dispatches (
+  subscription_id uuid not null references public.push_subscriptions(id) on delete cascade,
+  lesson_id uuid not null references public.lessons(id) on delete cascade,
+  notification_kind text not null check (notification_kind in ('student_4h','student_start','teacher_4h','teacher_start')),
+  delivered_at timestamptz,
+  created_at timestamptz not null default now(),
+  primary key (subscription_id, lesson_id, notification_kind)
+);
+alter table public.push_dispatches enable row level security;
+revoke all on public.push_dispatches from anon, authenticated;
