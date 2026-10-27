@@ -306,10 +306,11 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const teacherId = payload.teacher_id || profile.id
   ensureTeacherPermission(profile, teacherId)
 
-  if (profile.role === 'teacher' && !isUuid(payload.student_id)) {
+  const substitution = payload.lesson_kind === 'substitution'
+  if (!substitution && profile.role === 'teacher' && !isUuid(payload.student_id)) {
     throw new Error('Selecione um aluno já cadastrado na lista.')
   }
-  const studentId = profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload)
+  const studentId = substitution ? null : (profile.role === 'teacher' ? payload.student_id : await resolveStudentId(supabaseAdmin, payload))
 
   if (!payload.subject?.trim()) {
     throw new Error('Subject is required.')
@@ -321,12 +322,13 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
   const startsAt = new Date(payload.starts_at)
   const duration = Number(payload.duration_minutes) || 60
   const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
-  const teacherLessonStatus = payload.teacher_lesson_status ?? 'happened'
+  const teacherLessonStatus = payload.teacher_lesson_status === undefined ? (substitution ? null : 'happened') : payload.teacher_lesson_status
 
   const row = {
     subject: payload.subject.trim(),
     class_name: payload.class_name ?? '',
     student_id: studentId,
+    lesson_kind: substitution ? 'substitution' : 'standard',
     teacher_id: teacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
@@ -369,7 +371,7 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
   const updateData = {
     subject: String(payload.subject ?? existingLesson.subject).trim(),
     class_name: String(payload.class_name ?? existingLesson.class_name ?? ''),
-    student_id: payload.student_id ?? existingLesson.student_id,
+    student_id: existingLesson.lesson_kind === 'substitution' ? null : (payload.student_id ?? existingLesson.student_id),
     teacher_id: nextTeacherId,
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
