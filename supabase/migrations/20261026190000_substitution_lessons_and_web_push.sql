@@ -7,7 +7,8 @@ alter table public.lessons add constraint lessons_lesson_kind_check
 alter table public.lessons alter column student_id drop not null;
 alter table public.lessons drop constraint if exists lessons_student_required_check;
 alter table public.lessons add constraint lessons_student_required_check
-  check (lesson_kind = 'substitution' or student_id is not null);
+  check ((lesson_kind = 'substitution' and student_id is null)
+      or (lesson_kind = 'standard' and student_id is not null));
 comment on column public.lessons.lesson_kind is 'substitution permits a teacher-only appointment; student_id must be null or valid UUID.';
 
 -- Private device subscriptions. No public read/write, only authenticated server endpoints.
