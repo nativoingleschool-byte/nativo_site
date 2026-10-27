@@ -570,7 +570,7 @@ export default function TeacherPanel({
       void refreshProfiles().catch((error) => toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar a lista de alunos.'))
     }
     setEditingLesson(lesson)
-    setEditLessonStudentId(lesson.student_id)
+    setEditLessonStudentId(lesson.student_id || '')
     setEditLessonStudentIds(Array.from(new Set(group.map((item) => item.student_id).filter(Boolean))))
     setEditLessonIds(group.map((item) => item.id))
     setEditStudentsOpen(false)
@@ -589,7 +589,7 @@ export default function TeacherPanel({
     e.preventDefault()
     if (isSubmitting || !editingLesson) return
     const studentIds = [...new Set(editLessonStudentIds.filter(Boolean))]
-    if (!studentIds.length || !editLessonSubject.trim() || !editLessonStartsAt) {
+    if ((editingLesson.lesson_kind !== 'substitution' && !studentIds.length) || !editLessonSubject.trim() || !editLessonStartsAt) {
       toast.error(t(language, 'fill_required_fields'))
       return
     }
@@ -605,7 +605,7 @@ export default function TeacherPanel({
       student_ids: studentIds,
       teacher_id: profile.id,
       subject: editLessonSubject.trim(),
-      class_name: profilesById[studentIds[0]]?.class_name || editingLesson.class_name || '',
+      class_name: editingLesson.lesson_kind === 'substitution' ? 'Substituição' : (profilesById[studentIds[0]]?.class_name || editingLesson.class_name || ''),
       starts_at: dateTimeLocalToIso(editLessonStartsAt, appTimeZone),
       duration_minutes: editLessonDuration,
       meeting_url: editLessonMeetingUrl.trim() || null,
@@ -616,7 +616,9 @@ export default function TeacherPanel({
     toast.info('Salvando alterações em segundo plano…')
     void (async () => {
       try {
-        if (editRecurring && saveWeeklySeries) {
+        if (editingLesson.lesson_kind === 'substitution' && updateTeacherSingleLesson) {
+          await updateTeacherSingleLesson({ lesson_id: lessonId, subject: payload.subject, class_name: payload.class_name, starts_at: payload.starts_at, duration_minutes: payload.duration_minutes, meeting_url: payload.meeting_url, teacher_lesson_status: payload.teacher_lesson_status })
+        } else if (editRecurring && saveWeeklySeries) {
           await saveWeeklySeries({ ...payload, recurrence_weeks: seriesId ? 1 : editRecurrenceWeeks })
         } else if (payload.lesson_ids.length > 1 || studentIds.length > 1) {
           await updateTeacherLessonGroup(payload)
@@ -640,7 +642,7 @@ export default function TeacherPanel({
       const lessonIds = targetLessons.map((l) => l.id)
       console.info('[reminder:teacher:status] requested', { lessonIds, newStatus, visualPreviewMode })
 
-      if (newStatus === 'happened') {
+      if (newStatus === 'happened' && !targetLessons.every((lesson) => lesson.lesson_kind === 'substitution')) {
         setAttendanceLessons(targetLessons)
         setAttendanceDraft(Object.fromEntries(targetLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
         return
