@@ -848,10 +848,10 @@ export default function AdminCalendar({
               className="calendar-view-toggle"
               style={{
                 display: 'inline-flex',
-                background: '#f2f5f8',
+                background: 'var(--portal-surface-subtle)',
                 padding: '0.2rem',
                 borderRadius: '0.75rem',
-                border: '1px solid #dfe7ee',
+                border: '1px solid var(--portal-border)',
               }}
             >
               <button
@@ -865,8 +865,8 @@ export default function AdminCalendar({
                   fontSize: '0.84rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: calendarMode === 'classes' ? '#1f4268' : 'transparent',
-                  color: calendarMode === 'classes' ? '#fff' : '#506982',
+                  background: calendarMode === 'classes' ? 'var(--portal-primary)' : 'transparent',
+                  color: calendarMode === 'classes' ? '#fff' : 'var(--portal-text-secondary)',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
@@ -887,8 +887,8 @@ export default function AdminCalendar({
                   fontSize: '0.84rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: calendarMode === 'availability' ? '#1f4268' : 'transparent',
-                  color: calendarMode === 'availability' ? '#fff' : '#506982',
+                  background: calendarMode === 'availability' ? 'var(--portal-primary)' : 'transparent',
+                  color: calendarMode === 'availability' ? '#fff' : 'var(--portal-text-secondary)',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
@@ -909,10 +909,10 @@ export default function AdminCalendar({
               onChange={(e) => setSelectedTeacherId(e.target.value)}
               style={{
                 padding: '0.45rem 0.85rem',
-                background: '#090d16',
-                border: '1px solid #334155',
+                background: 'var(--portal-input-bg)',
+                border: '1px solid var(--portal-border-strong)',
                 borderRadius: '0.6rem',
-                color: '#fff',
+                color: 'var(--portal-text)',
                 fontSize: '0.84rem',
                 fontWeight: 600,
               }}

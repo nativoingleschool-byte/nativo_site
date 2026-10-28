@@ -5944,3 +5944,271 @@ html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-event:hover {
   background: var(--portal-surface-hover) !important;
   border-color: var(--portal-border-strong) !important;
 }
+
+
+/* ========================================================================== */
+/* Complete Calendar Dark Mode Overrides (Month, Week, Agenda & Admin/Teacher)*/
+/* ========================================================================== */
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-shell,
+html[data-theme="dark"] .reminder-app-scope .role-teacher .teacher-calendar-shell,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-card .teacher-calendar-shell,
+html[data-theme="dark"] body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-shell {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-toolbar,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-card .teacher-calendar-toolbar {
+  background: var(--portal-surface) !important;
+  border-bottom-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-month {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-today-button,
+html[data-theme="dark"] .reminder-app-scope .calendar-nav-button,
+html[data-theme="dark"] .reminder-app-scope .calendar-availability-button {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-today-button:hover,
+html[data-theme="dark"] .reminder-app-scope .calendar-nav-button:hover,
+html[data-theme="dark"] .reminder-app-scope .calendar-availability-button:hover {
+  background: var(--portal-surface-hover) !important;
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-availability-button span {
+  color: var(--portal-link) !important;
+  -webkit-text-fill-color: var(--portal-link) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-view-switcher {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-view-switcher button {
+  background: transparent !important;
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-view-switcher button:hover {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .calendar-view-switcher button.is-active {
+  background: var(--portal-primary) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn:not(.active) {
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-toggle-btn.active {
+  background: var(--portal-primary) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Month View Grid, Weekdays & Day Cells */
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-grid,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-days {
+  background: var(--portal-surface) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-weekdays {
+  background: var(--portal-surface-subtle) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-weekday {
+  background: var(--portal-surface-subtle) !important;
+  border-right-color: var(--portal-border) !important;
+  border-bottom-color: var(--portal-border) !important;
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day {
+  background: var(--portal-surface) !important;
+  border-right-color: var(--portal-border) !important;
+  border-bottom-color: var(--portal-border) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day:hover {
+  background: var(--portal-surface-hover) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day.is-outside {
+  background: rgba(2, 6, 23, 0.45) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day.is-outside:hover {
+  background: rgba(15, 23, 42, 0.75) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-date {
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day.is-outside .teacher-calendar-date {
+  color: var(--portal-text-muted) !important;
+  -webkit-text-fill-color: var(--portal-text-muted) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day.is-today {
+  background: rgba(56, 189, 248, 0.06) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-day.is-today .teacher-calendar-date {
+  background: var(--portal-primary) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-today-label {
+  color: var(--portal-link) !important;
+  -webkit-text-fill-color: var(--portal-link) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-more {
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+/* Month View Event Pills */
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-blue {
+  background: rgba(37, 99, 235, 0.24) !important;
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+  border-left: 3px solid #38bdf8 !important;
+  color: #f0f9ff !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event strong,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-blue strong {
+  color: #f0f9ff !important;
+  -webkit-text-fill-color: #f0f9ff !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event span,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-blue span {
+  color: #bae6fd !important;
+  -webkit-text-fill-color: #bae6fd !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-green {
+  background: var(--status-success-bg) !important;
+  border: 1px solid var(--status-success-border) !important;
+  border-left: 3px solid #10b981 !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-green strong,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-green span {
+  color: var(--status-success-text) !important;
+  -webkit-text-fill-color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-gold {
+  background: var(--status-warning-bg) !important;
+  border: 1px solid var(--status-warning-border) !important;
+  border-left: 3px solid #f59e0b !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-gold strong,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-gold span {
+  color: var(--status-warning-text) !important;
+  -webkit-text-fill-color: var(--status-warning-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-avail-pill {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(16, 185, 129, 0.14),
+    rgba(16, 185, 129, 0.14) 6px,
+    rgba(16, 185, 129, 0.24) 6px,
+    rgba(16, 185, 129, 0.24) 12px
+  ) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  border-left: 3px solid #10b981 !important;
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-avail-pill strong,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-avail-pill span {
+  color: var(--status-success-text) !important;
+  -webkit-text-fill-color: var(--status-success-text) !important;
+}
+
+/* Week View & Agenda View Event Details */
+html[data-theme="dark"] .reminder-app-scope .gcal-week-day-name {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--lesson {
+  background: rgba(37, 99, 235, 0.32) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-left: 3px solid #f59e0b !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--lesson strong,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--lesson span {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--avail strong,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--avail span,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--done strong,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--done span {
+  color: var(--status-success-text) !important;
+  -webkit-text-fill-color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-view__heading,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-view__heading span {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-view__heading strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-empty {
+  color: var(--portal-text-muted) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-event strong {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-event span {
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-agenda-zoom-link {
+  background: var(--portal-primary) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
