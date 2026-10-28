@@ -414,8 +414,8 @@ function ReminderAppInner() {
           }
         }}
       >
-        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
+        <div ref={resetPasswordCardRef} className="form-card" style={{ maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>
             {language === 'es' ? 'Actualizar Contraseña' : language === 'en' ? 'Update Password' : 'Atualizar Senha'}
           </h3>
           
@@ -445,7 +445,7 @@ function ReminderAppInner() {
             }
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--portal-text-secondary)' }}>
                 {language === 'es' ? 'Nueva Contraseña' : language === 'en' ? 'New Password' : 'Nova Senha'}
               </label>
               <input
@@ -454,12 +454,12 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', color: 'var(--portal-text)' }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--portal-text-secondary)' }}>
                 {language === 'es' ? 'Confirmar Nueva Contraseña' : language === 'en' ? 'Confirm New Password' : 'Confirmar Nova Senha'}
               </label>
               <input
@@ -468,7 +468,7 @@ function ReminderAppInner() {
                 placeholder="••••••••"
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', color: 'var(--portal-text)' }}
               />
             </div>
 
@@ -2523,7 +2523,7 @@ function ReminderAppInner() {
 export default function ReminderApp() {
   return (
     <ToastProvider>
-      <div className="reminder-app-scope bg-[#020617] text-[#e5eefc] min-h-screen">
+      <div className="reminder-app-scope bg-[var(--portal-bg)] text-[var(--portal-text)] min-h-screen">
         <ReminderAppInner />
       </div>
     </ToastProvider>

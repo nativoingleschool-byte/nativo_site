@@ -335,7 +335,7 @@ export default function StudentPanel({
 
               <section style={{ flex: 0.7 }}>
                 <h3>{t(language, 'alert_settings_title')}</h3>
-                <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
+                <div className="form-card" style={{ background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', padding: '1rem', borderRadius: '1rem' }}>
                   <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
                     {t(language, 'alert_settings_desc')}
                   </p>
@@ -375,9 +375,9 @@ export default function StudentPanel({
           <div className="split-column animate-fade-in">
             <section style={{ flex: 1 }}>
               <h3>{t(language, 'registration_data')}</h3>
-              <form onSubmit={handleSaveStudentData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(30,41,59,0.2)', padding: '1.25rem', borderRadius: '1.25rem' }}>
+              <form onSubmit={handleSaveStudentData} className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', padding: '1.25rem', borderRadius: '1.25rem' }}>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'full_name')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'full_name')}</label>
                   <input
                     required
                     value={fullName}
@@ -385,7 +385,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'email_optional')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'email_optional')}</label>
                   <input
                     required
                     type="email"
@@ -394,7 +394,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cpf_label')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'cpf_label')}</label>
                   <input
                     placeholder="000.000.000-00"
                     value={cpf}
@@ -402,7 +402,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'cep_label')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'cep_label')}</label>
                   <input
                     placeholder="06401-000"
                     value={cep}
@@ -410,7 +410,7 @@ export default function StudentPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'address_label')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'address_label')}</label>
                   <input
                     placeholder="Av. Principal, 123"
                     value={logradouro}
@@ -419,7 +419,7 @@ export default function StudentPanel({
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <div style={{ flex: 1 }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'neighborhood_label')}</label>
+                    <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'neighborhood_label')}</label>
                     <input
                       placeholder="Centro"
                       value={bairro}
@@ -427,7 +427,7 @@ export default function StudentPanel({
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'city_label')}</label>
+                    <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'city_label')}</label>
                     <input
                       placeholder="Barueri"
                       value={cidade}
@@ -435,7 +435,7 @@ export default function StudentPanel({
                     />
                   </div>
                   <div style={{ width: '60px' }}>
-                    <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'state_label')}</label>
+                    <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'state_label')}</label>
                     <input
                       placeholder="SP"
                       maxLength={2}
@@ -445,15 +445,15 @@ export default function StudentPanel({
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'preferred_billing_day')}</label>
-                  <strong className="text-white text-base block mt-1" style={{ padding: '0 0.5rem' }}>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'preferred_billing_day')}</label>
+                  <strong className="text-base block mt-1" style={{ padding: '0 0.5rem', color: 'var(--portal-heading)' }}>
                     {profile.data_pagamento_preferencial
                       ? t(language, 'day_of_each_month').replace('{day}', String(profile.data_pagamento_preferencial))
                       : t(language, 'not_defined')}
                   </strong>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(language, 'student_financial_status')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(language, 'student_financial_status')}</label>
                   <span className={`${badgeClass(profile.status_pagamento || 'pendente')} inline-block mt-1`}>
                     {profile.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
                     {profile.status_pagamento === 'atrasado' && t(language, 'financial_late')}
@@ -473,9 +473,9 @@ export default function StudentPanel({
                 {invoices
                   .filter(inv => inv.student_id === profile.id)
                   .map((inv) => (
-                    <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                    <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', borderRadius: '1rem' }}>
                       <div>
-                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>{t(language, 'invoice_nativo')}</p>
+                        <p className="font-bold" style={{ fontSize: '0.9rem', color: 'var(--portal-heading)' }}>{t(language, 'invoice_nativo')}</p>
                         <p className="muted text-xs">{new Date(inv.created_at).toLocaleDateString()}</p>
                         <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
                           {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
@@ -516,39 +516,39 @@ export default function StudentPanel({
             <div
               className="form-card"
               style={{
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.7))',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
+                background: 'var(--portal-surface-subtle)',
+                border: '1px solid var(--status-info-border)',
                 borderRadius: '1.25rem',
                 padding: '1.5rem',
               }}
             >
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#fff', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--portal-heading)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span>💳</span>
                 {language === 'es' ? 'Resumen de Matrícula y Pagos' : language === 'en' ? 'Tuition & Billing Overview' : 'Resumo da Mensalidade e Pagamentos'}
               </h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'var(--portal-surface)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--portal-border)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Valor Mensual' : language === 'en' ? 'Monthly Tuition' : 'Valor da Mensalidade'}
                   </p>
-                  <p style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#38bdf8' }}>
+                  <p style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--portal-link)' }}>
                     {profile.tuition_fee ? `R$ ${Number(profile.tuition_fee).toFixed(2).replace('.', ',')}` : 'R$ 0,00'}
                   </p>
                 </div>
 
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'var(--portal-surface)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--portal-border)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Vencimiento Preferencial' : language === 'en' ? 'Preferred Due Day' : 'Vencimento Preferencial'}
                   </p>
-                  <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc' }}>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--portal-heading)' }}>
                     {profile.data_pagamento_preferencial
                       ? (language === 'es' ? `Día ${profile.data_pagamento_preferencial} de cada mes` : language === 'en' ? `Day ${profile.data_pagamento_preferencial} of each month` : `Dia ${profile.data_pagamento_preferencial} de cada mês`)
                       : (language === 'es' ? 'Día 5 de cada mes' : language === 'en' ? 'Day 5 of each month' : 'Dia 5 de cada mês')}
                   </p>
                 </div>
 
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ background: 'var(--portal-surface)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--portal-border)' }}>
                   <p className="muted" style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
                     {language === 'es' ? 'Situación Actual' : language === 'en' ? 'Current Status' : 'Situação Atual'}
                   </p>
@@ -562,7 +562,7 @@ export default function StudentPanel({
             </div>
 
             <section>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--portal-heading)', marginBottom: '0.75rem' }}>
                 {t(language, 'invoices_title')}
               </h3>
               {loadingInvoices ? (
@@ -571,9 +571,9 @@ export default function StudentPanel({
                 <div className="list-stack">
                   {myInvoices.map((inv) => {
                     return (
-                      <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                      <div key={inv.id} className="lesson-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', borderRadius: '1rem' }}>
                         <div>
-                          <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>Nativo Languages Brazil LTDA - NFS-e</p>
+                          <p className="font-bold" style={{ fontSize: '0.9rem', color: 'var(--portal-heading)' }}>Nativo Languages Brazil LTDA - NFS-e</p>
                           <p className="muted text-xs" style={{ marginTop: '0.25rem' }}>
                             <strong>{t(language, 'billing_period_ref')}:</strong> {inv.billing_period || t(language, 'not_specified')}
                           </p>

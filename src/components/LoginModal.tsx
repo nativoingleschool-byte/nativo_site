@@ -148,7 +148,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
       onClick={handleClose}
     >
       <div 
-        className="bg-white rounded-[2rem] max-w-md w-full overflow-hidden flex flex-col shadow-2xl border border-outline transition-all duration-300 transform scale-100"
+        className="bg-surface rounded-[2rem] max-w-md w-full overflow-hidden flex flex-col shadow-2xl border border-outline transition-all duration-300 transform scale-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -166,7 +166,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
             </p>
           </div>
           <button 
-            className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-1.5 hover:bg-background rounded-full"
+            className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-1.5 hover:bg-surface-subtle rounded-full"
             onClick={handleClose}
             aria-label={lang === 'es' ? 'Cerrar' : lang === 'en' ? 'Close' : 'Fechar'}
           >
@@ -179,12 +179,12 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
           {isForgotView ? (
             <form className="space-y-4" onSubmit={handleResetPassword}>
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 font-medium">
+                <div className="p-4 rounded-2xl text-xs font-medium border" style={{ background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)', borderColor: 'var(--status-danger-border)' }}>
                   {error}
                 </div>
               )}
               {successMsg && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-2xl text-xs text-green-600 font-medium">
+                <div className="p-4 rounded-2xl text-xs font-medium border" style={{ background: 'var(--status-success-bg)', color: 'var(--status-success-text)', borderColor: 'var(--status-success-border)' }}>
                   {successMsg}
                 </div>
               )}
@@ -210,7 +210,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-4 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:opacity-95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -224,7 +224,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
                 
                 <button 
                   type="button"
-                  className="w-full py-4 bg-gray-100 text-gray-700 rounded-full font-bold hover:bg-gray-200 transition-all cursor-pointer text-sm"
+                  className="w-full py-4 bg-surface-subtle border border-outline text-on-surface rounded-full font-bold hover:bg-background transition-all cursor-pointer text-sm"
                   onClick={() => {
                     setIsForgotView(false);
                     setError('');
@@ -238,7 +238,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 font-medium">
+                <div className="p-4 rounded-2xl text-xs font-medium border" style={{ background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)', borderColor: 'var(--status-danger-border)' }}>
                   {error}
                 </div>
               )}
@@ -281,7 +281,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
                       type="checkbox"
                       checked={keepLoggedIn}
                       onChange={(e) => setKeepLoggedIn(e.target.checked)}
-                      className="w-4 h-4 rounded border-outline text-primary accent-[#1F3A5F] cursor-pointer"
+                      className="w-4 h-4 rounded border-outline text-primary accent-[var(--portal-primary)] cursor-pointer"
                     />
                     <span>
                       {lang === 'es' 
@@ -309,7 +309,7 @@ export default function LoginModal({ isOpen, onClose, lang = 'pt' }: LoginModalP
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full mt-2 py-4 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:opacity-95 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

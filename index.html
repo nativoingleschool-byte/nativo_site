@@ -15,10 +15,25 @@
     <meta name="theme-color" content="#1F3A5F" />
     <meta name="apple-mobile-web-app-title" content="Nativo" />
     <meta name="application-name" content="Nativo" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('nativo_theme_preference');
+          var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+          var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var resolved = isDark ? 'dark' : 'light';
+          var root = document.documentElement;
+          root.classList.toggle('dark', isDark);
+          root.classList.toggle('light', !isDark);
+          root.setAttribute('data-theme', resolved);
+          root.setAttribute('data-theme-mode', mode);
+          root.style.colorScheme = resolved;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

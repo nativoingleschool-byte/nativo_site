@@ -362,27 +362,27 @@ export default function AdminStaffTab({
       <div
         className="form-card mb-6 animate-slide-up"
         style={{
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%)',
+          background: 'var(--portal-surface)',
           borderRadius: '1.25rem',
-          border: '1px solid rgba(56, 189, 248, 0.2)',
+          border: '1px solid var(--portal-border)',
           padding: '1.5rem',
           marginBottom: '1.5rem',
-          boxShadow: '0 4px 20px -5px rgba(0, 0, 0, 0.3)',
+          boxShadow: 'var(--portal-shadow)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <ClipboardPenLine size={20} color="#1f4268" aria-hidden="true" />
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
+            <ClipboardPenLine size={20} color="var(--portal-link)" aria-hidden="true" />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, color: 'var(--portal-heading)' }}>
               {t(language, 'teacher_notes_admin_title')}
             </h3>
           </div>
           {teacherNotesList && teacherNotesList.length > 0 && (
             <span
               style={{
-                background: 'rgba(56, 189, 248, 0.15)',
-                color: '#38bdf8',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
+                background: 'var(--status-info-bg)',
+                color: 'var(--status-info-text)',
+                border: '1px solid var(--status-info-border)',
                 padding: '0.2rem 0.6rem',
                 borderRadius: '1rem',
                 fontSize: '0.75rem',
@@ -394,7 +394,7 @@ export default function AdminStaffTab({
           )}
         </div>
 
-        <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '1.25rem' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--portal-text-secondary)', marginBottom: '1.25rem' }}>
           {t(language, 'teacher_notes_admin_desc')}
         </p>
 
@@ -403,10 +403,10 @@ export default function AdminStaffTab({
             style={{
               padding: '1.5rem',
               borderRadius: '0.75rem',
-              background: 'rgba(2, 6, 23, 0.4)',
-              border: '1px dashed #334155',
+              background: 'var(--portal-surface-subtle)',
+              border: '1px dashed var(--portal-border-strong)',
               textAlign: 'center',
-              color: '#64748b',
+              color: 'var(--portal-text-muted)',
               fontSize: '0.88rem',
             }}
           >
@@ -434,8 +434,8 @@ export default function AdminStaffTab({
                 <div
                   key={noteItem.id}
                   style={{
-                    background: '#090d16',
-                    border: '1px solid #1e293b',
+                    background: 'var(--portal-surface-subtle)',
+                    border: '1px solid var(--portal-border)',
                     borderRadius: '0.85rem',
                     padding: '1rem 1.25rem',
                     position: 'relative',
@@ -445,20 +445,20 @@ export default function AdminStaffTab({
                   {/* Top line with teacher details, date, and delete 'x' button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 'bold', color: '#38bdf8', fontSize: '0.92rem' }}>
+                      <span style={{ fontWeight: 'bold', color: 'var(--portal-link)', fontSize: '0.92rem' }}>
                         {teacherName}
                       </span>
                       {teacherProfile?.speciality && (
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: 'rgba(51,65,85,0.4)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--portal-text-secondary)', background: 'var(--portal-surface-hover)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
                           {teacherProfile.speciality}
                         </span>
                       )}
                       {noteItem.month_key && (
-                        <span style={{ fontSize: '0.72rem', color: '#a78bfa', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--status-info-text)', background: 'var(--status-info-bg)', border: '1px solid var(--status-info-border)', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>
                           📅 {noteItem.month_key}
                         </span>
                       )}
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
                         • {dateOnly} {timeOnly ? `às ${timeOnly}` : ''}
                       </span>
                     </div>
@@ -480,9 +480,9 @@ export default function AdminStaffTab({
                         }
                       }}
                       style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
-                        color: '#ef4444',
+                        background: 'var(--status-danger-bg)',
+                        border: '1px solid var(--status-danger-border)',
+                        color: 'var(--status-danger-text)',
                         width: '24px',
                         height: '24px',
                         borderRadius: '50%',
@@ -501,8 +501,8 @@ export default function AdminStaffTab({
                         e.currentTarget.style.color = '#fff'
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
-                        e.currentTarget.style.color = '#ef4444'
+                        e.currentTarget.style.background = 'var(--status-danger-bg)'
+                        e.currentTarget.style.color = 'var(--status-danger-text)'
                       }}
                     >
                       ✕
@@ -512,15 +512,18 @@ export default function AdminStaffTab({
                   {/* Note Content Text */}
                   <div
                     style={{
-                      color: '#e2e8f0',
+                      color: 'var(--portal-text)',
                       fontSize: '0.9rem',
                       lineHeight: 1.5,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      background: 'rgba(15, 23, 42, 0.4)',
+                      background: 'var(--portal-surface)',
                       padding: '0.75rem',
                       borderRadius: '0.5rem',
-                      borderLeft: '3px solid #38bdf8',
+                      borderLeft: '3px solid var(--portal-link)',
+                      borderTop: '1px solid var(--portal-border)',
+                      borderRight: '1px solid var(--portal-border)',
+                      borderBottom: '1px solid var(--portal-border)',
                     }}
                   >
                     {noteItem.note}
@@ -562,16 +565,17 @@ export default function AdminStaffTab({
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '1.5rem',
               padding: '2rem',
+              color: 'var(--portal-text)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>➕</span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--portal-heading)', margin: 0 }}>
                   {t(language, 'add_staff_title')}
                 </h3>
               </div>
@@ -591,87 +595,87 @@ export default function AdminStaffTab({
               style={{ gap: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'full_name')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'full_name')}</label>
                 <input
                   required
                   type="text"
                   placeholder={t(language, 'full_name')}
                   value={userForm.full_name}
                   onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>Email</label>
                 <input
                   required
                   type="email"
                   placeholder="Email"
                   value={userForm.email}
                   onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'password')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'password')}</label>
                 <input
                   required
                   type="password"
                   placeholder={t(language, 'password')}
                   value={userForm.password}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'role_label')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'role_label')}</label>
                 <select
                   value={userForm.role === 'student' ? 'teacher' : userForm.role}
                   onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 >
                   <option value="teacher">Professor (Teacher)</option>
                   <option value="admin">Administrador (Admin)</option>
                 </select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'speciality_label')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'speciality_label')}</label>
                 <input
                   type="text"
                   placeholder="E.g. Business, TOEFL"
                   value={userForm.speciality}
                   onChange={(e) => setUserForm({ ...userForm, speciality: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'pix_label')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'pix_label')}</label>
                 <input
                   type="text"
                   placeholder="Celular, E-mail, CPF..."
                   value={userForm.chave_pix || ''}
                   onChange={(e) => setUserForm({ ...userForm, chave_pix: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'cnpj_label')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'cnpj_label')}</label>
                 <input
                   type="text"
                   placeholder="CNPJ ou CPF"
                   value={userForm.cnpj || ''}
                   onChange={(e) => setUserForm({ ...userForm, cnpj: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'value_hour_label')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'value_hour_label')}</label>
                 <input
                   type="number"
                   placeholder="Valor hora aula"
                   value={userForm.taxa_hora_aula || ''}
                   onChange={(e) => setUserForm({ ...userForm, taxa_hora_aula: Number(e.target.value) })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'stretch', gridColumn: '1 / -1', marginTop: '0.5rem' }}>
@@ -715,16 +719,17 @@ export default function AdminStaffTab({
               width: '95vw',
               maxHeight: '90vh',
               overflowY: 'auto',
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '1.5rem',
               padding: '1.5rem',
+              color: 'var(--portal-text)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>👥</span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--portal-heading)', margin: 0 }}>
                   {t(language, 'staff_list_title')}
                 </h3>
               </div>
@@ -741,7 +746,7 @@ export default function AdminStaffTab({
             <div className="table-responsive admin-shared-table">
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.8rem' }}>
                     <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'full_name')}</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Email</th>
                     <th style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>{t(language, 'role_label').split(' ')[0]}</th>
@@ -759,12 +764,12 @@ export default function AdminStaffTab({
                       const currency = staff.moeda_taxa ?? 'BRL'
 
                       return (
-                        <tr key={staff.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.85rem' }}>
+                        <tr key={staff.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.85rem' }}>
                           <td style={{ padding: '0.65rem 0.75rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                             {staff.role === 'teacher' ? (
                               <button
                                 type="button"
-                                style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                                style={{ background: 'none', border: 'none', color: 'var(--portal-link)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                                 onClick={() => {
                                   setSelectedTeacherForDetail(staff)
                                   setSelectedMonthKey('')
@@ -776,22 +781,22 @@ export default function AdminStaffTab({
                               staff.full_name
                             )}
                           </td>
-                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', wordBreak: 'break-all' }}>{staff.email}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', color: 'var(--portal-text-secondary)', wordBreak: 'break-all' }}>{staff.email}</td>
                           <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>
                             <span className={badgeClass(staff.role === 'admin' ? 'confirmed' : 'rescheduled')} style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem' }}>
                               {staff.role === 'admin' ? 'Admin' : t(language, 'teacher')}
                             </span>
                           </td>
-                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{staff.cnpj || '-'}</td>
-                          <td style={{ padding: '0.65rem 0.75rem', color: '#94a3b8', wordBreak: 'break-all' }}>{staff.chave_pix || '-'}</td>
-                          <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap', color: '#cbd5e1' }}>
+                          <td style={{ padding: '0.65rem 0.75rem', color: 'var(--portal-text-secondary)', whiteSpace: 'nowrap' }}>{staff.cnpj || '-'}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', color: 'var(--portal-text-secondary)', wordBreak: 'break-all' }}>{staff.chave_pix || '-'}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap', color: 'var(--portal-text)' }}>
                             {staff.role === 'teacher' ? `${currency} ${Number(hourlyRate).toFixed(2)}` : 'N/A'}
                           </td>
                           <td style={{ padding: '0.65rem 0.75rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'nowrap', alignItems: 'center' }}>
                               <button
                                 className="secondary-button"
-                                style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', borderColor: '#38bdf8', color: '#38bdf8', whiteSpace: 'nowrap' }}
+                                style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', borderColor: 'var(--portal-link)', color: 'var(--portal-link)', whiteSpace: 'nowrap' }}
                                 onClick={() => {
                                   setChangePasswordStaff(staff)
                                   setNewPasswordValue('')
@@ -878,8 +883,8 @@ export default function AdminStaffTab({
             }
           }}
         >
-          <div ref={editStaffCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_staff_title')}</h3>
+          <div ref={editStaffCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>{t(language, 'edit_staff_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
                 required
@@ -895,13 +900,13 @@ export default function AdminStaffTab({
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'new_password')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'new_password')}</label>
                 <input
                   type="password"
                   placeholder={t(language, 'new_password_placeholder')}
                   value={userForm.password || ''}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <select
@@ -1032,8 +1037,8 @@ export default function AdminStaffTab({
             }
           }}
         >
-          <div ref={changePasswordCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#fff' }}>
+          <div ref={changePasswordCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>
               {t(language, 'change_password_title').replace('{name}', changePasswordStaff.full_name)}
             </h3>
             <form
@@ -1069,25 +1074,25 @@ export default function AdminStaffTab({
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'new_password')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'new_password')}</label>
                 <input
                   required
                   type="password"
                   placeholder={t(language, 'new_password')}
                   value={newPasswordValue}
                   onChange={(e) => setNewPasswordValue(e.target.value)}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t(language, 'confirm_new_password')}</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>{t(language, 'confirm_new_password')}</label>
                 <input
                   required
                   type="password"
                   placeholder={t(language, 'confirm_new_password')}
                   value={confirmPasswordValue}
                   onChange={(e) => setConfirmPasswordValue(e.target.value)}
-                  style={{ padding: '0.6rem 0.8rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.6rem', color: '#fff' }}
+                  style={{ padding: '0.6rem 0.8rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                 />
               </div>
               <div className="button-stack mt-6" style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
@@ -1108,24 +1113,24 @@ export default function AdminStaffTab({
       <div className="admin-payroll-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
 
         <div>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
-          <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: 'var(--portal-heading)', margin: 0 }}>{t(language, 'payout_teachers_title')}</h3>
+          <p style={{ color: 'var(--portal-text-secondary)', fontSize: '0.82rem', margin: 0 }}>
             Clique no valor de qualquer professor para ver o registro de aulas, copiar a chave PIX e marcar o mês como pago.
           </p>
         </div>
 
         <div className="admin-payroll-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Filtro de Mês:</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--portal-text-secondary)' }}>Filtro de Mês:</span>
             <select
               value={selectedMonthKey || 'auto'}
               onChange={(e) => setSelectedMonthKey(e.target.value === 'auto' ? '' : e.target.value)}
               style={{
                 padding: '0.5rem 1rem',
-                background: '#090d16',
-                border: '1px solid #334155',
+                background: 'var(--portal-input-bg)',
+                border: '1px solid var(--portal-border-strong)',
                 borderRadius: '0.6rem',
-                color: '#fff',
+                color: 'var(--portal-text)',
                 fontSize: '0.88rem',
                 fontWeight: 600,
               }}
@@ -1175,7 +1180,7 @@ export default function AdminStaffTab({
       <div className="table-responsive admin-shared-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
               <th style={{ padding: '1rem' }}>Mês Referência</th>
               <th style={{ padding: '1rem' }}>Chave PIX</th>
@@ -1216,11 +1221,11 @@ export default function AdminStaffTab({
               const monthLabel = getMonthLabel(teacherActiveMonth, language)
 
               return (
-                <tr key={teacher.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                <tr key={teacher.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                     <button
                       type="button"
-                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--portal-link)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                       onClick={() => {
                         setSelectedTeacherForDetail(teacher)
                         setSelectedMonthKey(teacherActiveMonth)
@@ -1229,7 +1234,7 @@ export default function AdminStaffTab({
                     >
                       {teacher.full_name}
                     </button>
-                    {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
+                    {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
                     {(() => {
                       const activeNf = teacher.nota_fiscal_url
                         ? { file_url: teacher.nota_fiscal_url }
@@ -1247,9 +1252,9 @@ export default function AdminStaffTab({
                               )
                             }}
                             style={{
-                              background: 'rgba(16, 185, 129, 0.12)',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              color: '#10b981',
+                              background: 'var(--status-success-bg)',
+                              border: '1px solid var(--status-success-border)',
+                              color: 'var(--status-success-text)',
                               padding: '0.15rem 0.45rem',
                               borderRadius: '0.35rem',
                               fontSize: '0.7rem',
@@ -1268,7 +1273,7 @@ export default function AdminStaffTab({
                     })()}
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <strong style={{ color: '#fff' }}>{monthLabel}</strong>
+                    <strong style={{ color: 'var(--portal-heading)' }}>{monthLabel}</strong>
                     {isMonthPaid && (
                       <span className="badge badge-confirmed" style={{ marginLeft: '0.4rem', fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
                         Pago ✓
@@ -1278,7 +1283,7 @@ export default function AdminStaffTab({
                   <td style={{ padding: '1rem' }}>
                     {teacher.chave_pix ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>{teacher.chave_pix}</span>
+                        <span style={{ color: 'var(--portal-text)', fontSize: '0.85rem' }}>{teacher.chave_pix}</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -1286,13 +1291,13 @@ export default function AdminStaffTab({
                             toast.success('Chave PIX copiada!')
                           }}
                           style={{
-                            background: 'rgba(51, 65, 85, 0.4)',
-                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                            background: 'var(--portal-surface-subtle)',
+                            border: '1px solid var(--portal-border-strong)',
                             borderRadius: '0.3rem',
                             padding: '0.2rem 0.4rem',
                             fontSize: '0.72rem',
                             cursor: 'pointer',
-                            color: '#38bdf8',
+                            color: 'var(--portal-link)',
                           }}
                           title="Copiar Chave PIX"
                         >
@@ -1300,53 +1305,53 @@ export default function AdminStaffTab({
                         </button>
                       </div>
                     ) : (
-                      <span style={{ color: '#64748b' }}>-</span>
+                      <span style={{ color: 'var(--portal-text-muted)' }}>-</span>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {activeSessions.length === 0 ? (
-                      <span style={{ color: '#64748b' }}>0 aulas</span>
+                      <span style={{ color: 'var(--portal-text-muted)' }}>0 aulas</span>
                     ) : completedSessions.length === activeSessions.length ? (
                       <div>
-                        <strong style={{ color: '#10b981' }}>{completedSessions.length} realizadas</strong>
+                        <strong style={{ color: 'var(--status-success-text)' }}>{completedSessions.length} realizadas</strong>
                         {totalEnrolledStudents > completedSessions.length && (
-                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos nas turmas)</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-secondary)' }}>({totalEnrolledStudents} alunos nas turmas)</div>
                         )}
                       </div>
                     ) : completedSessions.length > 0 ? (
                       <div>
                         <span>
-                          <strong style={{ color: '#10b981' }}>{completedSessions.length}</strong> / {activeSessions.length}{' '}
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({scheduledOnlySessions.length} agendadas)</span>
+                          <strong style={{ color: 'var(--status-success-text)' }}>{completedSessions.length}</strong> / {activeSessions.length}{' '}
+                          <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-secondary)' }}>({scheduledOnlySessions.length} agendadas)</span>
                         </span>
                         {totalEnrolledStudents > activeSessions.length && (
-                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos)</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-secondary)' }}>({totalEnrolledStudents} alunos)</div>
                         )}
                       </div>
                     ) : (
                       <div>
-                        <span style={{ color: '#818cf8' }}>
+                        <span style={{ color: 'var(--portal-link)', fontWeight: 600 }}>
                           {activeSessions.length} agendadas
                         </span>
                         {totalEnrolledStudents > activeSessions.length && (
-                          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({totalEnrolledStudents} alunos)</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-secondary)' }}>({totalEnrolledStudents} alunos)</div>
                         )}
                       </div>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {totalActiveHours === 0 ? (
-                      <span style={{ color: '#64748b' }}>0.0h</span>
+                      <span style={{ color: 'var(--portal-text-muted)' }}>0.0h</span>
                     ) : completedHours > 0 && scheduledOnlySessions.length > 0 ? (
                       <div>
-                        <strong style={{ color: '#10b981' }}>{completedHours.toFixed(1)}h</strong>{' '}
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({totalActiveHours.toFixed(1)}h total)</span>
+                        <strong style={{ color: 'var(--status-success-text)' }}>{completedHours.toFixed(1)}h</strong>{' '}
+                        <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-secondary)' }}>({totalActiveHours.toFixed(1)}h total)</span>
                       </div>
                     ) : completedHours > 0 ? (
-                      <strong style={{ color: '#10b981' }}>{completedHours.toFixed(1)}h</strong>
+                      <strong style={{ color: 'var(--status-success-text)' }}>{completedHours.toFixed(1)}h</strong>
                     ) : (
-                      <span style={{ color: '#818cf8' }}>
-                        {totalActiveHours.toFixed(1)}h <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(agenda)</span>
+                      <span style={{ color: 'var(--portal-link)', fontWeight: 600 }}>
+                        {totalActiveHours.toFixed(1)}h <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-secondary)', fontWeight: 400 }}>(agenda)</span>
                       </span>
                     )}
                   </td>
@@ -1361,8 +1366,8 @@ export default function AdminStaffTab({
                         setSelectedMonthKey(teacherActiveMonth)
                       }}
                       style={{
-                        background: 'rgba(56, 189, 248, 0.08)',
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        background: 'var(--status-info-bg)',
+                        border: '1px solid var(--status-info-border)',
                         borderRadius: '0.6rem',
                         padding: '0.45rem 0.8rem',
                         cursor: 'pointer',
@@ -1374,7 +1379,7 @@ export default function AdminStaffTab({
                       }}
                       className="admin-payroll-amount-button" title="Abrir detalhes do pagamento"
                     >
-                      <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? '#10b981' : '#38bdf8' }}>
+                      <span style={{ fontSize: '1rem', fontWeight: 'bold', color: isMonthPaid ? 'var(--status-success-text)' : 'var(--portal-link)' }}>
                         {currency} {totalActiveAmount.toFixed(2)}
                       </span>
                     </button>
@@ -1489,16 +1494,16 @@ export default function AdminStaffTab({
               }
             }}
           >
-            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
               
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--portal-heading)', margin: 0 }}>{selectedTeacherForDetail.full_name}</h3>
                     <span className="badge badge-confirmed" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>{t(language, 'teacher')}</span>
                   </div>
-                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>{selectedTeacherForDetail.email}</p>
+                  <p style={{ color: 'var(--portal-text-secondary)', fontSize: '0.85rem', margin: 0 }}>{selectedTeacherForDetail.email}</p>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -1506,7 +1511,7 @@ export default function AdminStaffTab({
                   <select
                     value={activeMonthKey}
                     onChange={(e) => setSelectedMonthKey(e.target.value)}
-                    style={{ padding: '0.45rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.5rem', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
+                    style={{ padding: '0.45rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.5rem', color: 'var(--portal-text)', fontSize: '0.85rem', fontWeight: 600 }}
                   >
                     {availableMonths.map(([mKey, mLabel]) => (
                       <option key={mKey} value={mKey}>{mLabel}</option>
@@ -1526,8 +1531,8 @@ export default function AdminStaffTab({
               {/* Highlight Card: PIX Key & Payment Action */}
               <div
                 style={{
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
-                  border: isCurrentMonthPaid ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(56, 189, 248, 0.3)',
+                  background: 'var(--portal-surface-subtle)',
+                  border: isCurrentMonthPaid ? '1px solid var(--status-success-border)' : '1px solid var(--status-info-border)',
                   borderRadius: '1.25rem',
                   padding: '1.5rem',
                   marginBottom: '1.5rem',
@@ -1540,20 +1545,20 @@ export default function AdminStaffTab({
                 {/* Left: Summary & Amounts */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folha de Pagamento</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folha de Pagamento</span>
                     <span className={badgeClass(isCurrentMonthPaid ? 'confirmed' : 'pending')}>
                       {isCurrentMonthPaid ? 'Mês Pago ✓' : 'Pendente'}
                     </span>
                   </div>
 
-                  <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: isCurrentMonthPaid ? '#10b981' : '#38bdf8', margin: '0 0 0.3rem 0' }}>
+                  <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: isCurrentMonthPaid ? 'var(--status-success-text)' : 'var(--portal-link)', margin: '0 0 0.3rem 0' }}>
                     {currency} {totalActiveAmount.toFixed(2)}
                   </h2>
 
-                  <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
-                    Mês de Referência: <strong style={{ color: '#fff' }}>{activeMonthLabel}</strong> · {totalActiveHours.toFixed(1)}h ({activeSessions.length} aulas | {totalEnrolledStudents} alunos)
+                  <p style={{ fontSize: '0.85rem', color: 'var(--portal-text)', margin: 0 }}>
+                    Mês de Referência: <strong style={{ color: 'var(--portal-heading)' }}>{activeMonthLabel}</strong> · {totalActiveHours.toFixed(1)}h ({activeSessions.length} aulas | {totalEnrolledStudents} alunos)
                   </p>
-                  <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--portal-text-secondary)', marginTop: '0.2rem' }}>
                     Taxa Horária: {currency} {Number(hourlyRate).toFixed(2)}/h
                   </p>
                 </div>
@@ -1563,8 +1568,8 @@ export default function AdminStaffTab({
                   {/* PIX Box */}
                   <div
                     style={{
-                      background: '#090d16',
-                      border: '1px solid #334155',
+                      background: 'var(--portal-surface)',
+                      border: '1px solid var(--portal-border-strong)',
                       borderRadius: '0.75rem',
                       padding: '0.75rem 1rem',
                       display: 'flex',
@@ -1574,10 +1579,10 @@ export default function AdminStaffTab({
                     }}
                   >
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', display: 'block', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--portal-text-secondary)', textTransform: 'uppercase', display: 'block', fontWeight: 'bold' }}>
                         Chave PIX do Professor
                       </span>
-                      <strong style={{ color: '#38bdf8', fontSize: '0.95rem', wordBreak: 'break-all' }}>
+                      <strong style={{ color: 'var(--portal-link)', fontSize: '0.95rem', wordBreak: 'break-all' }}>
                         {selectedTeacherForDetail.chave_pix || 'Chave PIX não informada'}
                       </strong>
                     </div>
@@ -1647,9 +1652,9 @@ export default function AdminStaffTab({
               </div>
 
               {/* NF Card (Current Month) */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.3)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ background: 'var(--portal-surface-subtle)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid var(--portal-border)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Nota Fiscal Mês Vigente ({activeMonthLabel}):</span>
+                  <span style={{ color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>Nota Fiscal Mês Vigente ({activeMonthLabel}):</span>
                   <span className={badgeClass(selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'confirmed' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'secondary' : 'pending')}>
                     {selectedTeacherForDetail.status_nota_fiscal === 'enviada' ? 'Enviada ✓' : selectedTeacherForDetail.status_nota_fiscal === 'nao_se_aplica' ? 'Não se Aplica' : 'Pendente'}
                   </span>
@@ -1752,23 +1757,23 @@ export default function AdminStaffTab({
                   return list
                 })()
                 return (
-                  <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid #1e293b', marginBottom: '1.5rem' }}>
+                  <div style={{ background: 'var(--portal-surface-subtle)', padding: '1rem 1.25rem', borderRadius: '1rem', border: '1px solid var(--portal-border)', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span>📁</span>
-                        <strong style={{ fontSize: '0.92rem', color: '#fff' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--portal-heading)' }}>
                           {t(language, 'past_nfs_title')}
                         </strong>
                       </div>
                       {pastInvoices.length > 0 && (
-                        <span style={{ fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--status-info-text)', background: 'var(--status-info-bg)', border: '1px solid var(--status-info-border)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>
                           {pastInvoices.length} {pastInvoices.length === 1 ? 'nota arquivada' : 'notas arquivadas'}
                         </span>
                       )}
                     </div>
 
                     {pastInvoices.length === 0 ? (
-                      <p style={{ color: '#64748b', fontSize: '0.82rem', margin: '0.5rem 0 0.2rem' }}>
+                      <p style={{ color: 'var(--portal-text-muted)', fontSize: '0.82rem', margin: '0.5rem 0 0.2rem' }}>
                         {t(language, 'no_past_nfs')}
                       </p>
                     ) : (
@@ -1782,8 +1787,8 @@ export default function AdminStaffTab({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                background: '#090d16',
-                                border: '1px solid #334155',
+                                background: 'var(--portal-surface)',
+                                border: '1px solid var(--portal-border-strong)',
                                 padding: '0.5rem 0.85rem',
                                 borderRadius: '0.65rem',
                                 flexWrap: 'wrap',
@@ -1791,14 +1796,14 @@ export default function AdminStaffTab({
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                <span style={{ color: '#a78bfa', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                <span style={{ color: 'var(--portal-link)', fontWeight: 'bold', fontSize: '0.85rem' }}>
                                   📅 {mLabel}
                                 </span>
                                 <span className="badge badge-confirmed" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
                                   {inv.status === 'paga' ? t(language, 'invoice_paid_status') : t(language, 'archived_badge')}
                                 </span>
                                 {inv.created_at && (
-                                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)' }}>
                                     • {new Date(inv.created_at).toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en')}
                                   </span>
                                 )}
@@ -1867,13 +1872,13 @@ export default function AdminStaffTab({
               })()}
 
               {/* Monthly Lesson History / Registry that amounts are based on */}
-              <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '1rem', border: '1px solid #1e293b', padding: '1.25rem' }}>
+              <div style={{ background: 'var(--portal-surface-subtle)', borderRadius: '1rem', border: '1px solid var(--portal-border)', padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--portal-heading)', margin: 0 }}>
                       Registro de Aulas de {activeMonthLabel} ({activeSessions.length} aulas | {totalActiveHours.toFixed(1)}h)
                     </h4>
-                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0 }}>
+                    <p style={{ color: 'var(--portal-text-secondary)', fontSize: '0.78rem', margin: 0 }}>
                       Aulas no mesmo horário são computadas como turmas/grupos (1 hora de aula = 1 hora de pagamento).
                     </p>
                   </div>
@@ -1895,7 +1900,7 @@ export default function AdminStaffTab({
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
+                      <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)' }}>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'date_time_col')}</th>
                         <th style={{ padding: '0.6rem' }}>Alunos / Turma</th>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'class_subject_col')}</th>
@@ -1921,8 +1926,8 @@ export default function AdminStaffTab({
                         const allLessonIds = session.lessons.map((l) => l.id)
 
                         return (
-                          <tr key={session.key} style={{ borderBottom: '1px solid #1e293b' }}>
-                            <td style={{ padding: '0.6rem', color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                          <tr key={session.key} style={{ borderBottom: '1px solid var(--portal-border)' }}>
+                            <td style={{ padding: '0.6rem', color: 'var(--portal-text)', whiteSpace: 'nowrap' }}>
                               {new Date(session.starts_at).toLocaleString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td style={{ padding: '0.6rem' }}>
@@ -1931,17 +1936,17 @@ export default function AdminStaffTab({
                                   <span className="badge badge-confirmed" style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', marginRight: '0.4rem' }}>
                                     👥 Turma ({session.student_ids.length} alunos)
                                   </span>
-                                  <strong style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{studentNames}</strong>
+                                  <strong style={{ color: 'var(--portal-link)', fontSize: '0.85rem' }}>{studentNames}</strong>
                                 </div>
                               ) : (
                                 <div>
-                                  <span style={{ color: '#64748b', marginRight: '0.25rem' }}>👤</span>
-                                  <strong style={{ color: '#38bdf8' }}>{studentNames || 'Aluno'}</strong>
+                                  <span style={{ color: 'var(--portal-text-muted)', marginRight: '0.25rem' }}>👤</span>
+                                  <strong style={{ color: 'var(--portal-link)' }}>{studentNames || 'Aluno'}</strong>
                                 </div>
                               )}
                             </td>
-                            <td style={{ padding: '0.6rem', color: '#94a3b8' }}>{session.subject || session.class_name || '-'}</td>
-                            <td style={{ padding: '0.6rem', color: '#cbd5e1' }}>{session.duration_minutes} min ({sessionHours.toFixed(1)}h)</td>
+                            <td style={{ padding: '0.6rem', color: 'var(--portal-text-secondary)' }}>{session.subject || session.class_name || '-'}</td>
+                            <td style={{ padding: '0.6rem', color: 'var(--portal-text)' }}>{session.duration_minutes} min ({sessionHours.toFixed(1)}h)</td>
                             <td style={{ padding: '0.6rem' }}>
                               <span className={badgeClass(
                                 isHappened ? 'confirmed' :
@@ -1979,9 +1984,9 @@ export default function AdminStaffTab({
                                     borderRadius: '0.35rem',
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
-                                    background: isNoShow ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
-                                    color: isNoShow ? '#0f172a' : '#fbbf24',
-                                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                                    background: isNoShow ? '#f59e0b' : 'var(--status-warning-bg)',
+                                    color: isNoShow ? '#0f172a' : 'var(--status-warning-text)',
+                                    border: '1px solid var(--status-warning-border)',
                                   }}
                                   title="Marcar como Falta do(s) Aluno(s)"
                                 >
@@ -1995,9 +2000,9 @@ export default function AdminStaffTab({
                                     borderRadius: '0.35rem',
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
-                                    background: isCancelled ? '#ef4444' : 'rgba(239, 68, 68, 0.12)',
-                                    color: isCancelled ? '#fff' : '#f87171',
-                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    background: isCancelled ? '#ef4444' : 'var(--status-danger-bg)',
+                                    color: isCancelled ? '#fff' : 'var(--status-danger-text)',
+                                    border: '1px solid var(--status-danger-border)',
                                   }}
                                   title="Marcar como Cancelada"
                                 >
@@ -2011,9 +2016,9 @@ export default function AdminStaffTab({
                                     borderRadius: '0.35rem',
                                     fontSize: '0.72rem',
                                     fontWeight: 600,
-                                    background: isScheduled ? '#6366f1' : 'rgba(99, 102, 241, 0.12)',
-                                    color: isScheduled ? '#fff' : '#818cf8',
-                                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                                    background: isScheduled ? '#6366f1' : 'var(--status-info-bg)',
+                                    color: isScheduled ? '#fff' : 'var(--status-info-text)',
+                                    border: '1px solid var(--status-info-border)',
                                   }}
                                   title="Manter como Agendada"
                                 >

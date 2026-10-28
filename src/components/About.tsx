@@ -27,8 +27,8 @@ export default function About({ t }: AboutProps) {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
           {t.cards.map((card, idx) => (
-            <div key={idx} className="p-12 bg-white rounded-3xl border border-outline/50 hover:shadow-xl transition-all group">
-              <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mb-8 group-hover:bg-secondary/10 transition-colors">
+            <div key={idx} className="p-12 bg-surface rounded-3xl border border-outline/60 hover:shadow-xl transition-all group">
+              <div className="w-16 h-16 bg-surface-subtle border border-outline/40 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-secondary/15 transition-colors">
                 {icons[idx]}
               </div>
               <h3 className="text-2xl font-bold text-primary mb-4">{card.title}</h3>

@@ -590,7 +590,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             placeholder={t(language, 'invite_email_placeholder')}
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            style={{ flex: 1, padding: '0.75rem 1rem', background: '#090d16', border: '1px solid #1e293b', borderRadius: '0.75rem', color: '#fff' }}
+            style={{ flex: 1, padding: '0.75rem 1rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.75rem', color: 'var(--portal-text)' }}
           />
           <button className="primary-button" style={{ padding: '0.75rem 1.5rem', whiteSpace: 'nowrap' }} disabled={inviteLoading}>
             {inviteLoading ? t(language, 'loading_invite') : t(language, 'generate_invite_btn')}
@@ -608,9 +608,9 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           </button>
         </div>
         {generatedInviteLink && (
-          <div className="credential-card mt-4" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
-            <p className="section-label" style={{ color: '#10b981', fontWeight: 'bold' }}>{t(language, 'invite_link_generated')}</p>
-            <p className="inline-code" style={{ wordBreak: 'break-all', fontSize: '0.85rem', margin: '0.5rem 0', display: 'block', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+          <div className="credential-card mt-4" style={{ background: 'var(--status-success-bg)', border: '1px solid var(--status-success-border)', padding: '1rem', borderRadius: '1rem', marginTop: '1rem' }}>
+            <p className="section-label" style={{ color: 'var(--status-success-text)', fontWeight: 'bold' }}>{t(language, 'invite_link_generated')}</p>
+            <p className="inline-code" style={{ wordBreak: 'break-all', fontSize: '0.85rem', margin: '0.5rem 0', display: 'block', background: 'var(--portal-surface-subtle)', color: 'var(--portal-text)', border: '1px solid var(--portal-border)', padding: '0.5rem', borderRadius: '0.5rem' }}>
               {generatedInviteLink}
             </p>
             <button
@@ -629,7 +629,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
 
       {/* Bulk Action Bar */}
       <div className="admin-students-bulk-bar">
-        <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
+        <div style={{ fontSize: '0.9rem', color: 'var(--portal-text-secondary)' }}>
           {t(language, 'bulk_invoices_selected').replace('{count}', String(selectedStudentIds.length))}
         </div>
         <button
@@ -691,7 +691,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
       <section className="admin-students-list-card"><div className="admin-students-list-heading"><strong>Listagem de Alunos</strong><span>{students.length} no total</span></div><div className="table-responsive admin-students-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem', width: '40px' }}>
                 <input 
                   type="checkbox" 
@@ -749,7 +749,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 : t(language, 'student_no_classes')
 
               return (
-                <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                <tr key={student.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', width: '40px' }}>
                     <input 
                       type="checkbox" 
@@ -761,7 +761,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                     <button
                       type="button"
-                      style={{ background: 'none', border: 'none', color: '#38bdf8', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--portal-link)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                       onClick={() => void openPaymentHistory(student)}
                     >
                       {student.full_name}
@@ -774,9 +774,9 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                           fontSize: '0.72rem',
                           padding: '0.15rem 0.45rem',
                           borderRadius: '0.35rem',
-                          background: 'rgba(56, 189, 248, 0.15)',
-                          color: '#38bdf8',
-                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          background: 'var(--status-info-bg)',
+                          color: 'var(--status-info-text)',
+                          border: '1px solid var(--status-info-border)',
                           fontWeight: 600,
                           verticalAlign: 'middle',
                           display: 'inline-block'
@@ -788,11 +788,11 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {student.tuition_fee !== undefined && student.tuition_fee !== null && Number(student.tuition_fee) > 0 ? (
-                      <span style={{ fontWeight: '600', color: '#10b981' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--status-success-text)' }}>
                         R$ {Number(student.tuition_fee).toFixed(2)}
                       </span>
                     ) : (
-                      <span style={{ color: '#64748b', fontSize: '0.85rem' }}>-</span>
+                      <span style={{ color: 'var(--portal-text-muted)', fontSize: '0.85rem' }}>-</span>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
@@ -825,13 +825,13 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                       }
                       if (invoiceInfo.hasProtocol) {
                         return (
-                          <span className={badgeClass('pendente')} style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid #f59e0b' }}>
+                          <span className={badgeClass('pendente')} style={{ background: 'var(--status-warning-bg)', color: 'var(--status-warning-text)', border: '1px solid var(--status-warning-border)' }}>
                             {t(language, 'success_lote_envio_banner')}
                           </span>
                         )
                       }
                       return (
-                        <span className={badgeClass('pendente')} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid #38bdf8' }}>
+                        <span className={badgeClass('pendente')} style={{ background: 'var(--status-info-bg)', color: 'var(--status-info-text)', border: '1px solid var(--status-info-border)' }}>
                           Aguardando Emissão
                         </span>
                       )
@@ -840,7 +840,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                   <td style={{ padding: '1rem' }}>
                     <span 
                       title={t(language, 'calendar_time_hint')}
-                      style={{ borderBottom: '1px dotted #64748b', cursor: 'help', color: '#38bdf8' }}
+                      style={{ borderBottom: '1px dotted var(--portal-text-muted)', cursor: 'help', color: 'var(--portal-link)' }}
                     >
                       {scheduleText}
                     </span>
@@ -865,14 +865,17 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                           return (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                               <button 
-                                className="secondary-button" 
+                                type="button"
                                 style={{ 
                                   padding: '0.4rem 0.8rem', 
                                   fontSize: '0.8rem', 
                                   marginRight: '0.2rem', 
-                                  background: '#f59e0b',
-                                  borderColor: '#f59e0b',
-                                  color: '#000'
+                                  background: 'var(--status-warning-bg)',
+                                  border: '1px solid var(--status-warning-border)',
+                                  color: 'var(--status-warning-text)',
+                                  borderRadius: '0.7rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
                                 }}
                                 disabled={checkingStatusId === invoiceInfo.id}
                                 onClick={() => void handleCheckStatus(invoiceInfo.id)}
@@ -977,23 +980,23 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         <DropdownMenu.Content 
                           align="end"
                           style={{ 
-                            background: '#1e293b', 
-                            border: '1px solid #334155', 
+                            background: 'var(--portal-surface)', 
+                            border: '1px solid var(--portal-border-strong)', 
                             borderRadius: '0.5rem', 
                             padding: '0.5rem',
                             minWidth: '150px',
                             zIndex: 50,
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                            boxShadow: 'var(--portal-shadow-lg)'
                           }}
                         >
                           <DropdownMenu.Item 
-                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#38bdf8', borderRadius: '0.25rem' }}
+                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: 'var(--portal-link)', borderRadius: '0.25rem' }}
                             onSelect={() => void handleResetAndRetryNfse(student.id, student.full_name)}
                           >
                             {t(language, 'reissue_reset')}
                           </DropdownMenu.Item>
                           <DropdownMenu.Item 
-                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: '#e2e8f0', borderRadius: '0.25rem' }}
+                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', color: 'var(--portal-text)', borderRadius: '0.25rem' }}
                             onSelect={() => {
                               setSavingUserId(student.id)
                               const initial: UserFormState = {
@@ -1080,8 +1083,8 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             }
           }}
         >
-          <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'edit_student_title')}</h3>
+          <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>{t(language, 'edit_student_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input
                 required
@@ -1263,17 +1266,17 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             }
           }}
         >
-          <div ref={historyStudentCardRef} className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
+          <div ref={historyStudentCardRef} className="form-card" style={{ maxWidth: '600px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>{t(language, 'payment_history_of').replace('{name}', historyStudent.full_name)}</h3>
             {loadingHistory ? (
               <p className="muted">{t(language, 'loading_invoices')}</p>
             ) : (
               <div className="list-stack" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {historyInvoices.map((inv) => {
                   return (
-                    <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(15,23,42,0.4)', border: '1px solid #1e293b', borderRadius: '1rem' }}>
+                    <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', borderRadius: '1rem' }}>
                       <div>
-                        <p className="text-white font-bold" style={{ fontSize: '0.9rem' }}>NFS-e Ref. {inv.billing_period || '-'}</p>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--portal-heading)' }}>NFS-e Ref. {inv.billing_period || '-'}</p>
                         <p className="muted text-xs">{t(language, 'emission_date')}: {new Date(inv.created_at).toLocaleDateString()}</p>
                         <span className={badgeClass(inv.status)} style={{ marginTop: '0.25rem', display: 'inline-block' }}>
                           {inv.status === 'pago' ? t(language, 'paid') : inv.status === 'atrasado' ? t(language, 'financial_late') : t(language, 'financial_pending')}
@@ -1334,18 +1337,19 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
             style={{
               maxWidth: '480px',
               width: '100%',
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '1.5rem',
               padding: '2rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+              boxShadow: 'var(--portal-shadow-lg)',
+              color: 'var(--portal-text)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--portal-heading)' }}>
               📅 {t(language, 'select_reference_month_title')}
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--portal-text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
               {t(language, 'missing_prev_month_notice')
                 .replace('{name}', monthModalData.student.full_name)
                 .replace('{prevMonth}', formatBillingPeriod(monthModalData.previousPeriod, language))}

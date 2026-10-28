@@ -986,8 +986,8 @@ export default function AdminCalendar({
           style={{
             marginBottom: '1rem',
             padding: '0.75rem 1rem',
-            background: 'rgba(245, 158, 11, 0.12)',
-            border: '1px solid #f59e0b',
+            background: 'var(--status-warning-bg)',
+            border: '1px solid var(--status-warning-border)',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
@@ -997,12 +997,12 @@ export default function AdminCalendar({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <AlertTriangle size={20} aria-hidden="true" />
+            <AlertTriangle size={20} color="var(--status-warning-text)" aria-hidden="true" />
             <div>
-              <div style={{ fontWeight: 600, color: '#fbbf24', fontSize: '0.92rem' }}>
+              <div style={{ fontWeight: 600, color: 'var(--status-warning-text)', fontSize: '0.92rem' }}>
                 {earlyLessonGroups.length} aula{earlyLessonGroups.length > 1 ? 's' : ''} encontrada{earlyLessonGroups.length > 1 ? 's' : ''} em horário de madrugada (00h–07h)
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--portal-text-secondary)' }}>
                 Aulas que foram salvas antes do ajuste de fuso horário podem ter sido adiantadas em 6 horas. Clique para visualizá-las e restaurá-las com 1 clique (+6h).
               </div>
             </div>
@@ -1387,22 +1387,22 @@ export default function AdminCalendar({
                         style={{
                           padding: '1rem',
                           borderRadius: '0.75rem',
-                          background: isBooked ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                          border: `1px solid ${isBooked ? '#818cf8' : '#10b981'}`,
+                          background: isBooked ? 'var(--status-info-bg)' : 'var(--status-success-bg)',
+                          border: `1px solid ${isBooked ? 'var(--status-info-border)' : 'var(--status-success-border)'}`,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '0.5rem',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <strong style={{ fontSize: '1rem', color: isBooked ? '#c7d2fe' : '#34d399' }}>
+                          <strong style={{ fontSize: '1rem', color: isBooked ? 'var(--status-info-text)' : 'var(--status-success-text)' }}>
                             {isBooked ? `🟣 ${t(language, 'occupied_slot')}` : `🟢 ${t(language, 'available_slot')}`}
                           </strong>
                           <span className={`calendar-status-dot ${isBooked ? 'calendar-status-dot-booked' : 'calendar-status-dot-available'}`} />
                         </div>
 
                         {isBooked && (
-                          <div style={{ fontSize: '0.9rem', color: '#e2e8f0', marginTop: '0.25rem' }}>
+                          <div style={{ fontSize: '0.9rem', color: 'var(--portal-text)', marginTop: '0.25rem' }}>
                             <p style={{ margin: '0.2rem 0' }}>
                               <strong>Matéria:</strong> {conflict.subject || 'Aula'}
                             </p>
@@ -1412,7 +1412,7 @@ export default function AdminCalendar({
                           </div>
                         )}
 
-                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--portal-text-secondary)', marginTop: '0.25rem' }}>
                           <p style={{ margin: '0.2rem 0' }}>
                             <strong>Professor:</strong> {teacherProf?.full_name || t(language, 'teacher')}
                           </p>
@@ -1420,7 +1420,7 @@ export default function AdminCalendar({
                             <strong>Início:</strong> {availabilityStartsAt.replace('T', ' ')} ({selectedAvailability.duration_minutes} min)
                           </p>
                           {selectedAvailability.series_id && (
-                            <p style={{ margin: '0.2rem 0', color: '#38bdf8' }}>
+                            <p style={{ margin: '0.2rem 0', color: 'var(--portal-link)' }}>
                               🔁 <strong>{t(language, 'every_week')}</strong> (Horário recorrente)
                             </p>
                           )}
@@ -1429,12 +1429,12 @@ export default function AdminCalendar({
 
                       {/* Deletion Scope Selector if part of a recurring series */}
                       {selectedAvailability.series_id && (
-                        <div style={{ padding: '0.85rem', background: '#0f172a', borderRadius: '0.65rem', border: '1px solid #334155' }}>
-                          <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}>
+                        <div style={{ padding: '0.85rem', background: 'var(--portal-surface-subtle)', borderRadius: '0.65rem', border: '1px solid var(--portal-border)' }}>
+                          <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--portal-heading)', marginBottom: '0.5rem' }}>
                             {t(language, 'delete_scope_prompt')}
                           </p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: 'var(--portal-text)' }}>
                               <input
                                 type="radio"
                                 name="delete_scope"
@@ -1443,7 +1443,7 @@ export default function AdminCalendar({
                               />
                               <span>{t(language, 'delete_only_this')}</span>
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.84rem', color: 'var(--portal-text)' }}>
                               <input
                                 type="radio"
                                 name="delete_scope"
@@ -1628,7 +1628,7 @@ export default function AdminCalendar({
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #334155', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '0.75rem' }}>
               <button
                 type="button"
                 className={locateTab === 'early' ? 'primary-button' : 'ghost-button'}
@@ -1661,9 +1661,9 @@ export default function AdminCalendar({
                   width: '100%',
                   padding: '0.6rem 0.9rem',
                   borderRadius: '0.5rem',
-                  background: '#1e293b',
-                  border: '1px solid #334155',
-                  color: '#fff',
+                  background: 'var(--portal-input-bg)',
+                  border: '1px solid var(--portal-border-strong)',
+                  color: 'var(--portal-text)',
                   fontSize: '0.88rem',
                 }}
               />
@@ -1671,7 +1671,7 @@ export default function AdminCalendar({
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.25rem' }}>
               {filteredLocateGroups.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--portal-text-secondary)', fontSize: '0.9rem' }}>
                   Nenhuma aula encontrada nesta categoria.
                 </div>
               ) : (
@@ -1688,8 +1688,8 @@ export default function AdminCalendar({
                       key={group.key}
                       style={{
                         padding: '0.9rem 1rem',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
+                        background: 'var(--portal-surface-subtle)',
+                        border: '1px solid var(--portal-border)',
                         borderRadius: '0.5rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -1698,10 +1698,10 @@ export default function AdminCalendar({
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#f8fafc' }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--portal-heading)' }}>
                             {group.subject} {group.class_name ? `(${group.class_name})` : ''}
                           </div>
-                          <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--portal-text-secondary)', marginTop: '0.2rem' }}>
                             👤 <strong>Aluno(s):</strong> {studentNames || 'Nenhum'} | 👨‍🏫 <strong>Prof:</strong> {teacherName}
                           </div>
                         </div>
@@ -1740,7 +1740,8 @@ export default function AdminCalendar({
                       <div
                         style={{
                           fontSize: '0.78rem',
-                          background: 'rgba(30, 41, 59, 0.7)',
+                          background: 'var(--portal-surface)',
+                          border: '1px solid var(--portal-border)',
                           padding: '0.4rem 0.6rem',
                           borderRadius: '0.375rem',
                           display: 'flex',
@@ -1749,11 +1750,11 @@ export default function AdminCalendar({
                           flexWrap: 'wrap',
                         }}
                       >
-                        <span style={{ color: '#f87171' }}>
+                        <span style={{ color: 'var(--status-danger-text)' }}>
                           Horário Atual: <strong>{pad2(currentZoned.day)}/{pad2(currentZoned.month)} às {pad2(currentZoned.hour)}:{pad2(currentZoned.minute)}</strong>
                         </span>
-                        <span style={{ color: '#64748b' }}>➔</span>
-                        <span style={{ color: '#34d399' }}>
+                        <span style={{ color: 'var(--portal-text-muted)' }}>➔</span>
+                        <span style={{ color: 'var(--status-success-text)' }}>
                           Após Restaurar (+6h): <strong>{pad2(restoredZoned.day)}/{pad2(restoredZoned.month)} às {pad2(restoredZoned.hour)}:{pad2(restoredZoned.minute)}</strong>
                         </span>
                       </div>
@@ -1763,7 +1764,7 @@ export default function AdminCalendar({
               )}
             </div>
 
-            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--portal-border)', display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 className="secondary-button"

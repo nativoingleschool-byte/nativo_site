@@ -5302,3 +5302,645 @@ body:has(.teacher-agenda-view) .reminder-app-scope .teacher-portal-shell:not(.ad
 .reminder-app-scope .gcal-agenda-zoom-link:hover {
   background: #163252;
 }
+
+
+/* ========================================================================== */
+/* Unified Light & Dark Theme System Overrides                                */
+/* Fixes Light Mode contrast collisions and provides full Dark Mode support   */
+/* ========================================================================== */
+
+/* Light Mode Contrast Fixes: prevent global strong selector from turning text inside colored pills/buttons dark navy */
+.reminder-app-scope .primary-button strong,
+.reminder-app-scope .gcal-week-event--lesson strong,
+.reminder-app-scope .gcal-agenda-zoom-link strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.reminder-app-scope .gcal-week-event--done strong,
+.reminder-app-scope .badge-success strong,
+.reminder-app-scope .badge-confirmed strong {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Ensure inline-styled warning/status buttons inside admin tables are not stripped by blanket button selectors */
+.reminder-app-scope .admin-portal-shell .admin-students-table td button[style*="--status-warning-bg"] {
+  background: var(--status-warning-bg) !important;
+  border-color: var(--status-warning-border) !important;
+  color: var(--status-warning-text) !important;
+  -webkit-text-fill-color: var(--status-warning-text) !important;
+}
+
+/* ========================================================================== */
+/* Dark Mode Theme (`html[data-theme="dark"]` / `html.dark`)                  */
+/* ========================================================================== */
+
+html[data-theme="dark"]:has(.reminder-app-scope),
+html[data-theme="dark"] body:has(.reminder-app-scope),
+html.dark:has(.reminder-app-scope),
+html.dark body:has(.reminder-app-scope) {
+  background-color: var(--portal-bg) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope,
+html[data-theme="dark"] .reminder-app-scope .app-shell,
+html[data-theme="dark"] .reminder-app-scope .login-shell,
+html[data-theme="dark"] .reminder-app-scope .login-reference-shell,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-main,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell),
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-portal-main {
+  --reminder-canvas: var(--portal-bg);
+  --teacher-canvas: var(--portal-bg);
+  --admin-surface: var(--portal-surface);
+  --admin-border: var(--portal-border);
+  --admin-navy: var(--portal-heading);
+  --admin-muted: var(--portal-text-secondary);
+  background: var(--portal-bg) !important;
+  background-color: var(--portal-bg) !important;
+  color: var(--portal-text) !important;
+}
+
+/* Headings & Text in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope h1,
+html[data-theme="dark"] .reminder-app-scope h2,
+html[data-theme="dark"] .reminder-app-scope h3,
+html[data-theme="dark"] .reminder-app-scope h4,
+html[data-theme="dark"] .reminder-app-scope .text-white,
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-50"],
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-100"],
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-200"],
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell h1,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell h2,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell h3,
+html[data-theme="dark"] .reminder-app-scope .teacher-context-header h1,
+html[data-theme="dark"] .reminder-app-scope .login-reference-heading h1,
+html[data-theme="dark"] .reminder-app-scope .reference-finance-heading h2,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-title h2,
+html[data-theme="dark"] .reminder-app-scope .reference-meetings-heading h2,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-header h2,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-grid h3,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-card__header h2,
+html[data-theme="dark"] .reminder-app-scope .teacher-next-lesson-card__title h2,
+html[data-theme="dark"] .reminder-app-scope .admin-shared-calendar-toolbar h3,
+html[data-theme="dark"] .reminder-app-scope .admin-payroll-toolbar h3,
+html[data-theme="dark"] .reminder-app-scope .admin-students-invite-card > h3,
+html[data-theme="dark"] .reminder-app-scope .admin-students-list-heading strong,
+html[data-theme="dark"] .reminder-app-scope.modal-overlay > .modal-card h2,
+html[data-theme="dark"] .reminder-app-scope.modal-overlay > .form-card h3,
+html[data-theme="dark"] .teacher-preview-functional-modal h2,
+html[data-theme="dark"] .teacher-preview-attendance-modal h2 {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope label,
+html[data-theme="dark"] .reminder-app-scope .muted,
+html[data-theme="dark"] .reminder-app-scope .section-label,
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-300"],
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-400"],
+html[data-theme="dark"] .reminder-app-scope [class*="text-slate-500"],
+html[data-theme="dark"] .reminder-app-scope [class*="text-gray-"],
+html[data-theme="dark"] .reminder-app-scope .teacher-context-header__subtitle,
+html[data-theme="dark"] .reminder-app-scope .admin-payroll-toolbar p,
+html[data-theme="dark"] .reminder-app-scope .admin-payroll-toolbar span {
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+/* Sidebar & Context Header in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar,
+html[data-theme="dark"] .reminder-app-scope .role-teacher .teacher-sidebar {
+  background: var(--portal-surface) !important;
+  border-right-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar__brand,
+html[data-theme="dark"] .reminder-app-scope .role-teacher .teacher-brand-lockup {
+  border-bottom-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar__brand-copy strong,
+html[data-theme="dark"] .reminder-app-scope .login-reference-brand strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar__brand-copy .teacher-brand-english,
+html[data-theme="dark"] .reminder-app-scope .login-reference-brand strong em {
+  color: #f59e0b !important;
+  -webkit-text-fill-color: #f59e0b !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar-navigation__item {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar-navigation__item:hover,
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar-navigation__item:focus-visible {
+  background: var(--portal-surface-hover) !important;
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-sidebar-navigation__item.is-active {
+  background: var(--status-info-bg) !important;
+  border-color: var(--status-info-border) !important;
+  color: var(--status-info-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-context-header {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-bottom-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-profile-chip__avatar {
+  background: var(--status-info-bg) !important;
+  color: var(--status-info-text) !important;
+  border: 1px solid var(--status-info-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-profile-chip__copy strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-profile-chip__copy span {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-button,
+html[data-theme="dark"] .reminder-app-scope .teacher-logout-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-menu-toggle {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-button:hover,
+html[data-theme="dark"] .reminder-app-scope .teacher-logout-button:hover {
+  background: var(--portal-surface-hover) !important;
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-mobile-bottom-bar,
+html[data-theme="dark"] .reminder-app-scope .teacher-mobile-bottom-nav,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-mobile-menu {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-mobile-nav__item {
+  background: var(--portal-surface-subtle) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-mobile-nav__item.is-active {
+  background: var(--status-info-bg) !important;
+  color: var(--status-info-text) !important;
+}
+
+/* Notification Popover in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-popover {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border-strong) !important;
+  box-shadow: var(--portal-shadow-lg) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-popover__header {
+  border-bottom-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-popover__header h2 {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-popover__close {
+  background: var(--portal-surface-subtle) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item {
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item:hover,
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item.is-unread {
+  background: var(--portal-surface-subtle) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item__icon {
+  background: var(--status-info-bg) !important;
+  color: var(--status-info-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item__content strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-notification-item__content span {
+  color: var(--portal-text-secondary) !important;
+}
+
+/* Surfaces, Cards, Panels & KPI Grids in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .topbar,
+html[data-theme="dark"] .reminder-app-scope .feature-card,
+html[data-theme="dark"] .reminder-app-scope .panel,
+html[data-theme="dark"] .reminder-app-scope .summary-card,
+html[data-theme="dark"] .reminder-app-scope .clock-panel,
+html[data-theme="dark"] .reminder-app-scope .login-panel,
+html[data-theme="dark"] .reminder-app-scope .login-reference-card,
+html[data-theme="dark"] .reminder-app-scope .user-row,
+html[data-theme="dark"] .reminder-app-scope .credential-card,
+html[data-theme="dark"] .reminder-app-scope .form-card,
+html[data-theme="dark"] .reminder-app-scope .lesson-card,
+html[data-theme="dark"] .reminder-app-scope .reminder-card,
+html[data-theme="dark"] .reminder-app-scope .install-note,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid > *,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-invite-card,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-list-card,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-filter-card,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-payroll-toolbar,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-staff-toolbar,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-bank-metrics > .stat-card,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-grid,
+html[data-theme="dark"] .reminder-app-scope .teacher-next-lesson-card,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-card,
+html[data-theme="dark"] .reminder-app-scope .reference-finance-hero,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-card,
+html[data-theme="dark"] .reminder-app-scope .reference-meetings-card,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-card {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border) !important;
+  box-shadow: var(--portal-shadow) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid h1,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid h2,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid strong,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-value {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-label,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid .summary-card-header span {
+  color: #f59e0b !important;
+  -webkit-text-fill-color: #f59e0b !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-summary-grid svg,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-bank-heading-icon {
+  color: var(--portal-link) !important;
+  stroke: var(--portal-link) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-bulk-bar,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-staff-empty-notes,
+html[data-theme="dark"] .reminder-app-scope .reference-kpi-grid > div,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-actions {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-invite-card > h3,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-list-heading,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-toolbar,
+html[data-theme="dark"] .reminder-app-scope .reference-meeting-list,
+html[data-theme="dark"] .reminder-app-scope .reference-meeting-row,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-header {
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-list-heading span {
+  background: var(--portal-surface-subtle) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+/* Teacher Summary Cards & Banners in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card strong {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal,
+html[data-theme="dark"] .reminder-app-scope .reference-kpi-grid .is-green {
+  background: var(--status-success-bg) !important;
+  border-color: var(--status-success-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--teal strong,
+html[data-theme="dark"] .reminder-app-scope .reference-kpi-grid .is-green strong {
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-confirmation-banner,
+html[data-theme="dark"] .reminder-app-scope .reference-kpi-grid .is-yellow,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-notice,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-note,
+html[data-theme="dark"] .reminder-app-scope .login-reference-help {
+  background: var(--status-warning-bg) !important;
+  border-color: var(--status-warning-border) !important;
+  color: var(--status-warning-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell:not(.admin-portal-shell) .teacher-summary-card--amber strong,
+html[data-theme="dark"] .reminder-app-scope .reference-kpi-grid .is-yellow strong,
+html[data-theme="dark"] .reminder-app-scope .teacher-confirmation-banner__copy p,
+html[data-theme="dark"] .reminder-app-scope .teacher-confirmation-banner__copy p strong {
+  color: var(--status-warning-text) !important;
+}
+
+/* Tables in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .table-responsive,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell table {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell thead,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell th,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table thead tr,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table thead th,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table thead tr,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table thead th {
+  background: var(--portal-surface-subtle) !important;
+  color: var(--portal-text-secondary) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell tbody,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell tbody tr,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell tbody td,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table tbody td {
+  background: var(--portal-surface) !important;
+  color: var(--portal-text) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell tbody tr:hover,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell tbody tr:hover td,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-table tbody tr:hover td {
+  background: var(--portal-surface-hover) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table td button:not(.primary-button):not(.secondary-button) {
+  color: var(--portal-link) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-payroll-amount-button {
+  background: var(--status-info-bg) !important;
+  border-color: var(--status-info-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-payroll-amount-button > span {
+  color: var(--status-info-text) !important;
+  -webkit-text-fill-color: var(--status-info-text) !important;
+}
+
+/* Inputs, Selects & Textareas in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope input,
+html[data-theme="dark"] .reminder-app-scope select,
+html[data-theme="dark"] .reminder-app-scope textarea,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell input,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell select,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell textarea,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-invite-form input,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-bank-search__input,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-payroll-toolbar select,
+html[data-theme="dark"] .reminder-app-scope .login-reference-input,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-grid input,
+html[data-theme="dark"] .teacher-preview-functional-modal input,
+html[data-theme="dark"] .teacher-preview-functional-modal select,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-preview-dialog-field input,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-preview-dialog-date-time input,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-modal-extra-field > input,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-modal-extra-field > select,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-student-dropdown__trigger,
+html[data-theme="dark"] .teacher-lesson-form-modal .teacher-recurring-field__weeks input {
+  background: var(--portal-input-bg) !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+  border-color: var(--portal-border-strong) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .login-reference-input input {
+  background: transparent !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope input::placeholder,
+html[data-theme="dark"] .reminder-app-scope textarea::placeholder {
+  color: var(--portal-text-muted) !important;
+  -webkit-text-fill-color: var(--portal-text-muted) !important;
+}
+
+/* Buttons & Badges in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .primary-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .primary-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell button.reference-primary-button,
+html[data-theme="dark"] .reminder-app-scope .reference-primary-button,
+html[data-theme="dark"] .reminder-app-scope .login-reference-submit,
+html[data-theme="dark"] .reminder-app-scope .teacher-join-button,
+html[data-theme="dark"] .reminder-app-scope .teacher-new-lesson-button,
+html[data-theme="dark"] .reminder-app-scope .teacher-portal-shell .teacher-notes-submit {
+  background: var(--portal-primary) !important;
+  border-color: var(--portal-primary) !important;
+  color: var(--portal-primary-text) !important;
+  -webkit-text-fill-color: var(--portal-primary-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .secondary-button,
+html[data-theme="dark"] .reminder-app-scope .ghost-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .secondary-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-actions .ghost-button,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-staff-toolbar__secondary,
+html[data-theme="dark"] .reminder-app-scope .teacher-soft-button,
+html[data-theme="dark"] .reminder-app-scope .teacher-availability-button,
+html[data-theme="dark"] .reminder-app-scope .reference-month-switcher button,
+html[data-theme="dark"] .reminder-app-scope .reference-meeting-row > button,
+html[data-theme="dark"] .reminder-app-scope .reference-profile-actions > button:first-child,
+html[data-theme="dark"] .teacher-preview-functional-modal .secondary-button,
+html[data-theme="dark"] .teacher-preview-attendance-modal .secondary-button {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .danger-button,
+html[data-theme="dark"] .teacher-edit-modal-layout .teacher-preview-dialog-actions > button:first-child {
+  background: var(--status-danger-bg) !important;
+  border-color: var(--status-danger-border) !important;
+  color: var(--status-danger-text) !important;
+  -webkit-text-fill-color: var(--status-danger-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table .badge,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-staff-payment-status {
+  background: var(--status-info-bg) !important;
+  border-color: var(--status-info-border) !important;
+  color: var(--status-info-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table .badge-success,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-success,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-staff-payment-status.badge-success,
+html[data-theme="dark"] .reminder-app-scope .reference-status,
+html[data-theme="dark"] .reminder-app-scope .reference-approved {
+  background: var(--status-success-bg) !important;
+  border-color: var(--status-success-border) !important;
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-students-table .badge-danger,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-tracked-lessons .admin-tracked-lesson-status .badge-danger {
+  background: var(--status-danger-bg) !important;
+  border-color: var(--status-danger-border) !important;
+  color: var(--status-danger-text) !important;
+}
+
+/* Modals & Dropdowns in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .modal-overlay,
+html[data-theme="dark"] .reminder-app-scope.modal-overlay {
+  background: var(--portal-backdrop) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .modal-card,
+html[data-theme="dark"] .reminder-app-scope.modal-overlay > .modal-card,
+html[data-theme="dark"] .reminder-app-scope.modal-overlay > .form-card,
+html[data-theme="dark"] .teacher-preview-functional-modal,
+html[data-theme="dark"] .teacher-preview-attendance-modal,
+html[data-theme="dark"] .teacher-reference-preview-portal .reference-modal,
+html[data-theme="dark"] .teacher-reference-preview-portal .reference-availability-modal {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text) !important;
+  box-shadow: var(--portal-shadow-lg) !important;
+}
+
+html[data-theme="dark"] .teacher-student-dropdown__menu {
+  background: var(--portal-surface-elevated) !important;
+  border-color: var(--portal-border-strong) !important;
+  box-shadow: var(--portal-shadow-lg) !important;
+}
+
+html[data-theme="dark"] .teacher-student-dropdown__search {
+  background: var(--portal-input-bg) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .teacher-student-dropdown__search input {
+  background: transparent !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+  caret-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .teacher-student-dropdown__menu label {
+  background: transparent !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .teacher-student-dropdown__menu label:hover {
+  background: var(--portal-surface-hover) !important;
+}
+
+html[data-theme="dark"] .teacher-preview-attendance-modal label,
+html[data-theme="dark"] .teacher-reference-preview-portal .reference-availability-modal .teacher-weekly-availability-day {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-text) !important;
+}
+
+/* Google Calendar Week Grid, Agenda & Mobile Calendar in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .gcal-week-grid-container,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-view,
+html[data-theme="dark"] .reminder-app-scope .mobile-calendar-shell {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-header-row,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-time-label,
+html[data-theme="dark"] .reminder-app-scope .gcal-layer-toggles,
+html[data-theme="dark"] .reminder-app-scope .admin-portal-shell .admin-shared-calendar-card .calendar-view-toggle {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-layer-toggle {
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-sync-pill {
+  background: var(--status-success-bg) !important;
+  border-color: var(--status-success-border) !important;
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-time-gutter-header,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-day-header,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-hour-row,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-slot {
+  border-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-day-header.is-today,
+html[data-theme="dark"] .reminder-app-scope .gcal-week-slot.is-today {
+  background: rgba(56, 189, 248, 0.06) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-slot:hover {
+  background: var(--portal-surface-hover) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-day-number {
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-day-number.is-today {
+  background: var(--portal-primary) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--done {
+  background: var(--status-success-bg) !important;
+  color: var(--status-success-text) !important;
+  border-left-color: #10b981 !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .gcal-week-event--avail,
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-event.is-avail-pill {
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-event {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-calendar-list-event:hover {
+  background: var(--portal-surface-hover) !important;
+  border-color: var(--portal-border-strong) !important;
+}

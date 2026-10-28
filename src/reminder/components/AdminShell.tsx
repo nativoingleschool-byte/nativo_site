@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react'
 import { Bell, BookOpen, CalendarDays, CircleDollarSign, LogOut, UsersRound, Landmark, Menu, X } from 'lucide-react'
 import type { Profile, AppNotification } from '../lib/types'
 import TeacherNotificationPanel from './TeacherNotificationPanel'
+import { ThemeToggle } from '../../lib/theme'
 
 export type AdminSection = 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation'
 const sections = [
@@ -52,6 +53,7 @@ export default function AdminShell({ profile, activeTab, onTabChange, children, 
           <span className="teacher-context-header__subtitle">{active.subtitle}</span>
         </div></div>
         <div className="teacher-context-header__actions">
+          <ThemeToggle />
           <button className="admin-menu-toggle" type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir navegação"><Menu size={19}/></button>
           <div className="teacher-notification-anchor"><button type="button" className="teacher-notification-button"
             aria-label="Notificações" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18}/>

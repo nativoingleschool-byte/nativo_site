@@ -71,7 +71,7 @@ export default function TermsOfServiceModal({ lang, isOpen, onClose }: TermsOfSe
       sections: [
         {
           title: "1. Cancelación de Clases",
-          body: "Las clases pueden cancelarse sin penalización hasta 4 horas antes de la hora programada. Para clases grupales, la cancelación solo puede ocurrir si:\n\na. Todos los alumnos están de acuerdo en un nuevo día y horario, y\nb. El profesor tiene disponibilidad en el horario propuesto."
+          body: "Las clases pueden cancelarse sin penalización hasta 4 horas antes de la hora programada. Para clases grupales, la cancelación solo puede ocurrir si:\n\na. Todos los alumnos están de acuerdo en un nuevo dia y horario, y\nb. El profesor tiene disponibilidad en el horario propuesto."
         },
         {
           title: "2. Reprogramación de Clases",
@@ -102,7 +102,7 @@ export default function TermsOfServiceModal({ lang, isOpen, onClose }: TermsOfSe
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline"
+        className="bg-surface rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 md:p-8 border-b border-outline">
@@ -130,7 +130,7 @@ export default function TermsOfServiceModal({ lang, isOpen, onClose }: TermsOfSe
         <div className="p-6 md:p-8 border-t border-outline flex justify-end">
           <button 
             onClick={onClose}
-            className="px-6 py-3 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-colors cursor-pointer text-sm"
+            className="px-6 py-3 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:opacity-90 transition-colors cursor-pointer text-sm"
           >
             {activeContent.close}
           </button>

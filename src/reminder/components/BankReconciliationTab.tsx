@@ -14,10 +14,7 @@ import {
   RefreshCw,
   Play,
   Square,
-  Users,
-  CheckSquare,
   AlertTriangle,
-  ArrowRight,
   Filter,
   Check,
   Trash2,
@@ -42,7 +39,6 @@ const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return '-'
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) {
-    // Fallback if just YYYY-MM-DD
     const parts = dateStr.split('-')
     if (parts.length === 3) {
       return `${parts[2]}/${parts[1]}/${parts[0]}`
@@ -156,7 +152,6 @@ export default function BankReconciliationTab({
           const parsedList: BankTransaction[] = data.transactions || []
           setTransactions(prev => {
             const map = new Map<string, BankTransaction>()
-            // Retain any existing, but replace or prepend newly parsed
             parsedList.forEach(item => map.set(item.id, item))
             prev.forEach(item => {
               if (!map.has(item.id)) map.set(item.id, item)
@@ -227,7 +222,6 @@ export default function BankReconciliationTab({
     } catch (err: any) {
       console.error('Failed to update student match:', err.message)
       toast.error('Erro ao atualizar vínculo do aluno.')
-      // Revert if needed
       fetchTransactions()
     }
   }
@@ -269,7 +263,6 @@ export default function BankReconciliationTab({
         throw new Error(data.error || 'Erro ao emitir nota fiscal.')
       }
 
-      // Optimistic row update
       setTransactions(prev =>
         prev.map(t => {
           if (t.id === tx.id) {
@@ -297,9 +290,8 @@ export default function BankReconciliationTab({
     }
   }
 
-  // 5. Sequential Batch Emission Runner (Safe for Vercel 10s Serverless Limit)
+  // 5. Sequential Batch Emission Runner
   const handleStartBatchEmission = async () => {
-    // Items to emit: either explicitly selected matched items, or all matched items if none selected
     let targetItems = transactions.filter(t => t.status === 'matched' && t.student_id)
     if (selectedIds.size > 0) {
       targetItems = targetItems.filter(t => selectedIds.has(t.id))
@@ -357,7 +349,6 @@ export default function BankReconciliationTab({
             throw new Error(data.error || 'Erro na resposta do servidor')
           }
 
-          // Optimistic row state update
           setTransactions(prev =>
             prev.map(t => {
               if (t.id === item.id) {
@@ -381,7 +372,6 @@ export default function BankReconciliationTab({
           )
         }
 
-        // Small delay between transactions to prevent rate limiting
         await new Promise(r => setTimeout(r, 250))
       }
 
@@ -552,11 +542,11 @@ export default function BankReconciliationTab({
       <div className="panel p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+            <h3 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--portal-heading)' }}>
               <FileSpreadsheet className="admin-bank-heading-icon" size={24} />
               {t(language, 'bank_reconciliation')}
             </h3>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm mt-1" style={{ color: 'var(--portal-text-secondary)' }}>
               Importe o extrato bancário (.OFX ou .CSV) da escola para conciliar créditos e emitir NFS-e em lote com segurança.
             </p>
           </div>
@@ -575,7 +565,7 @@ export default function BankReconciliationTab({
             {transactions.length > 0 && (
               <button
                 type="button"
-                className="secondary-button flex items-center gap-2 text-sm text-slate-300 hover:text-rose-300 hover:border-rose-500/40 transition-colors"
+                className="secondary-button flex items-center gap-2 text-sm transition-colors"
                 disabled={isUploading || isBatchRunning || isResetting}
                 onClick={() => setShowResetModal(true)}
                 title="Limpar dados do extrato importado"
@@ -609,18 +599,19 @@ export default function BankReconciliationTab({
             const file = e.dataTransfer.files?.[0]
             if (file) handleFileUpload(file)
           }}
-          className={`mt-4 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
-            isUploading
-              ? 'border-indigo-500/50 bg-indigo-500/5 cursor-wait'
-              : 'border-slate-700/60 hover:border-indigo-500/60 hover:bg-slate-800/20'
-          }`}
+          className="mt-4 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200"
+          style={{
+            borderColor: isUploading ? 'var(--portal-link)' : 'var(--portal-border-strong)',
+            background: isUploading ? 'var(--status-info-bg)' : 'var(--portal-surface-subtle)',
+            cursor: isUploading ? 'wait' : 'pointer',
+          }}
         >
-          <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
-            <Upload size={28} className={isUploading ? 'animate-bounce text-indigo-400' : 'text-slate-500'} />
+          <div className="flex flex-col items-center justify-center gap-2" style={{ color: 'var(--portal-text-secondary)' }}>
+            <Upload size={28} style={{ color: isUploading ? 'var(--portal-link)' : 'var(--portal-text-muted)' }} className={isUploading ? 'animate-bounce' : ''} />
             <p className="text-sm">
-              <span className="font-semibold text-slate-200">Arraste seu arquivo OFX ou CSV aqui</span> ou clique para buscar
+              <span className="font-semibold" style={{ color: 'var(--portal-heading)' }}>Arraste seu arquivo OFX ou CSV aqui</span> ou clique para buscar
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs" style={{ color: 'var(--portal-text-muted)' }}>
               Formatos suportados: Arquivos bancários .OFX padrão e planilhas .CSV (Itaú, Bradesco, Santander, Nubank, Inter, etc.)
             </p>
           </div>
@@ -631,43 +622,49 @@ export default function BankReconciliationTab({
       <div className="admin-bank-metrics">
         <div className="stat-card">
           <p className="section-label">Total Transações</p>
-          <p className="text-2xl font-bold text-slate-100">{totalCount}</p>
-          <p className="text-xs text-slate-400 mt-1">{formatCurrency(totalAmount)}</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--portal-heading)' }}>{totalCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>{formatCurrency(totalAmount)}</p>
         </div>
         <div className="stat-card">
           <p className="section-label">Alunos Identificados</p>
-          <p className="text-2xl font-bold text-indigo-400">{matchedCount}</p>
-          <p className="text-xs text-slate-400 mt-1">Prontos para emissão</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--portal-link)' }}>{matchedCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>Prontos para emissão</p>
         </div>
         <div className="stat-card">
           <p className="section-label">Pendentes</p>
-          <p className="text-2xl font-bold text-amber-400">{pendingCount}</p>
-          <p className="text-xs text-slate-400 mt-1">Requerem vínculo manual</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--status-warning-text)' }}>{pendingCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>Requerem vínculo manual</p>
         </div>
         <div className="stat-card">
           <p className="section-label">NFS-e Emitidas</p>
-          <p className="text-2xl font-bold text-emerald-400">{issuedCount}</p>
-          <p className="text-xs text-slate-400 mt-1">Processadas com sucesso</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--status-success-text)' }}>{issuedCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>Processadas com sucesso</p>
         </div>
         <div className="stat-card col-span-2 sm:col-span-1">
           <p className="section-label">Ação em Lote</p>
-          <p className="text-2xl font-bold text-slate-200">{batchEligibleCount}</p>
-          <p className="text-xs text-slate-400 mt-1">Disponíveis na fila</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--portal-heading)' }}>{batchEligibleCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>Disponíveis na fila</p>
         </div>
       </div>
 
       {/* 3. Batch Emission Banner / Interactive Progress Bar */}
       {isBatchRunning && batchProgress && (
-        <div className="panel p-5 border border-indigo-500/40 bg-indigo-950/20 animate-fade-in">
+        <div
+          className="panel p-5 border animate-fade-in"
+          style={{
+            borderColor: 'var(--status-info-border)',
+            background: 'var(--status-info-bg)',
+          }}
+        >
           <div className="flex items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3">
-              <RefreshCw size={20} className="text-indigo-400 animate-spin" />
+              <RefreshCw size={20} style={{ color: 'var(--status-info-text)' }} className="animate-spin" />
               <div>
-                <h4 className="text-base font-semibold text-slate-100">
+                <h4 className="text-base font-semibold" style={{ color: 'var(--portal-heading)' }}>
                   Emitindo NFS-e em lote ({batchProgress.current} de {batchProgress.total})
                 </h4>
-                <p className="text-xs text-slate-300">
-                  Processando atualmente: <span className="font-semibold text-indigo-300">{batchProgress.studentName}</span>
+                <p className="text-xs" style={{ color: 'var(--portal-text-secondary)' }}>
+                  Processando atualmente: <span className="font-semibold" style={{ color: 'var(--status-info-text)' }}>{batchProgress.studentName}</span>
                 </p>
               </div>
             </div>
@@ -682,15 +679,16 @@ export default function BankReconciliationTab({
           </div>
 
           {/* Progress Bar Track */}
-          <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+          <div className="w-full rounded-full h-2.5 overflow-hidden" style={{ background: 'var(--portal-border)' }}>
             <div
-              className="bg-indigo-500 h-2.5 rounded-full transition-all duration-300"
+              className="h-2.5 rounded-full transition-all duration-300"
               style={{
+                background: 'var(--portal-primary)',
                 width: `${Math.round((batchProgress.current / batchProgress.total) * 100)}%`
               }}
             />
           </div>
-          <p className="text-right text-xs text-slate-400 mt-1">
+          <p className="text-right text-xs mt-1" style={{ color: 'var(--portal-text-secondary)' }}>
             {Math.round((batchProgress.current / batchProgress.total) * 100)}% concluído (chamadas isoladas anti-timeout)
           </p>
         </div>
@@ -713,11 +711,16 @@ export default function BankReconciliationTab({
 
           {/* Status filter dropdown */}
           <div className="flex items-center gap-2">
-            <Filter size={15} className="text-slate-400" />
+            <Filter size={15} style={{ color: 'var(--portal-text-secondary)' }} />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="text-sm bg-slate-900/80 border border-slate-700/60 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="text-sm rounded-lg px-3 py-1.5 focus:outline-none"
+              style={{
+                background: 'var(--portal-input-bg)',
+                border: '1px solid var(--portal-border)',
+                color: 'var(--portal-text)',
+              }}
             >
               <option value="all">Todos os Status ({transactions.length})</option>
               <option value="matched">Identificados ({matchedCount})</option>
@@ -770,7 +773,14 @@ export default function BankReconciliationTab({
         <div className="table-responsive">
           <table className="w-full text-left text-sm border-collapse" style={{ minWidth: '700px' }}>
             <thead>
-              <tr className="bg-slate-900/60 border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <tr
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{
+                  background: 'var(--portal-surface-subtle)',
+                  borderBottom: '1px solid var(--portal-border)',
+                  color: 'var(--portal-text-secondary)',
+                }}
+              >
                 <th className="p-3.5 w-10 text-center">
                   <input
                     type="checkbox"
@@ -780,7 +790,7 @@ export default function BankReconciliationTab({
                       selectedIds.size >= filteredTransactions.filter(t => t.status === 'matched').length
                     }
                     onChange={toggleSelectAll}
-                    className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    className="rounded cursor-pointer"
                   />
                 </th>
                 <th className="p-3.5">Data</th>
@@ -791,22 +801,22 @@ export default function BankReconciliationTab({
                 <th className="p-3.5 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400">
-                    <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-indigo-400" />
+                  <td colSpan={7} className="p-8 text-center" style={{ color: 'var(--portal-text-secondary)' }}>
+                    <RefreshCw size={24} className="animate-spin mx-auto mb-2" style={{ color: 'var(--portal-link)' }} />
                     Carregando transações...
                   </td>
                 </tr>
               ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400">
+                  <td colSpan={7} className="p-8 text-center" style={{ color: 'var(--portal-text-secondary)' }}>
                     {transactions.length === 0 ? (
                       <div>
-                        <FileSpreadsheet size={32} className="mx-auto mb-2 text-slate-500" />
-                        <p className="font-semibold text-slate-300">Nenhum extrato importado ainda</p>
-                        <p className="text-xs text-slate-500 mt-1">Faça o upload de um arquivo .OFX ou .CSV acima para iniciar.</p>
+                        <FileSpreadsheet size={32} className="mx-auto mb-2" style={{ color: 'var(--portal-text-muted)' }} />
+                        <p className="font-semibold" style={{ color: 'var(--portal-heading)' }}>Nenhum extrato importado ainda</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--portal-text-muted)' }}>Faça o upload de um arquivo .OFX ou .CSV acima para iniciar.</p>
                       </div>
                     ) : (
                       <p>Nenhuma transação encontrada com os filtros selecionados.</p>
@@ -822,9 +832,11 @@ export default function BankReconciliationTab({
                   return (
                     <tr
                       key={tx.id}
-                      className={`hover:bg-slate-800/30 transition-colors ${
-                        isSelected ? 'bg-indigo-950/20' : ''
-                      }`}
+                      className="transition-colors"
+                      style={{
+                        borderBottom: '1px solid var(--portal-border)',
+                        background: isSelected ? 'var(--status-info-bg)' : undefined,
+                      }}
                     >
                       {/* Checkbox */}
                       <td className="p-3.5 text-center">
@@ -833,23 +845,23 @@ export default function BankReconciliationTab({
                           checked={isSelected}
                           disabled={tx.status === 'issued'}
                           onChange={() => toggleSelectRow(tx.id)}
-                          className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-30"
+                          className="rounded cursor-pointer disabled:opacity-30"
                         />
                       </td>
 
                       {/* Date */}
-                      <td className="p-3.5 font-medium text-slate-300">
+                      <td className="p-3.5 font-medium" style={{ color: 'var(--portal-text)' }}>
                         {formatDateDisplay(tx.transaction_date)}
                       </td>
 
                       {/* Memo */}
                       <td className="p-3.5 max-w-xs" title={tx.memo}>
-                        <div className="font-medium text-slate-200 truncate">{tx.memo}</div>
+                        <div className="font-medium truncate" style={{ color: 'var(--portal-heading)' }}>{tx.memo}</div>
                         {tx.fitid && (
-                          <span className="text-[11px] text-slate-500 block truncate">ID: {tx.fitid}</span>
+                          <span className="text-xs block truncate" style={{ color: 'var(--portal-text-muted)' }}>ID: {tx.fitid}</span>
                         )}
                         {txError && (
-                          <div className="text-[11px] text-rose-400 mt-0.5 flex items-center gap-1">
+                          <div className="text-xs mt-0.5 flex items-center gap-1" style={{ color: 'var(--status-danger-text)' }}>
                             <AlertCircle size={12} className="shrink-0" />
                             <span className="truncate">{txError}</span>
                           </div>
@@ -857,7 +869,7 @@ export default function BankReconciliationTab({
                       </td>
 
                       {/* Amount */}
-                      <td className="p-3.5 text-right font-semibold text-emerald-400">
+                      <td className="p-3.5 text-right font-semibold" style={{ color: 'var(--status-success-text)' }}>
                         {formatCurrency(tx.amount)}
                       </td>
 
@@ -867,11 +879,13 @@ export default function BankReconciliationTab({
                           disabled={tx.status === 'issued' || isBatchRunning}
                           value={tx.student_id || ''}
                           onChange={(e) => handleUpdateStudentMatch(tx.id, e.target.value)}
-                          className={`text-xs w-full max-w-[240px] rounded-lg px-2.5 py-1.5 focus:outline-none transition-colors ${
-                            tx.student_id
-                              ? 'bg-slate-900 border border-indigo-500/50 text-indigo-200'
-                              : 'bg-slate-900/60 border border-slate-700/60 text-slate-400'
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+                          className="text-xs w-full max-w-[240px] rounded-lg px-2.5 py-1.5 focus:outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          style={{
+                            background: tx.student_id ? 'var(--status-info-bg)' : 'var(--portal-input-bg)',
+                            border: `1px solid ${tx.student_id ? 'var(--status-info-border)' : 'var(--portal-border)'}`,
+                            color: tx.student_id ? 'var(--status-info-text)' : 'var(--portal-text-secondary)',
+                            fontWeight: tx.student_id ? 600 : 500,
+                          }}
                         >
                           <option value="">-- Vincular Aluno --</option>
                           {students
@@ -883,16 +897,43 @@ export default function BankReconciliationTab({
                             ))}
                         </select>
                         {tx.student && (
-                          <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
+                          <div className="text-xs mt-1 flex flex-wrap items-center gap-1.5" style={{ color: 'var(--portal-text-secondary)' }}>
                             {tx.student.cpf && <span>CPF: {tx.student.cpf}</span>}
                             {tx.raw_data?.match_type === 'cpf' && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">Auto CPF</span>
+                              <span
+                                className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                                style={{
+                                  background: 'var(--status-info-bg)',
+                                  color: 'var(--status-info-text)',
+                                  border: '1px solid var(--status-info-border)',
+                                }}
+                              >
+                                Auto CPF
+                              </span>
                             )}
                             {tx.raw_data?.match_type?.startsWith('name') && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">Auto Nome</span>
+                              <span
+                                className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                                style={{
+                                  background: 'var(--status-info-bg)',
+                                  color: 'var(--status-info-text)',
+                                  border: '1px solid var(--status-info-border)',
+                                }}
+                              >
+                                Auto Nome
+                              </span>
                             )}
                             {tx.raw_data?.match_type === 'amount_fallback' && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-500/30">Auto Valor</span>
+                              <span
+                                className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                                style={{
+                                  background: 'var(--status-warning-bg)',
+                                  color: 'var(--status-warning-text)',
+                                  border: '1px solid var(--status-warning-border)',
+                                }}
+                              >
+                                Auto Valor
+                              </span>
                             )}
                           </div>
                         )}
@@ -901,22 +942,50 @@ export default function BankReconciliationTab({
                       {/* Status */}
                       <td className="p-3.5 text-center">
                         {tx.status === 'issued' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            style={{
+                              background: 'var(--status-success-bg)',
+                              color: 'var(--status-success-text)',
+                              border: '1px solid var(--status-success-border)',
+                            }}
+                          >
                             <CheckCircle2 size={12} />
                             Emitida
                           </span>
                         ) : tx.status === 'matched' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-950/60 text-indigo-300 border border-indigo-500/30">
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            style={{
+                              background: 'var(--status-info-bg)',
+                              color: 'var(--status-info-text)',
+                              border: '1px solid var(--status-info-border)',
+                            }}
+                          >
                             <Check size={12} />
                             Identificado
                           </span>
                         ) : tx.status === 'failed' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-950/60 text-rose-300 border border-rose-500/30">
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            style={{
+                              background: 'var(--status-danger-bg)',
+                              color: 'var(--status-danger-text)',
+                              border: '1px solid var(--status-danger-border)',
+                            }}
+                          >
                             <AlertTriangle size={12} />
                             Falha
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-950/60 text-amber-300 border border-amber-500/30">
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            style={{
+                              background: 'var(--status-warning-bg)',
+                              color: 'var(--status-warning-text)',
+                              border: '1px solid var(--status-warning-border)',
+                            }}
+                          >
                             <Clock size={12} />
                             Pendente
                           </span>
@@ -927,7 +996,7 @@ export default function BankReconciliationTab({
                       <td className="p-3.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           {tx.status === 'issued' ? (
-                            <span className="text-xs text-slate-500">Concluído</span>
+                            <span className="text-xs" style={{ color: 'var(--portal-text-muted)' }}>Concluído</span>
                           ) : (
                             <>
                               <button
@@ -949,7 +1018,11 @@ export default function BankReconciliationTab({
                                 type="button"
                                 disabled={isBatchRunning || isIssuingThis}
                                 onClick={() => handleDeleteTransactions([tx.id])}
-                                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-800/40 transition-colors"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{
+                                  color: 'var(--portal-text-muted)',
+                                  border: '1px solid transparent',
+                                }}
                                 title="Remover transação do extrato"
                               >
                                 <Trash2 size={13} />
@@ -969,18 +1042,35 @@ export default function BankReconciliationTab({
 
       {/* 6. Reset Statement Confirmation Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in"
+          style={{ background: 'var(--portal-backdrop)' }}
+        >
+          <div
+            className="rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+            style={{
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
+              color: 'var(--portal-text)',
+            }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'var(--status-danger-bg)',
+                    border: '1px solid var(--status-danger-border)',
+                    color: 'var(--status-danger-text)',
+                  }}
+                >
                   <RotateCcw size={20} />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-100">
+                  <h4 className="text-lg font-bold" style={{ color: 'var(--portal-heading)' }}>
                     {t(language, 'reset_statement')}
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs" style={{ color: 'var(--portal-text-secondary)' }}>
                     Limpar dados importados do extrato
                   </p>
                 </div>
@@ -988,26 +1078,32 @@ export default function BankReconciliationTab({
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
-                className="text-slate-400 hover:text-slate-200 transition-colors"
+                style={{ color: 'var(--portal-text-secondary)' }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <p className="text-sm text-slate-300">
+            <p className="text-sm" style={{ color: 'var(--portal-text)' }}>
               {t(language, 'reset_statement_confirm')}
             </p>
 
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
+            <div
+              className="rounded-xl p-3.5 space-y-2"
+              style={{
+                background: 'var(--portal-surface-subtle)',
+                border: '1px solid var(--portal-border)',
+              }}
+            >
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs" style={{ color: 'var(--portal-text-secondary)' }}>
                 <input
                   type="checkbox"
                   checked={resetIncludeIssued}
                   onChange={(e) => setResetIncludeIssued(e.target.checked)}
-                  className="rounded border-slate-700 text-rose-500 focus:ring-rose-500 mt-0.5"
+                  className="rounded mt-0.5"
                 />
                 <span>
-                  <strong className="text-slate-200 block">Excluir também transações já emitidas</strong>
+                  <strong className="block" style={{ color: 'var(--portal-heading)' }}>Excluir também transações já emitidas</strong>
                   Por padrão, transações com NFS-e emitida são mantidas no histórico. Marque esta opção se desejar apagar todo o histórico de extratos.
                 </span>
               </label>

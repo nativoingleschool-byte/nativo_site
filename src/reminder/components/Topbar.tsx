@@ -3,6 +3,8 @@ import { Language, supportedLanguages, t } from '../lib/i18n'
 import { formatDateTime } from '../lib/utils'
 import { LogOut, Bell, BellOff, Download, Globe, Clock, User, Receipt, Settings, X } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { ThemeToggle } from '../../lib/theme'
+
 const appTimeZones = [
   { value: 'America/Sao_Paulo', label: 'BRT' },
   { value: 'UTC', label: 'UTC' },
@@ -133,7 +135,7 @@ export default function Topbar({
       {profile.role === 'admin' && adminTab && setAdminTab && (
         <div className="lg:hidden">
           <select
-            className="topbar-select text-xs bg-slate-900/90 border border-slate-700/60 rounded px-2 py-1"
+            className="topbar-select text-xs rounded px-2 py-1"
             value={adminTab}
             onChange={(e) => setAdminTab(e.target.value as any)}
           >
@@ -147,7 +149,8 @@ export default function Topbar({
       )}
 
       {/* Right: controls */}
-      <div className="topbar-section" style={{ position: 'relative' }} ref={settingsRef}>
+      <div className="topbar-section" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }} ref={settingsRef}>
+        <ThemeToggle lang={language} />
         <button
           className="topbar-icon-btn"
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -161,15 +164,15 @@ export default function Topbar({
             position: 'absolute',
             top: 'calc(100% + 8px)',
             right: 0,
-            background: 'rgba(15, 23, 42, 0.98)',
-            border: '1px solid rgba(148, 163, 184, 0.18)',
+            background: 'var(--portal-surface)',
+            border: '1px solid var(--portal-border)',
             borderRadius: '12px',
             padding: '12px',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
             minWidth: '220px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.25)',
             backdropFilter: 'blur(16px)',
             zIndex: 100
           }}>
@@ -196,7 +199,7 @@ export default function Topbar({
             <div className="topbar-chip" style={{ justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Globe size={14} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0' }}>{t(language, 'language')}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--portal-text)' }}>{t(language, 'language')}</span>
               </div>
               <select
                 className="topbar-select"

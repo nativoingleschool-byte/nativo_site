@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { User, FileText, Mail, Lock, Calendar, Loader2, CheckCircle2, Home, MapPin, Globe } from 'lucide-react';
+import { ThemeToggle } from '../lib/theme';
 
 export default function RegisterApp() {
   const [token, setToken] = useState('');
@@ -82,22 +83,28 @@ export default function RegisterApp() {
     }
   };
 
+  const inputClass =
+    'w-full pl-12 pr-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary transition-colors text-sm';
+
   if (success) {
     return (
-      <div className="min-h-screen bg-[#020617] text-[#e5eefc] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-[#0f172a] border border-slate-800 rounded-3xl p-8 text-center shadow-2xl space-y-6">
+      <div className="min-h-screen bg-background text-on-surface flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-surface border border-outline rounded-3xl p-8 text-center shadow-2xl space-y-6">
+          <div className="flex justify-end">
+            <ThemeToggle />
+          </div>
           <div className="flex justify-center">
-            <CheckCircle2 className="w-16 h-16 text-emerald-400" />
+            <CheckCircle2 className="w-16 h-16 text-emerald-500" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-black tracking-tight text-white">Cadastro Concluído!</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h1 className="text-3xl font-black tracking-tight text-primary">Cadastro Concluído!</h1>
+            <p className="text-on-surface-variant text-sm leading-relaxed">
               Sua conta de estudante foi criada com sucesso. Você já pode acessar a plataforma utilizando suas credenciais.
             </p>
           </div>
           <button
             onClick={() => window.history.pushState({}, '', '/reminder')}
-            className="w-full py-4 bg-primary text-white rounded-full font-bold hover:brightness-110 transition-all cursor-pointer shadow-lg text-sm"
+            className="w-full py-4 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:brightness-110 transition-all cursor-pointer shadow-lg text-sm"
           >
             Acessar a Área do Aluno
           </button>
@@ -107,21 +114,25 @@ export default function RegisterApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-[#e5eefc] flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-[#0f172a] border border-slate-800 rounded-[2rem] p-8 shadow-2xl space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-block px-3 py-1 bg-primary/20 border border-primary/30 rounded-full text-xs text-primary font-bold uppercase tracking-widest">
+    <div className="min-h-screen bg-background text-on-surface flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-surface border border-outline rounded-[2rem] p-8 shadow-2xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="inline-block px-3 py-1 bg-primary/15 border border-primary/25 rounded-full text-xs text-primary font-bold uppercase tracking-widest">
             Convite Nativo
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Crie sua Conta</h1>
-          <p className="text-slate-400 text-sm leading-relaxed">
+          <ThemeToggle />
+        </div>
+
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-black tracking-tight text-primary">Crie sua Conta</h1>
+          <p className="text-on-surface-variant text-sm leading-relaxed">
             Preencha seus dados para concluir seu cadastro como estudante.
           </p>
         </div>
 
         {error && (
-          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-xs text-rose-300 font-medium">
+          <div className="p-4 rounded-2xl text-xs font-medium border" style={{ background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)', borderColor: 'var(--status-danger-border)' }}>
             {error}
           </div>
         )}
@@ -129,14 +140,14 @@ export default function RegisterApp() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Full Name */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Nome Completo</label>
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Nome Completo</label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input
                 type="text"
                 required
                 placeholder="Seu nome"
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                className={inputClass}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
@@ -145,12 +156,12 @@ export default function RegisterApp() {
 
           {/* Country */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">País / Country</label>
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">País / Country</label>
             <div className="relative">
-              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <select
                 required
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:outline-none focus:border-primary transition-colors text-sm appearance-none"
+                className={`${inputClass} appearance-none`}
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
               >
@@ -176,14 +187,14 @@ export default function RegisterApp() {
           {/* CPF — Required only for Brazil */}
           {country === 'BR' && (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CPF</label>
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">CPF</label>
               <div className="relative">
-                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
                 <input
                   type="text"
                   required
                   placeholder="000.000.000-00"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                  className={inputClass}
                   value={cpf}
                   onChange={(e) => setCpf(e.target.value)}
                 />
@@ -193,15 +204,15 @@ export default function RegisterApp() {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">E-mail</label>
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">E-mail</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input
                 type="email"
                 required
                 disabled={isEmailLocked}
                 placeholder="exemplo@gmail.com"
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-950/50 border border-slate-900 rounded-2xl text-slate-400 placeholder-slate-600 focus:outline-none transition-colors text-sm disabled:cursor-not-allowed"
+                className={`${inputClass} disabled:opacity-70 disabled:cursor-not-allowed`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -210,16 +221,16 @@ export default function RegisterApp() {
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">
               {country === 'BR' ? 'Senha' : 'Password'}
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                className={inputClass}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -231,11 +242,11 @@ export default function RegisterApp() {
             <>
               {/* Preferred Payment Date */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Dia de Vencimento Preferencial</label>
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Dia de Vencimento Preferencial</label>
                 <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
                   <select
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:outline-none focus:border-primary transition-colors text-sm appearance-none"
+                    className={`${inputClass} appearance-none`}
                     value={paymentDate}
                     onChange={(e) => setPaymentDate(e.target.value)}
                   >
@@ -250,13 +261,13 @@ export default function RegisterApp() {
 
               {/* CEP */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CEP (Opcional)</label>
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">CEP (Opcional)</label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
                   <input
                     type="text"
                     placeholder="06401-000"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                    className={inputClass}
                     value={cep}
                     onChange={(e) => setCep(e.target.value)}
                   />
@@ -265,13 +276,13 @@ export default function RegisterApp() {
 
               {/* Logradouro */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Endereço (Rua, Nº, Apto) (Opcional)</label>
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Endereço (Rua, Nº, Apto) (Opcional)</label>
                 <div className="relative">
-                  <Home className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                  <Home className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Av. Principal, 123"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                    className={inputClass}
                     value={logradouro}
                     onChange={(e) => setLogradouro(e.target.value)}
                   />
@@ -281,32 +292,32 @@ export default function RegisterApp() {
               {/* Bairro, Cidade, UF in grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Bairro (Opcional)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Bairro (Opcional)</label>
                   <input
                     type="text"
                     placeholder="Centro"
-                    className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                    className="w-full px-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary transition-colors text-sm"
                     value={bairro}
                     onChange={(e) => setBairro(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Cidade (Opcional)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Cidade (Opcional)</label>
                   <input
                     type="text"
                     placeholder="Barueri"
-                    className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm"
+                    className="w-full px-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary transition-colors text-sm"
                     value={cidade}
                     onChange={(e) => setCidade(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">UF (Opcional)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">UF (Opcional)</label>
                   <input
                     type="text"
                     placeholder="SP"
                     maxLength={2}
-                    className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-primary transition-colors text-sm uppercase"
+                    className="w-full px-4 py-3.5 bg-background border border-outline rounded-2xl text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary transition-colors text-sm uppercase"
                     value={uf}
                     onChange={(e) => setUf(e.target.value)}
                   />
@@ -319,7 +330,7 @@ export default function RegisterApp() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-4 bg-primary text-white rounded-full font-bold hover:brightness-110 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-2 py-4 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:brightness-110 transition-all cursor-pointer flex justify-center items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>

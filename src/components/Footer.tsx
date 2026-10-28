@@ -20,7 +20,7 @@ interface FooterProps {
 
 export default function Footer({ t, onOpenPrivacy, onOpenTerms }: FooterProps) {
   return (
-    <footer className="bg-primary pt-24 pb-12 text-white/80 font-light">
+    <footer className="bg-brand-navy pt-24 pb-12 text-white/80 font-light border-t border-white/10">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-16 px-6 md:px-16 max-w-7xl mx-auto">
         <div className="space-y-6">
           <div className="flex items-center gap-2 text-2xl font-black text-white tracking-tighter uppercase">
@@ -67,7 +67,7 @@ export default function Footer({ t, onOpenPrivacy, onOpenTerms }: FooterProps) {
           </ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-6 md:px-16 mt-20 pt-8 border-t border-white/10 text-center text-[10px] uppercase tracking-widest opacity-50">
+      <div className="max-w-7xl mx-auto px-6 md:px-16 mt-20 pt-8 border-t border-white/10 text-center text-xs uppercase tracking-widest opacity-50">
         <p>{t.rights}</p>
       </div>
     </footer>

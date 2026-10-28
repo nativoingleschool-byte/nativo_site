@@ -248,8 +248,8 @@ export default function DateTimePicker({
   return (
     <div ref={containerRef} className={`datetime-picker-wrapper ${className}`} style={{ width: '100%', position: 'relative', ...style }}>
       {label && (
-        <label style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.35rem', display: 'block' }}>
-          {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        <label style={{ fontSize: '0.82rem', color: 'var(--portal-text-secondary)', marginBottom: '0.35rem', display: 'block', fontWeight: 600 }}>
+          {label} {required && <span style={{ color: 'var(--status-danger-text)' }}>*</span>}
         </label>
       )}
 
@@ -265,15 +265,15 @@ export default function DateTimePicker({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0.65rem 0.85rem',
-            background: '#0f172a',
-            border: `1px solid ${showCalendar ? '#6366f1' : '#334155'}`,
+            background: 'var(--portal-input-bg)',
+            border: `1px solid ${showCalendar ? 'var(--portal-link)' : 'var(--portal-border)'}`,
             borderRadius: '0.75rem',
-            color: '#f8fafc',
+            color: 'var(--portal-text)',
             fontSize: '0.88rem',
             fontWeight: 500,
             cursor: 'pointer',
             outline: 'none',
-            boxShadow: showCalendar ? '0 0 0 2px rgba(99, 102, 241, 0.25)' : 'none',
+            boxShadow: showCalendar ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
             transition: 'all 0.15s ease',
           }}
           title={t(language, 'select_date')}
@@ -282,7 +282,7 @@ export default function DateTimePicker({
             <span style={{ fontSize: '1.1rem' }}>📅</span>
             <span>{formattedDateLabel}</span>
           </span>
-          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{showCalendar ? '▲' : '▼'}</span>
+          <span style={{ color: 'var(--portal-text-secondary)', fontSize: '0.75rem' }}>{showCalendar ? '▲' : '▼'}</span>
         </button>
 
         {/* Time Selector Controls */}
@@ -291,10 +291,10 @@ export default function DateTimePicker({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            background: '#0f172a',
+            background: 'var(--portal-input-bg)',
             padding: '0.3rem 0.5rem',
             borderRadius: '0.75rem',
-            border: '1px solid #334155',
+            border: '1px solid var(--portal-border)',
           }}
         >
           {/* Hour Dropdown */}
@@ -303,10 +303,10 @@ export default function DateTimePicker({
             onChange={(e) => handleHourChange(Number(e.target.value))}
             style={{
               padding: '0.35rem 0.45rem',
-              background: '#1e293b',
-              border: '1px solid #475569',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '0.5rem',
-              color: '#fff',
+              color: 'var(--portal-text)',
               fontSize: '0.88rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -321,7 +321,7 @@ export default function DateTimePicker({
             ))}
           </select>
 
-          <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>:</span>
+          <span style={{ color: 'var(--portal-text-secondary)', fontWeight: 'bold' }}>:</span>
 
           {/* Minute Dropdown */}
           <select
@@ -329,10 +329,10 @@ export default function DateTimePicker({
             onChange={(e) => handleMinuteChange(Number(e.target.value))}
             style={{
               padding: '0.35rem 0.45rem',
-              background: '#1e293b',
-              border: '1px solid #475569',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '0.5rem',
-              color: '#fff',
+              color: 'var(--portal-text)',
               fontSize: '0.88rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -354,9 +354,9 @@ export default function DateTimePicker({
             style={{
               padding: '0.38rem 0.75rem',
               borderRadius: '0.55rem',
-              border: parsed.period === 'AM' ? '1px solid #38bdf8' : '1px solid #818cf8',
-              background: parsed.period === 'AM' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(99, 102, 241, 0.25)',
-              color: parsed.period === 'AM' ? '#38bdf8' : '#a5b4fc',
+              border: '1px solid var(--status-info-border)',
+              background: 'var(--status-info-bg)',
+              color: 'var(--status-info-text)',
               fontSize: '0.84rem',
               fontWeight: 700,
               cursor: 'pointer',
@@ -384,7 +384,7 @@ export default function DateTimePicker({
           paddingBottom: '0.2rem',
         }}
       >
-        <span style={{ fontSize: '0.72rem', color: '#64748b', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
           {t(language, 'quick_presets') || 'Presets'}:
         </span>
         {commonPresets.map((preset) => {
@@ -397,9 +397,9 @@ export default function DateTimePicker({
               style={{
                 padding: '0.2rem 0.5rem',
                 borderRadius: '0.4rem',
-                border: isSelected ? '1px solid #10b981' : '1px solid #334155',
-                background: isSelected ? 'rgba(16, 185, 129, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                color: isSelected ? '#34d399' : '#94a3b8',
+                border: isSelected ? '1px solid var(--status-success-border)' : '1px solid var(--portal-border)',
+                background: isSelected ? 'var(--status-success-bg)' : 'var(--portal-surface-subtle)',
+                color: isSelected ? 'var(--status-success-text)' : 'var(--portal-text-secondary)',
                 fontSize: '0.74rem',
                 fontWeight: isSelected ? 700 : 500,
                 cursor: 'pointer',
@@ -421,12 +421,12 @@ export default function DateTimePicker({
             top: 'calc(100% + 4px)',
             left: 0,
             zIndex: 999999,
-            background: '#090d16',
-            border: '1px solid #334155',
+            background: 'var(--portal-surface)',
+            border: '1px solid var(--portal-border-strong)',
             borderRadius: '1rem',
             padding: '1rem',
             width: '310px',
-            boxShadow: '0 20px 35px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(99, 102, 241, 0.15)',
+            boxShadow: '0 20px 35px -5px rgba(15, 23, 42, 0.32)',
             backdropFilter: 'blur(16px)',
           }}
         >
@@ -436,10 +436,10 @@ export default function DateTimePicker({
               type="button"
               onClick={prevMonth}
               style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
+                background: 'var(--portal-surface-subtle)',
+                border: '1px solid var(--portal-border)',
                 borderRadius: '0.5rem',
-                color: '#f8fafc',
+                color: 'var(--portal-text)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
@@ -451,15 +451,15 @@ export default function DateTimePicker({
             >
               ◀
             </button>
-            <strong style={{ fontSize: '0.92rem', color: '#f8fafc' }}>{monthTitle}</strong>
+            <strong style={{ fontSize: '0.92rem', color: 'var(--portal-heading)' }}>{monthTitle}</strong>
             <button
               type="button"
               onClick={nextMonth}
               style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
+                background: 'var(--portal-surface-subtle)',
+                border: '1px solid var(--portal-border)',
                 borderRadius: '0.5rem',
-                color: '#f8fafc',
+                color: 'var(--portal-text)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
@@ -476,7 +476,7 @@ export default function DateTimePicker({
           {/* Weekday Header */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', textAlign: 'center', marginBottom: '0.4rem' }}>
             {weekDayHeaders.map((w, idx) => (
-              <span key={idx} style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', padding: '0.2rem 0' }}>
+              <span key={idx} style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--portal-text-muted)', padding: '0.2rem 0' }}>
                 {w}
               </span>
             ))}
@@ -496,9 +496,9 @@ export default function DateTimePicker({
                   style={{
                     height: '34px',
                     borderRadius: '0.5rem',
-                    border: isToday ? '1px solid #6366f1' : 'none',
-                    background: isSelected ? '#4f46e5' : isToday ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                    color: isSelected ? '#fff' : cell.isCurrentMonth ? '#e2e8f0' : '#475569',
+                    border: isToday ? '1px solid var(--portal-link)' : 'none',
+                    background: isSelected ? 'var(--portal-primary)' : isToday ? 'var(--status-info-bg)' : 'transparent',
+                    color: isSelected ? '#fff' : cell.isCurrentMonth ? 'var(--portal-text)' : 'var(--portal-text-muted)',
                     fontSize: '0.82rem',
                     fontWeight: isSelected || isToday ? 700 : cell.isCurrentMonth ? 500 : 400,
                     cursor: 'pointer',
@@ -509,12 +509,12 @@ export default function DateTimePicker({
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = '#1e293b'
+                      e.currentTarget.style.background = 'var(--portal-surface-hover)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = isToday ? 'rgba(99, 102, 241, 0.2)' : 'transparent'
+                      e.currentTarget.style.background = isToday ? 'var(--status-info-bg)' : 'transparent'
                     }
                   }}
                 >
@@ -532,7 +532,7 @@ export default function DateTimePicker({
               alignItems: 'center',
               marginTop: '0.85rem',
               paddingTop: '0.65rem',
-              borderTop: '1px solid #1e293b',
+              borderTop: '1px solid var(--portal-border)',
             }}
           >
             <button
@@ -545,7 +545,7 @@ export default function DateTimePicker({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#818cf8',
+                color: 'var(--portal-link)',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -559,10 +559,10 @@ export default function DateTimePicker({
               type="button"
               onClick={() => setShowCalendar(false)}
               style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
+                background: 'var(--portal-surface-subtle)',
+                border: '1px solid var(--portal-border)',
                 borderRadius: '0.45rem',
-                color: '#cbd5e1',
+                color: 'var(--portal-text-secondary)',
                 fontSize: '0.78rem',
                 padding: '0.3rem 0.7rem',
                 cursor: 'pointer',

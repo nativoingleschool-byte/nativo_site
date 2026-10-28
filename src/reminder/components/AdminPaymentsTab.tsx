@@ -209,7 +209,6 @@ export default function AdminPaymentsTab({
           toast.info(statusResult.message || t(language, 'success_lote_envio_banner'))
         }
       } else {
-        // Fallback toast if no invoice_id returned
         if (data.nfs_e_pdf_link) {
           toast.success(t(language, 'success_invoice_banner').replace('{name}', `${fullName} (${formatBillingPeriod(targetPeriod, language)})`))
         } else {
@@ -333,8 +332,8 @@ export default function AdminPaymentsTab({
         <div
           className="animate-fade-in mb-4"
           style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.35)',
+            background: 'var(--status-danger-bg)',
+            border: '1px solid var(--status-danger-border)',
             borderRadius: '0.75rem',
             padding: '0.85rem 1.25rem',
             marginBottom: '1rem',
@@ -342,7 +341,7 @@ export default function AdminPaymentsTab({
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1rem',
-            color: '#f87171'
+            color: 'var(--status-danger-text)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -377,7 +376,7 @@ export default function AdminPaymentsTab({
       <div className="table-responsive admin-shared-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => handleSort('name')}
@@ -416,10 +415,10 @@ export default function AdminPaymentsTab({
                 )
 
                 return (
-                  <tr key={student.id} style={{ borderBottom: '1px solid #1e293b', fontSize: '0.9rem' }}>
+                  <tr key={student.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.9rem' }}>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ fontWeight: 'bold' }}>{student.full_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{student.email}</div>
+                      <div style={{ fontWeight: 'bold', color: 'var(--portal-heading)' }}>{student.full_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>{student.email}</div>
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -430,7 +429,7 @@ export default function AdminPaymentsTab({
                           background: student.status_pagamento === 'em_dia' ? '#10b981' : 
                                       student.status_pagamento === 'pendente' ? '#f59e0b' : '#ef4444'
                         }} />
-                        <span style={{ fontSize: '0.85rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--portal-text)' }}>
                           {student.status_pagamento === 'em_dia' && t(language, 'financial_ok')}
                           {student.status_pagamento === 'pendente' && t(language, 'financial_pending')}
                           {student.status_pagamento === 'atrasado' && t(language, 'financial_late')}
@@ -441,11 +440,11 @@ export default function AdminPaymentsTab({
                     <td style={{ padding: '1rem' }}>
                       {lastInvoice ? (
                         <div>
-                          <div style={{ fontWeight: 'bold' }}>{lastInvoice.billing_period || t(language, 'not_specified')}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{new Date(lastInvoice.created_at).toLocaleDateString()}</div>
+                          <div style={{ fontWeight: 'bold', color: 'var(--portal-heading)' }}>{lastInvoice.billing_period || t(language, 'not_specified')}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>{new Date(lastInvoice.created_at).toLocaleDateString()}</div>
                         </div>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>-</span>
+                        <span style={{ color: 'var(--portal-text-muted)', fontSize: '0.85rem' }}>-</span>
                       )}
                     </td>
                     <td style={{ padding: '1rem' }}>
@@ -461,8 +460,17 @@ export default function AdminPaymentsTab({
                       ) : lastInvoice?.protocolo_recebimento ? (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                           <button
-                            className="secondary-button"
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: '#f59e0b', borderColor: '#f59e0b', color: '#000' }}
+                            type="button"
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.8rem',
+                              borderRadius: '0.6rem',
+                              fontWeight: 700,
+                              background: 'var(--status-warning-bg)',
+                              border: '1px solid var(--status-warning-border)',
+                              color: 'var(--status-warning-text)',
+                              cursor: 'pointer',
+                            }}
                             disabled={checkingStatusId === lastInvoice.id}
                             onClick={() => void handleCheckStatus(lastInvoice.id)}
                           >
@@ -478,7 +486,7 @@ export default function AdminPaymentsTab({
                           </button>
                         </div>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{t(language, 'awaiting_emission')}</span>
+                        <span style={{ color: 'var(--portal-text-muted)', fontSize: '0.85rem' }}>{t(language, 'awaiting_emission')}</span>
                       )}
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -488,9 +496,9 @@ export default function AdminPaymentsTab({
                             title={nfseErrors[student.id]}
                             style={{
                               fontSize: '0.75rem',
-                              color: '#f87171',
-                              background: 'rgba(239, 68, 68, 0.15)',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              color: 'var(--status-danger-text)',
+                              background: 'var(--status-danger-bg)',
+                              border: '1px solid var(--status-danger-border)',
                               padding: '0.2rem 0.5rem',
                               borderRadius: '0.4rem',
                               maxWidth: '160px',
@@ -522,7 +530,7 @@ export default function AdminPaymentsTab({
                           style={{ 
                             padding: '0.4rem 0.8rem', 
                             fontSize: '0.8rem', 
-                            background: hasInvoiceForCurrentMonth ? '#10b981' : '#0284c7',
+                            background: hasInvoiceForCurrentMonth ? '#10b981' : 'var(--portal-primary)',
                             cursor: hasInvoiceForCurrentMonth ? 'not-allowed' : 'pointer'
                           }}
                           disabled={issuingNfseId === student.id || hasInvoiceForCurrentMonth || !student.tuition_fee || Number(student.tuition_fee) <= 0}
@@ -565,7 +573,7 @@ export default function AdminPaymentsTab({
             right: 0,
             bottom: 0,
             zIndex: 99999,
-            background: 'rgba(2, 6, 23, 0.78)',
+            background: 'var(--portal-backdrop)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -580,18 +588,18 @@ export default function AdminPaymentsTab({
             style={{
               maxWidth: '480px',
               width: '100%',
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: 'var(--portal-surface)',
+              border: '1px solid var(--portal-border)',
               borderRadius: '1.5rem',
               padding: '2rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+              boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.28)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--portal-heading)' }}>
               📅 {t(language, 'select_reference_month_title')}
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--portal-text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
               {t(language, 'missing_prev_month_notice')
                 .replace('{name}', monthModalData.student.full_name)
                 .replace('{prevMonth}', formatBillingPeriod(monthModalData.previousPeriod, language))}
@@ -604,7 +612,7 @@ export default function AdminPaymentsTab({
                 style={{
                   padding: '0.85rem 1.25rem',
                   fontSize: '0.9rem',
-                  background: '#0284c7',
+                  background: 'var(--portal-primary)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -618,7 +626,7 @@ export default function AdminPaymentsTab({
                 }}
               >
                 <span>⬅️ {t(language, 'previous_month').replace('{month}', formatBillingPeriod(monthModalData.previousPeriod, language))}</span>
-                <span style={{ fontSize: '0.8rem', opacity: 0.85, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.previousPeriod}</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.9, background: 'rgba(255,255,255,0.18)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.previousPeriod}</span>
               </button>
 
               <button
@@ -641,7 +649,7 @@ export default function AdminPaymentsTab({
                 }}
               >
                 <span>⭐ {t(language, 'current_month').replace('{month}', formatBillingPeriod(monthModalData.currentPeriod, language))}</span>
-                <span style={{ fontSize: '0.8rem', opacity: 0.85, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.currentPeriod}</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.9, background: 'rgba(255,255,255,0.18)', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' }}>{monthModalData.currentPeriod}</span>
               </button>
             </div>
 

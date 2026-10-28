@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import type { AppNotification, Profile } from '../lib/types'
 import TeacherNotificationPanel from './TeacherNotificationPanel'
+import { ThemeToggle } from '../../lib/theme'
 
 export type TeacherTab = 'calendar' | 'worklog' | 'profile'
 
@@ -169,6 +170,7 @@ export default function TeacherShell({
           </div>
 
           <div className="teacher-context-header__actions">
+            <ThemeToggle />
             <div className="teacher-notification-anchor">
               <button
                 type="button"

@@ -96,7 +96,7 @@ export default function PrivacyPolicyModal({ lang, isOpen, onClose }: PrivacyPol
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline"
+        className="bg-surface rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 md:p-8 border-b border-outline">
@@ -142,7 +142,7 @@ export default function PrivacyPolicyModal({ lang, isOpen, onClose }: PrivacyPol
         <div className="p-6 md:p-8 border-t border-outline flex justify-end">
           <button 
             onClick={onClose}
-            className="px-6 py-3 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-colors cursor-pointer text-sm"
+            className="px-6 py-3 bg-[var(--portal-primary)] text-white rounded-full font-bold hover:opacity-90 transition-colors cursor-pointer text-sm"
           >
             {activeContent.close}
           </button>

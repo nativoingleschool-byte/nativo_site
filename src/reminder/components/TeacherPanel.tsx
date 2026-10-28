@@ -925,16 +925,16 @@ export default function TeacherPanel({
               <div
                 className="form-card mb-6"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(153, 27, 27, 0.05))',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  background: 'var(--status-danger-bg)',
+                  border: '1px solid var(--status-danger-border)',
                   borderRadius: '1.25rem',
                   padding: '1.25rem',
                   marginBottom: '1.5rem',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                  boxShadow: 'var(--portal-shadow)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--status-danger-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>⚠️</span>
                     {language === 'es' ? 'Atención: Clase anterior sin marcar' : language === 'en' ? "Warning: Unmarked Past Class" : 'Atenção: Aula anterior não marcada'}
                   </h3>
@@ -958,13 +958,13 @@ export default function TeacherPanel({
                           gap: '0.75rem',
                           padding: '0.85rem 1rem',
                           borderRadius: '0.75rem',
-                          background: 'rgba(15, 23, 42, 0.75)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          background: 'var(--portal-surface)',
+                          border: '1px solid var(--portal-border)',
                         }}
                       >
                         <div style={{ minWidth: '180px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.92rem' }}>{studentName}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--portal-heading)', fontSize: '0.92rem' }}>{studentName}</span>
                           </div>
                           <p className="muted" style={{ fontSize: '0.78rem', marginTop: '0.2rem' }}>
                             {timeStr} • {l.subject}
@@ -1044,16 +1044,16 @@ export default function TeacherPanel({
               <div
                 className="form-card mb-6 mt-6"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.75))',
-                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  background: 'var(--portal-surface-subtle)',
+                  border: '1px solid var(--status-info-border)',
                   borderRadius: '1.25rem',
                   padding: '1.25rem',
                   marginBottom: '1.5rem',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                  boxShadow: 'var(--portal-shadow)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--portal-heading)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>⚡</span>
                     {language === 'es' ? 'Clases de Hoy (Chamada Rápida)' : language === 'en' ? "Today's Classes (Quick Attendance)" : 'Aulas de Hoje (Chamada Rápida)'}
                   </h3>
@@ -1079,13 +1079,13 @@ export default function TeacherPanel({
                           gap: '0.75rem',
                           padding: '0.85rem 1rem',
                           borderRadius: '0.75rem',
-                          background: 'rgba(15, 23, 42, 0.75)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          background: 'var(--portal-surface)',
+                          border: '1px solid var(--portal-border)',
                         }}
                       >
                         <div style={{ minWidth: '180px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.92rem' }}>{studentName}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--portal-heading)', fontSize: '0.92rem' }}>{studentName}</span>
                             {session.lessons.some((lesson) => lesson.teacher_lesson_status) && (
                               <span className={badgeClass(l.teacher_lesson_status)} style={{ fontSize: '0.7rem' }}>
                                 {session.is_happened ? '✓ Realizada' : session.is_no_show ? '⚠️ Não Compareceu' : session.is_cancelled ? '✕ Cancelada' : 'Agendada'}
@@ -1132,9 +1132,9 @@ export default function TeacherPanel({
 
             <div
               className="form-card mb-6 mt-6"
-              style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
+              style={{ background: 'var(--portal-surface-subtle)', border: '1px solid var(--portal-border)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.5rem' }}
             >
-              <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#fff' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--portal-heading)' }}>
                 {t(language, 'propose_new_class_title')}
               </h3>
               <form onSubmit={handleProposeClass} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -1264,13 +1264,14 @@ export default function TeacherPanel({
                 width: '100%',
                 maxHeight: 'calc(100dvh - 24px)',
                 overflow: 'hidden',
-                background: '#0f172a',
-                border: '1px solid #1e293b',
+                background: 'var(--portal-surface)',
+                border: '1px solid var(--portal-border)',
                 borderRadius: '1.5rem',
                 padding: '2rem',
+                color: 'var(--portal-text)',
               }}
             >
-              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(modalLanguage, 'tab_worklog_nf')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>Adicionar Nova Aula</h2>
@@ -1349,13 +1350,13 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>Título do Encontro / Módulo</label>
                   <input
                     required
                     placeholder=""
                     value={newLessonSubject}
                     onChange={(e) => setNewLessonSubject(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                   />
                 </div>
 
@@ -1372,7 +1373,7 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-modal-extra-field teacher-lesson-form-duration teacher-preview-dialog-extra">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -1380,7 +1381,7 @@ export default function TeacherPanel({
                       step={5}
                       value={newLessonDuration}
                       onChange={(e) => setNewLessonDuration(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                     />
                     <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.4rem' }}>
                       {[30, 45, 60, 90].map((mins) => (
@@ -1393,8 +1394,9 @@ export default function TeacherPanel({
                             padding: '0.2rem',
                             borderRadius: '0.3rem',
                             fontSize: '0.72rem',
-                            background: newLessonDuration === mins ? '#38bdf8' : 'rgba(51, 65, 85, 0.4)',
-                            color: newLessonDuration === mins ? '#0f172a' : '#cbd5e1',
+                            background: newLessonDuration === mins ? 'var(--portal-primary)' : 'var(--portal-surface-subtle)',
+                            color: newLessonDuration === mins ? '#ffffff' : 'var(--portal-text)',
+                            border: '1px solid var(--portal-border)',
                             fontWeight: newLessonDuration === mins ? 'bold' : 'normal',
                           }}
                         >
@@ -1405,11 +1407,11 @@ export default function TeacherPanel({
                   </div>
 
                 <div className="teacher-modal-extra-field teacher-lesson-form-status teacher-preview-dialog-extra">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(modalLanguage, 'status')}</label>
                   <select
                     value={newLessonStatus || 'agendada'}
                     onChange={(e) => setNewLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                   >
                     <option value="happened">{t(language, 'status_happened')}</option>
                     <option value="student_no_show">{t(language, 'status_student_noshow')}</option>
@@ -1453,16 +1455,16 @@ export default function TeacherPanel({
 
       {attendanceLessons.length > 0 && createPortal(
         <div className="reminder-app-scope modal-overlay teacher-preview-dialog-backdrop teacher-preview-attendance-backdrop" role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflow: 'hidden' }}>
-          <div className="modal-card animate-fade-in teacher-preview-attendance-modal" style={{ maxWidth: '460px', width: '100%', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1.5rem', padding: '2rem' }}>
+          <div className="modal-card animate-fade-in teacher-preview-attendance-modal" style={{ maxWidth: '460px', width: '100%', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
             <button type="button" className="teacher-preview-dialog-close" aria-label="Fechar" onClick={() => { setAttendanceLessons([]); setAttendanceDraft({}) }}><X size={19} /></button>
-            <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+            <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1rem' }}>
               <div><p className="section-label">CHAMADA DA AULA</p><h2 style={{ fontSize: '1.4rem' }}>Quem compareceu?</h2></div>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>Marque os alunos presentes. Os desmarcados serão registrados como faltantes.</p>
+            <p style={{ color: 'var(--portal-text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Marque os alunos presentes. Os desmarcados serão registrados como faltantes.</p>
             <div className="teacher-preview-attendance-list" style={{ display: 'grid', gap: '0.5rem' }}>
               {attendanceLessons.map((lesson) => {
                 const student = profilesById[lesson.student_id] || students.find((item) => item.id === lesson.student_id)
-                return <label key={lesson.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.65rem', color: '#f8fafc', cursor: 'pointer' }}>
+                return <label key={lesson.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.75rem', border: '1px solid var(--portal-border-strong)', borderRadius: '0.65rem', color: 'var(--portal-text)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={Boolean(attendanceDraft[lesson.id])} onChange={(event) => setAttendanceDraft((current) => ({ ...current, [lesson.id]: event.target.checked }))} />
                   <span>{student?.full_name || lesson.class_name || 'Aluno'}</span>
                 </label>
@@ -1513,13 +1515,14 @@ export default function TeacherPanel({
                 width: '100%',
                 maxHeight: 'calc(100dvh - 24px)',
                 overflow: 'hidden',
-                background: '#0f172a',
-                border: '1px solid #1e293b',
+                background: 'var(--portal-surface)',
+                border: '1px solid var(--portal-border)',
                 borderRadius: '1.5rem',
                 padding: '2rem',
+                color: 'var(--portal-text)',
               }}
             >
-              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
+              <div className="panel-header teacher-preview-dialog-header" style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1rem' }}>
                 <div>
                   <p className="section-label">{t(modalLanguage, 'adjust_class_label')}</p>
                   <h2 style={{ fontSize: '1.4rem' }}>Detalhes da aula</h2>
@@ -1601,12 +1604,12 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-subject">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Título do Encontro / Módulo</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>Título do Encontro / Módulo</label>
                   <input
                     required
                     value={editLessonSubject}
                     onChange={(e) => setEditLessonSubject(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                   />
                 </div>
 
@@ -1618,18 +1621,18 @@ export default function TeacherPanel({
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">Link da aula (opcional)</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>Link da aula (opcional)</label>
                   <input
                     type="url"
                     value={editLessonMeetingUrl}
                     onChange={(e) => setEditLessonMeetingUrl(e.target.value)}
                     placeholder="https://zoom.us/j/..."
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                   />
                 </div>
 
                 <div className="teacher-modal-extra-field teacher-lesson-form-duration teacher-preview-dialog-extra">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'duration_minutes_label')} *</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(modalLanguage, 'duration_minutes_label')} *</label>
                     <input
                       required
                       type="number"
@@ -1637,16 +1640,16 @@ export default function TeacherPanel({
                       step={5}
                       value={editLessonDuration}
                       onChange={(e) => setEditLessonDuration(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                     />
                   </div>
 
                 <div className="teacher-modal-extra-field teacher-lesson-form-status teacher-preview-dialog-extra">
-                  <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">{t(modalLanguage, 'status')}</label>
+                  <label className="text-xs font-bold block uppercase tracking-widest mb-1" style={{ color: 'var(--portal-text-secondary)' }}>{t(modalLanguage, 'status')}</label>
                   <select
                     value={editLessonStatus || 'agendada'}
                     onChange={(e) => setEditLessonStatus(e.target.value === 'agendada' ? null : (e.target.value as TeacherLessonStatus))}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#090d16', border: '1px solid #334155', borderRadius: '0.6rem', color: '#fff' }}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.6rem', color: 'var(--portal-text)' }}
                   >
                     <option value="happened">{t(modalLanguage, 'status_happened')}</option>
                     <option value="student_no_show">{t(modalLanguage, 'status_student_noshow')}</option>
@@ -1677,7 +1680,7 @@ export default function TeacherPanel({
                     alignItems: 'center',
                     gap: '0.75rem',
                     marginTop: '1.25rem',
-                    borderTop: '1px solid #1e293b',
+                    borderTop: '1px solid var(--portal-border)',
                     paddingTop: '1rem',
                   }}
                 >
@@ -1686,9 +1689,9 @@ export default function TeacherPanel({
                     onClick={() => handleDeleteSession([editingLesson.id])}
                     style={{
                       padding: '0.5rem 1rem',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      color: '#f87171',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      background: 'var(--status-danger-bg)',
+                      color: 'var(--status-danger-text)',
+                      border: '1px solid var(--status-danger-border)',
                       borderRadius: '0.5rem',
                       fontSize: '0.85rem',
                       fontWeight: 600,

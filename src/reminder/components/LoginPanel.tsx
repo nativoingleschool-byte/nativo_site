@@ -1,7 +1,8 @@
 import { FormEvent, useState } from 'react'
 import { ArrowLeft, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
-import { Language, t } from '../lib/i18n'
+import { Language } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
+import { ThemeToggle } from '../../lib/theme'
 
 interface LoginPanelProps {
   language: Language
@@ -47,7 +48,10 @@ export default function LoginPanel({ language, loginForm, setLoginForm, keepLogg
 
   return (
     <div className="reminder-app-scope login-reference-shell">
-      <div className="login-reference-brand"><span className="login-reference-mark"><img src="/hero/logo-white.png" alt="" /></span><div><strong>NATIVO <em>ENGLISH</em></strong><span>Portal do Professor</span></div></div>
+      <div className="login-reference-top-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '460px', gap: '0.75rem' }}>
+        <div className="login-reference-brand"><span className="login-reference-mark"><img src="/hero/logo-white.png" alt="" /></span><div><strong>NATIVO <em>ENGLISH</em></strong><span>Portal do Professor</span></div></div>
+        <ThemeToggle lang={language} />
+      </div>
       <main className="login-reference-main">
         <section className="login-reference-card" aria-labelledby="login-title">
           {view === 'login' ? <>
