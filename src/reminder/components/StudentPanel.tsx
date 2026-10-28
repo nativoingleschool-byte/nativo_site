@@ -1,9 +1,11 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useMemo, FormEvent } from 'react'
 import { BrowserPermission, Lesson, Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass, minutesUntil, sortByDateDesc, sortByDateAsc } from '../lib/utils'
+import { formatShortDate, badgeClass, minutesUntil, sortByDateDesc, sortByDateAsc, buildGoogleCalendarInviteUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
+import { trackPageView } from '../../lib/telemetry'
+import MobileCalendar, { type CalendarEventItem } from './MobileCalendar'
 
 interface StudentPanelProps {
   language: Language
@@ -45,6 +47,11 @@ export default function StudentPanel({
   refreshProfile,
 }: StudentPanelProps) {
   const { toast } = useToast()
+
+  const handleTabChange = (tab: 'account' | 'lessons' | 'invoices') => {
+    trackPageView('/student/' + tab)
+    setStudentTab(tab)
+  }
   const [fullName, setFullName] = useState(profile.full_name)
   const [email, setEmail] = useState(profile.email)
   const [cpf, setCpf] = useState(profile.cpf || '')
@@ -163,6 +170,43 @@ export default function StudentPanel({
     .sort(sortByDateAsc)
     .slice(0, 4)
 
+  const studentCalendarEvents = useMemo<CalendarEventItem[]>(() => {
+    return visibleLessons.map((lesson) => {
+      const start = new Date(lesson.starts_at)
+      const duration = lesson.duration_minutes || 60
+      const end = new Date(start.getTime() + duration * 60000)
+      const teacherName = profilesById[lesson.teacher_id]?.full_name || 'Professor'
+      return {
+        id: `student-lesson-${lesson.id}`,
+        type: 'lesson' as const,
+        start,
+        end,
+        title: lesson.subject || 'Aula de Inglês',
+        subtitle: `Prof. ${teacherName}`,
+        color: lesson.teacher_lesson_status === 'happened' ? ('green' as const) : ('blue' as const),
+        sourceData: lesson,
+      }
+    })
+  }, [visibleLessons, profilesById])
+
+  const handleSelectStudentCalendarEvent = (event: CalendarEventItem) => {
+    const lesson = event.sourceData as Lesson
+    if (lesson?.meeting_url) {
+      window.open(lesson.meeting_url, '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (lesson) {
+      const url = buildGoogleCalendarInviteUrl({
+        title: `${lesson.subject || 'Aula de Inglês'} · ${lesson.class_name || 'Nativo'}`,
+        startsAt: lesson.starts_at,
+        durationMinutes: lesson.duration_minutes || 60,
+        attendees: [profile.email].filter(Boolean),
+        meetingUrl: lesson.meeting_url,
+      })
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   const lessonCardClass = (lessonId: string) =>
     focusedLessonId === lessonId ? 'lesson-card lesson-card-focus' : 'lesson-card'
 
@@ -178,7 +222,7 @@ export default function StudentPanel({
           <div className="mobile-tab-select">
             <select
               value={studentTab}
-              onChange={(e) => setStudentTab(e.target.value as any)}
+              onChange={(e) => handleTabChange(e.target.value as any)}
             >
               <option value="lessons">{t(language, 'student_tab_lessons')}</option>
               <option value="account">{t(language, 'student_tab_account')}</option>
@@ -191,21 +235,21 @@ export default function StudentPanel({
             <button
               type="button"
               className={studentTab === 'lessons' ? 'tab-button tab-button-active' : 'tab-button'}
-              onClick={() => setStudentTab('lessons')}
+              onClick={() => handleTabChange('lessons')}
             >
               {t(language, 'student_tab_lessons')}
             </button>
             <button
               type="button"
               className={studentTab === 'account' ? 'tab-button tab-button-active' : 'tab-button'}
-              onClick={() => setStudentTab('account')}
+              onClick={() => handleTabChange('account')}
             >
               {t(language, 'student_tab_account')}
             </button>
             <button
               type="button"
               className={studentTab === 'invoices' ? 'tab-button tab-button-active' : 'tab-button'}
-              onClick={() => setStudentTab('invoices')}
+              onClick={() => handleTabChange('invoices')}
             >
               {t(language, 'student_tab_invoices')}
             </button>
@@ -213,87 +257,118 @@ export default function StudentPanel({
         </div>
 
         {studentTab === 'lessons' ? (
-          <div className="split-column animate-fade-in">
-            <section style={{ flex: 1.3 }}>
-              <h3>{t(language, 'active_lesson_reminders')}</h3>
-              <div className="list-stack">
-                {/* 4-hour reminders */}
-                {dueStudentFourHourReminders.map((lesson) => (
-                  <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                    <p className="reminder-title">{lesson.subject}</p>
-                    <p className="muted">
-                      {t(language, 'starts_in_minutes')
-                        .replace('{minutes}', String(minutesUntil(now, lesson.starts_at)))
-                        .replace('{time}', formatShortDateLabel(lesson.starts_at))}
-                    </p>
-                    <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                      <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
-                        {t(language, 'will_attend_btn')}
-                      </button>
-                      <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
-                        {t(language, 'need_cancel_btn')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Class-time reminders */}
-                {dueStudentStartReminders.map((lesson) => (
-                  <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
-                    <p className="reminder-title">{lesson.subject}</p>
-                    <p className="muted">{t(language, 'class_started_notice')}</p>
-                    <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                      <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
-                        {t(language, 'had_class_btn')}
-                      </button>
-                      <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
-                        {t(language, 'did_not_have_class_btn')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {dueStudentFourHourReminders.length === 0 && dueStudentStartReminders.length === 0 && (
-                  <p className="empty-state">{t(language, 'no_active_reminders')}</p>
-                )}
-              </div>
-
-              <h3 className="mt-8" style={{ marginTop: '2rem' }}>{t(language, 'my_upcoming_lessons')}</h3>
-              <div className="list-stack">
-                {studentUpcomingLessons.map((lesson) => (
-                  <div key={lesson.id} className={lessonCardClass(lesson.id)}>
-                    <div>
-                      <h3>{lesson.subject}</h3>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="split-column">
+              <section style={{ flex: 1.3 }}>
+                <h3>{t(language, 'active_lesson_reminders')}</h3>
+                <div className="list-stack">
+                  {/* 4-hour reminders */}
+                  {dueStudentFourHourReminders.map((lesson) => (
+                    <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
+                      <p className="reminder-title">{lesson.subject}</p>
                       <p className="muted">
-                        {formatShortDateLabel(lesson.starts_at)} {t(language, 'with_teacher_label')} {profilesById[lesson.teacher_id]?.full_name}
+                        {t(language, 'starts_in_minutes')
+                          .replace('{minutes}', String(minutesUntil(now, lesson.starts_at)))
+                          .replace('{time}', formatShortDateLabel(lesson.starts_at))}
                       </p>
+                      <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                        <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'attend' })}>
+                          {t(language, 'will_attend_btn')}
+                        </button>
+                        <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_attendance: 'cancel' })}>
+                          {t(language, 'need_cancel_btn')}
+                        </button>
+                      </div>
                     </div>
-                    <span className={badgeClass('agendada')}>{t(language, 'scheduled_badge')}</span>
-                  </div>
-                ))}
-                {studentUpcomingLessons.length === 0 && <p className="empty-state">{t(language, 'no_upcoming_lessons')}</p>}
-              </div>
-            </section>
+                  ))}
 
-            <section style={{ flex: 0.7 }}>
-              <h3>{t(language, 'alert_settings_title')}</h3>
-              <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
-                <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
-                  {t(language, 'alert_settings_desc')}
-                </p>
-                <button 
-                  className={notificationPermission === 'granted' && profile.push_enabled ? 'danger-button full-width' : 'primary-button full-width'} 
-                  onClick={() => {
-                    if (notificationPermission === 'granted' && profile.push_enabled) {
-                      void disablePush()
-                    } else {
-                      void requestPushPermission()
-                    }
-                  }}
-                >
-                  {notificationPermission === 'granted' && profile.push_enabled ? t(language, 'disable_alerts_btn') : t(language, 'enable_pwa_alerts_btn')}
-                </button>
-              </div>
+                  {/* Class-time reminders */}
+                  {dueStudentStartReminders.map((lesson) => (
+                    <div key={lesson.id} className={`reminder-card ${focusedLessonId === lesson.id ? 'reminder-card-focus' : ''}`}>
+                      <p className="reminder-title">{lesson.subject}</p>
+                      <p className="muted">{t(language, 'class_started_notice')}</p>
+                      <div className="button-row wrap" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                        <button className="primary-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'done' })}>
+                          {t(language, 'had_class_btn')}
+                        </button>
+                        <button className="danger-button" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => void updateLesson(lesson.id, { student_lesson_status: 'not_done' })}>
+                          {t(language, 'did_not_have_class_btn')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {dueStudentFourHourReminders.length === 0 && dueStudentStartReminders.length === 0 && (
+                    <p className="empty-state">{t(language, 'no_active_reminders')}</p>
+                  )}
+                </div>
+
+                <h3 className="mt-8" style={{ marginTop: '2rem' }}>{t(language, 'my_upcoming_lessons')}</h3>
+                <div className="list-stack">
+                  {studentUpcomingLessons.map((lesson) => (
+                    <div key={lesson.id} className={lessonCardClass(lesson.id)}>
+                      <div>
+                        <h3>{lesson.subject}</h3>
+                        <p className="muted">
+                          {formatShortDateLabel(lesson.starts_at)} {t(language, 'with_teacher_label')} {profilesById[lesson.teacher_id]?.full_name}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {lesson.meeting_url && (
+                          <a
+                            href={lesson.meeting_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="primary-button"
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', textDecoration: 'none' }}
+                          >
+                            Entrar no Zoom
+                          </a>
+                        )}
+                        <span className={badgeClass('agendada')}>{t(language, 'scheduled_badge')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {studentUpcomingLessons.length === 0 && <p className="empty-state">{t(language, 'no_upcoming_lessons')}</p>}
+                </div>
+              </section>
+
+              <section style={{ flex: 0.7 }}>
+                <h3>{t(language, 'alert_settings_title')}</h3>
+                <div className="form-card" style={{ background: 'rgba(30,41,59,0.3)', padding: '1rem', borderRadius: '1rem' }}>
+                  <p className="muted text-sm" style={{ marginBottom: '1rem' }}>
+                    {t(language, 'alert_settings_desc')}
+                  </p>
+                  <button
+                    className={notificationPermission === 'granted' && profile.push_enabled ? 'danger-button full-width' : 'primary-button full-width'}
+                    onClick={() => {
+                      if (notificationPermission === 'granted' && profile.push_enabled) {
+                        void disablePush()
+                      } else {
+                        void requestPushPermission()
+                      }
+                    }}
+                  >
+                    {notificationPermission === 'granted' && profile.push_enabled ? t(language, 'disable_alerts_btn') : t(language, 'enable_pwa_alerts_btn')}
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            {/* Student Google Calendar View */}
+            <section className="teacher-calendar-card" style={{ marginTop: '0.5rem' }}>
+              <MobileCalendar
+                events={studentCalendarEvents}
+                language={language}
+                hideAvailabilityLayer={true}
+                syncStatusLabel={
+                  profile.email && !profile.email.endsWith('@setup.local')
+                    ? `Google Agenda (${profile.email}): Sincronizado`
+                    : 'Google Agenda: Sincronizado'
+                }
+                onSelectEvent={handleSelectStudentCalendarEvent}
+                onSelectSlot={() => {}}
+              />
             </section>
           </div>
         ) : studentTab === 'account' ? (
@@ -407,11 +482,11 @@ export default function StudentPanel({
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                        <a 
-                          href={inv.boleto_url} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="secondary-button" 
+                        <a
+                          href={inv.boleto_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="secondary-button"
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
                         >
                           {t(language, 'boleto_btn')}

@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
-import { getSupabaseAdmin, getSupabaseConfig, verifyUserFromToken } from '../../services/supabase-admin.js'
+import { getSupabaseAdmin, getSupabaseConfig } from '../../services/supabase-admin.js'
+import {
+  syncLessonsToGoogleCalendar,
+  deleteGoogleCalendarEvents,
+  syncAvailabilitiesToGoogleCalendar,
+  deleteAvailabilityGoogleEvents,
+} from '../../services/google-calendar.js'
 
 const json = (res, status, body) => {
   res.statusCode = status
@@ -22,15 +28,8 @@ const assertAuthenticated = async (req) => {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  let user = null
-  const { data: userData, error: userError } = await userClient.auth.getUser(token)
-  if (!userError && userData?.user) {
-    user = userData.user
-  } else {
-    user = await verifyUserFromToken(token)
-  }
-
-  if (!user) {
+  const { data: { user }, error: userError } = await userClient.auth.getUser(token)
+  if (userError || !user) {
     console.warn('[reminder:auth] invalid session', { code: userError?.code, status: userError?.status })
     throw new Error('Sessão inválida ou expirada. Entre novamente.')
   }
@@ -153,7 +152,9 @@ const createWeeklySeries = async (db, profile, payload) => {
   }
   const { data, error } = await db.from('lessons').insert(rows).select('*')
   if (error) throw new Error(error.message)
-  return data || []
+  const created = data || []
+  await syncLessonsToGoogleCalendar(db, created)
+  return created
 }
 
 const updateWeeklySeries = async (db, profile, payload) => {
@@ -161,10 +162,37 @@ const updateWeeklySeries = async (db, profile, payload) => {
   if (!payload.lesson_id) throw new Error('Informe a aula de referência.')
   const selected = [...new Set((payload.student_ids || []).filter(Boolean))]
   if (!selected.length || !selected.every(isUuid)) throw new Error('Selecione alunos cadastrados.')
+
+  // Capture existing series lessons before RPC so we can clean up any removed Google Calendar events
+  const { data: refLesson } = await db.from('lessons').select('*').eq('id', payload.lesson_id).single()
+  let oldEventIds = []
+  if (refLesson?.recurrence_series_id) {
+    const { data: oldSeriesRows } = await db
+      .from('lessons')
+      .select('google_event_id')
+      .eq('recurrence_series_id', refLesson.recurrence_series_id)
+      .gte('starts_at', refLesson.starts_at)
+    oldEventIds = (oldSeriesRows || []).map((r) => r.google_event_id).filter(Boolean)
+  }
+
   const { data, error } = await db.rpc('update_teacher_weekly_series', {
     p: { ...payload, student_ids: selected, recurrence_weeks: weeks },
   })
   if (error) throw new Error(error.message)
+
+  if (oldEventIds.length > 0) {
+    await deleteGoogleCalendarEvents(oldEventIds)
+  }
+  if (refLesson?.recurrence_series_id) {
+    const { data: updatedSeriesRows } = await db
+      .from('lessons')
+      .select('*')
+      .eq('recurrence_series_id', refLesson.recurrence_series_id)
+    if (updatedSeriesRows?.length) {
+      await syncLessonsToGoogleCalendar(db, updatedSeriesRows)
+    }
+  }
+
   return { success: true, lesson_count: data }
 }
 
@@ -185,7 +213,6 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
 
   const startsAt = new Date(payload.starts_at)
   const duration = Number(payload.duration_minutes) || 60
-  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
   const teacherLessonStatus = payload.teacher_lesson_status ?? null
 
   const rows = studentIds.map((studentId) => ({
@@ -204,7 +231,9 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
     throw new Error(error.message)
   }
 
-  return data ?? []
+  const created = data ?? []
+  await syncLessonsToGoogleCalendar(supabaseAdmin, created)
+  return created
 }
 
 const updateGroup = async (supabaseAdmin, profile, payload) => {
@@ -234,6 +263,7 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
   const duration = Number(payload.duration_minutes) || existingLessons[0].duration_minutes || 60
   const startsAtStr = payload.starts_at ?? existingLessons[0].starts_at
   const startsAt = new Date(startsAtStr)
+  const existingGoogleEventId = existingLessons.map((l) => l.google_event_id).find(Boolean) || null
 
   const sharedUpdate = {
     subject: String(payload.subject ?? existingLessons[0].subject).trim(),
@@ -242,6 +272,10 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     starts_at: startsAt.toISOString(),
     duration_minutes: duration,
     meeting_url: payload.meeting_url !== undefined ? payload.meeting_url : existingLessons[0].meeting_url ?? null,
+  }
+
+  if (existingGoogleEventId) {
+    sharedUpdate.google_event_id = existingGoogleEventId
   }
 
   if (payload.teacher_lesson_status !== undefined) {
@@ -299,7 +333,9 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     throw new Error(refreshError.message)
   }
 
-  return refreshedLessons ?? []
+  const updatedRows = refreshedLessons ?? []
+  await syncLessonsToGoogleCalendar(supabaseAdmin, updatedRows)
+  return updatedRows
 }
 
 const createLesson = async (supabaseAdmin, profile, payload) => {
@@ -320,7 +356,6 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
 
   const startsAt = new Date(payload.starts_at)
   const duration = Number(payload.duration_minutes) || 60
-  const endsAt = new Date(startsAt.getTime() + duration * 60000).toISOString()
   const teacherLessonStatus = payload.teacher_lesson_status ?? 'happened'
 
   const row = {
@@ -339,6 +374,7 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
     throw new Error(error.message)
   }
 
+  await syncLessonsToGoogleCalendar(supabaseAdmin, [data])
   return data
 }
 
@@ -394,6 +430,7 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
     throw new Error(updateError.message)
   }
 
+  await syncLessonsToGoogleCalendar(supabaseAdmin, [updated])
   return updated
 }
 
@@ -421,6 +458,19 @@ const deleteLesson = async (supabaseAdmin, profile, payload) => {
 
   if (deleteError) {
     throw new Error(deleteError.message)
+  }
+
+  if (existingLesson.google_event_id) {
+    const { data: remainingPeers } = await supabaseAdmin
+      .from('lessons')
+      .select('*')
+      .eq('google_event_id', existingLesson.google_event_id)
+
+    if (!remainingPeers || remainingPeers.length === 0) {
+      await deleteGoogleCalendarEvents([existingLesson.google_event_id])
+    } else {
+      await syncLessonsToGoogleCalendar(supabaseAdmin, remainingPeers)
+    }
   }
 
   return { success: true, id: payload.lesson_id }
@@ -545,13 +595,31 @@ const createAvailability = async (supabaseAdmin, profile, payload) => {
   if (error) {
     throw new Error(error.message)
   }
-  return data ?? []
+
+  const created = data ?? []
+  await syncAvailabilitiesToGoogleCalendar(supabaseAdmin, created)
+  return created
 }
 
 const deleteAvailability = async (supabaseAdmin, profile, payload) => {
   if (!payload.id && !payload.series_id) {
     throw new Error('Availability ID or Series ID is required.')
   }
+
+  let selectQuery = supabaseAdmin.from('teacher_availability').select('id, google_event_id')
+  if (payload.series_scope === 'future' && payload.series_id) {
+    selectQuery = selectQuery.eq('series_id', payload.series_id)
+    if (payload.starts_at) {
+      selectQuery = selectQuery.gte('starts_at', payload.starts_at)
+    }
+  } else {
+    selectQuery = selectQuery.eq('id', payload.id)
+  }
+  if (profile.role !== 'admin') {
+    selectQuery = selectQuery.eq('teacher_id', profile.id)
+  }
+  const { data: toDelete } = await selectQuery
+  const googleEventIds = (toDelete || []).map((r) => r.google_event_id).filter(Boolean)
 
   let query = supabaseAdmin.from('teacher_availability').delete()
 
@@ -572,6 +640,11 @@ const deleteAvailability = async (supabaseAdmin, profile, payload) => {
   if (error) {
     throw new Error(error.message)
   }
+
+  if (googleEventIds.length > 0) {
+    await deleteAvailabilityGoogleEvents(googleEventIds)
+  }
+
   return { success: true, id: payload.id, series_id: payload.series_id, scope: payload.series_scope }
 }
 

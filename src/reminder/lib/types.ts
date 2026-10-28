@@ -78,6 +78,7 @@ export type Profile = {
 
 export type Lesson = {
   recurrence_series_id?: string | null
+  google_event_id?: string | null
   id: string
   subject: string
   class_name: string
@@ -157,6 +158,7 @@ export type TeacherAvailability = {
   starts_at: string
   duration_minutes: number
   series_id?: string | null
+  google_event_id?: string | null
   created_at?: string
 }
 

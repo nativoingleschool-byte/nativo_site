@@ -14,6 +14,7 @@ type LessonDraft = {
   student_ids: string[]
   teacher_id: string
   class_name: string
+  meeting_url?: string | null
 }
 
 type LessonUpdateDraft = LessonDraft & {
@@ -902,7 +903,7 @@ export default function AdminCalendar({
         </div>
 
         <div className="button-row wrap admin-shared-calendar-actions">
-          {calendarMode === 'availability' && role === 'admin' && (
+          {role === 'admin' && (
             <select
               value={selectedTeacherId}
               onChange={(e) => setSelectedTeacherId(e.target.value)}
@@ -1028,10 +1029,10 @@ export default function AdminCalendar({
 
       <TeacherAvailabilityCalendar
         lessons={lessons}
-        availabilities={calendarMode === 'availability' ? availabilities : []}
+        availabilities={availabilities}
         timeZone={timeZone}
         language={language}
-        currentTeacherId={currentTeacherId || undefined}
+        currentTeacherId={role === 'admin' ? (selectedTeacherId !== 'all' ? selectedTeacherId : undefined) : (currentTeacherId || undefined)}
         role="admin"
         onCreateLessonSlot={(startUtc, durationMinutes) => {
           const localParts = getZonedParts(new Date(startUtc), timeZone)
