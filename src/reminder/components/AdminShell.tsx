@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react'
 import { Bell, BookOpen, CalendarDays, CircleDollarSign, LogOut, UsersRound, Landmark, Menu, X } from 'lucide-react'
 import type { Profile, AppNotification } from '../lib/types'
 import TeacherNotificationPanel from './TeacherNotificationPanel'
+import { trackPageView } from '../../lib/telemetry'
 import { ThemeToggle } from '../../lib/theme'
 
 export type AdminSection = 'students' | 'payments' | 'calendar' | 'staff' | 'reconciliation'
@@ -21,19 +22,39 @@ type Props = {
   notifications: AppNotification[]
   onMarkNotificationRead: (id: string) => void
   onMarkAllNotificationsRead: () => void
+  onClearNotifications?: () => void
+  onDeleteNotification?: (id: string) => void
   onLogout: () => void | Promise<void>
 }
 
-export default function AdminShell({ profile, activeTab, onTabChange, children, notifications, onMarkNotificationRead, onMarkAllNotificationsRead, onLogout }: Props) {
+export default function AdminShell({
+  profile,
+  activeTab,
+  onTabChange,
+  children,
+  notifications,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onClearNotifications,
+  onDeleteNotification,
+  onLogout
+}: Props) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const active = sections.find(item => item.id === activeTab) || sections[0]
   const initials = (profile.full_name || 'Administrador').split(/\s+/).slice(0,2).map(p => p.charAt(0).toUpperCase()).join('')
   const unread = notifications.filter(n => !n.read_at).length
+
+  const handleTabClick = (id: AdminSection) => {
+    trackPageView(`/admin/${id}`)
+    onTabChange(id)
+    setMobileMenuOpen(false)
+  }
+
   const nav = (mobile = false) => <nav aria-label="Navegação administrativa" className={mobile ? 'admin-mobile-nav' : 'teacher-sidebar-navigation'}>
     {sections.map(({ id, title, icon: Icon }) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined}
       className={mobile ? `admin-mobile-nav__item${activeTab === id ? ' is-active' : ''}` : `teacher-sidebar-navigation__item${activeTab === id ? ' is-active' : ''}`}
-      onClick={() => {onTabChange(id);setMobileMenuOpen(false)}}>
+      onClick={() => handleTabClick(id)}>
       <Icon aria-hidden="true" size={18} strokeWidth={activeTab === id ? 2.2 : 1.9}/><span>{title}</span>
     </button>)}
   </nav>
@@ -53,13 +74,19 @@ export default function AdminShell({ profile, activeTab, onTabChange, children, 
           <span className="teacher-context-header__subtitle">{active.subtitle}</span>
         </div></div>
         <div className="teacher-context-header__actions">
-          <ThemeToggle />
           <button className="admin-menu-toggle" type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir navegação"><Menu size={19}/></button>
+          <ThemeToggle />
           <div className="teacher-notification-anchor"><button type="button" className="teacher-notification-button"
             aria-label="Notificações" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18}/>
             {unread > 0 && <span className="teacher-notification-button__badge">{unread > 9 ? '9+' : unread}</span>}</button>
-            {notificationsOpen && <TeacherNotificationPanel notifications={notifications} onClose={() => setNotificationsOpen(false)}
-              onMarkRead={onMarkNotificationRead} onMarkAllRead={onMarkAllNotificationsRead}/>}
+            {notificationsOpen && <TeacherNotificationPanel
+              notifications={notifications}
+              onClose={() => setNotificationsOpen(false)}
+              onMarkRead={onMarkNotificationRead}
+              onMarkAllRead={onMarkAllNotificationsRead}
+              onClearAll={onClearNotifications}
+              onDeleteNotification={onDeleteNotification}
+            />}
           </div>
           <div className="teacher-profile-chip"><span className="teacher-profile-chip__avatar">{initials}</span>
             <span className="teacher-profile-chip__copy"><strong>{profile.full_name || 'Administrador'}</strong><span>{profile.email}</span></span></div>

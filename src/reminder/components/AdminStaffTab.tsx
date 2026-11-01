@@ -1178,7 +1178,7 @@ export default function AdminStaffTab({
       </div>
 
       <div className="table-responsive admin-shared-table">
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>{t(language, 'teacher')}</th>
@@ -1188,6 +1188,7 @@ export default function AdminStaffTab({
               <th style={{ padding: '1rem' }}>{t(language, 'hours_worked')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'rate_hour')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'amount_due')} (Clique p/ Detalhes)</th>
+              <th style={{ padding: '1rem' }}>{t(language, 'last_invoice_upload')}</th>
               <th style={{ padding: '1rem' }}>{t(language, 'status')}</th>
               <th style={{ padding: '1rem', textAlign: 'right' }}>{t(language, 'actions')}</th>
             </tr>
@@ -1220,6 +1221,34 @@ export default function AdminStaffTab({
 
               const monthLabel = getMonthLabel(teacherActiveMonth, language)
 
+              const teacherInvs = (teacherInvoices || [])
+                .filter((inv) => inv.teacher_id === teacher.id && inv.file_url)
+                .sort((a, b) => {
+                  const tA = a.created_at ? new Date(a.created_at).getTime() : 0
+                  const tB = b.created_at ? new Date(b.created_at).getTime() : 0
+                  return tB - tA
+                })
+              const lastInvoice = teacherInvs[0] || null
+
+              const activeNf = teacher.nota_fiscal_url
+                ? { file_url: teacher.nota_fiscal_url, file_name: lastInvoice?.file_url === teacher.nota_fiscal_url ? lastInvoice?.file_name : undefined }
+                : lastInvoice
+
+              const lastUploadDate = lastInvoice?.created_at ? new Date(lastInvoice.created_at) : null
+              const lastUploadDateStr = lastUploadDate
+                ? lastUploadDate.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })
+                : null
+              const lastUploadTimeStr = lastUploadDate
+                ? lastUploadDate.toLocaleTimeString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null
+
               return (
                 <tr key={teacher.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>
@@ -1235,42 +1264,36 @@ export default function AdminStaffTab({
                       {teacher.full_name}
                     </button>
                     {teacher.cnpj && <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)', fontWeight: 'normal' }}>{teacher.cnpj}</div>}
-                    {(() => {
-                      const activeNf = teacher.nota_fiscal_url
-                        ? { file_url: teacher.nota_fiscal_url }
-                        : (teacherInvoices || []).find((inv) => inv.teacher_id === teacher.id && inv.file_url)
-                      if (!activeNf) return null
-                      return (
-                        <div style={{ marginTop: '0.3rem' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openFileFromDataOrUrl(
-                                activeNf.file_url,
-                                `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
-                              )
-                            }}
-                            style={{
-                              background: 'var(--status-success-bg)',
-                              border: '1px solid var(--status-success-border)',
-                              color: 'var(--status-success-text)',
-                              padding: '0.15rem 0.45rem',
-                              borderRadius: '0.35rem',
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                            }}
-                            title="Ver Nota Fiscal enviada"
-                          >
-                            📄 NF Enviada
-                          </button>
-                        </div>
-                      )
-                    })()}
+                    {activeNf && (
+                      <div style={{ marginTop: '0.3rem' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openFileFromDataOrUrl(
+                              activeNf.file_url,
+                              lastInvoice?.file_name || `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
+                            )
+                          }}
+                          style={{
+                            background: 'var(--status-success-bg)',
+                            border: '1px solid var(--status-success-border)',
+                            color: 'var(--status-success-text)',
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '0.35rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                          }}
+                          title={`Ver Nota Fiscal enviada${lastUploadDateStr ? ` (${lastUploadDateStr})` : ''}`}
+                        >
+                          📄 NF Enviada {lastUploadDateStr ? `(${lastUploadDateStr})` : ''}
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <strong style={{ color: 'var(--portal-heading)' }}>{monthLabel}</strong>
@@ -1385,6 +1408,88 @@ export default function AdminStaffTab({
                     </button>
                   </td>
 
+                  {/* Last Invoice Upload Date Column */}
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                    {lastUploadDateStr ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--portal-heading)', fontSize: '0.85rem' }}>
+                          {lastUploadDateStr}
+                        </div>
+                        {lastUploadTimeStr && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)' }}>
+                            {lastUploadTimeStr}
+                          </div>
+                        )}
+                        {activeNf?.file_url && (
+                          <div style={{ marginTop: '0.25rem' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openFileFromDataOrUrl(
+                                  activeNf.file_url,
+                                  lastInvoice?.file_name || `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
+                                )
+                              }}
+                              style={{
+                                background: 'var(--status-success-bg)',
+                                border: '1px solid var(--status-success-border)',
+                                color: 'var(--status-success-text)',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                              }}
+                              title="Ver Nota Fiscal enviada"
+                            >
+                              📄 Ver NF
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : activeNf?.file_url ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--portal-heading)', fontSize: '0.85rem' }}>
+                          {t(language, 'nf_status_sent')}
+                        </div>
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openFileFromDataOrUrl(
+                                activeNf.file_url,
+                                `Nota_Fiscal_${teacher.full_name.replace(/\s+/g, '_')}.pdf`
+                              )
+                            }}
+                            style={{
+                              background: 'var(--status-success-bg)',
+                              border: '1px solid var(--status-success-border)',
+                              color: 'var(--status-success-text)',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '0.35rem',
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                            }}
+                            title="Ver Nota Fiscal enviada"
+                          >
+                            📄 Ver NF
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--portal-text-muted)', fontSize: '0.85rem' }}>-</span>
+                    )}
+                  </td>
+
                   <td style={{ padding: '1rem' }}>
                     <span className={`admin-staff-payment-status ${badgeClass(isMonthPaid ? 'confirmed' : 'pending')}`}>
                       {isMonthPaid ? 'Pago' : 'Pendente'}
@@ -1494,7 +1599,21 @@ export default function AdminStaffTab({
               }
             }}
           >
-            <div ref={teacherDetailCardRef} className="form-card animate-fade-in" style={{ maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <div
+              ref={teacherDetailCardRef}
+              className="form-card animate-fade-in admin-teacher-detail-modal admin-wide-modal"
+              style={{
+                maxWidth: '1240px',
+                width: '95vw',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                background: 'var(--portal-surface)',
+                border: '1px solid var(--portal-border)',
+                borderRadius: '1.5rem',
+                padding: '2rem',
+                color: 'var(--portal-text)'
+              }}
+            >
               
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -1898,7 +2017,7 @@ export default function AdminStaffTab({
 
                 {/* Monthly Lessons Table */}
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left', minWidth: '780px' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)' }}>
                         <th style={{ padding: '0.6rem' }}>{t(language, 'date_time_col')}</th>

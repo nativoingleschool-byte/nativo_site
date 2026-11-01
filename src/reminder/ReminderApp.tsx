@@ -59,6 +59,7 @@ type PendingLink = {
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000
+const REMINDER_LOOKBACK_MS = 48 * 60 * 60 * 1000 // 48-hour cutoff window for past overdue reminders
 
 const pad2 = (value: number) => value.toString().padStart(2, '0')
 const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -358,6 +359,7 @@ function ReminderAppInner() {
     password: '',
   }))
   const [loginError, setLoginError] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(() => (visualPreviewMode ? fixture.teacher : null))
   const [notifications, setNotifications] = useState<AppNotification[]>(() => (visualPreviewMode ? previewNotifications : []))
   const [profiles, setProfiles] = useState<Profile[]>(() => (visualPreviewMode ? fixture.profiles : []))
@@ -701,6 +703,26 @@ function ReminderAppInner() {
     const { error } = await supabase.from('notifications').update({ read_at: readAt }).eq('user_id', profile.id).is('read_at', null)
     if (error) {
       console.warn('Notifications could not be marked as read:', error.message)
+      void refreshNotifications()
+    }
+  }
+
+  const clearNotifications = async () => {
+    setNotifications([])
+    if (visualPreviewMode || !profile?.id) return
+    const { error } = await supabase.from('notifications').delete().eq('user_id', profile.id)
+    if (error) {
+      console.warn('Notifications could not be cleared:', error.message)
+      void refreshNotifications()
+    }
+  }
+
+  const deleteNotification = async (id: string) => {
+    setNotifications((items) => items.filter((item) => item.id !== id))
+    if (visualPreviewMode || !profile?.id) return
+    const { error } = await supabase.from('notifications').delete().eq('id', id).eq('user_id', profile.id)
+    if (error) {
+      console.warn('Notification could not be deleted:', error.message)
       void refreshNotifications()
     }
   }
@@ -1243,7 +1265,14 @@ function ReminderAppInner() {
 
   const dueStudentStartReminders = profile?.role === 'student'
     ? visibleLessons
-        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && lesson.student_lesson_status === null)
+        .filter((lesson) => {
+          const lessonTime = new Date(lesson.starts_at).getTime()
+          return (
+            now.getTime() >= lessonTime &&
+            lessonTime >= now.getTime() - REMINDER_LOOKBACK_MS &&
+            lesson.student_lesson_status === null
+          )
+        })
         .sort(sortByDateAsc)
     : []
 
@@ -1258,7 +1287,14 @@ function ReminderAppInner() {
 
   const dueTeacherStartReminders = profile?.role === 'teacher'
     ? visibleLessons
-        .filter((lesson) => now.getTime() >= new Date(lesson.starts_at).getTime() && lesson.teacher_lesson_status === null)
+        .filter((lesson) => {
+          const lessonTime = new Date(lesson.starts_at).getTime()
+          return (
+            now.getTime() >= lessonTime &&
+            lessonTime >= now.getTime() - REMINDER_LOOKBACK_MS &&
+            lesson.teacher_lesson_status === null
+          )
+        })
         .sort(sortByDateAsc)
     : []
 
@@ -1423,9 +1459,12 @@ function ReminderAppInner() {
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault()
+    if (isLoggingIn) return
+    setIsLoggingIn(true)
     setLoginError('')
 
     try {
+      try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1492,6 +1531,9 @@ function ReminderAppInner() {
         setLoginError(errMsg)
         void trackEvent('login_failed', { reason: errMsg }, { skipDatabase: true })
       }
+    }
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
@@ -2235,7 +2277,7 @@ function ReminderAppInner() {
         {isAdmin && (
           <AdminShell profile={profile} activeTab={adminTab} onTabChange={setAdminTab}
             notifications={notifications} onMarkNotificationRead={markNotificationRead}
-            onMarkAllNotificationsRead={markAllNotificationsRead} onLogout={handleLogout}>
+            onMarkAllNotificationsRead={markAllNotificationsRead} onClearNotifications={clearNotifications} onDeleteNotification={deleteNotification} onLogout={handleLogout}>
           <section className="summary-grid admin-summary-grid">
             {summaryCards.map((card) => <StatCard key={card.label} label={card.label} value={card.value} />)}
           </section>
@@ -2460,6 +2502,8 @@ function ReminderAppInner() {
             unreadNotifications={notifications.filter((item) => !item.read_at).length}
             onMarkNotificationRead={markNotificationRead}
             onMarkAllNotificationsRead={markAllNotificationsRead}
+            onClearNotifications={clearNotifications}
+            onDeleteNotification={deleteNotification}
             onLogout={handleLogout}
             pageSubtitles={{
               calendar: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(now).replace(/^./, (letter) => letter.toUpperCase()),

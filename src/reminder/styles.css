@@ -3478,10 +3478,15 @@ body:has(.teacher-agenda-view) .teacher-calendar-card .teacher-calendar-toolbar 
   box-shadow: 0 20px 60px rgba(26, 54, 75, .2) !important;
   color: #324d66 !important;
 }
-.reminder-app-scope.modal-overlay > .modal-card:not(.teacher-preview-functional-modal):not(.teacher-preview-attendance-modal):not([style*="1240px"]),
-.reminder-app-scope.modal-overlay > .form-card:not([style*="1240px"]) {
+.reminder-app-scope.modal-overlay > .modal-card:not(.teacher-preview-functional-modal):not(.teacher-preview-attendance-modal):not([style*="1240px"]):not(.admin-teacher-detail-modal):not(.admin-wide-modal),
+.reminder-app-scope.modal-overlay > .form-card:not([style*="1240px"]):not(.admin-teacher-detail-modal):not(.admin-wide-modal) {
   width: min(560px, 100%) !important;
   max-width: 560px !important;
+}
+.reminder-app-scope.modal-overlay > .admin-teacher-detail-modal,
+.reminder-app-scope.modal-overlay > .admin-wide-modal {
+  width: min(1240px, 95vw) !important;
+  max-width: 1240px !important;
 }
 .reminder-app-scope.modal-overlay > .modal-card .panel-header,
 .reminder-app-scope.modal-overlay > .form-card .panel-header {

@@ -1,18 +1,20 @@
-import { useState, type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import {
   Bell,
   CalendarDays,
-  CircleDollarSign,
+  CircleHelp,
+  Clock3,
   LogOut,
   UserRound,
 } from 'lucide-react'
 import type { AppNotification, Profile } from '../lib/types'
 import TeacherNotificationPanel from './TeacherNotificationPanel'
+import { trackPageView } from '../../lib/telemetry'
 import { ThemeToggle } from '../../lib/theme'
 
 export type TeacherTab = 'calendar' | 'worklog' | 'profile'
 
-type TeacherShellProps = {
+export type TeacherShellProps = {
   /** Perfil já carregado pelo ReminderApp/Supabase. O shell apenas o exibe. */
   profile: Profile
   /** Aba atualmente selecionada pelo estado existente do ReminderApp. */
@@ -28,6 +30,8 @@ type TeacherShellProps = {
   notifications?: AppNotification[]
   onMarkNotificationRead?: (id: string) => void
   onMarkAllNotificationsRead?: () => void
+  onClearNotifications?: () => void
+  onDeleteNotification?: (id: string) => void
   /** Mantém o logout existente fora do shell. */
   onLogout?: () => void | Promise<void>
   /** Ação opcional do suporte; permanece desacoplada da camada visual. */
@@ -44,32 +48,28 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   { id: 'calendar', label: 'Agenda', icon: CalendarDays },
-  { id: 'worklog', label: 'Financeiro', icon: CircleDollarSign },
-  { id: 'profile', label: 'Meu perfil', icon: UserRound },
+  { id: 'worklog', label: 'Aulas & Registro', icon: Clock3 },
+  { id: 'profile', label: 'Financeiro', icon: UserRound },
 ]
 
 const pageTitles: Record<TeacherTab, string> = {
-  calendar: 'Agenda',
-  worklog: 'Financeiro',
-  profile: 'Meu perfil',
+  calendar: 'Minha Agenda',
+  worklog: 'Aulas & Registro',
+  profile: 'Financeiro',
 }
 
 const defaultPageSubtitles: Record<TeacherTab, string> = {
-  calendar: 'Acompanhe suas aulas e disponibilidade.',
-  worklog: 'Demonstrativo e NFS-e MEI.',
-  profile: 'Cadastro & Dados Bancários',
+  calendar: 'Visualize e gerencie os horários das suas aulas',
+  worklog: 'Confirme a realização das aulas e acompanhe o histórico',
+  profile: 'Consulte seus pagamentos e envie notas fiscais',
 }
 
-function getInitials(fullName: string) {
-  const initials = fullName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-
-  return initials || 'P'
+function getInitials(name?: string | null): string {
+  if (!name) return 'PR'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return 'PR'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 function TeacherNavigation({
@@ -99,7 +99,10 @@ function TeacherNavigation({
                 : `teacher-sidebar-navigation__item${isActive ? ' is-active' : ''}`
             }
             aria-current={isActive ? 'page' : undefined}
-            onClick={() => onTabChange(id)}
+            onClick={() => {
+              trackPageView(`/teacher/${id}`)
+              onTabChange(id)
+            }}
           >
             <Icon aria-hidden="true" size={mobile ? 19 : 18} strokeWidth={isActive ? 2.2 : 1.9} />
             <span>{label}</span>
@@ -120,25 +123,29 @@ export default function TeacherShell({
   notifications = [],
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
+  onClearNotifications,
+  onDeleteNotification,
   onLogout,
   onSupport,
   pageSubtitles,
 }: TeacherShellProps) {
-  const teacherName = profile.full_name.trim() || 'Professor'
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const teacherName = profile.full_name || profile.email?.split('@')[0] || 'Professor'
+  const hasUnreadNotifications = unreadNotifications > 0
   const pageTitle = pageTitles[activeTab]
   const pageSubtitle = pageSubtitles?.[activeTab] ?? defaultPageSubtitles[activeTab]
-  const hasUnreadNotifications = unreadNotifications > 0
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   return (
     <div className="teacher-portal-shell">
-      <aside className="teacher-sidebar" aria-label="Portal do Professor">
+      <aside className="teacher-sidebar" aria-label="Menu principal do professor">
         <div className="teacher-sidebar__brand">
           <div className="teacher-sidebar__monogram" aria-hidden="true">
             <img src="/hero/logo-white.png" alt="" />
           </div>
           <div className="teacher-sidebar__brand-copy">
-            <strong>NATIVO <em className="teacher-brand-english">ENGLISH</em></strong>
+            <strong>
+              NATIVO <em className="teacher-brand-english">ENGLISH</em>
+            </strong>
             <span>Portal do Professor</span>
           </div>
         </div>
@@ -146,22 +153,27 @@ export default function TeacherShell({
         <TeacherNavigation activeTab={activeTab} onTabChange={onTabChange} />
 
         <div className="teacher-sidebar__footer">
-          <button type="button" className="teacher-sidebar__support" onClick={onSupport}>
-            <span className="teacher-sidebar__support-icon" aria-hidden="true">
-              ?
-            </span>
-            <span>Suporte Docente</span>
-          </button>
-          <span className="teacher-sidebar__version">Nativo English v2.4</span>
+          {onSupport && (
+            <button
+              type="button"
+              className="teacher-sidebar__support-button"
+              onClick={onSupport}
+              aria-label="Ajuda e Suporte"
+            >
+              <CircleHelp aria-hidden="true" size={17} />
+              <span>Ajuda e Suporte</span>
+            </button>
+          )}
+
+          <span className="teacher-sidebar__version">Nativo English · Professor</span>
         </div>
       </aside>
 
       <div className="teacher-portal-main">
-        <header className="teacher-context-header">
+        <header className="teacher-context-header" aria-label="Cabeçalho contextual">
           <div className="teacher-context-header__title-group">
-            <span className="teacher-context-header__eyebrow">Portal do Professor</span>
             <div className="teacher-context-header__heading-row">
-              <h1>{pageTitle}</h1>
+              <h1 className="teacher-context-header__title">{pageTitle}</h1>
               <span className="teacher-context-header__separator" aria-hidden="true">
                 •
               </span>
@@ -171,13 +183,14 @@ export default function TeacherShell({
 
           <div className="teacher-context-header__actions">
             <ThemeToggle />
+
             <div className="teacher-notification-anchor">
               <button
                 type="button"
                 className="teacher-notification-button"
                 aria-label={
                   hasUnreadNotifications
-                    ? `${unreadNotifications} notificações não lidas`
+                    ? `Notificações (${unreadNotifications} novas)`
                     : 'Notificações'
                 }
                 aria-expanded={notificationsOpen}
@@ -199,6 +212,8 @@ export default function TeacherShell({
                   onClose={() => setNotificationsOpen(false)}
                   onMarkRead={(id) => onMarkNotificationRead?.(id)}
                   onMarkAllRead={() => onMarkAllNotificationsRead?.()}
+                  onClearAll={onClearNotifications}
+                  onDeleteNotification={onDeleteNotification}
                 />
               )}
             </div>
@@ -217,20 +232,20 @@ export default function TeacherShell({
               <button
                 type="button"
                 className="teacher-logout-button"
-                aria-label="Sair"
-                title="Sair"
                 onClick={() => void onLogout()}
+                aria-label="Sair da conta"
+                title="Sair da conta"
               >
-                <LogOut aria-hidden="true" size={17} strokeWidth={1.9} />
+                <LogOut aria-hidden="true" size={17} />
               </button>
             )}
           </div>
         </header>
 
-        <main className="teacher-portal-content">{children}</main>
-      </div>
+        <main className="teacher-portal-content" tabIndex={-1}>
+          {children}
+        </main>
 
-      <div className="teacher-mobile-bottom-bar">
         <TeacherNavigation activeTab={activeTab} onTabChange={onTabChange} mobile />
       </div>
     </div>
