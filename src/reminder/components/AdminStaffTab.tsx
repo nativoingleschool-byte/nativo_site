@@ -79,7 +79,27 @@ export default function AdminStaffTab({
   const [confirmPasswordValue, setConfirmPasswordValue] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
   const [selectedTeacherForDetail, setSelectedTeacherForDetail] = useState<Profile | null>(null)
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
+  const [detailMonthKey, setDetailMonthKey] = useState<string>('')
+
+  const getCurrentMonthKey = (): string => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('nativo_admin_staff_month')
+      if (saved) return saved
+    } catch (e) {}
+    return getCurrentMonthKey()
+  })
+
+  const handleMonthFilterChange = (newVal: string) => {
+    setSelectedMonthKey(newVal)
+    try {
+      localStorage.setItem('nativo_admin_staff_month', newVal)
+    } catch (e) {}
+  }
 
   const [initialUserForm, setInitialUserForm] = useState<UserFormState | null>(null)
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
@@ -152,18 +172,46 @@ export default function AdminStaffTab({
     void fetchTeacherPayouts()
   }, [])
 
-  // Get active payout month for a teacher: starting from current month (2026-08), advancing when marked as paid
+  // Get active payout month for a teacher: starting from earliest unpaid lesson month or current month
   const getTeacherActivePayoutMonth = (teacherId: string): string => {
     if (selectedMonthKey && selectedMonthKey !== 'auto') {
       return selectedMonthKey
     }
-    const baseMonth = '2026-08'
-    let current = baseMonth
     const paidList = paidMonthsByTeacher[teacherId] || []
+
+    // Find all distinct months where this teacher has lessons
+    const teacherLessonMonths = Array.from(
+      new Set(
+        lessons
+          .filter((l) => l.teacher_id === teacherId && l.starts_at)
+          .map((l) => l.starts_at.slice(0, 7))
+      )
+    ).sort()
+
+    // Find earliest month with lessons that is not yet paid
+    const firstUnpaidLessonMonth = teacherLessonMonths.find((m) => !paidList.includes(m))
+    if (firstUnpaidLessonMonth) {
+      return firstUnpaidLessonMonth
+    }
+
+    // If all lesson months are paid, or no lessons found, start from current calendar month
+    let current = getCurrentMonthKey()
     while (paidList.includes(current)) {
       current = getNextMonthKey(current)
     }
     return current
+  }
+
+  const openTeacherDetail = (teacher: Profile, monthKey?: string) => {
+    setSelectedTeacherForDetail(teacher)
+    setDetailMonthKey(
+      monthKey || (selectedMonthKey && selectedMonthKey !== 'auto' ? selectedMonthKey : getTeacherActivePayoutMonth(teacher.id))
+    )
+  }
+
+  const closeTeacherDetail = () => {
+    setSelectedTeacherForDetail(null)
+    setDetailMonthKey('')
   }
 
   const markTeacherMonthPaid = async (teacherId: string, monthKey: string, isPaid: boolean) => {
@@ -239,7 +287,7 @@ export default function AdminStaffTab({
         const nextMonthLabel = getMonthLabel(nextMonth, language)
         toast.success(`Mês ${monthLabel} marcado como PAGO! A tag de NF foi resetada e agora exibindo ${nextMonthLabel}.`)
         if (selectedTeacherForDetail?.id === teacherId) {
-          setSelectedMonthKey(nextMonth)
+          setDetailMonthKey(nextMonth)
         }
       } else {
         toast.success(`Mês ${monthLabel} desmarcado como pago.`)
@@ -249,9 +297,12 @@ export default function AdminStaffTab({
     }
   }
 
-  // Generate available months list from all lessons
+  // Generate available months list from all lessons, paid records, and current month
   const availablePayrollMonths = useMemo(() => {
     const monthsMap = new Map<string, string>()
+    const currentKey = getCurrentMonthKey()
+    monthsMap.set(currentKey, getMonthLabel(currentKey, language))
+
     lessons.forEach((l) => {
       if (l.starts_at) {
         const key = l.starts_at.slice(0, 7)
@@ -261,13 +312,71 @@ export default function AdminStaffTab({
       }
     })
 
-    const baseMonthKey = '2026-08'
-    if (!monthsMap.has(baseMonthKey)) {
-      monthsMap.set(baseMonthKey, getMonthLabel(baseMonthKey, language))
-    }
+    Object.values(paidMonthsByTeacher).forEach((months) => {
+      months.forEach((key) => {
+        if (!monthsMap.has(key)) {
+          monthsMap.set(key, getMonthLabel(key, language))
+        }
+      })
+    })
 
     return Array.from(monthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
-  }, [lessons, language])
+  }, [lessons, language, paidMonthsByTeacher])
+
+  const handleBatchPayoutWithSync = async (status: 'pago' | 'pendente') => {
+    try {
+      const isPaid = status === 'pago'
+      const updatedMap = { ...paidMonthsByTeacher }
+      const upsertRows: Array<{ teacher_id: string; month_key: string; status: string; paid_at: string }> = []
+      const deletePairs: Array<{ teacher_id: string; month_key: string }> = []
+
+      for (const teacher of teachers) {
+        const monthKey = getTeacherActivePayoutMonth(teacher.id)
+        const currentList = updatedMap[teacher.id] || []
+        if (isPaid) {
+          if (!currentList.includes(monthKey)) {
+            updatedMap[teacher.id] = [...currentList, monthKey]
+          }
+          upsertRows.push({
+            teacher_id: teacher.id,
+            month_key: monthKey,
+            status: 'pago',
+            paid_at: new Date().toISOString(),
+          })
+        } else {
+          updatedMap[teacher.id] = currentList.filter((m) => m !== monthKey)
+          deletePairs.push({ teacher_id: teacher.id, month_key: monthKey })
+        }
+      }
+
+      setPaidMonthsByTeacher(updatedMap)
+      try {
+        localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(updatedMap))
+      } catch (e) {}
+
+      if (isPaid && upsertRows.length > 0) {
+        try {
+          await supabase.from('teacher_payouts').upsert(upsertRows, { onConflict: 'teacher_id,month_key' })
+        } catch (dbErr) {
+          console.warn('Batch teacher_payouts upsert notice:', dbErr)
+        }
+      } else if (!isPaid && deletePairs.length > 0) {
+        try {
+          for (const pair of deletePairs) {
+            await supabase.from('teacher_payouts').delete().eq('teacher_id', pair.teacher_id).eq('month_key', pair.month_key)
+          }
+        } catch (dbErr) {
+          console.warn('Batch teacher_payouts delete notice:', dbErr)
+        }
+      }
+
+      await handleBatchUpdatePayout(status)
+      await refreshProfiles()
+      toast.success(isPaid ? 'Todos os professores foram marcados como pagos para o mês ativo!' : 'Status de pagamento resetado para pendente.')
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar pagamentos em lote.')
+    }
+  }
 
   const handleUpdateLessonStatus = async (lessonId: string, status: 'happened' | 'student_no_show' | 'not_happened' | null) => {
     try {
@@ -771,8 +880,7 @@ export default function AdminStaffTab({
                                 type="button"
                                 style={{ background: 'none', border: 'none', color: 'var(--portal-link)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                                 onClick={() => {
-                                  setSelectedTeacherForDetail(staff)
-                                  setSelectedMonthKey('')
+                                  openTeacherDetail(staff)
                                 }}
                               >
                                 {staff.full_name}
@@ -1124,7 +1232,7 @@ export default function AdminStaffTab({
             <span style={{ fontSize: '0.85rem', color: 'var(--portal-text-secondary)' }}>Filtro de Mês:</span>
             <select
               value={selectedMonthKey || 'auto'}
-              onChange={(e) => setSelectedMonthKey(e.target.value === 'auto' ? '' : e.target.value)}
+              onChange={(e) => handleMonthFilterChange(e.target.value)}
               style={{
                 padding: '0.5rem 1rem',
                 background: 'var(--portal-input-bg)',
@@ -1135,7 +1243,7 @@ export default function AdminStaffTab({
                 fontWeight: 600,
               }}
             >
-              <option value="auto">Mês Vigente de Cada Professor (Início: Agosto 2026)</option>
+              <option value="auto">Mês Vigente de Cada Professor (Automático)</option>
               {availablePayrollMonths.map(([mKey, mLabel]) => (
                 <option key={mKey} value={mKey}>
                   {mLabel}
@@ -1148,14 +1256,14 @@ export default function AdminStaffTab({
             <button 
               className="primary-button" 
               style={{ padding: '0.45rem 0.9rem', fontSize: '0.8rem' }}
-              onClick={() => void handleBatchUpdatePayout('pago')}
+              onClick={() => void handleBatchPayoutWithSync('pago')}
             >
               {t(language, 'pay_all')}
             </button>
             <button 
               className="secondary-button" 
               style={{ padding: '0.45rem 0.9rem', fontSize: '0.8rem' }}
-              onClick={() => void handleBatchUpdatePayout('pendente')}
+              onClick={() => void handleBatchPayoutWithSync('pendente')}
             >
               {t(language, 'pending_all')}
             </button>
@@ -1256,8 +1364,7 @@ export default function AdminStaffTab({
                       type="button"
                       style={{ background: 'none', border: 'none', color: 'var(--portal-link)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', padding: 0, textAlign: 'left' }}
                       onClick={() => {
-                        setSelectedTeacherForDetail(teacher)
-                        setSelectedMonthKey(teacherActiveMonth)
+                        openTeacherDetail(teacher, teacherActiveMonth)
                       }}
                       title="Ver registro de aulas e chave PIX"
                     >
@@ -1385,8 +1492,7 @@ export default function AdminStaffTab({
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedTeacherForDetail(teacher)
-                        setSelectedMonthKey(teacherActiveMonth)
+                        openTeacherDetail(teacher, teacherActiveMonth)
                       }}
                       style={{
                         background: 'var(--status-info-bg)',
@@ -1525,8 +1631,7 @@ export default function AdminStaffTab({
                         className="secondary-button"
                         style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
                         onClick={() => {
-                          setSelectedTeacherForDetail(teacher)
-                          setSelectedMonthKey(teacherActiveMonth)
+                          openTeacherDetail(teacher, teacherActiveMonth)
                         }}
                         title="Ver registro detalhado de aulas e chave PIX"
                       >
@@ -1547,6 +1652,9 @@ export default function AdminStaffTab({
         
         // Group available months for this teacher
         const availableMonthsMap = new Map<string, string>()
+        const currentKey = getCurrentMonthKey()
+        availableMonthsMap.set(currentKey, getMonthLabel(currentKey, language))
+
         teacherLessons.forEach(l => {
           if (l.starts_at) {
             const key = l.starts_at.slice(0, 7)
@@ -1556,14 +1664,16 @@ export default function AdminStaffTab({
           }
         })
 
-        const baseMonthKey = '2026-08'
-        if (!availableMonthsMap.has(baseMonthKey)) {
-          availableMonthsMap.set(baseMonthKey, getMonthLabel(baseMonthKey, language))
-        }
+        const teacherPaidMonths = paidMonthsByTeacher[selectedTeacherForDetail.id] || []
+        teacherPaidMonths.forEach((m) => {
+          if (!availableMonthsMap.has(m)) {
+            availableMonthsMap.set(m, getMonthLabel(m, language))
+          }
+        })
 
         const availableMonths = Array.from(availableMonthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
         
-        const activeMonthKey = selectedMonthKey || getTeacherActivePayoutMonth(selectedTeacherForDetail.id)
+        const activeMonthKey = detailMonthKey || (selectedMonthKey && selectedMonthKey !== 'auto' ? selectedMonthKey : getTeacherActivePayoutMonth(selectedTeacherForDetail.id))
         const isCurrentMonthPaid = (paidMonthsByTeacher[selectedTeacherForDetail.id] || []).includes(activeMonthKey)
 
         const monthLessons = teacherLessons
@@ -1595,7 +1705,7 @@ export default function AdminStaffTab({
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
             onClick={(e) => {
               if (teacherDetailCardRef.current && !teacherDetailCardRef.current.contains(e.target as Node)) {
-                setSelectedTeacherForDetail(null)
+                closeTeacherDetail()
               }
             }}
           >
@@ -1629,7 +1739,7 @@ export default function AdminStaffTab({
                   {/* Select Month inside modal */}
                   <select
                     value={activeMonthKey}
-                    onChange={(e) => setSelectedMonthKey(e.target.value)}
+                    onChange={(e) => setDetailMonthKey(e.target.value)}
                     style={{ padding: '0.45rem 0.85rem', background: 'var(--portal-input-bg)', border: '1px solid var(--portal-border-strong)', borderRadius: '0.5rem', color: 'var(--portal-text)', fontSize: '0.85rem', fontWeight: 600 }}
                   >
                     {availableMonths.map(([mKey, mLabel]) => (
@@ -1640,7 +1750,7 @@ export default function AdminStaffTab({
                   <button
                     className="secondary-button"
                     style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}
-                    onClick={() => setSelectedTeacherForDetail(null)}
+                    onClick={closeTeacherDetail}
                   >
                     ✕ {t(language, 'close')}
                   </button>
