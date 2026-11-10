@@ -2132,10 +2132,17 @@ function ReminderAppInner() {
 
   if (loading) {
     return (
-      <div className="login-shell">
-        <section className="login-panel">
-          <h2>Loading app...</h2>
-        </section>
+      <div className="reminder-app-scope">
+        <div className="login-shell">
+          <section className="login-panel" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+              {language === 'es' ? 'Cargando...' : language === 'en' ? 'Loading app...' : 'Carregando...'}
+            </h2>
+            <p className="muted" style={{ fontSize: '0.85rem' }}>
+              {language === 'es' ? 'Por favor espere un momento.' : language === 'en' ? 'Please wait a moment.' : 'Por favor, aguarde um momento.'}
+            </p>
+          </section>
+        </div>
       </div>
     )
   }
