@@ -1,0 +1,16 @@
+name: 15-Minute Lesson Reminders Cron
+
+on:
+  schedule:
+    # Runs every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  trigger-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Nativo Lesson Reminders
+        run: |
+          curl -s -f -X POST "https://nativoenglish.com.br/api/cron/reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

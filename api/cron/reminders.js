@@ -115,7 +115,7 @@ export default async function handler(req, res) {
             body: `${lesson.subject || 'Class'} is due now. Record what happened.`,
             entity_type: 'lesson',
             entity_id: lesson.id,
-            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}`,
+            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}&intent=happened`,
             action_intent: 'happened',
             dedupe_key: `${lesson.teacher_id}-${lesson.id}-teacher-start`,
           });
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
             body: `${lesson.subject || 'Class'} is due now. Confirm whether the class was done.`,
             entity_type: 'lesson',
             entity_id: lesson.id,
-            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}`,
+            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}&intent=done`,
             action_intent: 'done',
             dedupe_key: `${lesson.student_id}-${lesson.id}-student-start`,
           });
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
             body: `${lesson.subject || 'Class'} starts in ${minutesUntilStart} minutes.`,
             entity_type: 'lesson',
             entity_id: lesson.id,
-            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}`,
+            action_url: `/reminder?lessonId=${encodeURIComponent(lesson.id)}&intent=attend`,
             action_intent: 'attend',
             dedupe_key: `${lesson.student_id}-${lesson.id}-student-4h`,
           });
@@ -192,6 +192,40 @@ export default async function handler(req, res) {
 
     if (upsertError) {
       throw new Error(`Failed to upsert notifications: ${upsertError.message}`);
+    }
+
+    // 5. Enforce 5-year data retention for teacher invoices (delete records older than 5 years)
+    try {
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+      const fiveYearsAgoIso = fiveYearsAgo.toISOString();
+
+      // Find old invoices to clean up from storage & database
+      const { data: expiredInvoices } = await supabase
+        .from('teacher_invoices')
+        .select('id, file_url')
+        .lt('created_at', fiveYearsAgoIso)
+        .limit(100);
+
+      if (expiredInvoices && expiredInvoices.length > 0) {
+        const expiredIds = expiredInvoices.map((inv) => inv.id);
+        const storagePathsToRemove = expiredInvoices
+          .map((inv) => {
+            const url = inv.file_url || '';
+            const match = url.match(/teacher-invoices\/([^?]+)/);
+            return match ? match[1] : (url.includes('/') && !url.startsWith('data:') && !url.startsWith('http') ? url : null);
+          })
+          .filter(Boolean);
+
+        if (storagePathsToRemove.length > 0) {
+          await supabase.storage.from('teacher-invoices').remove(storagePathsToRemove);
+        }
+
+        await supabase.from('teacher_invoices').delete().in('id', expiredIds);
+        console.info(`[cron:retention] Cleaned up ${expiredIds.length} invoices older than 5 years.`);
+      }
+    } catch (retentionErr) {
+      console.warn('[cron:retention] Invoice retention cleanup warning:', retentionErr.message);
     }
 
     return json(res, 200, {

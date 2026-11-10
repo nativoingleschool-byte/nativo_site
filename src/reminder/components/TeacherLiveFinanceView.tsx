@@ -100,6 +100,7 @@ export default function TeacherLiveFinanceView({
     style: 'currency',
     currency: /^[A-Z]{3}$/.test(currency) ? currency : 'BRL',
   }).format(amount)
+
   const myInvoices = [...invoices]
   if (profile.nota_fiscal_url && !myInvoices.some((invoice) => invoice.file_url === profile.nota_fiscal_url)) {
     myInvoices.unshift({
@@ -112,6 +113,15 @@ export default function TeacherLiveFinanceView({
       created_at: new Date().toISOString(),
     })
   }
+
+  const currentMonthInvoice = myInvoices.find((inv) => inv.month_key === invoiceReferenceMonth)
+  const isInvoiceSentForMonth = Boolean(currentMonthInvoice)
+  const invoiceStatusText = currentMonthInvoice?.status === 'paga'
+    ? (language === 'pt' ? 'Paga' : language === 'es' ? 'Pagada' : 'Paid')
+    : isInvoiceSentForMonth
+      ? t(language, 'nf_status_sent')
+      : t(language, 'nf_status_pending')
+
   const monthLabel = months.find(([key]) => key === monthKey)?.[1] ?? monthKey
 
   const submitNote = async (event: FormEvent<HTMLFormElement>) => {
@@ -172,23 +182,23 @@ export default function TeacherLiveFinanceView({
           <div>
             <div className="reference-invoice-title">
               <h2>{t(language, 'nf_submission_title')} · {invoiceReferenceLabel}</h2>
-              <span>{profile.status_nota_fiscal === 'enviada' ? t(language, 'nf_status_sent') : t(language, 'nf_status_pending')}</span>
+              <span className={currentMonthInvoice?.status === 'paga' ? 'is-paid' : ''}>{invoiceStatusText}</span>
             </div>
             <p>{t(language, 'nf_exact_value_notice')} <strong>{formatMoney(invoiceAmount)}</strong></p>
           </div>
           <label className="reference-primary-button">
             <FileUp size={15} aria-hidden="true" />
-            {uploadingInvoice ? t(language, 'saving_label') : profile.status_nota_fiscal === 'enviada' ? t(language, 'replace_resend_nf') : t(language, 'select_nf_file')}
+            {uploadingInvoice ? t(language, 'saving_label') : isInvoiceSentForMonth ? t(language, 'replace_resend_nf') : t(language, 'select_nf_file')}
             <input type="file" accept=".pdf,application/pdf" disabled={uploadingInvoice} onChange={onUploadInvoice} />
           </label>
         </div>
         <div className="reference-invoice-notice"><Info size={15} /><span>{t(language, 'teacher_mei_alert_desc')}</span></div>
-        {profile.nota_fiscal_url && (
+        {(currentMonthInvoice?.file_url || profile.nota_fiscal_url) && (
           <div className="reference-invoice-file">
-            <strong>{invoiceReferenceLabel}</strong>
+            <strong>{currentMonthInvoice?.file_name || invoiceReferenceLabel}</strong>
             <div>
-              <button type="button" onClick={() => openFileFromDataOrUrl(profile.nota_fiscal_url!, `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`)}>{t(language, 'view_sent_file')}</button>
-              <button type="button" onClick={() => downloadFileFromDataOrUrl(profile.nota_fiscal_url!, `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`)}>{language === 'pt' ? 'Baixar' : language === 'es' ? 'Descargar' : 'Download'}</button>
+              <button type="button" onClick={() => openFileFromDataOrUrl(currentMonthInvoice?.file_url || profile.nota_fiscal_url!, currentMonthInvoice?.file_name || `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`)}>{t(language, 'view_sent_file')}</button>
+              <button type="button" onClick={() => downloadFileFromDataOrUrl(currentMonthInvoice?.file_url || profile.nota_fiscal_url!, currentMonthInvoice?.file_name || `Nota_Fiscal_${profile.full_name.replace(/\s+/g, '_')}.pdf`)}>{language === 'pt' ? 'Baixar' : language === 'es' ? 'Descargar' : 'Download'}</button>
             </div>
           </div>
         )}
@@ -197,7 +207,7 @@ export default function TeacherLiveFinanceView({
             <strong>{t(language, 'past_nfs_title')} ({myInvoices.length})</strong>
             {myInvoices.map((invoice) => (
               <div key={invoice.id}>
-                <span>{invoice.month_key} · {invoice.file_name || 'Nota Fiscal'}</span>
+                <span>{invoice.month_key} · {invoice.file_name || 'Nota Fiscal'}{invoice.status === 'paga' ? ` (${language === 'pt' ? 'Paga' : 'Paid'})` : ''}</span>
                 <div>
                   <button type="button" onClick={() => openFileFromDataOrUrl(invoice.file_url, invoice.file_name || `Nota_Fiscal_${invoice.month_key}.pdf`)}>{t(language, 'view_sent_file')}</button>
                   <button type="button" onClick={() => downloadFileFromDataOrUrl(invoice.file_url, invoice.file_name || `Nota_Fiscal_${invoice.month_key}.pdf`)}>{language === 'pt' ? 'Baixar' : language === 'es' ? 'Descargar' : 'Download'}</button>

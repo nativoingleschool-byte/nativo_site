@@ -21,6 +21,8 @@ import {
   TeacherInvoice,
   TeacherAttendance,
   TeacherLessonStatus,
+  StudentAttendance,
+  StudentLessonStatus,
 } from './lib/types'
 import {
   formatShortDate,
@@ -557,17 +559,23 @@ function ReminderAppInner() {
   }, [])
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const lessonId = params.get('lessonId')
-    const intent = params.get('intent') as ReminderIntent | null
+    const handleUrlParams = () => {
+      const params = new URLSearchParams(window.location.search)
+      const lessonId = params.get('lessonId')
+      const intent = params.get('intent') as ReminderIntent | null
 
-    if (lessonId || intent) {
-      setPendingLink({ lessonId, intent })
-      params.delete('lessonId')
-      params.delete('intent')
-      const nextQuery = params.toString()
-      window.history.replaceState({}, document.title, nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
+      if (lessonId || intent) {
+        setPendingLink({ lessonId, intent })
+        params.delete('lessonId')
+        params.delete('intent')
+        const nextQuery = params.toString()
+        window.history.replaceState({}, document.title, nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
+      }
     }
+
+    handleUrlParams()
+    window.addEventListener('popstate', handleUrlParams)
+    return () => window.removeEventListener('popstate', handleUrlParams)
   }, [])
 
   useEffect(() => {
@@ -724,6 +732,47 @@ function ReminderAppInner() {
     if (error) {
       console.warn('Notification could not be deleted:', error.message)
       void refreshNotifications()
+    }
+  }
+
+  const handleSelectNotification = async (notification: AppNotification) => {
+    if (!notification.read_at) {
+      void markNotificationRead(notification.id)
+    }
+
+    let targetLessonId = notification.entity_type === 'lesson' ? notification.entity_id : null
+    let targetIntent: ReminderIntent | null = null
+
+    if (notification.action_url) {
+      try {
+        const parsed = new URL(notification.action_url, window.location.origin)
+        const qLessonId = parsed.searchParams.get('lessonId')
+        const qIntent = parsed.searchParams.get('intent') as ReminderIntent | null
+        if (qLessonId) targetLessonId = qLessonId
+        if (qIntent) targetIntent = qIntent
+      } catch {
+        const matchLesson = notification.action_url.match(/lessonId=([a-zA-Z0-9-]+)/)
+        if (matchLesson) targetLessonId = matchLesson[1]
+        const matchIntent = notification.action_url.match(/intent=([a-zA-Z0-9_-]+)/)
+        if (matchIntent) targetIntent = matchIntent[1] as ReminderIntent
+      }
+    }
+
+    if (targetLessonId) {
+      if (profile?.role === 'teacher') {
+        setTeacherTab('calendar')
+      } else if (profile?.role === 'admin') {
+        setAdminTab('calendar')
+      }
+      setFocusedLessonId(targetLessonId)
+
+      if (targetIntent) {
+        const targetLesson = lessons.find((l) => l.id === targetLessonId)
+        if (targetLesson) {
+          const changes = applyIntentToLesson(targetIntent)
+          void updateLesson(targetLesson.id, changes)
+        }
+      }
     }
   }
 
@@ -1183,16 +1232,24 @@ function ReminderAppInner() {
   }, [session?.user?.id, profile?.role, visualPreviewMode])
 
   useEffect(() => {
-    if (!pendingLink.lessonId || !pendingLink.intent || !session?.user) return
+    if (!pendingLink.lessonId || !session?.user) return
 
     const targetLesson = lessons.find((lesson) => lesson.id === pendingLink.lessonId)
     if (!targetLesson) return
 
-    const changes = applyIntentToLesson(pendingLink.intent)
     setFocusedLessonId(pendingLink.lessonId)
-    void updateLesson(targetLesson.id, changes)
+    if (profile?.role === 'teacher') {
+      setTeacherTab('calendar')
+    } else if (profile?.role === 'admin') {
+      setAdminTab('calendar')
+    }
+
+    if (pendingLink.intent) {
+      const changes = applyIntentToLesson(pendingLink.intent)
+      void updateLesson(targetLesson.id, changes)
+    }
     setPendingLink({ lessonId: null, intent: null })
-  }, [pendingLink, lessons, session])
+  }, [pendingLink, lessons, session, profile?.role])
 
   const profilesById = useMemo(
     () => Object.fromEntries(profiles.map((item) => [item.id, item])),
@@ -1276,26 +1333,30 @@ function ReminderAppInner() {
         .sort(sortByDateAsc)
     : []
 
+  const teacherSessions = useMemo(() => {
+    return profile?.role === 'teacher' ? groupLessonsIntoTeacherSessions(visibleLessons) : []
+  }, [profile?.role, visibleLessons])
+
   const dueTeacherFourHourReminders = profile?.role === 'teacher'
-    ? visibleLessons
-        .filter((lesson) => {
-          const lessonTime = new Date(lesson.starts_at).getTime()
+    ? teacherSessions
+        .filter((session) => {
+          const lessonTime = new Date(session.starts_at).getTime()
           return now.getTime() >= lessonTime - FOUR_HOURS_MS && now.getTime() < lessonTime
         })
-        .sort(sortByDateAsc)
+        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
     : []
 
   const dueTeacherStartReminders = profile?.role === 'teacher'
-    ? visibleLessons
-        .filter((lesson) => {
-          const lessonTime = new Date(lesson.starts_at).getTime()
+    ? teacherSessions
+        .filter((session) => {
+          const lessonTime = new Date(session.starts_at).getTime()
           return (
             now.getTime() >= lessonTime &&
             lessonTime >= now.getTime() - REMINDER_LOOKBACK_MS &&
-            lesson.teacher_lesson_status === null
+            session.is_scheduled
           )
         })
-        .sort(sortByDateAsc)
+        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
     : []
 
   const trackedLessons = lessons
@@ -1349,25 +1410,32 @@ function ReminderAppInner() {
     }
 
     if (profile.role === 'teacher') {
-      for (const lesson of dueTeacherFourHourReminders) {
-        const student = profilesById[lesson.student_id]
+      for (const session of dueTeacherFourHourReminders) {
+        const studentNames = session.student_ids
+          .map((sid) => profilesById[sid]?.full_name)
+          .filter(Boolean)
+          .join(', ')
+        const attendeeLabel = studentNames || session.class_name || 'Alunos'
+        const firstLessonId = session.lessons[0]?.id || session.key
+
         reminderList.push({
-          key: `${profile.id}-${lesson.id}-teacher-4h`,
+          key: `${profile.id}-${session.key}-teacher-4h`,
           title: 'Upcoming lesson reminder',
-          body: `${student?.full_name ?? 'Student'} has ${lesson.student_attendance ?? 'not replied'} for ${lesson.subject}.`,
-          lessonId: lesson.id,
+          body: `${session.subject || 'Aula'}: ${attendeeLabel}`,
+          lessonId: firstLessonId,
           userId: profile.id,
           actions: [{ action: 'open', title: 'Open lesson' }],
           intentMap: {},
         })
       }
 
-      for (const lesson of dueTeacherStartReminders) {
+      for (const session of dueTeacherStartReminders) {
+        const firstLessonId = session.lessons[0]?.id || session.key
         reminderList.push({
-          key: `${profile.id}-${lesson.id}-teacher-start`,
+          key: `${profile.id}-${session.key}-teacher-start`,
           title: 'Teacher class check',
-          body: `${lesson.subject} is due now. Record what happened.`,
-          lessonId: lesson.id,
+          body: `${session.subject || 'Aulas de Inglês'} is due now. Record what happened.`,
+          lessonId: firstLessonId,
           userId: profile.id,
           actions: [
             { action: 'happened', title: 'Class happened' },
@@ -1659,6 +1727,18 @@ function ReminderAppInner() {
         },
         { userRole: profile?.role, userId: profile?.id }
       )
+      if (!visualPreviewMode && session?.user?.id) {
+        void supabase
+          .from('notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('entity_id', lessonId)
+          .is('read_at', null)
+          .then(() => {
+            setNotifications((prev) =>
+              prev.map((n) => (n.entity_id === lessonId ? { ...n, read_at: n.read_at || new Date().toISOString() } : n))
+            )
+          })
+      }
     }
 
     await refreshLessons()
@@ -1807,6 +1887,8 @@ function ReminderAppInner() {
     meeting_url?: string | null
     teacher_attendance?: TeacherAttendance
     teacher_lesson_status?: 'happened' | 'student_no_show' | 'not_happened' | null
+    student_attendance?: StudentAttendance
+    student_lesson_status?: StudentLessonStatus
   }) => {
     setAppError('')
     const payload = {
@@ -1829,6 +1911,11 @@ function ReminderAppInner() {
         return updated
       }
       const updated = await callLessonsApi<Lesson>('update_lesson', payload)
+      if (payload.teacher_lesson_status && session?.user?.id) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.entity_id === payload.lesson_id ? { ...n, read_at: n.read_at || new Date().toISOString() } : n))
+        )
+      }
       void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
       return updated
     } catch (error) {
@@ -1957,6 +2044,11 @@ function ReminderAppInner() {
         return
       }
       await callLessonsApi('update_group', payload)
+      if (payload.teacher_lesson_status && session?.user?.id) {
+        setNotifications((prev) =>
+          prev.map((n) => (payload.lesson_ids.includes(n.entity_id) ? { ...n, read_at: n.read_at || new Date().toISOString() } : n))
+        )
+      }
       void refreshLessons().catch((error) => console.warn('[reminder:lessons] saved, but refresh failed:', error))
     } catch (error) {
       setAppError(error instanceof Error ? error.message : 'Could not update the class.')
@@ -2284,7 +2376,9 @@ function ReminderAppInner() {
         {isAdmin && (
           <AdminShell profile={profile} activeTab={adminTab} onTabChange={setAdminTab}
             notifications={notifications} onMarkNotificationRead={markNotificationRead}
-            onMarkAllNotificationsRead={markAllNotificationsRead} onClearNotifications={clearNotifications} onDeleteNotification={deleteNotification} onLogout={handleLogout}>
+            onMarkAllNotificationsRead={markAllNotificationsRead} onClearNotifications={clearNotifications} onDeleteNotification={deleteNotification}
+            onSelectNotification={handleSelectNotification}
+            onLogout={handleLogout}>
           <section className="summary-grid admin-summary-grid">
             {summaryCards.map((card) => <StatCard key={card.label} label={card.label} value={card.value} />)}
           </section>
@@ -2511,6 +2605,7 @@ function ReminderAppInner() {
             onMarkAllNotificationsRead={markAllNotificationsRead}
             onClearNotifications={clearNotifications}
             onDeleteNotification={deleteNotification}
+            onSelectNotification={handleSelectNotification}
             onLogout={handleLogout}
             pageSubtitles={{
               calendar: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(now).replace(/^./, (letter) => letter.toUpperCase()),

@@ -32,6 +32,7 @@ export type TeacherShellProps = {
   onMarkAllNotificationsRead?: () => void
   onClearNotifications?: () => void
   onDeleteNotification?: (id: string) => void
+  onSelectNotification?: (notification: AppNotification) => void
   /** Mantém o logout existente fora do shell. */
   onLogout?: () => void | Promise<void>
   /** Ação opcional do suporte; permanece desacoplada da camada visual. */
@@ -125,6 +126,7 @@ export default function TeacherShell({
   onMarkAllNotificationsRead,
   onClearNotifications,
   onDeleteNotification,
+  onSelectNotification,
   onLogout,
   onSupport,
   pageSubtitles,
@@ -214,6 +216,7 @@ export default function TeacherShell({
                   onMarkAllRead={() => onMarkAllNotificationsRead?.()}
                   onClearAll={onClearNotifications}
                   onDeleteNotification={onDeleteNotification}
+                  onSelectNotification={onSelectNotification}
                 />
               )}
             </div>

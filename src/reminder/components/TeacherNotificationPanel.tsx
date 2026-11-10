@@ -8,6 +8,7 @@ type TeacherNotificationPanelProps = {
   onMarkAllRead: () => void
   onClearAll?: () => void
   onDeleteNotification?: (id: string) => void
+  onSelectNotification?: (notification: AppNotification) => void
 }
 
 const iconForType = (type: string) => {
@@ -26,12 +27,23 @@ export default function TeacherNotificationPanel({
   onMarkAllRead,
   onClearAll,
   onDeleteNotification,
+  onSelectNotification,
 }: TeacherNotificationPanelProps) {
   const unreadCount = notifications.filter((item) => !item.read_at).length
   const openNotification = (notification: AppNotification) => {
     if (!notification.read_at) onMarkRead(notification.id)
+    if (onSelectNotification) {
+      onSelectNotification(notification)
+      onClose()
+      return
+    }
     if (notification.action_url) {
-      window.location.assign(notification.action_url)
+      if (notification.action_url.startsWith('/') || notification.action_url.startsWith(window.location.origin)) {
+        window.history.pushState({}, '', notification.action_url)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      } else {
+        window.location.assign(notification.action_url)
+      }
       onClose()
     }
   }

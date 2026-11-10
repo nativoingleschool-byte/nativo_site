@@ -214,6 +214,24 @@ export default function AdminStaffTab({
     setDetailMonthKey('')
   }
 
+  const calculateTeacherMonthFinancials = (teacherId: string, monthKey: string) => {
+    const teacher = profiles.find((p) => p.id === teacherId) || profilesById[teacherId]
+    const teacherMonthLessons = lessons.filter(
+      (l) => l.teacher_id === teacherId && l.starts_at && l.starts_at.slice(0, 7) === monthKey
+    )
+    const sessions = groupLessonsIntoTeacherSessions(teacherMonthLessons)
+    const activeSessions = sessions.filter((s) => !s.is_cancelled)
+    const totalActiveMinutes = activeSessions.reduce((acc, s) => acc + s.duration_minutes, 0)
+    const totalActiveHours = totalActiveMinutes / 60
+    const hourlyRate = teacher?.taxa_hora_aula ?? 56.00
+    const totalActiveAmount = totalActiveHours * Number(hourlyRate)
+
+    return {
+      hoursCount: Number(totalActiveHours.toFixed(2)),
+      amount: Number(totalActiveAmount.toFixed(2)),
+    }
+  }
+
   const markTeacherMonthPaid = async (teacherId: string, monthKey: string, isPaid: boolean) => {
     try {
       const currentList = paidMonthsByTeacher[teacherId] || []
@@ -227,12 +245,15 @@ export default function AdminStaffTab({
       setPaidMonthsByTeacher(updatedMap)
       localStorage.setItem('nativo_teacher_paid_months_map', JSON.stringify(updatedMap))
 
-      // Persist to Supabase teacher_payouts table
+      // Persist to Supabase teacher_payouts table with calculated hours and amount
       try {
         if (isPaid) {
+          const { hoursCount, amount } = calculateTeacherMonthFinancials(teacherId, monthKey)
           await supabase.from('teacher_payouts').upsert({
             teacher_id: teacherId,
             month_key: monthKey,
+            hours_count: hoursCount,
+            amount: amount,
             status: 'pago',
             paid_at: new Date().toISOString(),
           }, { onConflict: 'teacher_id,month_key' })
@@ -327,7 +348,7 @@ export default function AdminStaffTab({
     try {
       const isPaid = status === 'pago'
       const updatedMap = { ...paidMonthsByTeacher }
-      const upsertRows: Array<{ teacher_id: string; month_key: string; status: string; paid_at: string }> = []
+      const upsertRows: Array<{ teacher_id: string; month_key: string; hours_count: number; amount: number; status: string; paid_at: string }> = []
       const deletePairs: Array<{ teacher_id: string; month_key: string }> = []
 
       for (const teacher of teachers) {
@@ -337,9 +358,12 @@ export default function AdminStaffTab({
           if (!currentList.includes(monthKey)) {
             updatedMap[teacher.id] = [...currentList, monthKey]
           }
+          const { hoursCount, amount } = calculateTeacherMonthFinancials(teacher.id, monthKey)
           upsertRows.push({
             teacher_id: teacher.id,
             month_key: monthKey,
+            hours_count: hoursCount,
+            amount: amount,
             status: 'pago',
             paid_at: new Date().toISOString(),
           })

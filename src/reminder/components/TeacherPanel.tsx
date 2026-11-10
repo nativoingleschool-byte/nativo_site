@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Search, X } from 'lucide-react'
-import { Lesson, Profile, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice } from '../lib/types'
+import { Lesson, Profile, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice, StudentAttendance, StudentLessonStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -95,6 +95,8 @@ interface TeacherPanelProps {
     meeting_url?: string | null
     teacher_attendance?: TeacherAttendance
     teacher_lesson_status?: TeacherLessonStatus
+    student_attendance?: StudentAttendance
+    student_lesson_status?: StudentLessonStatus
   }) => Promise<Lesson | undefined>
   deleteTeacherSingleLesson?: (lessonId: string) => Promise<void>
   profilesById: Record<string, Profile>
@@ -170,21 +172,6 @@ export default function TeacherPanel({
   const modalLanguage: Language = visualPreviewMode ? 'pt' : language
   const formatShortDateLabel = (value: string) => formatShortDate(value, language, appTimeZone)
 
-  // A NFS-e acompanha o ciclo real do mês, independentemente do mês visual
-  // selecionado no calendário de aulas: se a nota ainda está pendente,
-  // trabalhamos com o mês anterior; depois do envio, a referência passa para
-  // o mês atual. Isso evita referências artificiais como 2027 vindas de
-  // selectedMonth, que pertence somente à navegação do calendário.
-  const nfReferenceDate = useMemo(() => {
-    const date = new Date()
-    if (profile.status_nota_fiscal !== 'enviada') date.setMonth(date.getMonth() - 1)
-    return date
-  }, [profile.status_nota_fiscal])
-  const nfReferenceMonthKey = `${nfReferenceDate.getFullYear()}-${String(nfReferenceDate.getMonth() + 1).padStart(2, '0')}`
-  const nfReferenceMonthLabel = new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
-    month: 'long',
-    year: 'numeric',
-  }).format(nfReferenceDate)
 
   const [isSendingNotes, setIsSendingNotes] = useState(false)
 
@@ -387,7 +374,7 @@ export default function TeacherPanel({
       const promptLessons = groupLessonsIntoTeacherSessions(teacherLessons)
         .find((session) => session.lessons.some((lesson) => lesson.id === target.id))?.lessons ?? [target]
       setAttendanceLessons(promptLessons)
-      setAttendanceDraft(Object.fromEntries(promptLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
+      setAttendanceDraft(Object.fromEntries(promptLessons.map((lesson) => [lesson.id, lesson.student_attendance ? lesson.student_attendance === 'attend' : true])))
       return
     }
     try {
@@ -403,6 +390,7 @@ export default function TeacherPanel({
         if (error) throw error
       }
       void trackEvent('lesson_status_update', { lesson_id: lessonId, status, source: 'quick_bar' }, { userRole: 'teacher', userId: profile.id })
+      void supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('entity_id', lessonIds).is('read_at', null)
       await refreshLessons()
       toast.success(
         status === 'student_no_show'
@@ -418,14 +406,32 @@ export default function TeacherPanel({
     if (attendanceLessons.length === 0) return
     try {
       for (const lesson of attendanceLessons) {
-        const teacherAttendance: TeacherAttendance = attendanceDraft[lesson.id] ? 'present' : 'absent'
+        const isStudentPresent = Boolean(attendanceDraft[lesson.id])
+        const studentAttendance: StudentAttendance = isStudentPresent ? 'attend' : 'cancel'
+        const lessonStatus: TeacherLessonStatus = isStudentPresent ? 'happened' : 'student_no_show'
+        const teacherAttendance: TeacherAttendance = 'present'
+
         if (updateTeacherSingleLesson) {
-          await updateTeacherSingleLesson({ lesson_id: lesson.id, teacher_lesson_status: 'happened', teacher_attendance: teacherAttendance })
+          await updateTeacherSingleLesson({
+            lesson_id: lesson.id,
+            teacher_lesson_status: lessonStatus,
+            teacher_attendance: teacherAttendance,
+            student_attendance: studentAttendance,
+          })
         } else {
-          const { error } = await supabase.from('lessons').update({ teacher_lesson_status: 'happened', teacher_attendance: teacherAttendance }).eq('id', lesson.id)
+          const { error } = await supabase
+            .from('lessons')
+            .update({
+              teacher_lesson_status: lessonStatus,
+              teacher_attendance: teacherAttendance,
+              student_attendance: studentAttendance,
+            })
+            .eq('id', lesson.id)
           if (error) throw error
         }
       }
+      const affectedLessonIds = attendanceLessons.map((l) => l.id)
+      void supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('entity_id', affectedLessonIds).is('read_at', null)
       await refreshLessons()
       setAttendanceLessons([])
       setAttendanceDraft({})
@@ -444,7 +450,11 @@ export default function TeacherPanel({
   // Generate available months list from teacher lessons
   const availableMonths = useMemo(() => {
     const monthsMap = new Map<string, string>()
-    const currentMonthKey = new Date().toISOString().slice(0, 7)
+    const now = new Date()
+    const currentMonthKey = now.toISOString().slice(0, 7)
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
+
     teacherLessons.forEach((l) => {
       if (l.starts_at) {
         const key = l.starts_at.slice(0, 7)
@@ -460,25 +470,67 @@ export default function TeacherPanel({
       }
     })
 
-    if (!monthsMap.has(currentMonthKey)) {
-      const dObj = new Date()
-      const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
-        month: 'long',
-        year: 'numeric',
-      })
-      monthsMap.set(currentMonthKey, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+    for (const [key, dObj] of [[currentMonthKey, now], [prevMonthKey, prevDate]] as const) {
+      if (!monthsMap.has(key)) {
+        const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es' : 'en', {
+          month: 'long',
+          year: 'numeric',
+        })
+        monthsMap.set(key, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1))
+      }
     }
 
     return Array.from(monthsMap.entries()).sort((a, b) => b[0].localeCompare(a[0]))
   }, [teacherLessons, language])
+
+  // Default statement month: during the first 15 days of the month (closing window),
+  // or when the current month has no completed classes yet, default to the previous month.
+  const defaultStatementMonthKey = useMemo(() => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
+    const currentDay = now.getDate()
+    const currentMonthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+
+    const prevDate = new Date(currentYear, currentMonth - 2, 1)
+    const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
+
+    if (currentDay <= 15) {
+      return prevMonthKey
+    }
+
+    const currentMonthHasCompleted = teacherLessons.some(
+      (l) => l.starts_at?.slice(0, 7) === currentMonthKey && l.teacher_lesson_status === 'happened'
+    )
+    if (!currentMonthHasCompleted && teacherLessons.some((l) => l.starts_at?.slice(0, 7) === prevMonthKey)) {
+      return prevMonthKey
+    }
+
+    return currentMonthKey
+  }, [teacherLessons])
 
   // Active Month Key
   const activeMonthKey = useMemo(() => {
     if (selectedMonthKey && availableMonths.some(([k]) => k === selectedMonthKey)) {
       return selectedMonthKey
     }
-    return new Date().toISOString().slice(0, 7)
-  }, [selectedMonthKey, availableMonths])
+    if (availableMonths.some(([k]) => k === defaultStatementMonthKey)) {
+      return defaultStatementMonthKey
+    }
+    return defaultStatementMonthKey || new Date().toISOString().slice(0, 7)
+  }, [selectedMonthKey, availableMonths, defaultStatementMonthKey])
+
+  const activeMonthLabel = useMemo(() => {
+    const matched = availableMonths.find(([k]) => k === activeMonthKey)
+    if (matched) return matched[1]
+    const [yr, mo] = activeMonthKey.split('-')
+    const dObj = new Date(parseInt(yr, 10), parseInt(mo, 10) - 1, 1)
+    const monthLabel = dObj.toLocaleDateString(language === 'pt' ? 'pt-BR' : language === 'es' ? 'es-ES' : 'en-US', {
+      month: 'long',
+      year: 'numeric',
+    })
+    return monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+  }, [availableMonths, activeMonthKey, language])
 
   // Month lessons list
   const monthLessons = useMemo(() => {
@@ -518,12 +570,6 @@ export default function TeacherPanel({
   const hourlyRate = profile.taxa_hora_aula ?? 56.0
   const currency = profile.moeda_taxa ?? 'BRL'
   const totalAmount = totalHours * Number(hourlyRate)
-  const invoiceReferenceAmount = useMemo(() => {
-    const referenceLessons = teacherLessons.filter((lesson) => lesson.starts_at?.slice(0, 7) === nfReferenceMonthKey)
-    return groupLessonsIntoTeacherSessions(referenceLessons)
-      .filter((session) => session.is_happened || session.is_no_show)
-      .reduce((sum, session) => sum + (session.duration_minutes / 60) * Number(hourlyRate), 0)
-  }, [teacherLessons, nfReferenceMonthKey, hourlyRate])
 
   const isFutureDateTimeLocal = (value: string) => {
     if (!value) return false
@@ -628,6 +674,16 @@ export default function TeacherPanel({
     setEditRecurrenceWeeks(4)
   }
 
+  // Deep link lesson focus from notifications / agenda
+  useEffect(() => {
+    if (!focusedLessonId) return
+    const target = lessons.find((lesson) => lesson.id === focusedLessonId)
+    if (!target) return
+    const sessionLessons = groupLessonsIntoTeacherSessions(teacherLessons)
+      .find((session) => session.lessons.some((lesson) => lesson.id === target.id))?.lessons ?? [target]
+    handleOpenEditLesson(target, sessionLessons)
+  }, [focusedLessonId, lessons, teacherLessons])
+
   // Submit Edit Lesson
   const handleEditLessonSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -675,6 +731,7 @@ export default function TeacherPanel({
         } else {
           throw new Error('Operação de edição indisponível.')
         }
+        void supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('entity_id', payload.lesson_ids).is('read_at', null)
         toast.success('Alterações salvas.')
       } catch (error) {
         console.error('[reminder:teacher] update failed', error)
@@ -692,7 +749,7 @@ export default function TeacherPanel({
 
       if (newStatus === 'happened') {
         setAttendanceLessons(targetLessons)
-        setAttendanceDraft(Object.fromEntries(targetLessons.map((lesson) => [lesson.id, lesson.teacher_attendance === 'present'])))
+        setAttendanceDraft(Object.fromEntries(targetLessons.map((lesson) => [lesson.id, lesson.student_attendance ? lesson.student_attendance === 'attend' : true])))
         return
       }
 
@@ -735,6 +792,7 @@ export default function TeacherPanel({
         if (error) throw error
         await refreshLessons()
       }
+      void supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('entity_id', lessonIds).is('read_at', null)
       toast.success(t(language, 'lesson_status_updated'))
     } catch (err: any) {
       console.error('[reminder:teacher:status] failed', { newStatus, message: err instanceof Error ? err.message : String(err) }, err)
@@ -831,7 +889,7 @@ export default function TeacherPanel({
         try {
           const fileDataUrl = reader.result as string
 
-          const activeMonthKey = nfReferenceMonthKey
+          const uploadMonthKey = activeMonthKey
 
           const res = await fetch('/api/me/upload-nf', {
             method: 'POST',
@@ -842,7 +900,7 @@ export default function TeacherPanel({
             body: JSON.stringify({
               status_nota_fiscal: 'enviada',
               nota_fiscal_url: fileDataUrl,
-              month_key: activeMonthKey,
+              month_key: uploadMonthKey,
               file_name: file.name || 'Nota_Fiscal.pdf',
             }),
           })
@@ -855,7 +913,7 @@ export default function TeacherPanel({
           void trackEvent(
             'teacher_nf_uploaded',
             {
-              month_key: activeMonthKey,
+              month_key: uploadMonthKey,
               file_name: file.name || 'Nota_Fiscal.pdf',
               file_size_kb: Math.round(file.size / 1024),
             },
@@ -1261,9 +1319,9 @@ export default function TeacherPanel({
             onCreateNote={onCreateTeacherNote}
             onDeleteNote={onDeleteTeacherNote}
             appTimeZone={appTimeZone}
-            invoiceReferenceMonth={nfReferenceMonthKey}
-            invoiceReferenceLabel={nfReferenceMonthLabel}
-            invoiceAmount={invoiceReferenceAmount}
+            invoiceReferenceMonth={activeMonthKey}
+            invoiceReferenceLabel={activeMonthLabel}
+            invoiceAmount={totalAmount}
             invoices={teacherInvoices.filter((invoice) => invoice.teacher_id === profile.id)}
             uploadingInvoice={uploadingNf}
             onUploadInvoice={handleUploadNf}

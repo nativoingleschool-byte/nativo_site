@@ -331,6 +331,14 @@ const updateGroup = async (supabaseAdmin, profile, payload) => {
     throw new Error(updateError.message)
   }
 
+  if (payload.teacher_lesson_status) {
+    try {
+      await supabaseAdmin.from('notifications').update({ read_at: new Date().toISOString() }).in('entity_id', lessonIds).is('read_at', null)
+    } catch (notifErr) {
+      console.warn('[manage:update_group] Auto-clearing notifications notice:', notifErr.message)
+    }
+  }
+
   const existingStudentIds = new Set(existingLessons.map((lesson) => lesson.student_id))
   const selectedStudentIds = Array.from(new Set((payload.student_ids ?? []).filter(Boolean)))
   if (!selectedStudentIds.length) {
@@ -460,6 +468,12 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
   if (payload.teacher_attendance !== undefined) {
     updateData.teacher_attendance = payload.teacher_attendance
   }
+  if (payload.student_attendance !== undefined) {
+    updateData.student_attendance = payload.student_attendance
+  }
+  if (payload.student_lesson_status !== undefined) {
+    updateData.student_lesson_status = payload.student_lesson_status
+  }
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from('lessons')
@@ -470,6 +484,14 @@ const updateLesson = async (supabaseAdmin, profile, payload) => {
 
   if (updateError) {
     throw new Error(updateError.message)
+  }
+
+  if (payload.teacher_lesson_status) {
+    try {
+      await supabaseAdmin.from('notifications').update({ read_at: new Date().toISOString() }).eq('entity_id', payload.lesson_id).is('read_at', null)
+    } catch (notifErr) {
+      console.warn('[manage:update_single] Auto-clearing notifications notice:', notifErr.message)
+    }
   }
 
   await syncLessonsToGoogleCalendar(supabaseAdmin, [updated])
