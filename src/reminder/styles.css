@@ -6217,3 +6217,135 @@ html[data-theme="dark"] .reminder-app-scope .gcal-agenda-zoom-link {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+
+/* ========================================================================== */
+/* Teacher Classes, Registry & Communication Box Dark Mode Overrides          */
+/* ========================================================================== */
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes {
+  background: var(--portal-surface) !important;
+  border-color: var(--portal-border) !important;
+  box-shadow: var(--portal-shadow) !important;
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes h2 {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes form label {
+  color: var(--portal-text-secondary) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes textarea {
+  background: var(--portal-input-bg) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text) !important;
+  -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history {
+  border-top-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history h3 {
+  color: var(--portal-heading) !important;
+  -webkit-text-fill-color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history > p {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history article {
+  border-top-color: var(--portal-border) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history article p {
+  color: var(--portal-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history article span {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history article button {
+  color: var(--status-danger-text) !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-teacher-notes-history article button:hover {
+  background: var(--status-danger-bg) !important;
+  border-radius: 6px;
+}
+
+/* Additional Teacher Registry & Invoice Card Elements in Dark Mode */
+html[data-theme="dark"] .reminder-app-scope .reference-filters button {
+  color: var(--portal-text-secondary) !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-filters button.is-active {
+  color: var(--portal-heading) !important;
+  background: var(--portal-surface-subtle) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-meeting-actions button,
+html[data-theme="dark"] .reminder-app-scope .reference-status-actions button,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-file button,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-history button {
+  background: var(--portal-surface-subtle) !important;
+  border-color: var(--portal-border-strong) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-meeting-actions button:hover,
+html[data-theme="dark"] .reminder-app-scope .reference-status-actions button:hover,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-file button:hover,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-history button:hover {
+  background: var(--portal-surface-hover) !important;
+  color: var(--portal-heading) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-status-actions button:first-child {
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-status-actions button:nth-child(2) {
+  color: var(--status-warning-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-status-actions button:nth-child(3) {
+  color: var(--status-danger-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-check {
+  background: var(--status-success-bg) !important;
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-amount {
+  color: var(--status-success-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-file,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-history,
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-history > div {
+  border-top-color: var(--portal-border) !important;
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-title span {
+  background: var(--status-warning-bg) !important;
+  border-color: var(--status-warning-border) !important;
+  color: var(--status-warning-text) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .reference-invoice-title span.is-paid {
+  background: var(--status-success-bg) !important;
+  border-color: var(--status-success-border) !important;
+  color: var(--status-success-text) !important;
+}
