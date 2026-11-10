@@ -237,6 +237,44 @@ export default function TeacherPanel({
 
   const addModalRef = useRef<HTMLDivElement>(null)
   const editModalRef = useRef<HTMLDivElement>(null)
+  const addStudentsDropdownRef = useRef<HTMLDivElement>(null)
+  const editStudentsDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!newLessonStudentsOpen && !editStudentsOpen) return
+    const handlePointerDownOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null
+      if (!target) return
+      if (newLessonStudentsOpen && addStudentsDropdownRef.current && !addStudentsDropdownRef.current.contains(target)) {
+        setNewLessonStudentsOpen(false)
+        setStudentSearch('')
+      }
+      if (editStudentsOpen && editStudentsDropdownRef.current && !editStudentsDropdownRef.current.contains(target)) {
+        setEditStudentsOpen(false)
+        setEditStudentSearch('')
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (newLessonStudentsOpen) {
+          setNewLessonStudentsOpen(false)
+          setStudentSearch('')
+        }
+        if (editStudentsOpen) {
+          setEditStudentsOpen(false)
+          setEditStudentSearch('')
+        }
+      }
+    }
+    document.addEventListener('mousedown', handlePointerDownOutside)
+    document.addEventListener('touchstart', handlePointerDownOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDownOutside)
+      document.removeEventListener('touchstart', handlePointerDownOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [newLessonStudentsOpen, editStudentsOpen])
 
   const sortedStudents = useMemo(() => {
     const map = new Map<string, Profile>()
@@ -487,6 +525,13 @@ export default function TeacherPanel({
       .reduce((sum, session) => sum + (session.duration_minutes / 60) * Number(hourlyRate), 0)
   }, [teacherLessons, nfReferenceMonthKey, hourlyRate])
 
+  const isFutureDateTimeLocal = (value: string) => {
+    if (!value) return false
+    const iso = dateTimeLocalToIso(value, appTimeZone)
+    const ms = new Date(iso).getTime()
+    return Number.isFinite(ms) && ms > Date.now()
+  }
+
   // Open Add Lesson Modal
   const handleOpenAddLesson = () => {
     if ((!students || students.length === 0) && refreshProfiles) {
@@ -503,7 +548,7 @@ export default function TeacherPanel({
     setNewLessonStudentsOpen(false)
     setNewLessonSubject(visualPreviewMode ? 'Aulas de Inglês · Turma Fluência' : t(language, 'individual_class'))
     setNewLessonDuration(60)
-    setNewLessonStatus('happened')
+    setNewLessonStatus(teacherTab === 'calendar' ? null : 'happened')
     setNewRecurring(false)
     setNewRecurrenceWeeks(4)
 
@@ -526,15 +571,21 @@ export default function TeacherPanel({
       toast.error('Escolha de 2 a 52 semanas para a recorrência.')
       return
     }
+    const startsAtIso = dateTimeLocalToIso(newLessonStartsAt, appTimeZone)
+    const isFutureStart = new Date(startsAtIso).getTime() > Date.now()
+    const effectiveStatus: TeacherLessonStatus =
+      isFutureStart && (newLessonStatus === 'happened' || newLessonStatus === 'student_no_show')
+        ? null
+        : newLessonStatus
     const payload = {
       student_ids: studentIds,
       teacher_id: profile.id,
       subject: newLessonSubject.trim(),
       class_name: sortedStudents.find((item) => item.id === studentIds[0])?.class_name || '',
-      starts_at: dateTimeLocalToIso(newLessonStartsAt, appTimeZone),
+      starts_at: startsAtIso,
       duration_minutes: newLessonDuration,
       meeting_url: newLessonMeetingUrl.trim() || null,
-      teacher_lesson_status: newLessonStatus,
+      teacher_lesson_status: effectiveStatus,
     }
     setShowAddLessonModal(false)
     toast.info('Salvando aula em segundo plano…')
@@ -592,6 +643,12 @@ export default function TeacherPanel({
       return
     }
     const lessonId = editingLesson.id
+    const startsAtIso = dateTimeLocalToIso(editLessonStartsAt, appTimeZone)
+    const isFutureStart = new Date(startsAtIso).getTime() > Date.now()
+    const effectiveEditStatus: TeacherLessonStatus =
+      isFutureStart && (editLessonStatus === 'happened' || editLessonStatus === 'student_no_show')
+        ? null
+        : editLessonStatus
     const payload = {
       lesson_id: lessonId,
       lesson_ids: [...editLessonIds],
@@ -599,10 +656,10 @@ export default function TeacherPanel({
       teacher_id: profile.id,
       subject: editLessonSubject.trim(),
       class_name: profilesById[studentIds[0]]?.class_name || editingLesson.class_name || '',
-      starts_at: dateTimeLocalToIso(editLessonStartsAt, appTimeZone),
+      starts_at: startsAtIso,
       duration_minutes: editLessonDuration,
       meeting_url: editLessonMeetingUrl.trim() || null,
-      teacher_lesson_status: editLessonStatus,
+      teacher_lesson_status: effectiveEditStatus,
     }
     const seriesId = editingLesson.recurrence_series_id
     setEditingLesson(null)
@@ -1285,7 +1342,7 @@ export default function TeacherPanel({
                     <label className="text-xs text-slate-400 font-bold block uppercase tracking-widest">Alunos</label>
                   </div>
 
-                  <div className="teacher-student-dropdown">
+                  <div className="teacher-student-dropdown" ref={addStudentsDropdownRef}>
                     <button
                       type="button"
                       className="teacher-student-dropdown__trigger"
@@ -1362,9 +1419,31 @@ export default function TeacherPanel({
 
                 <div className="teacher-preview-dialog-date-time">
                   <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={newLessonStartsAt.slice(0, 10)} onChange={(event) => setNewLessonStartsAt(`${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                  <input
+                    type="date"
+                    value={newLessonStartsAt.slice(0, 10)}
+                    onChange={(event) => {
+                      const nextStartsAt = `${event.target.value}T${newLessonStartsAt.slice(11, 16) || '20:00'}`
+                      setNewLessonStartsAt(nextStartsAt)
+                      if (isFutureDateTimeLocal(nextStartsAt)) {
+                        setNewLessonStatus((prev) => (prev === 'happened' || prev === 'student_no_show' ? null : prev))
+                      }
+                    }}
+                    required
+                  />
                   <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={newLessonStartsAt.slice(11, 16)} onChange={(event) => setNewLessonStartsAt(`${newLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                  <input
+                    type="time"
+                    value={newLessonStartsAt.slice(11, 16)}
+                    onChange={(event) => {
+                      const nextStartsAt = `${newLessonStartsAt.slice(0, 10)}T${event.target.value}`
+                      setNewLessonStartsAt(nextStartsAt)
+                      if (isFutureDateTimeLocal(nextStartsAt)) {
+                        setNewLessonStatus((prev) => (prev === 'happened' || prev === 'student_no_show' ? null : prev))
+                      }
+                    }}
+                    required
+                  />
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">
@@ -1422,7 +1501,17 @@ export default function TeacherPanel({
 
                                 <div className="teacher-recurring-field">
                   <label className="teacher-recurring-field__toggle">
-                    <input type="checkbox" checked={newRecurring} onChange={(event) => setNewRecurring(event.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={newRecurring}
+                      onChange={(event) => {
+                        const checked = event.target.checked
+                        setNewRecurring(checked)
+                        if (checked && (teacherTab === 'calendar' || isFutureDateTimeLocal(newLessonStartsAt))) {
+                          setNewLessonStatus((prev) => (prev === 'happened' || prev === 'student_no_show' ? null : prev))
+                        }
+                      }}
+                    />
                     <span>Aula recorrente</span>
                     <span className="teacher-recurring-field__hint">Semanal</span>
                   </label>
@@ -1533,7 +1622,7 @@ export default function TeacherPanel({
               <form onSubmit={handleEditLessonSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="teacher-preview-dialog-student">
                   <label className="teacher-modal-field-label">Alunos</label>
-                  <div className="teacher-student-dropdown">
+                  <div className="teacher-student-dropdown" ref={editStudentsDropdownRef}>
                     <button
                       type="button"
                       className="teacher-student-dropdown__trigger"
@@ -1615,9 +1704,31 @@ export default function TeacherPanel({
 
                 <div className="teacher-preview-dialog-date-time">
                   <label className="teacher-modal-field-label">{modalLanguage === 'pt' ? 'Data' : modalLanguage === 'es' ? 'Fecha' : 'Date'}</label>
-                  <input type="date" value={editLessonStartsAt.slice(0, 10)} onChange={(event) => setEditLessonStartsAt(`${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`)} required />
+                  <input
+                    type="date"
+                    value={editLessonStartsAt.slice(0, 10)}
+                    onChange={(event) => {
+                      const nextStartsAt = `${event.target.value}T${editLessonStartsAt.slice(11, 16) || '20:00'}`
+                      setEditLessonStartsAt(nextStartsAt)
+                      if (isFutureDateTimeLocal(nextStartsAt)) {
+                        setEditLessonStatus((prev) => (prev === 'happened' || prev === 'student_no_show' ? null : prev))
+                      }
+                    }}
+                    required
+                  />
                   <label className="teacher-modal-field-label teacher-preview-dialog-time-label">{modalLanguage === 'pt' ? 'Horário de início' : modalLanguage === 'es' ? 'Hora de inicio' : 'Start time'}</label>
-                  <input type="time" value={editLessonStartsAt.slice(11, 16)} onChange={(event) => setEditLessonStartsAt(`${editLessonStartsAt.slice(0, 10)}T${event.target.value}`)} required />
+                  <input
+                    type="time"
+                    value={editLessonStartsAt.slice(11, 16)}
+                    onChange={(event) => {
+                      const nextStartsAt = `${editLessonStartsAt.slice(0, 10)}T${event.target.value}`
+                      setEditLessonStartsAt(nextStartsAt)
+                      if (isFutureDateTimeLocal(nextStartsAt)) {
+                        setEditLessonStatus((prev) => (prev === 'happened' || prev === 'student_no_show' ? null : prev))
+                      }
+                    }}
+                    required
+                  />
                 </div>
 
                 <div className="teacher-preview-dialog-field teacher-preview-dialog-link">

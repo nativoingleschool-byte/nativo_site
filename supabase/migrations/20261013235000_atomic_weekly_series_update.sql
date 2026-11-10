@@ -77,7 +77,7 @@ BEGIN
       SELECT series_id, sid, ref.teacher_id,
         start_at + (wk * interval '7 days'),
         p->>'subject',COALESCE(p->>'class_name',''),
-        (p->>'duration_minutes')::integer,p->>'meeting_url',p->>'teacher_lesson_status'
+        (p->>'duration_minutes')::integer,p->>'meeting_url',NULL
       FROM generate_series(1,weeks-1) wk CROSS JOIN unnest(ids) sid;
     END IF;
   ELSE
@@ -87,7 +87,10 @@ BEGIN
         class_name=COALESCE(p->>'class_name',''),
         duration_minutes=(p->>'duration_minutes')::integer,
         meeting_url=p->>'meeting_url',
-        teacher_lesson_status=p->>'teacher_lesson_status'
+        teacher_lesson_status=CASE
+          WHEN starts_at = ref.starts_at THEN p->>'teacher_lesson_status'
+          ELSE teacher_lesson_status
+        END
     WHERE recurrence_series_id=series_id AND teacher_id=ref.teacher_id;
   END IF;
 
@@ -98,7 +101,8 @@ BEGIN
   )
   SELECT series_id, sid, ref.teacher_id, dt.starts_at,
     p->>'subject', COALESCE(p->>'class_name',''),
-    (p->>'duration_minutes')::integer,p->>'meeting_url',p->>'teacher_lesson_status'
+    (p->>'duration_minutes')::integer,p->>'meeting_url',
+    CASE WHEN dt.starts_at = start_at THEN p->>'teacher_lesson_status' ELSE NULL END
   FROM (SELECT DISTINCT starts_at FROM public.lessons
         WHERE recurrence_series_id=series_id AND teacher_id=ref.teacher_id) dt
   CROSS JOIN unnest(ids) sid

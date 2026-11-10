@@ -126,6 +126,16 @@ const recurrenceCount = (payload) => {
   return weeks
 }
 
+const sanitizeStatusForStartTime = (status, startsAt) => {
+  const normalized = status || null
+  if (!normalized) return null
+  const ms = new Date(startsAt).getTime()
+  if (Number.isFinite(ms) && ms > Date.now() && (normalized === 'happened' || normalized === 'student_no_show')) {
+    return null
+  }
+  return normalized
+}
+
 const createWeeklySeries = async (db, profile, payload) => {
   const studentIds = [...new Set((payload.student_ids || (payload.student_id ? [payload.student_id] : [])).filter(Boolean))]
   const weeks = recurrenceCount(payload)
@@ -140,13 +150,15 @@ const createWeeklySeries = async (db, profile, payload) => {
   const rows = []
   for (let week = 0; week < weeks; week += 1) {
     const startsAt = new Date(start.getTime() + week * 7 * 86400000).toISOString()
+    // Only the initial occurrence (week 0) can carry a past status; future weeks always start scheduled (null).
+    const weekStatus = week === 0 ? sanitizeStatusForStartTime(payload.teacher_lesson_status, startsAt) : null
     for (const studentId of studentIds) {
       rows.push({
         recurrence_series_id: seriesId, student_id: studentId, teacher_id: teacherId,
         starts_at: startsAt, duration_minutes: Number(payload.duration_minutes) || 60,
         subject: payload.subject.trim(), class_name: payload.class_name || '',
         meeting_url: payload.meeting_url || null,
-        teacher_lesson_status: payload.teacher_lesson_status || null,
+        teacher_lesson_status: weekStatus,
       })
     }
   }
@@ -164,32 +176,61 @@ const updateWeeklySeries = async (db, profile, payload) => {
   if (!selected.length || !selected.every(isUuid)) throw new Error('Selecione alunos cadastrados.')
 
   // Capture existing series lessons before RPC so we can clean up any removed Google Calendar events
+  // and preserve per-occurrence status across the series.
   const { data: refLesson } = await db.from('lessons').select('*').eq('id', payload.lesson_id).single()
   let oldEventIds = []
+  const priorStatusById = new Map()
   if (refLesson?.recurrence_series_id) {
     const { data: oldSeriesRows } = await db
       .from('lessons')
-      .select('google_event_id')
+      .select('id, starts_at, teacher_lesson_status, google_event_id')
       .eq('recurrence_series_id', refLesson.recurrence_series_id)
-      .gte('starts_at', refLesson.starts_at)
-    oldEventIds = (oldSeriesRows || []).map((r) => r.google_event_id).filter(Boolean)
+    for (const row of oldSeriesRows || []) {
+      priorStatusById.set(row.id, row.teacher_lesson_status)
+      if (row.google_event_id && row.starts_at >= refLesson.starts_at) {
+        oldEventIds.push(row.google_event_id)
+      }
+    }
   }
 
+  const targetStartIso = payload.starts_at ? new Date(payload.starts_at).toISOString() : refLesson?.starts_at
+  const sanitizedRefStatus = sanitizeStatusForStartTime(payload.teacher_lesson_status, targetStartIso)
+
   const { data, error } = await db.rpc('update_teacher_weekly_series', {
-    p: { ...payload, student_ids: selected, recurrence_weeks: weeks },
+    p: { ...payload, teacher_lesson_status: sanitizedRefStatus, student_ids: selected, recurrence_weeks: weeks },
   })
   if (error) throw new Error(error.message)
 
   if (oldEventIds.length > 0) {
     await deleteGoogleCalendarEvents(oldEventIds)
   }
-  if (refLesson?.recurrence_series_id) {
-    const { data: updatedSeriesRows } = await db
+
+  const { data: afterRefLesson } = await db.from('lessons').select('recurrence_series_id, starts_at').eq('id', payload.lesson_id).maybeSingle()
+  const activeSeriesId = refLesson?.recurrence_series_id || afterRefLesson?.recurrence_series_id
+  const refStartsAt = afterRefLesson?.starts_at || targetStartIso
+
+  if (activeSeriesId) {
+    const { data: seriesRows } = await db
       .from('lessons')
       .select('*')
-      .eq('recurrence_series_id', refLesson.recurrence_series_id)
-    if (updatedSeriesRows?.length) {
-      await syncLessonsToGoogleCalendar(db, updatedSeriesRows)
+      .eq('recurrence_series_id', activeSeriesId)
+
+    if (seriesRows?.length) {
+      const nowMs = Date.now()
+      for (const row of seriesRows) {
+        const isRefOccurrence = refStartsAt && new Date(row.starts_at).getTime() === new Date(refStartsAt).getTime()
+        const isFutureRow = new Date(row.starts_at).getTime() > nowMs
+        const priorStatus = priorStatusById.has(row.id) ? priorStatusById.get(row.id) : null
+        const desiredStatus = isRefOccurrence
+          ? sanitizedRefStatus
+          : sanitizeStatusForStartTime(priorStatus, row.starts_at)
+        const finalStatus = isFutureRow && (desiredStatus === 'happened' || desiredStatus === 'student_no_show') ? null : desiredStatus
+        if (row.teacher_lesson_status !== finalStatus) {
+          await db.from('lessons').update({ teacher_lesson_status: finalStatus }).eq('id', row.id)
+          row.teacher_lesson_status = finalStatus
+        }
+      }
+      await syncLessonsToGoogleCalendar(db, seriesRows)
     }
   }
 
@@ -213,7 +254,7 @@ const createGroup = async (supabaseAdmin, profile, payload) => {
 
   const startsAt = new Date(payload.starts_at)
   const duration = Number(payload.duration_minutes) || 60
-  const teacherLessonStatus = payload.teacher_lesson_status ?? null
+  const teacherLessonStatus = sanitizeStatusForStartTime(payload.teacher_lesson_status ?? null, startsAt)
 
   const rows = studentIds.map((studentId) => ({
     subject: payload.subject.trim(),
@@ -356,7 +397,8 @@ const createLesson = async (supabaseAdmin, profile, payload) => {
 
   const startsAt = new Date(payload.starts_at)
   const duration = Number(payload.duration_minutes) || 60
-  const teacherLessonStatus = payload.teacher_lesson_status ?? 'happened'
+  const rawStatus = payload.teacher_lesson_status !== undefined ? payload.teacher_lesson_status : 'happened'
+  const teacherLessonStatus = sanitizeStatusForStartTime(rawStatus, startsAt)
 
   const row = {
     subject: payload.subject.trim(),
