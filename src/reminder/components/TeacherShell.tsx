@@ -245,7 +245,9 @@ export default function TeacherShell({
         <main className="teacher-portal-content" tabIndex={-1}>
           {children}
         </main>
+      </div>
 
+      <div className="teacher-mobile-bottom-bar">
         <TeacherNavigation activeTab={activeTab} onTabChange={onTabChange} mobile />
       </div>
     </div>

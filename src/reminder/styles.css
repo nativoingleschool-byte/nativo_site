@@ -6349,3 +6349,23 @@ html[data-theme="dark"] .reminder-app-scope .reference-invoice-title span.is-pai
   border-color: var(--status-success-border) !important;
   color: var(--status-success-text) !important;
 }
+
+
+/* ========================================================================== */
+/* Teacher Mobile Bottom Navbar Visibility & Dark Mode                        */
+/* ========================================================================== */
+
+@media (min-width: 768px) {
+  .reminder-app-scope .teacher-mobile-bottom-bar,
+  .reminder-app-scope .teacher-mobile-navigation {
+    display: none !important;
+  }
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-mobile-navigation__item {
+  color: var(--portal-text-secondary) !important;
+}
+
+html[data-theme="dark"] .reminder-app-scope .teacher-mobile-navigation__item.is-active {
+  color: var(--portal-link) !important;
+}
