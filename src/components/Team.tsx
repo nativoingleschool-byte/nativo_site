@@ -9,7 +9,6 @@ interface TeamProps {
       giordanna: string;
       caitlin: string;
       eric: string;
-      cole: string;
       bruno: string;
       vini: string;
     };
@@ -49,11 +48,6 @@ export default function Team({ t }: TeamProps) {
       image: "/team/Eric.png"
     },
     {
-      name: "Cole",
-      roleKey: "cole" as const,
-      image: "/team/Cole.png"
-    },
-    {
       name: "Bruno",
       roleKey: "bruno" as const,
       image: "/team/Bruno.png"
@@ -78,7 +72,7 @@ export default function Team({ t }: TeamProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 justify-items-center w-fit mx-auto">
           {teamMembers.map((member, index) => (
             <div key={index} className="text-center group w-40">
               
