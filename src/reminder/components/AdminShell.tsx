@@ -39,59 +39,42 @@ export default function AdminShell({
   onClearNotifications,
   onDeleteNotification,
   onSelectNotification,
-  onLogout,
+  onLogout
 }: Props) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const active = sections.find(item => item.id === activeTab) || sections[0]
+  const initials = (profile.full_name || 'Administrador').split(/\s+/).slice(0,2).map(p => p.charAt(0).toUpperCase()).join('')
   const unread = notifications.filter(n => !n.read_at).length
-  const currentSection = sections.find(s => s.id === activeTab) || sections[0]
-  const initials = (profile.full_name || 'Admin')
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase())
-    .join('')
 
-  return (
-    <div className="teacher-portal-shell admin-shell">
-      <aside className={`teacher-sidebar admin-sidebar ${mobileMenuOpen ? 'is-open' : ''}`} aria-label="Menu administrativo">
-        <div className="teacher-brand">
-          <span className="teacher-brand__badge">Nativo</span>
-          <div className="teacher-brand__text">
-            <strong>Nativo Languages</strong>
-            <small>Portal Administrativo</small>
-          </div>
-          <button className="admin-menu-close" type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Fechar menu"><X size={18}/></button>
-        </div>
-        <nav className="teacher-nav">
-          {sections.map(s => {
-            const Icon = s.icon
-            const active = activeTab === s.id
-            return (
-              <button
-                key={s.id}
-                type="button"
-                className={`teacher-nav__item ${active ? 'is-active' : ''}`}
-                onClick={() => {
-                  onTabChange(s.id)
-                  setMobileMenuOpen(false)
-                  trackPageView(`/admin/${s.id}`)
-                }}
-              >
-                <Icon size={18} />
-                <span>{s.title}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </aside>
+  const handleTabClick = (id: AdminSection) => {
+    trackPageView(`/admin/${id}`)
+    onTabChange(id)
+    setMobileMenuOpen(false)
+  }
 
-      <div className="teacher-portal-main">
+  const nav = (mobile = false) => <nav aria-label="Navegação administrativa" className={mobile ? 'admin-mobile-nav' : 'teacher-sidebar-navigation'}>
+    {sections.map(({ id, title, icon: Icon }) => <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined}
+      className={mobile ? `admin-mobile-nav__item${activeTab === id ? ' is-active' : ''}` : `teacher-sidebar-navigation__item${activeTab === id ? ' is-active' : ''}`}
+      onClick={() => handleTabClick(id)}>
+      <Icon aria-hidden="true" size={18} strokeWidth={activeTab === id ? 2.2 : 1.9}/><span>{title}</span>
+    </button>)}
+  </nav>
+  return <div className="teacher-portal-shell admin-portal-shell">
+    <aside className="teacher-sidebar" aria-label="Portal do Administrador">
+      <div className="teacher-sidebar__brand">
+        <div className="teacher-sidebar__monogram"><img src="/hero/logo-white.png" alt=""/></div>
+        <div className="teacher-sidebar__brand-copy"><strong>NATIVO <em className="teacher-brand-english">ENGLISH</em></strong><span>Portal Administrativo</span></div>
+      </div>
+      {nav()}
+      <div className="teacher-sidebar__footer"><span className="teacher-sidebar__version">Nativo English · Administração</span></div>
+    </aside>
+    <div className="teacher-portal-main">
       <header className="teacher-context-header">
-        <div>
-          <span className="teacher-context-header__kicker">GESTÃO ESCOLAR</span>
-          <h1 className="teacher-context-header__title">{currentSection.title}</h1>
-          <p className="teacher-context-header__subtitle">{currentSection.subtitle}</p>
-        </div>
+        <div className="teacher-context-header__title-group"><div className="teacher-context-header__heading-row">
+          <h1>{active.title}</h1><span className="teacher-context-header__separator" aria-hidden="true">•</span>
+          <span className="teacher-context-header__subtitle">{active.subtitle}</span>
+        </div></div>
         <div className="teacher-context-header__actions">
           <button className="admin-menu-toggle" type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir navegação"><Menu size={19}/></button>
           <ThemeToggle />
@@ -113,8 +96,8 @@ export default function AdminShell({
           <button type="button" className="teacher-logout-button" aria-label="Sair" onClick={() => void onLogout()}><LogOut size={17}/></button>
         </div>
       </header>
-      <main className="teacher-portal-body">{children}</main>
-      </div>
+      {mobileMenuOpen && <div className="admin-mobile-menu">{nav(true)}<button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Fechar"><X size={16}/></button></div>}
+      <main className="teacher-portal-content admin-portal-content">{children}</main>
     </div>
-  )
+  </div>
 }
