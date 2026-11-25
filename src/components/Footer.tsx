@@ -9,6 +9,8 @@ interface FooterProps {
     team: string;
     contact: string;
     hq: string;
+    brLocation?: string;
+    cnpj?: string;
     legal: string;
     privacy: string;
     terms: string;
@@ -28,6 +30,9 @@ export default function Footer({ t, onOpenPrivacy, onOpenTerms }: FooterProps) {
             <div>Nativo English</div>
           </div>
           <p className="text-sm leading-relaxed max-w-xs">{t.desc}</p>
+          {t.cnpj && (
+            <p className="text-xs font-medium tracking-wider text-white/70">{t.cnpj}</p>
+          )}
         </div>
         <div>
           <h5 className="text-secondary font-bold mb-8 uppercase text-xs tracking-widest">{t.explore}</h5>
@@ -41,7 +46,10 @@ export default function Footer({ t, onOpenPrivacy, onOpenTerms }: FooterProps) {
           <h5 className="text-secondary font-bold mb-8 uppercase text-xs tracking-widest">{t.contact}</h5>
           <ul className="space-y-4 text-sm">
             <li className="flex items-center gap-3"><MapPin className="w-5 h-5 flex-shrink-0" />{t.hq}</li>
-            <li className="flex items-center gap-3"><Mail className="w-5 h-5 flex-shrink-0" />nativoingleschool@gmail.com</li>
+            {t.brLocation && (
+              <li className="flex items-center gap-3"><MapPin className="w-5 h-5 flex-shrink-0" />{t.brLocation}</li>
+            )}
+            <li className="flex items-center gap-3"><Mail className="w-5 h-5 flex-shrink-0" /><a href="mailto:administrativo@nativoenglish.com.br" className="hover:text-white transition-colors">administrativo@nativoenglish.com.br</a></li>
             <li className="flex items-center gap-3"><Phone className="w-5 h-5 flex-shrink-0" />(61) 99808-0042</li>
           </ul>
         </div>
@@ -68,7 +76,7 @@ export default function Footer({ t, onOpenPrivacy, onOpenTerms }: FooterProps) {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-6 md:px-16 mt-20 pt-8 border-t border-white/10 text-center text-xs uppercase tracking-widest opacity-50">
-        <p>{t.rights}</p>
+        <p>{t.rights}{t.cnpj ? ` · ${t.cnpj}` : ''}</p>
       </div>
     </footer>
   );

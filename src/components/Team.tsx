@@ -20,42 +20,42 @@ export default function Team({ t }: TeamProps) {
     {
       name: "Weberty",
       roleKey: "weberty" as const,
-      image: "/team/Weberty.png"
+      image: "/team/Weberty.jpg"
     },
     {
       name: "Keziah",
       roleKey: "keziah" as const,
-      image: "/team/Keziah.png"
+      image: "/team/Keziah.jpg"
     },
     {
       name: "Jhennifer",
       roleKey: "jhennifer" as const,
-      image: "/team/Jhennifer.png"
+      image: "/team/Jhennifer.jpg"
     },
     {
       name: "Giordanna",
       roleKey: "giordanna" as const,
-      image: "/team/Giordanna.png"
+      image: "/team/Giordanna.jpg"
     },
     {
       name: "Caitlin",
       roleKey: "caitlin" as const,
-      image: "/team/Caitlin.png"
+      image: "/team/Caitlin.jpg"
     },
     {
       name: "Eric",
       roleKey: "eric" as const,
-      image: "/team/Eric.png"
+      image: "/team/Eric.jpg"
     },
     {
       name: "Bruno",
       roleKey: "bruno" as const,
-      image: "/team/Bruno.png"
+      image: "/team/Bruno.jpg"
     },
     {
       name: "Vini",
       roleKey: "vini" as const,
-      image: "/team/Vini.png"
+      image: "/team/Vini.jpg"
     }
   ];
 
@@ -81,6 +81,8 @@ export default function Team({ t }: TeamProps) {
                 <img
                   src={member.image}
                   alt={member.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover rounded-full transition-all duration-500"
                 />
 

@@ -32,7 +32,7 @@ export default function PrivacyPolicyModal({ lang, isOpen, onClose }: PrivacyPol
       },
       section5: {
         title: "5. Contato",
-        body: "Se você tiver alguma dúvida sobre esta Política de Privacidade ou sobre o tratamento de seus dados, envie um e-mail para nativoingleschool@gmail.com."
+        body: "Se você tiver alguma dúvida sobre esta Política de Privacidade ou sobre o tratamento de seus dados, envie um e-mail para administrativo@nativoenglish.com.br."
       },
       close: "Fechar"
     },
@@ -57,7 +57,7 @@ export default function PrivacyPolicyModal({ lang, isOpen, onClose }: PrivacyPol
       },
       section5: {
         title: "5. Contact Us",
-        body: "If you have any questions about this Privacy Policy or how we handle your data, please email us at nativoingleschool@gmail.com."
+        body: "If you have any questions about this Privacy Policy or how we handle your data, please email us at administrativo@nativoenglish.com.br."
       },
       close: "Close"
     },
@@ -82,7 +82,7 @@ export default function PrivacyPolicyModal({ lang, isOpen, onClose }: PrivacyPol
       },
       section5: {
         title: "5. Contacto",
-        body: "Si tiene alguna pregunta sobre esta Política de Privacidad o sobre el tratamiento de sus datos, envíe un correo electrónico a nativoingleschool@gmail.com."
+        body: "Si tiene alguna pregunta sobre esta Política de Privacidad o sobre el tratamiento de sus datos, envíe un correo electrónico a administrativo@nativoenglish.com.br."
       },
       close: "Cerrar"
     }

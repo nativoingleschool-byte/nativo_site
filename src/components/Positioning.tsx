@@ -23,7 +23,7 @@ export default function Positioning({ t }: PositioningProps) {
         </div>
         <div className="relative">
           <div className="aspect-[4/5] rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.18)] overflow-hidden border border-outline/40">
-            <img alt="Collaboration" className="w-full h-full object-cover" src="/hero/girl-with-headphones.jpg"/>
+            <img alt="Collaboration" loading="lazy" decoding="async" className="w-full h-full object-cover" src="/hero/girl-with-headphones.jpg"/>
           </div>
           <div className="absolute -bottom-10 -left-10 bg-brand-navy p-12 rounded-2xl text-white shadow-2xl hidden lg:block max-w-xs border border-white/10">
             <p className="text-2xl font-medium italic leading-snug">"{t.quote}"</p>
