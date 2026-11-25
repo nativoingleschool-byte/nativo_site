@@ -446,7 +446,20 @@ export const translations: Record<Language, Dictionary> = {
     update_password_title: 'Update Password',
     update_password_success: 'Password updated successfully.',
     enter_new_status: 'Enter new status (pending, paid, overdue):',
-    reset_success_reissuing: 'System reset for {name}. Re-issuing NFS-e...'
+    reset_success_reissuing: 'System reset for {name}. Re-issuing NFS-e...',
+    payer_nf_col: 'Payer / NF',
+    same_as_payer: 'Same',
+    add_student_btn: '+ New Student',
+    add_student_title: 'Add New Student',
+    nf_issued_to_student_label: 'Issue NF to the student',
+    nf_issued_to_student_hint_on: 'Checked: the NF will be issued and sent to the student.',
+    nf_issued_to_student_hint_off: 'Unchecked: enter the student\'s name and the details of who will receive the NF.',
+    student_name_label: 'Student Name',
+    nf_recipient_section: 'NF Recipient / Payer Details',
+    nf_recipient_name_placeholder: 'Payer / Company Name (for NF)',
+    nf_recipient_email_placeholder: 'Email to receive NF',
+    nf_recipient_cpf_cnpj_placeholder: 'CPF / CNPJ for NF',
+    student_created_success: 'Student added successfully!'
   },
   pt: {
     language: 'Idioma',
@@ -854,7 +867,20 @@ export const translations: Record<Language, Dictionary> = {
     update_password_title: 'Atualizar Senha',
     update_password_success: 'Senha atualizada com sucesso.',
     enter_new_status: 'Insira o novo status (pendente, pago, atrasado):',
-    reset_success_reissuing: 'Sistema resetado para {name}. Re-emitindo NFS-e...'
+    reset_success_reissuing: 'Sistema resetado para {name}. Re-emitindo NFS-e...',
+    payer_nf_col: 'Pagador / NF',
+    same_as_payer: 'Mesmo',
+    add_student_btn: '+ Novo Aluno',
+    add_student_title: 'Adicionar Novo Aluno',
+    nf_issued_to_student_label: 'Emitir NF para o aluno',
+    nf_issued_to_student_hint_on: 'Marcado: a NF será emitida e enviada para o próprio aluno.',
+    nf_issued_to_student_hint_off: 'Desmarcado: informe o nome do aluno e os dados de quem receberá a NF.',
+    student_name_label: 'Nome do Aluno',
+    nf_recipient_section: 'Dados para Emissão e Envio da NF (Pagador / Tomador)',
+    nf_recipient_name_placeholder: 'Nome / Razão Social para NF',
+    nf_recipient_email_placeholder: 'E-mail para envio da NF',
+    nf_recipient_cpf_cnpj_placeholder: 'CPF / CNPJ para NF',
+    student_created_success: 'Aluno adicionado com sucesso!'
   },
   es: {
     language: 'Idioma',
@@ -1262,7 +1288,20 @@ export const translations: Record<Language, Dictionary> = {
     update_password_title: 'Actualizar Contraseña',
     update_password_success: 'Contraseña actualizada con éxito.',
     enter_new_status: 'Ingrese el nuevo estado (pendiente, pagado, atrasado):',
-    reset_success_reissuing: 'Sistema restablecido para {name}. Re-emitiendo factura...'
+    reset_success_reissuing: 'Sistema restablecido para {name}. Re-emitiendo factura...',
+    payer_nf_col: 'Pagador / NF',
+    same_as_payer: 'Mismo',
+    add_student_btn: '+ Nuevo Alumno',
+    add_student_title: 'Agregar Nuevo Alumno',
+    nf_issued_to_student_label: 'Emitir NF al alumno',
+    nf_issued_to_student_hint_on: 'Marcado: la NF se emitirá y enviará al propio alumno.',
+    nf_issued_to_student_hint_off: 'Desmarcado: ingrese el nombre del alumno y los datos de quien recibirá la NF.',
+    student_name_label: 'Nombre del Alumno',
+    nf_recipient_section: 'Datos para Emisión y Envío de la NF (Pagador)',
+    nf_recipient_name_placeholder: 'Nombre / Razón Social para NF',
+    nf_recipient_email_placeholder: 'Correo para envío de la NF',
+    nf_recipient_cpf_cnpj_placeholder: 'CPF / CNPJ para NF',
+    student_created_success: '¡Alumno agregado con éxito!'
   }
 }
 

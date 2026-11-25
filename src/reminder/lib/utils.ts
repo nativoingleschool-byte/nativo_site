@@ -372,3 +372,27 @@ export const openFileFromDataOrUrl = (dataOrHttpUrl: string, fallbackFileName = 
     downloadFileFromDataOrUrl(dataOrHttpUrl, fileName)
   }
 }
+
+type StudentNameLike = {
+  full_name?: string | null
+  student_name?: string | null
+  nf_issued_to_student?: boolean | null
+}
+
+/**
+ * Returns whether the student is a different person from the NF/payer record.
+ */
+export const hasSeparateStudentName = (profile?: StudentNameLike | null): boolean =>
+  Boolean(profile && profile.nf_issued_to_student === false && profile.student_name?.trim())
+
+/**
+ * Returns the actual student's name for display in calendars/teacher views,
+ * falling back to full_name when the NF is issued to the student.
+ */
+export const getStudentDisplayName = (profile?: StudentNameLike | null): string => {
+  if (!profile) return ''
+  if (hasSeparateStudentName(profile)) {
+    return profile.student_name!.trim()
+  }
+  return profile.full_name || ''
+}

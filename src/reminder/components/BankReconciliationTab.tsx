@@ -3,6 +3,7 @@ import { Profile, BankTransaction, BankTransactionStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
+import { hasSeparateStudentName } from '../lib/utils'
 import { trackEvent } from '../../lib/telemetry'
 import {
   Upload,
@@ -96,7 +97,7 @@ export default function BankReconciliationTab({
           status,
           raw_data,
           created_at,
-          student:profiles!bank_transactions_student_id_fkey(id, full_name, email, cpf, tuition_fee)
+          student:profiles!bank_transactions_student_id_fkey(id, full_name, student_name, nf_issued_to_student, email, cpf, tuition_fee)
         `)
         .order('transaction_date', { ascending: false })
         .limit(100)
@@ -518,7 +519,9 @@ export default function BankReconciliationTab({
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase()
       const inMemo = tx.memo.toLowerCase().includes(q)
-      const inStudent = tx.student?.full_name?.toLowerCase().includes(q)
+      const inStudent =
+        tx.student?.full_name?.toLowerCase().includes(q) ||
+        tx.student?.student_name?.toLowerCase().includes(q)
       const inAmount = String(tx.amount).includes(q)
       return inMemo || inStudent || inAmount
     }
@@ -888,13 +891,13 @@ export default function BankReconciliationTab({
                           }}
                         >
                           <option value="">-- Vincular Aluno --</option>
-                          {students
-                            .filter(s => !s.archived)
-                            .map(s => (
-                              <option key={s.id} value={s.id}>
-                                {s.full_name} {s.cpf ? `(${s.cpf})` : ''} {s.tuition_fee ? `- R$ ${s.tuition_fee}` : ''}
-                              </option>
-                            ))}
+                            {students
+                              .filter(s => !s.archived)
+                              .map(s => (
+                                <option key={s.id} value={s.id}>
+                                  {s.full_name}{hasSeparateStudentName(s) ? ` (Aluno: ${s.student_name})` : ''} {s.cpf ? `(${s.cpf})` : ''} {s.tuition_fee ? `- R$ ${s.tuition_fee}` : ''}
+                                </option>
+                              ))}
                         </select>
                         {tx.student && (
                           <div className="text-xs mt-1 flex flex-wrap items-center gap-1.5" style={{ color: 'var(--portal-text-secondary)' }}>

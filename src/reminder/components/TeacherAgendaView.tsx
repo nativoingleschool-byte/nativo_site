@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { addMinutes, format } from 'date-fns'
 import { CalendarPlus, Check, Clock3, Video, X } from 'lucide-react'
 import type { Lesson, Profile, TeacherAvailability, TeacherLessonStatus } from '../lib/types'
-import { buildGoogleCalendarInviteUrl, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, isoToDateTimeLocal, type TeacherLessonSession } from '../lib/utils'
+import { buildGoogleCalendarInviteUrl, dateTimeLocalToIso, getStudentDisplayName, groupLessonsIntoTeacherSessions, isoToDateTimeLocal, type TeacherLessonSession } from '../lib/utils'
 import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 import { useToast } from '../lib/toast'
 import MobileCalendar, { type CalendarEventItem } from './MobileCalendar'
@@ -30,7 +30,7 @@ type TeacherAgendaViewProps = {
 
 const getStudentNames = (lesson: Lesson, profilesById: Record<string, Profile>, students: Profile[]) => {
   const student = profilesById[lesson.student_id] ?? students.find((item) => item.id === lesson.student_id)
-  return student?.full_name ?? lesson.class_name ?? 'Aluno'
+  return getStudentDisplayName(student) || lesson.class_name || 'Aluno'
 }
 
 const formatTime = (value: string) =>
@@ -164,7 +164,7 @@ export default function TeacherAgendaView({
         start: new Date(session.starts_at),
         end: new Date(session.ends_at || addMinutes(new Date(session.starts_at), session.duration_minutes).toISOString()),
         title: session.subject || 'Aulas de Inglês',
-        subtitle: session.student_ids.map((id) => profilesById[id]?.full_name ?? students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`,
+        subtitle: session.student_ids.map((id) => getStudentDisplayName(profilesById[id] ?? students.find((student) => student.id === id))).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`,
         color: session.is_happened ? ('green' as const) : ('blue' as const),
         sourceData: { ...session.lessons[0], lessonIds: session.lessons.map((lesson) => lesson.id), lessons: session.lessons },
       })),
@@ -224,7 +224,7 @@ export default function TeacherAgendaView({
             <span className="teacher-confirmation-banner__icon" aria-hidden="true">!</span>
             <p>
               <strong>1 aula precisa de confirmação:</strong>{' '}
-              {pendingConfirmation.student_ids.map((id) => profilesById[id]?.full_name ?? students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${pendingConfirmation.student_ids.length} alunos`} — {todayLabel}, {formatTime(pendingConfirmation.starts_at)} ({pendingConfirmation.subject})
+              {pendingConfirmation.student_ids.map((id) => getStudentDisplayName(profilesById[id] ?? students.find((student) => student.id === id))).filter(Boolean).join(', ') || `${pendingConfirmation.student_ids.length} alunos`} — {todayLabel}, {formatTime(pendingConfirmation.starts_at)} ({pendingConfirmation.subject})
             </p>
           </div>
           <div className="teacher-confirmation-banner__actions">

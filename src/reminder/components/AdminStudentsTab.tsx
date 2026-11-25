@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Lesson, Profile, UserFormState } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass } from '../lib/utils'
+import { formatShortDate, badgeClass, hasSeparateStudentName } from '../lib/utils'
 import { supabase, getFreshSessionToken } from '../lib/supabase'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { MoreVertical } from 'lucide-react'
@@ -52,7 +52,35 @@ export default function AdminStudentsTab({
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const activeCardRef = useRef<HTMLDivElement | null>(null)
   const editStudentCardRef = useRef<HTMLDivElement>(null)
+  const addStudentCardRef = useRef<HTMLDivElement>(null)
   const historyStudentCardRef = useRef<HTMLDivElement>(null)
+
+  const createDefaultNewStudentForm = (): UserFormState => ({
+    full_name: '',
+    email: '',
+    password: '',
+    role: 'student',
+    class_name: '',
+    speciality: '',
+    first_class_at: '',
+    first_class_teacher_id: '',
+    country: 'BR',
+    cpf: '',
+    data_pagamento_preferencial: 5,
+    status_pagamento: 'pendente',
+    cep: '',
+    logradouro: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
+    tuition_fee: undefined,
+    nf_issued_to_student: true,
+    student_name: ''
+  })
+
+  const [addStudentModalOpen, setAddStudentModalOpen] = useState(false)
+  const [creatingStudent, setCreatingStudent] = useState(false)
+  const [newStudentForm, setNewStudentForm] = useState<UserFormState>(createDefaultNewStudentForm)
 
   /** Fetch the generated DANFS-e PDF from the server and trigger a browser download. */
   const downloadNfsePdf = async (invoiceId: string, studentName: string) => {
@@ -688,7 +716,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
         </div>
       )}
 
-      <section className="admin-students-list-card"><div className="admin-students-list-heading"><strong>Listagem de Alunos</strong><span>{students.length} no total</span></div><div className="table-responsive admin-students-table">
+      <section className="admin-students-list-card"><div className="admin-students-list-heading"><strong>Listagem de Alunos</strong><div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><span>{students.length} no total</span><button type="button" className="primary-button" style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }} onClick={() => { setNewStudentForm(createDefaultNewStudentForm()); setAddStudentModalOpen(true) }}>{t(language, 'add_student_btn')}</button></div></div><div className="table-responsive admin-students-table">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--portal-border)', color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
@@ -705,12 +733,13 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 title="Ordenar por Nome"
               >
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span>{t(language, 'full_name')}</span>
+                  <span>{t(language, 'payer_nf_col')}</span>
                   <span style={{ fontSize: '0.75rem', opacity: sortField === 'name' ? 1 : 0.4 }}>
                     {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
                   </span>
                 </div>
               </th>
+              <th style={{ padding: '1rem' }}>{t(language, 'student_col')}</th>
               <th
                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => handleSort('fee')}
@@ -783,6 +812,31 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         }}
                       >
                         {student.country}
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {hasSeparateStudentName(student) ? (
+                      <span
+                        style={{
+                          fontSize: '0.82rem',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '999px',
+                          background: 'var(--status-info-bg)',
+                          color: 'var(--status-info-text)',
+                          border: '1px solid var(--status-info-border)',
+                          fontWeight: 600,
+                          display: 'inline-block'
+                        }}
+                      >
+                        {student.student_name}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--portal-text-secondary)', fontSize: '0.85rem' }}>
+                        {student.full_name}{' '}
+                        <span style={{ fontSize: '0.72rem', color: 'var(--portal-text-muted)' }}>
+                          ({t(language, 'same_as_payer')})
+                        </span>
                       </span>
                     )}
                   </td>
@@ -1018,7 +1072,9 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                                 bairro: student.bairro || '',
                                 cidade: student.cidade || '',
                                 uf: student.uf || '',
-                                tuition_fee: student.tuition_fee
+                                tuition_fee: student.tuition_fee,
+                                nf_issued_to_student: student.nf_issued_to_student ?? true,
+                                student_name: student.student_name || ''
                               }
                               setUserForm(initial)
                               setInitialUserForm(initial)
@@ -1067,7 +1123,9 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 (userForm.bairro || '') !== (initialUserForm.bairro || '') ||
                 (userForm.cidade || '') !== (initialUserForm.cidade || '') ||
                 (userForm.uf || '') !== (initialUserForm.uf || '') ||
-                Number(userForm.tuition_fee || 0) !== Number(initialUserForm.tuition_fee || 0)
+                Number(userForm.tuition_fee || 0) !== Number(initialUserForm.tuition_fee || 0) ||
+                (userForm.nf_issued_to_student ?? true) !== (initialUserForm.nf_issued_to_student ?? true) ||
+                (userForm.student_name || '') !== (initialUserForm.student_name || '')
               ) : false
 
               if (isDirty) {
@@ -1086,16 +1144,58 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
           <div ref={editStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>{t(language, 'edit_student_title')}</h3>
             <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.65rem',
+                  padding: '0.75rem',
+                  borderRadius: '0.75rem',
+                  background: 'var(--portal-surface-subtle)',
+                  border: '1px solid var(--portal-border)',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={userForm.nf_issued_to_student ?? true}
+                  onChange={(e) => setUserForm({ ...userForm, nf_issued_to_student: e.target.checked })}
+                  style={{ width: 'auto', marginTop: '0.2rem' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--portal-heading)' }}>
+                    {t(language, 'nf_issued_to_student_label')}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--portal-text-muted)', marginTop: '0.15rem' }}>
+                    {(userForm.nf_issued_to_student ?? true) ? t(language, 'nf_issued_to_student_hint_on') : t(language, 'nf_issued_to_student_hint_off')}
+                  </div>
+                </div>
+              </label>
+
+              {userForm.nf_issued_to_student === false && (
+                <>
+                  <input
+                    required
+                    placeholder={`${t(language, 'student_name_label')} *`}
+                    value={userForm.student_name || ''}
+                    onChange={(e) => setUserForm({ ...userForm, student_name: e.target.value })}
+                  />
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--portal-text-secondary)', marginTop: '0.25rem' }}>
+                    {t(language, 'nf_recipient_section')}
+                  </div>
+                </>
+              )}
+
               <input
                 required
-                placeholder={t(language, 'full_name')}
+                placeholder={userForm.nf_issued_to_student === false ? t(language, 'nf_recipient_name_placeholder') : t(language, 'full_name')}
                 value={userForm.full_name}
                 onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
               />
               <input
                 required
                 type="email"
-                placeholder="Email"
+                placeholder={userForm.nf_issued_to_student === false ? t(language, 'nf_recipient_email_placeholder') : 'Email'}
                 value={userForm.email}
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
@@ -1120,7 +1220,7 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 <option value="OTHER">🌍 Outro / Other</option>
               </select>
               <input
-                placeholder={t(language, 'cpf_label')}
+                placeholder={userForm.nf_issued_to_student === false ? t(language, 'nf_recipient_cpf_cnpj_placeholder') : t(language, 'cpf_label')}
                 value={userForm.cpf || ''}
                 onChange={(e) => setUserForm({ ...userForm, cpf: e.target.value })}
               />
@@ -1209,6 +1309,12 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 className="primary-button"
                 onClick={async () => {
                   if (!userForm.id) return
+                  const nfToStudent = userForm.nf_issued_to_student ?? true
+                  const trimmedStudentName = (userForm.student_name || '').trim()
+                  if (!nfToStudent && !trimmedStudentName) {
+                    toast.error(`${t(language, 'student_name_label')} obrigatório.`)
+                    return
+                  }
                   try {
                     const { error } = await supabase
                       .from('profiles')
@@ -1216,6 +1322,8 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                         full_name: userForm.full_name,
                         email: userForm.email,
                         country: userForm.country || 'BR',
+                        nf_issued_to_student: nfToStudent,
+                        student_name: nfToStudent ? null : trimmedStudentName,
                         cpf: userForm.cpf || null,
                         data_pagamento_preferencial: userForm.data_pagamento_preferencial || 5,
                         status_pagamento: userForm.status_pagamento || 'pendente',
@@ -1413,6 +1521,233 @@ const formatBillingPeriod = (period: string, language: Language = 'pt') => {
                 {t(language, 'cancel')}
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {addStudentModalOpen && createPortal(
+        <div
+          className="reminder-app-scope modal-overlay"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, background: 'rgba(2, 6, 23, 0.78)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}
+          onClick={(e) => {
+            if (addStudentCardRef.current && !addStudentCardRef.current.contains(e.target as Node) && !creatingStudent) {
+              setAddStudentModalOpen(false)
+            }
+          }}
+        >
+          <div ref={addStudentCardRef} className="form-card" style={{ maxWidth: '450px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--portal-surface)', border: '1px solid var(--portal-border)', borderRadius: '1.5rem', padding: '2rem', color: 'var(--portal-text)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--portal-heading)' }}>{t(language, 'add_student_title')}</h3>
+            <form
+              className="space-y-4"
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const nfToStudent = newStudentForm.nf_issued_to_student ?? true
+                const trimmedStudentName = (newStudentForm.student_name || '').trim()
+                if (!nfToStudent && !trimmedStudentName) {
+                  toast.error(`${t(language, 'student_name_label')} obrigatório.`)
+                  return
+                }
+                setCreatingStudent(true)
+                try {
+                  const token = await getFreshSessionToken()
+                  if (!token) throw new Error(t(language, 'unauthenticated_error'))
+
+                  const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      action: 'create',
+                      payload: {
+                        role: 'student',
+                        full_name: newStudentForm.full_name,
+                        email: newStudentForm.email,
+                        password: newStudentForm.password,
+                        country: newStudentForm.country || 'BR',
+                        nf_issued_to_student: nfToStudent,
+                        student_name: nfToStudent ? null : trimmedStudentName,
+                        cpf: newStudentForm.cpf || null,
+                        tuition_fee: newStudentForm.tuition_fee,
+                        data_pagamento_preferencial: newStudentForm.data_pagamento_preferencial || 5,
+                        status_pagamento: newStudentForm.status_pagamento || 'pendente',
+                        cep: newStudentForm.cep || null,
+                        logradouro: newStudentForm.logradouro || null,
+                        bairro: newStudentForm.bairro || null,
+                        cidade: newStudentForm.cidade || null,
+                        uf: newStudentForm.uf || null
+                      }
+                    })
+                  })
+                  const data = await response.json()
+                  if (!response.ok) throw new Error(data.error || 'Erro ao adicionar aluno.')
+                  toast.success(t(language, 'student_created_success'))
+                  setAddStudentModalOpen(false)
+                  await refreshProfiles()
+                } catch (err: any) {
+                  toast.error(err.message)
+                } finally {
+                  setCreatingStudent(false)
+                }
+              }}
+            >
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.65rem',
+                  padding: '0.75rem',
+                  borderRadius: '0.75rem',
+                  background: 'var(--portal-surface-subtle)',
+                  border: '1px solid var(--portal-border)',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={newStudentForm.nf_issued_to_student ?? true}
+                  onChange={(e) => setNewStudentForm({ ...newStudentForm, nf_issued_to_student: e.target.checked })}
+                  style={{ width: 'auto', marginTop: '0.2rem' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--portal-heading)' }}>
+                    {t(language, 'nf_issued_to_student_label')}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--portal-text-muted)', marginTop: '0.15rem' }}>
+                    {(newStudentForm.nf_issued_to_student ?? true) ? t(language, 'nf_issued_to_student_hint_on') : t(language, 'nf_issued_to_student_hint_off')}
+                  </div>
+                </div>
+              </label>
+
+              {newStudentForm.nf_issued_to_student === false && (
+                <>
+                  <input
+                    required
+                    placeholder={`${t(language, 'student_name_label')} *`}
+                    value={newStudentForm.student_name || ''}
+                    onChange={(e) => setNewStudentForm({ ...newStudentForm, student_name: e.target.value })}
+                  />
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--portal-text-secondary)', marginTop: '0.25rem' }}>
+                    {t(language, 'nf_recipient_section')}
+                  </div>
+                </>
+              )}
+
+              <input
+                required
+                placeholder={newStudentForm.nf_issued_to_student === false ? t(language, 'nf_recipient_name_placeholder') : t(language, 'full_name')}
+                value={newStudentForm.full_name}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, full_name: e.target.value })}
+              />
+              <input
+                required
+                type="email"
+                placeholder={newStudentForm.nf_issued_to_student === false ? t(language, 'nf_recipient_email_placeholder') : 'Email'}
+                value={newStudentForm.email}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, email: e.target.value })}
+              />
+              <input
+                type="password"
+                placeholder={`${t(language, 'password')} (opcional)`}
+                value={newStudentForm.password}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, password: e.target.value })}
+              />
+              <select
+                value={newStudentForm.country || 'BR'}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, country: e.target.value })}
+              >
+                <option value="BR">🇧🇷 Brasil</option>
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 United Kingdom</option>
+                <option value="PT">🇵🇹 Portugal</option>
+                <option value="ES">🇪🇸 España</option>
+                <option value="AR">🇦🇷 Argentina</option>
+                <option value="CO">🇨🇴 Colombia</option>
+                <option value="MX">🇲🇽 México</option>
+                <option value="DE">🇩🇪 Deutschland</option>
+                <option value="FR">🇫🇷 France</option>
+                <option value="IT">🇮🇹 Italia</option>
+                <option value="JP">🇯🇵 日本</option>
+                <option value="AU">🇦🇺 Australia</option>
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="OTHER">🌍 Outro / Other</option>
+              </select>
+              <input
+                placeholder={newStudentForm.nf_issued_to_student === false ? t(language, 'nf_recipient_cpf_cnpj_placeholder') : t(language, 'cpf_label')}
+                value={newStudentForm.cpf || ''}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, cpf: e.target.value })}
+              />
+              <input
+                type="number"
+                step="0.01"
+                placeholder={t(language, 'tuition_fee_placeholder')}
+                value={newStudentForm.tuition_fee ?? ''}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, tuition_fee: e.target.value === '' ? undefined : Number(e.target.value) })}
+              />
+              <select
+                value={newStudentForm.data_pagamento_preferencial || 5}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, data_pagamento_preferencial: Number(e.target.value) })}
+              >
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {t(language, 'billing_day_label').replace('{day}', String(day))}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={newStudentForm.status_pagamento || 'pendente'}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, status_pagamento: e.target.value as any })}
+              >
+                <option value="em_dia">{t(language, 'financial_ok')}</option>
+                <option value="atrasado">{t(language, 'financial_late')}</option>
+                <option value="pendente">{t(language, 'financial_pending')}</option>
+              </select>
+              <input
+                placeholder={t(language, 'cep_label')}
+                value={newStudentForm.cep || ''}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, cep: e.target.value })}
+              />
+              <input
+                placeholder={t(language, 'address_label')}
+                value={newStudentForm.logradouro || ''}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, logradouro: e.target.value })}
+              />
+              <input
+                placeholder={t(language, 'neighborhood_label')}
+                value={newStudentForm.bairro || ''}
+                onChange={(e) => setNewStudentForm({ ...newStudentForm, bairro: e.target.value })}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  style={{ flex: 2 }}
+                  placeholder={t(language, 'city_label')}
+                  value={newStudentForm.cidade || ''}
+                  onChange={(e) => setNewStudentForm({ ...newStudentForm, cidade: e.target.value })}
+                />
+                <input
+                  style={{ flex: 1 }}
+                  placeholder={t(language, 'state_label')}
+                  value={newStudentForm.uf || ''}
+                  onChange={(e) => setNewStudentForm({ ...newStudentForm, uf: e.target.value.toUpperCase() })}
+                />
+              </div>
+              <div className="button-stack mt-6" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                <button type="submit" className="primary-button" disabled={creatingStudent}>
+                  {creatingStudent ? t(language, 'saving_label') : t(language, 'save')}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={creatingStudent}
+                  onClick={() => setAddStudentModalOpen(false)}
+                >
+                  {t(language, 'cancel')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body

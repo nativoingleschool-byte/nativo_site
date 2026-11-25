@@ -23,6 +23,8 @@ export type UserFormState = {
   uf?: string
   tuition_fee?: number
   country?: string
+  nf_issued_to_student?: boolean
+  student_name?: string | null
 }
 
 export type AccountFormState = {
@@ -74,6 +76,8 @@ export type Profile = {
   uf?: string
   tuition_fee?: number
   archived?: boolean
+  nf_issued_to_student?: boolean
+  student_name?: string | null
 }
 
 export type Lesson = {

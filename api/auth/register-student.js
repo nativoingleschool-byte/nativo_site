@@ -30,6 +30,8 @@ export default async function handler(req, res) {
       password, 
       full_name, 
       country,
+      nf_issued_to_student,
+      student_name,
       cpf, 
       data_pagamento_preferencial,
       cep,
@@ -41,6 +43,12 @@ export default async function handler(req, res) {
 
     if (!token || !email || !password || !full_name) {
       return json(res, 400, { error: 'Missing required registration fields.' });
+    }
+
+    const nfIssuedToStudent = nf_issued_to_student !== false;
+    const trimmedStudentName = typeof student_name === 'string' ? student_name.trim() : '';
+    if (!nfIssuedToStudent && !trimmedStudentName) {
+      return json(res, 400, { error: 'Informe o nome do aluno.' });
     }
 
     const emailNormalized = email.trim().toLowerCase();
@@ -85,6 +93,8 @@ export default async function handler(req, res) {
       full_name,
       role: 'student',
       country: country || 'BR',
+      nf_issued_to_student: nfIssuedToStudent,
+      student_name: nfIssuedToStudent ? null : trimmedStudentName,
       cpf: cpf || null,
       data_pagamento_preferencial: data_pagamento_preferencial ? parseInt(data_pagamento_preferencial, 10) : null,
       cep: cep || null,
@@ -99,14 +109,20 @@ export default async function handler(req, res) {
       .from('profiles')
       .upsert(profilePayload);
 
-    // Fallback: If 'country' column has not been added to the database schema yet
-    if (profileError && profileError.message && profileError.message.toLowerCase().includes('country')) {
-      console.warn('[register-student] Retrying profile upsert without country column:', profileError.message);
-      const { country: _omitted, ...payloadWithoutCountry } = profilePayload;
-      const retryResult = await supabaseAdmin
-        .from('profiles')
-        .upsert(payloadWithoutCountry);
-      profileError = retryResult.error;
+    // Fallback: If optional newer columns have not been added to the database schema yet
+    if (profileError && profileError.message) {
+      const msg = profileError.message.toLowerCase();
+      if (msg.includes('country') || msg.includes('nf_issued_to_student') || msg.includes('student_name')) {
+        console.warn('[register-student] Retrying profile upsert without unmigrated columns:', profileError.message);
+        const fallbackPayload = { ...profilePayload };
+        if (msg.includes('country')) delete fallbackPayload.country;
+        if (msg.includes('nf_issued_to_student')) delete fallbackPayload.nf_issued_to_student;
+        if (msg.includes('student_name')) delete fallbackPayload.student_name;
+        const retryResult = await supabaseAdmin
+          .from('profiles')
+          .upsert(fallbackPayload);
+        profileError = retryResult.error;
+      }
     }
 
     if (profileError) {

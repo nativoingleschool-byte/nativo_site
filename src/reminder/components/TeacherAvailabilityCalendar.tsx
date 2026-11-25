@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react'
 import { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { useToast } from '../lib/toast'
-import { groupLessonsIntoTeacherSessions } from '../lib/utils'
+import { groupLessonsIntoTeacherSessions, getStudentDisplayName } from '../lib/utils'
 import MobileCalendar from './MobileCalendar'
 
 type CalendarEvent = {
@@ -131,7 +131,7 @@ export default function TeacherAvailabilityCalendar({
       const teacherName = role === 'admin' ? (teacherObj?.full_name || 'Teacher') : ''
 
       const studentNames = session.student_ids
-        .map(id => profilesById[id]?.full_name)
+        .map(id => getStudentDisplayName(profilesById[id]))
         .filter(Boolean) as string[]
 
       const distinctClassNames = Array.from(new Set(

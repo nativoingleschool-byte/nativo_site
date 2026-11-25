@@ -2,7 +2,7 @@ import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { Lesson, Profile, TeacherAvailability } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { localeByLanguage } from '../lib/utils'
+import { localeByLanguage, getStudentDisplayName } from '../lib/utils'
 import { useToast } from '../lib/toast'
 import DateTimePicker from './DateTimePicker'
 import { CalendarDays, Clock3, Plus, Search, UsersRound, AlertTriangle } from 'lucide-react'
@@ -216,7 +216,7 @@ export default function AdminCalendar({
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDaysToDateKey(weekStart, index)), [weekStart])
   const sortedStudents = useMemo(
-    () => [...students].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })),
+    () => [...students].sort((a, b) => getStudentDisplayName(a).localeCompare(getStudentDisplayName(b), undefined, { sensitivity: 'base' })),
     [students],
   )
   const sortedTeachers = useMemo(
@@ -312,7 +312,7 @@ export default function AdminCalendar({
       const classMatch = (g.class_name || '').toLowerCase().includes(q)
       const teacherName = (profilesById[g.teacher_id]?.full_name || '').toLowerCase()
       const teacherMatch = teacherName.includes(q)
-      const studentMatch = g.student_ids.some((id) => (profilesById[id]?.full_name || '').toLowerCase().includes(q))
+      const studentMatch = g.student_ids.some((id) => getStudentDisplayName(profilesById[id]).toLowerCase().includes(q))
       return subjectMatch || classMatch || teacherMatch || studentMatch
     })
   }, [locateSearchQuery, locateTab, earlyLessonGroups, allSortedLessonGroups, profilesById])
@@ -1157,7 +1157,7 @@ export default function AdminCalendar({
                   <option value="">{t(language, 'select_student_add')}</option>
                   {sortedStudents.map((student) => (
                     <option key={student.id} value={student.id} disabled={selectedStudentIds.includes(student.id)}>
-                      {student.full_name} {selectedStudentIds.includes(student.id) ? t(language, 'added_label') : ''}
+                      {getStudentDisplayName(student)} {selectedStudentIds.includes(student.id) ? t(language, 'added_label') : ''}
                     </option>
                   ))}
                 </select>
@@ -1166,7 +1166,7 @@ export default function AdminCalendar({
                   <div className="selected-students-list">
                     {selectedStudentIds.map((studentId) => {
                       const student = profilesById[studentId]
-                      const studentName = student?.full_name ?? t(language, 'role_student')
+                      const studentName = getStudentDisplayName(student) || t(language, 'role_student')
 
                       let attendanceStatus: 'attend' | 'cancel' | 'pending' = 'pending'
                       if (editingGroup) {
@@ -1407,7 +1407,7 @@ export default function AdminCalendar({
                               <strong>Matéria:</strong> {conflict.subject || 'Aula'}
                             </p>
                             <p style={{ margin: '0.2rem 0' }}>
-                              <strong>Aluno:</strong> {profilesById[conflict.student_id]?.full_name || 'Aluno'}
+                              <strong>Aluno:</strong> {getStudentDisplayName(profilesById[conflict.student_id]) || 'Aluno'}
                             </p>
                           </div>
                         )}
@@ -1681,7 +1681,7 @@ export default function AdminCalendar({
                   const restoredZoned = getZonedParts(restoredDate, timeZone)
 
                   const teacherName = profilesById[group.teacher_id]?.full_name || 'Professor'
-                  const studentNames = group.student_ids.map((id) => profilesById[id]?.full_name || id).join(', ')
+                  const studentNames = group.student_ids.map((id) => getStudentDisplayName(profilesById[id]) || id).join(', ')
 
                   return (
                     <div

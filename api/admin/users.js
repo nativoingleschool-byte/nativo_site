@@ -58,10 +58,18 @@ const assertAdmin = async (req) => {
 
 const createUser = async (supabaseAdmin, payload) => {
   const email = normalizeEmail(payload.email, payload.full_name)
+  const password = String(payload.password ?? '').trim() || randomPassword()
+  const isStudent = payload.role === 'student'
+  const nfIssuedToStudent = payload.nf_issued_to_student !== false
+  const trimmedStudentName = typeof payload.student_name === 'string' ? payload.student_name.trim() : ''
+
+  if (isStudent && !nfIssuedToStudent && !trimmedStudentName) {
+    throw new Error('Nome do aluno é obrigatório quando a NF não é emitida para o aluno.')
+  }
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
-    password: payload.password,
+    password,
     email_confirm: true,
     user_metadata: { full_name: payload.full_name },
   })
@@ -75,13 +83,32 @@ const createUser = async (supabaseAdmin, payload) => {
     email,
     full_name: payload.full_name,
     role: payload.role,
-    class_name: payload.role === 'student' ? payload.class_name || '' : '',
-    speciality: payload.role === 'student' ? '' : payload.speciality || '',
+    class_name: isStudent ? payload.class_name || '' : '',
+    speciality: isStudent ? '' : payload.speciality || '',
     push_enabled: false,
+    ...(isStudent
+      ? {
+          country: payload.country || 'BR',
+          nf_issued_to_student: nfIssuedToStudent,
+          student_name: nfIssuedToStudent ? null : trimmedStudentName,
+          cpf: payload.cpf || null,
+          data_pagamento_preferencial: payload.data_pagamento_preferencial ? Number(payload.data_pagamento_preferencial) : 5,
+          status_pagamento: payload.status_pagamento || 'pendente',
+          cep: payload.cep || null,
+          logradouro: payload.logradouro || null,
+          bairro: payload.bairro || null,
+          cidade: payload.cidade || null,
+          uf: payload.uf || null,
+          tuition_fee: payload.tuition_fee !== undefined && payload.tuition_fee !== '' && payload.tuition_fee !== null
+            ? Number(payload.tuition_fee)
+            : null,
+        }
+      : {}),
   }
 
   const { error: profileError } = await supabaseAdmin.from('profiles').upsert(profilePayload)
   if (profileError) {
+    await supabaseAdmin.auth.admin.deleteUser(data.user.id).catch(() => {})
     throw new Error(profileError.message)
   }
 

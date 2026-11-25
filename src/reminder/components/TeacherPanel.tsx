@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { Lesson, Profile, TeacherAttendance, TeacherLessonStatus, TeacherNote, TeacherAvailability, TeacherInvoice, StudentAttendance, StudentLessonStatus } from '../lib/types'
 import { Language, t } from '../lib/i18n'
-import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl } from '../lib/utils'
+import { formatShortDate, badgeClass, isoToDateTimeLocal, dateTimeLocalToIso, groupLessonsIntoTeacherSessions, TeacherLessonSession, openFileFromDataOrUrl, downloadFileFromDataOrUrl, buildGoogleCalendarInviteUrl, getStudentDisplayName } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import TeacherAvailabilityCalendar from './TeacherAvailabilityCalendar'
 import TeacherAgendaView from './TeacherAgendaView'
@@ -289,7 +289,7 @@ export default function TeacherPanel({
     })
 
     return Array.from(map.values()).sort((a, b) =>
-      (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+      getStudentDisplayName(a).localeCompare(getStudentDisplayName(b), undefined, { sensitivity: 'base' })
     )
   }, [students, profilesById, lessons])
 
@@ -303,7 +303,7 @@ export default function TeacherPanel({
     const query = studentSearch.trim().toLocaleLowerCase()
     if (!query) return classStudents
     return classStudents.filter((student) =>
-      `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
+      `${getStudentDisplayName(student)} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
     )
   }, [classStudents, studentSearch])
   // Do not hide valid students when a lesson has a stale or different class label.
@@ -312,10 +312,10 @@ export default function TeacherPanel({
     const query = editStudentSearch.trim().toLocaleLowerCase()
     if (!query) return editClassStudents
     return editClassStudents.filter((student) =>
-      `${student.full_name} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
+      `${getStudentDisplayName(student)} ${student.class_name || ''}`.toLocaleLowerCase().includes(query)
     )
   }, [editClassStudents, editStudentSearch])
-  const editCurrentStudentName = sortedStudents.find((student) => student.id === editLessonStudentId)?.full_name || profilesById[editLessonStudentId]?.full_name || 'Aluno não localizado'
+  const editCurrentStudentName = getStudentDisplayName(sortedStudents.find((student) => student.id === editLessonStudentId) ?? profilesById[editLessonStudentId]) || 'Aluno não localizado'
   const showEditStudentFallback = Boolean(
     editLessonStudentId
     && !sortedStudents.some((student) => student.id === editLessonStudentId)
@@ -1059,7 +1059,7 @@ export default function TeacherPanel({
                   {(() => {
                     const session = lastUnmarkedClass
                     const l = session.lessons[0]
-                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const studentName = session.student_ids.map((id) => getStudentDisplayName(profilesById[id] || students.find((student) => student.id === id))).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
                     const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
@@ -1180,7 +1180,7 @@ export default function TeacherPanel({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {teacherTodayLessons.map((session) => {
                     const l = session.lessons[0]
-                    const studentName = session.student_ids.map((id) => profilesById[id]?.full_name || students.find((student) => student.id === id)?.full_name).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
+                    const studentName = session.student_ids.map((id) => getStudentDisplayName(profilesById[id] || students.find((student) => student.id === id))).filter(Boolean).join(', ') || `${session.student_ids.length} alunos`
                     const timeStr = formatShortDate(session.starts_at, language, appTimeZone)
 
                     return (
@@ -1263,7 +1263,7 @@ export default function TeacherPanel({
                     <option value="">{t(language, 'select_student')}</option>
                     {sortedStudents.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.full_name} {s.class_name ? `(${s.class_name})` : ''}
+                        {getStudentDisplayName(s)} {s.class_name ? `(${s.class_name})` : ''}
                       </option>
                     ))}
                   </select>
@@ -1451,7 +1451,7 @@ export default function TeacherPanel({
                                 setNewLessonStudentName('')
                               }}
                             />
-                            <span>{student.full_name}</span>
+                            <span>{getStudentDisplayName(student)}</span>
                             {student.class_name && <small>{student.class_name}</small>}
                           </label>
                         )) : <p className="teacher-student-dropdown__empty">{classStudents.length ? 'Nenhum aluno encontrado.' : 'Nenhum aluno cadastrado nesta turma.'}</p>}
@@ -1613,7 +1613,7 @@ export default function TeacherPanel({
                 const student = profilesById[lesson.student_id] || students.find((item) => item.id === lesson.student_id)
                 return <label key={lesson.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.75rem', border: '1px solid var(--portal-border-strong)', borderRadius: '0.65rem', color: 'var(--portal-text)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={Boolean(attendanceDraft[lesson.id])} onChange={(event) => setAttendanceDraft((current) => ({ ...current, [lesson.id]: event.target.checked }))} />
-                  <span>{student?.full_name || lesson.class_name || 'Aluno'}</span>
+                  <span>{getStudentDisplayName(student) || lesson.class_name || 'Aluno'}</span>
                 </label>
               })}
             </div>
@@ -1694,8 +1694,7 @@ export default function TeacherPanel({
                       aria-expanded={editStudentsOpen}
                     >
                       <span>{editLessonStudentIds.map((id) =>
-                        sortedStudents.find((student) => student.id === id)?.full_name
-                        || profilesById[id]?.full_name
+                        getStudentDisplayName(sortedStudents.find((student) => student.id === id) || profilesById[id])
                         || 'Aluno não localizado'
                       ).join(', ') || 'Selecionar alunos'}</span>
                       <ChevronDown size={15} />
@@ -1727,7 +1726,7 @@ export default function TeacherPanel({
                                 })
                               }}
                             />
-                            <span>{student.full_name}</span>
+                            <span>{getStudentDisplayName(student)}</span>
                             {student.class_name && <small>{student.class_name}</small>}
                           </label>
                         ))}

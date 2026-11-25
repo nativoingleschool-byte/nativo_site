@@ -15,6 +15,8 @@ create table if not exists public.profiles (
   
   -- Student specific fields
   country text not null default 'BR',
+  nf_issued_to_student boolean not null default true,
+  student_name text null,
   cpf text null,
   data_pagamento_preferencial integer null check (data_pagamento_preferencial between 1 and 31),
   status_pagamento text null check (status_pagamento in ('em_dia', 'atrasado', 'pendente')),

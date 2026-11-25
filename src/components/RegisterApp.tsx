@@ -15,6 +15,8 @@ export default function RegisterApp() {
   const [cidade, setCidade] = useState('');
   const [uf, setUf] = useState('');
   const [country, setCountry] = useState('BR');
+  const [nfIssuedToStudent, setNfIssuedToStudent] = useState(true);
+  const [studentName, setStudentName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -43,6 +45,12 @@ export default function RegisterApp() {
       return;
     }
 
+    if (!nfIssuedToStudent && !studentName.trim()) {
+      setError('Informe o nome do aluno.');
+      setLoading(false);
+      return;
+    }
+
     const isBrazil = country === 'BR';
 
     try {
@@ -57,6 +65,8 @@ export default function RegisterApp() {
           password,
           full_name: fullName,
           country,
+          nf_issued_to_student: nfIssuedToStudent,
+          student_name: nfIssuedToStudent ? null : studentName.trim(),
           ...(isBrazil ? {
             cpf,
             data_pagamento_preferencial: Number(paymentDate),
@@ -138,15 +148,61 @@ export default function RegisterApp() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Issue NF to student checkbox */}
+          <label className="flex items-start gap-3 p-3.5 bg-background border border-outline rounded-2xl cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={nfIssuedToStudent}
+              onChange={(e) => setNfIssuedToStudent(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+            />
+            <div>
+              <span className="text-sm font-bold text-on-surface block">Emitir NF para o aluno</span>
+              <span className="text-xs text-on-surface-variant block mt-0.5">
+                {nfIssuedToStudent
+                  ? 'Marcado: a Nota Fiscal será emitida e enviada para o próprio aluno.'
+                  : 'Desmarcado: informe o nome do aluno e abaixo os dados de quem receberá a NF.'}
+              </span>
+            </div>
+          </label>
+
+          {/* Student Name when NF goes to a different person/entity */}
+          {!nfIssuedToStudent && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Nome do Aluno</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Nome completo do aluno"
+                  className={inputClass}
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {!nfIssuedToStudent && (
+            <div className="pt-1 border-t border-outline/60">
+              <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                Dados para Emissão e Envio da NF (Pagador / Tomador)
+              </p>
+            </div>
+          )}
+
           {/* Full Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">Nome Completo</label>
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">
+              {nfIssuedToStudent ? 'Nome Completo' : 'Nome / Razão Social para NF'}
+            </label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input
                 type="text"
                 required
-                placeholder="Seu nome"
+                placeholder={nfIssuedToStudent ? 'Seu nome' : 'Nome ou razão social do pagador'}
                 className={inputClass}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -187,13 +243,15 @@ export default function RegisterApp() {
           {/* CPF — Required only for Brazil */}
           {country === 'BR' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">CPF</label>
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">
+                {nfIssuedToStudent ? 'CPF' : 'CPF / CNPJ para NF'}
+              </label>
               <div className="relative">
                 <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
                 <input
                   type="text"
                   required
-                  placeholder="000.000.000-00"
+                  placeholder={nfIssuedToStudent ? '000.000.000-00' : '000.000.000-00 ou CNPJ'}
                   className={inputClass}
                   value={cpf}
                   onChange={(e) => setCpf(e.target.value)}
@@ -204,7 +262,9 @@ export default function RegisterApp() {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">E-mail</label>
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block">
+              {nfIssuedToStudent ? 'E-mail' : 'E-mail para envio da NF'}
+            </label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input

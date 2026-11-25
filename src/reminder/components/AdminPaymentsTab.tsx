@@ -4,6 +4,7 @@ import { Profile } from '../lib/types'
 import { Language, t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
+import { hasSeparateStudentName } from '../lib/utils'
 
 const getBillingPeriods = () => {
   const today = new Date()
@@ -274,9 +275,11 @@ export default function AdminPaymentsTab({
   }
 
   const filteredStudents = students.filter((student) => {
+    const q = paymentSearch.toLowerCase()
     const matchesSearch =
-      student.full_name.toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      student.email.toLowerCase().includes(paymentSearch.toLowerCase())
+      student.full_name.toLowerCase().includes(q) ||
+      (student.student_name || '').toLowerCase().includes(q) ||
+      student.email.toLowerCase().includes(q)
     const status = student.status_pagamento || 'pendente'
     const matchesFilter = paymentFilter === 'all' || status === paymentFilter
     return matchesSearch && matchesFilter
@@ -418,6 +421,11 @@ export default function AdminPaymentsTab({
                   <tr key={student.id} style={{ borderBottom: '1px solid var(--portal-border)', fontSize: '0.9rem' }}>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ fontWeight: 'bold', color: 'var(--portal-heading)' }}>{student.full_name}</div>
+                      {hasSeparateStudentName(student) && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--portal-link)', fontWeight: 600 }}>
+                          {t(language, 'student_col')}: {student.student_name}
+                        </div>
+                      )}
                       <div style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>{student.email}</div>
                     </td>
                     <td style={{ padding: '1rem' }}>
